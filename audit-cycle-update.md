@@ -973,3 +973,43 @@ student@prolinegym.lb    profile_id=0b78def3…  gym_id=b737047f…
 **Status upgrade:** identity chain + coherent demo gym are **VERIFIED at the data level on the real DB**. Remaining = the *visual* confirmation (acceptance #2/#3): logging into each portal in a browser and the owner add-student click-path. The dev server (http://localhost:3000) now points at this coherent DB, so that final pass is unblocked. `tsc`/`next build` already green.
 
 **Migration ledger note:** CI applied via the Management API and inserted `000010…000017` into `supabase_migrations.schema_migrations`, so a future `supabase db push` will see them as applied and won't double-apply.
+
+---
+
+## Cycle 5 / Phase 0 / Prompt V1 — Verification Harness
+
+**Status:** Harness COMPLETE & running in CI · **F1 visual gate: FAIL** (15/18 assertions green; 3 real app defects block full visual proof)
+**Date:** 2026-06-09
+
+Playwright harness (`e2e/`, `playwright.config.ts`, `.github/workflows/e2e.yml`) logs in via the **real login form** as each demo role, asserts each portal renders **real data (not empty)**, exercises the owner add-student write path, and screenshots every portal (uploaded as the `e2e-screenshots` CI artifact + `playwright-report`). Latest run: **15 passed / 3 failed** (auth 4/4). No RLS/auth weakened — failures are reported, not worked around.
+
+> Harness note: the dashboard/portal layouts render content **twice** (responsive desktop+mobile shells); specs scope to `:visible`/`.first()`. Also, production `next start` 500s (see V1-F4), so the harness drives `next dev`.
+
+### Per-login results (screenshot in `e2e-screenshots` artifact)
+| Login | Check | Result | Screenshot |
+|-------|-------|:--:|---|
+| `owner@` | dashboard live student count (= **2**) | ✅ PASS | owner-dashboard |
+| `owner@` | `/students` list populated (cards render) | ✅ PASS | owner-students |
+| `owner@` | student **names** render (not blank) | ❌ **FAIL** | owner-students |
+| `owner@` | `/leads` loads w/o error | ✅ PASS | owner-leads |
+| `owner@` | `/payments` loads w/o error | ✅ PASS | owner-payments |
+| `owner@` | **add-student** persists & appears (F1 #3) | ❌ **FAIL** | owner-add-student-* |
+| `reception@` | `/students` populated | ✅ PASS | reception-students |
+| `reception@` | `/leads`, `/payments` load | ✅ PASS | reception-leads/payments |
+| `coach@` | home resolves a real coach | ✅ PASS | coach-home |
+| `coach@` | roster includes enrolled student (**Karim**) | ✅ PASS | coach-roster |
+| `student@` | `/portal/schedule` shows enrolled class | ❌ **FAIL** | student-schedule |
+| `student@` | `/portal/billing` shows invoice | ✅ PASS | student-billing |
+| `student@` | `/portal/pt` lists ≥1 package | ✅ PASS | student-pt |
+
+### F1 visual gate: **FAIL**
+F1's identity/data layer is **visually confirmed** where it surfaces correctly: owner dashboard counts (2 students), owner & reception student **lists populated**, coach home + roster (sees Karim), student billing (invoice) + PT (packages), leads/payments load. But three defects block the gate:
+
+### Findings (empty/broken portals + likely cause — for the auditor to assign)
+- **V1-F1 — `/students` names blank (owner + reception).** Cards render but names are empty. Cause: `students/components/student-list.tsx` reads flat `student.name_en/name_ar`, but `students/page.tsx` passes rows with **nested `profiles`** (`profiles.first_name_*`). No mapping. (Surfaced by `getByText(/Karim|Omar/)` → not found.)
+- **V1-F2 — owner add-student write path broken (F1 #3 unmet).** `students/components/student-form.tsx` upserts columns that **don't exist** on `students` (`name_ar, name_en, phone, date_of_birth, gender, discipline_id, belt_rank, guardian_id, emergency_contact, status`) and creates **no `profiles` row** (students require `profile_id`). The new student never persists/appears. (This is an F1 #3 gap I missed in F1 — the form was never exercised.)
+- **V1-F3 — student `/portal/schedule` empty despite enrollment.** The student's own schedule shows the "not enrolled" state even though F1 enrolled Karim in *Muay Thai Beginner* (and the coach roster sees that enrollment). Likely cause: **no student-self RLS policy on `class_enrollments`** (student can't read their own enrollment), or the `class_schedules` embed returns empty under student RLS. Billing works (invoices have a student-self policy), so it's enrollment-specific.
+- **V1-F4 (infra) — production `next start` 500s on every route.** Middleware uses Node's `crypto` in the Edge runtime (`The edge runtime does not support Node.js 'crypto' module`). The harness runs against `next dev` (Node middleware) which works. **Must fix before any production deploy.**
+
+### What this institutionalizes
+The harness is the standing **behavior-green** gate: it runs on push + manual dispatch, fails if any portal renders empty or the write path fails, and uploads screenshots. Adding a vertical-slice spec is one file following `e2e/README.md`. Repo: https://github.com/TechStack2/proline-gym-platform (workflow "E2E Verification").
