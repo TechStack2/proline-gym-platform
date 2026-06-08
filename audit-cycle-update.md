@@ -941,3 +941,35 @@ This box could not run the "observe real data" protocol because this sandbox has
 - **`coach_id` on classes is NOT NULL** — the demo class is created only once a coach row exists (handled by ordering within `000017`).
 - **Out-of-scope bug flagged (not fixed):** the **Classes** dashboard page queries `coach:coaches(id, first_name, last_name)` (`classes/page.tsx:16` and `classes/[id]/page.tsx:15`) — `coaches` has no `first_name/last_name` (they live on `profiles`), so the query errors (`42703`) and coach names don't render. It's a pre-existing bug **outside F1's must-see set** and touches 4 files with locale-name logic; deferred to avoid an unverifiable change in a prove-by-observation task. Recommend a dedicated fix.
 - Idempotency: re-running `000017` is safe (guards on every insert; trigger drop-then-create).
+
+### ✅ Verification RESULTS — executed against the live cloud DB via GitHub CI (2026-06-08)
+Run through a private repo + GitHub Actions using the **Supabase Management API with a revocable access token only** (no DB password / no service-role key shared). Workflow: `.github/workflows/verify-foundation.yml`.
+
+**Extra root finding:** the cloud DB was **behind the migration chain** — `supabase_migrations.schema_migrations` showed only `000001…000009` applied, and `pt_assignments` (000012) was absent. P21/P22's migrations had never reached the cloud either. The CI applied the full gap **000010→000017 in order** (idempotent where needed) and recorded each in the ledger.
+
+**Reproduce query — BEFORE (live):**
+```
+coach@prolinegym.lb      profile_id=NULL  gym_id=NULL
+owner@prolinegym.lb      profile_id=NULL  gym_id=NULL
+reception@prolinegym.lb  profile_id=NULL  gym_id=NULL
+student@prolinegym.lb    profile_id=NULL  gym_id=NULL
+```
+**Reproduce query — AFTER (live):**
+```
+coach@prolinegym.lb      profile_id=4ff84da4…  gym_id=b737047f…
+owner@prolinegym.lb      profile_id=8b08af1e…  gym_id=b737047f…
+reception@prolinegym.lb  profile_id=9de3d015…  gym_id=b737047f…
+student@prolinegym.lb    profile_id=0b78def3…  gym_id=b737047f…
+```
+→ **Acceptance #1 PASS** — all 4 logins now resolve a profile + gym.
+
+**Per-portal DATA proof (queried live; proves the rows each portal loads exist):**
+| Login | Observed data on cloud DB |
+|-------|---------------------------|
+| `owner@` / `reception@` | students in gym = **Omar (white), Karim (white)** → student list populated |
+| `student@` | enrollment = **Muay Thai Beginner**; belt = **white**; invoice = **INV-PROLINE-GYM-2026-00001 $55.50** (50 + 11% TVA — tax/number triggers fired) |
+| `coach@` | own class = **Muay Thai Beginner**; roster includes **Karim** |
+
+**Status upgrade:** identity chain + coherent demo gym are **VERIFIED at the data level on the real DB**. Remaining = the *visual* confirmation (acceptance #2/#3): logging into each portal in a browser and the owner add-student click-path. The dev server (http://localhost:3000) now points at this coherent DB, so that final pass is unblocked. `tsc`/`next build` already green.
+
+**Migration ledger note:** CI applied via the Management API and inserted `000010…000017` into `supabase_migrations.schema_migrations`, so a future `supabase db push` will see them as applied and won't double-apply.

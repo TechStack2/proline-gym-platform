@@ -50,3 +50,7 @@ next-env.d.ts
 *.swp
 *.swo
 *~
+e2e/.auth/
+test-results/
+playwright-report/
+screenshots/

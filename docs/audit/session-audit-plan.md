@@ -410,7 +410,7 @@ The audit was elevated from "fix what's broken" to "match-or-exceed best-in-clas
 **Re-sequenced execution:**
 | # | Prompt | Phase | Status |
 |---|--------|-------|--------|
-| F1 | Foundation & Identity Integrity | 0 | ▶ **Drafted** — [cycle-5/prompt-F1-foundation-identity.md](./cycle-5/prompt-F1-foundation-identity.md) · **execution restarts here** |
+| F1 | Foundation & Identity Integrity | 0 | ✅ **Data-proven (live), code-verified by auditor** · visual/interaction gate pending. **Deeper finding:** cloud DB was stuck at `000009` — all Cycle 1–4 + P21/P22 migrations (`000010→000017`) had never been applied to cloud; CI applied the full chain. Identity chain proven fixed via live before/after. Open: browser click-through of 4 logins + owner-adds-student. Minor: verify no duplicate `Karim` (phone collision 000006↔000017). |
 | 22-revalidate | Re-verify PT slice on coherent gym | 1 | ⏸ After F1 |
 | 21 | Notification substrate | 1 | ◑ Built (runtime checks ride P25 gate) |
 | 23 | Lead → Onboard | 1 | ⏳ After 22 re-validated |

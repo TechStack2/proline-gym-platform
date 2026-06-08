@@ -1,0 +1,66 @@
+name: E2E Verification (behavior-green gate)
+
+# Builds the app, runs the Playwright harness against the linked Supabase
+# project, and uploads screenshots + the HTML report as artifacts. Fails if any
+# portal renders empty or a write path fails. Secrets/keys come from CI, never
+# the repo.
+#
+# Required repo secrets:
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY   (public client config)
+# Optional:
+#   DEMO_PASSWORD  (defaults to the public demo password)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD || 'ProlineDemo2024!' }}
+      NEXT_PUBLIC_DEFAULT_LOCALE: en
+      NEXT_PUBLIC_SUPPORTED_LOCALES: ar,en,fr
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Guard — Supabase env present
+        run: |
+          if [ -z "${NEXT_PUBLIC_SUPABASE_URL}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" ]; then
+            echo "::error::Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY secrets."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Run E2E harness
+        run: npm run test:e2e
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: screenshots/
+          if-no-files-found: ignore
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore

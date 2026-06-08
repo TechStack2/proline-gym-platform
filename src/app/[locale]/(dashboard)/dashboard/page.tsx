@@ -94,7 +94,7 @@ export default async function DashboardPage({ params }: Props) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">{t(stat.label as 'nav.students')}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-2xl font-bold text-gray-900" data-testid={`stat-${stat.key}`}>{stat.value}</p>
                 </div>
               </div>
             </div>

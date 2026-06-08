@@ -65,7 +65,7 @@ export function StudentList({ students, locale, isRTL }: StudentListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {students.map((student) => (
-        <Link key={student.id} href={`/${locale}/students/${student.id}`}>
+        <Link key={student.id} href={`/${locale}/students/${student.id}`} data-testid="student-card">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
