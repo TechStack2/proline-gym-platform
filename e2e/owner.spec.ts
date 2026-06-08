@@ -10,7 +10,7 @@ test('dashboard shows live, non-zero student count', async ({ page }, testInfo) 
   expect(resp?.status() ?? 0, '/dashboard should load').toBeLessThan(400);
   await shot(page, testInfo, 'owner-dashboard');
 
-  const students = page.getByTestId('stat-totalStudents').first();
+  const students = page.locator('[data-testid="stat-totalStudents"]:visible').first();
   await expect(students).toBeVisible();
   const text = (await students.textContent())?.trim() || '0';
   expect(Number(text), `dashboard student count should be > 0 (was "${text}")`).toBeGreaterThan(0);
