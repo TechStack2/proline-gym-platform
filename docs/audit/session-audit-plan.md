@@ -410,8 +410,10 @@ The audit was elevated from "fix what's broken" to "match-or-exceed best-in-clas
 **Re-sequenced execution:**
 | # | Prompt | Phase | Status |
 |---|--------|-------|--------|
-| F1 | Foundation & Identity Integrity | 0 | ✅ **Data-proven (live), code-verified by auditor** · visual/interaction gate pending. **Deeper finding:** cloud DB was stuck at `000009` — all Cycle 1–4 + P21/P22 migrations (`000010→000017`) had never been applied to cloud; CI applied the full chain. Identity chain proven fixed via live before/after. Open: browser click-through of 4 logins + owner-adds-student. Minor: verify no duplicate `Karim` (phone collision 000006↔000017). |
-| 22-revalidate | Re-verify PT slice on coherent gym | 1 | ⏸ After F1 |
+| F1 | Foundation & Identity Integrity | 0 | ✅ **Data-proven (live), code-verified.** Cloud DB had been stuck at `000009`; CI applied `000010→000017`. Identity chain fixed. Visual gate then tested by V1 (below). |
+| V1 | Playwright verification harness | 0 | ✅ **Built & trustworthy** — standing behavior-green gate; auto-screenshots 4 portals in CI. Run: 15 pass / 3 fail. **Caught 3 browser-only defects 4 cycles missed + 1 deploy blocker.** F1 visual gate = **FAIL** pending F1.1. |
+| F1.1 | Foundation defect fixes (V1-F1…F4) | 0 | ▶ **Drafted** — [cycle-5/prompt-F1.1-foundation-defects.md](./cycle-5/prompt-F1.1-foundation-defects.md). **V1-F1** student list blank (nested-vs-flat name shape). **V1-F2** add-student broken (upserts non-existent cols, no profiles row — rebuild on profiles→students). **V1-F3** student schedule empty — *auditor corrected coder: NOT RLS (self-policy exists 000004:137); real cause = bad `class_schedules` embed skips enrollments*. **V1-F4** prod `next start` 500s (Node crypto in Edge middleware) — pre-deploy. |
+| 22-revalidate | Re-verify PT slice on coherent gym | 1 | ⏸ After F1.1 closes the visual gate |
 | 21 | Notification substrate | 1 | ◑ Built (runtime checks ride P25 gate) |
 | 23 | Lead → Onboard | 1 | ⏳ After 22 re-validated |
 | 24 | Enroll → Attend → Progress → Bill | 1 | ⏳ |

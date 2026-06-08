@@ -29,11 +29,9 @@ export default async function PortalSchedulePage({ params: { locale } }: Props) 
         coach_id,
         coaches:coach_id (
           profile_id,
-          profiles:profile_id (first_name_en, first_name_ar, last_name_en, last_name_ar)
-        )
-      ),
-      class_schedules:class_id (
-        day_of_week, start_time, end_time
+          profiles:profile_id (first_name_en, first_name_ar, first_name_fr, last_name_en, last_name_ar, last_name_fr)
+        ),
+        class_schedules ( day_of_week, start_time, end_time )
       )
     `)
     .eq('student_id', student?.id)
@@ -67,14 +65,18 @@ export default async function PortalSchedulePage({ params: { locale } }: Props) 
            disc.name_en
   }
 
-  // Group by day of week
+  // Group by day of week. class_schedules lives under classes (FK
+  // class_schedules.class_id → classes.id); a class can have multiple weekly
+  // slots (e.g. Mon + Wed), so expand one entry per slot.
   const scheduleByDay: Record<number, any[]> = {}
   enrollments?.forEach((enr: any) => {
-    const sched = enr.class_schedules?.[0]
-    if (!sched) return
-    const dow = sched.day_of_week
-    if (!scheduleByDay[dow]) scheduleByDay[dow] = []
-    scheduleByDay[dow].push({ ...enr, schedule: sched })
+    const cls = Array.isArray(enr.classes) ? enr.classes[0] : enr.classes
+    const slots: any[] = cls?.class_schedules || []
+    for (const sched of slots) {
+      const dow = sched.day_of_week
+      if (!scheduleByDay[dow]) scheduleByDay[dow] = []
+      scheduleByDay[dow].push({ ...enr, classes: cls, schedule: sched })
+    }
   })
 
   const sortedDays = Object.keys(scheduleByDay).map(Number).sort((a, b) => a - b)

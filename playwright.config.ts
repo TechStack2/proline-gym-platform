@@ -56,12 +56,11 @@ export default defineConfig({
     },
   ],
 
-  // NOTE: production `next start` currently 500s on every request because the
-  // middleware uses Node's `crypto` in the Edge runtime (reported as a V1
-  // finding). The dev server runs the middleware in a Node context and works,
-  // so the harness drives `next dev` until that middleware bug is fixed.
+  // Runs against the PRODUCTION build (`next start`). The middleware is now
+  // Edge-compatible (F1.1/V1-F4), so prod serves routes without 500s. CI runs
+  // `next build` before the harness; locally, build first or reuse a running server.
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run start',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

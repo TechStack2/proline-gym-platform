@@ -2251,6 +2251,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_student: {
+        Args: {
+          p_first_name_ar: string
+          p_first_name_en: string
+          p_first_name_fr: string
+          p_last_name_ar: string
+          p_last_name_en: string
+          p_last_name_fr: string
+          p_phone: string
+          p_gender: Database["public"]["Enums"]["gender_enum"] | null
+          p_date_of_birth: string | null
+          p_emergency_contact_name: string | null
+          p_emergency_contact_phone: string | null
+          p_medical_notes: string | null
+          p_join_date: string | null
+          p_current_belt_rank: Database["public"]["Enums"]["belt_rank_enum"] | null
+        }
+        Returns: Database["public"]["Tables"]["students"]["Row"]
+      }
+      update_student: {
+        Args: {
+          p_student_id: string
+          p_first_name_ar: string
+          p_first_name_en: string
+          p_first_name_fr: string
+          p_last_name_ar: string
+          p_last_name_en: string
+          p_last_name_fr: string
+          p_phone: string
+          p_gender: Database["public"]["Enums"]["gender_enum"] | null
+          p_date_of_birth: string | null
+          p_emergency_contact_name: string | null
+          p_emergency_contact_phone: string | null
+          p_medical_notes: string | null
+          p_join_date: string | null
+          p_current_belt_rank: Database["public"]["Enums"]["belt_rank_enum"] | null
+        }
+        Returns: Database["public"]["Tables"]["students"]["Row"]
+      }
       get_coach_pt_roster: {
         Args: never
         Returns: {

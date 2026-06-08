@@ -2,7 +2,6 @@ import createMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import { routing } from '@/i18n/routing';
-import { createHash, randomBytes } from 'crypto';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -69,9 +68,14 @@ const AUTH_PATTERNS = [
   /\/auth\/register/,
 ];
 
-// ─── CSP Nonce Generator ───
+// ─── CSP Nonce Generator (Web Crypto — Edge-runtime compatible) ───
 function generateNonce(): string {
-  return randomBytes(16).toString('base64url');
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  // base64url, no padding
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function buildProdCspHeader(nonce: string): string {
