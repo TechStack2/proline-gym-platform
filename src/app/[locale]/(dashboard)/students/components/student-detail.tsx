@@ -16,9 +16,33 @@ interface StudentDetailProps {
   locale: string
 }
 
+// The detail page query returns `students` columns + a nested `profiles` object
+// (same shape as the list). Read name/phone/gender/dob from `profiles`, not flat
+// fields. disciplines/guardians/belt_progressions are not joined by the query, so
+// guard them (they render their empty state).
+function profileOf(student: any) {
+  const p = Array.isArray(student?.profiles) ? student.profiles[0] : student?.profiles
+  return p || {}
+}
+
+function localizedName(p: any, locale: string): string {
+  const order = locale === 'ar' ? ['ar', 'en', 'fr'] : locale === 'fr' ? ['fr', 'en', 'ar'] : ['en', 'ar', 'fr']
+  const pick = (base: 'first_name' | 'last_name') => {
+    for (const l of order) {
+      const v = p?.[`${base}_${l}`]
+      if (typeof v === 'string' && v.trim()) return v
+    }
+    return ''
+  }
+  return [pick('first_name'), pick('last_name')].filter(Boolean).join(' ').trim()
+}
+
 export function StudentDetail({ student, memberships, attendance, beltProgressions, locale }: StudentDetailProps) {
   const t = useTranslations('students')
   const isRTL = locale === 'ar'
+  const profile = profileOf(student)
+  const displayName = localizedName(profile, locale)
+  const status = student.is_active === false ? 'inactive' : 'active'
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -59,10 +83,10 @@ export function StudentDetail({ student, memberships, attendance, beltProgressio
           </Button>
         </Link>
         <h1 className="text-3xl font-bold">
-          {isRTL ? student.name_ar : student.name_en}
+          {displayName || '—'}
         </h1>
-        <Badge className={getStatusColor(student.status)}>
-          {t(`status.${student.status}`)}
+        <Badge className={getStatusColor(status)}>
+          {t(`status.${status}`)}
         </Badge>
       </div>
 
@@ -76,27 +100,28 @@ export function StudentDetail({ student, memberships, attendance, beltProgressio
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-gray-400" />
-              <span dir="ltr">{student.phone}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
-              <span>{new Date(student.date_of_birth).toLocaleDateString()}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-gray-400" />
-              <span>{student.disciplines?.name || t('no_discipline')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-gray-400" />
-              <span>{t('gender_' + student.gender)}</span>
-            </div>
-            {student.guardians && (
-              <div className="pt-3 border-t">
-                <p className="text-sm font-medium">{t('guardian')}</p>
-                <p>{isRTL ? student.guardians.name_ar : student.guardians.name_en}</p>
-                <p className="text-sm text-gray-500" dir="ltr">{student.guardians.phone}</p>
+            {profile.phone && (
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-400" />
+                <span dir="ltr">{profile.phone}</span>
+              </div>
+            )}
+            {profile.date_of_birth && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span>{new Date(profile.date_of_birth).toLocaleDateString()}</span>
+              </div>
+            )}
+            {student.current_belt_rank && (
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-gray-400" />
+                <span>{String(student.current_belt_rank).replace(/_/g, ' ')}</span>
+              </div>
+            )}
+            {profile.gender && (
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-gray-400" />
+                <span>{t(profile.gender)}</span>
               </div>
             )}
           </CardContent>

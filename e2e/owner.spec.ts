@@ -28,9 +28,10 @@ test('students list is populated (cards render)', async ({ page }, testInfo) => 
 
 test('student names render real data (not blank)', async ({ page }) => {
   await page.goto('/en/students');
-  // F1 backfilled student "Karim"; "Omar" also exists in the gym.
+  // F1 backfilled student "Karim"; "Omar" also exists in the gym. Scope to a
+  // VISIBLE card (the layout duplicates content across breakpoints).
   await expect(
-    page.getByText(/Karim|Omar/).first(),
+    page.locator('[data-testid="student-card"]:visible').filter({ hasText: /Karim|Omar/ }).first(),
     'expected a real student name to be visible on the cards',
   ).toBeVisible();
 });
@@ -76,5 +77,8 @@ test('add-student write path persists and the new student appears (F1 #3)', asyn
 
   await expect(page, 'should redirect back to /students after save').toHaveURL(/\/students(\?.*)?$/, { timeout: 10_000 });
   await shot(page, testInfo, 'owner-add-student-result');
-  await expect(page.getByText(unique).first(), 'newly added student should appear in the list').toBeVisible();
+  await expect(
+    page.locator('[data-testid="student-card"]:visible').filter({ hasText: unique }).first(),
+    'newly added student should appear in the list',
+  ).toBeVisible();
 });

@@ -1013,3 +1013,31 @@ F1's identity/data layer is **visually confirmed** where it surfaces correctly: 
 
 ### What this institutionalizes
 The harness is the standing **behavior-green** gate: it runs on push + manual dispatch, fails if any portal renders empty or the write path fails, and uploads screenshots. Adding a vertical-slice spec is one file following `e2e/README.md`. Repo: https://github.com/TechStack2/proline-gym-platform (workflow "E2E Verification").
+
+---
+
+## Cycle 5 / Phase 0 / Prompt F1.1 — Foundation Defect Fixes
+
+**Status:** Code fixes COMPLETE for all 4 defects · `tsc` + `next build` GREEN · `next start` boots prod with no 500 at startup · **Full browser harness NOT run in this environment** (sandbox blocks the Playwright Chromium download and outbound network to the cloud Supabase DB and to localhost). **F1 visual gate: PENDING harness re-run** (see "Verification boundary").
+**Date:** 2026-06-09
+
+Scope: only V1-F1..F4 plus what the identity-correct add-student required. No new features.
+
+### Per-defect results
+
+| Defect | Root cause (confirmed) | Fix (files) | Result |
+|--------|------------------------|-------------|--------|
+| **V1-F1** | `student-list.tsx` (and `student-detail.tsx`) read FLAT fields (`student.name_en/_ar`, `student.disciplines?.name`, `student.guardians.*`, `student.status`) but the page queries return rows with a NESTED `profiles` object (`profiles.first_name_{ar,en,fr}` + `last_name_*`). Names rendered blank; detail also did `new Date(student.date_of_birth)` → Invalid Date. | `student-list.tsx` (already aligned: builds name from `profiles.first_name_{locale}`+`last_name_*` with en/ar/fr fallback, one `localized()` helper). **`student-detail.tsx`** aligned this session: same name helper, reads `profile.phone/gender/date_of_birth`, `student.current_belt_rank`, status from `student.is_active`; unjoined disciplines/guardians/belt rows guarded; gender label now uses the real `students.{male,female,other}` i18n key (was a nonexistent `gender_<x>` key). `[id]/page.tsx` select extended with `gender, date_of_birth`. | Code-correct; **needs harness for visual PASS** |
+| **V1-F2** | `students` table has NO name/phone/discipline columns; the form upserted phantom columns and never created a `profiles` row, so the write could only fail. | `migration 000018_student_identity_write_path.sql`: drops the `profiles.id → auth.users` FK + defaults it to `gen_random_uuid()` (login-less gym-managed members, like 000017's seeds), and adds SECURITY DEFINER, staff-only, gym-scoped RPCs `create_student` / `update_student` that atomically write profile + student (correct columns; `current_belt_rank` is the belt **enum**, not a hierarchy id). `student-form.tsx` now calls those RPCs. `src/types/database.ts` has the RPC types (tsc green). Discipline field dropped from the write path (no clean single-class mapping). | Code-correct; **requires 000018 applied to cloud + harness for PASS** |
+| **V1-F3** | NOT an RLS bug (the `class_enrollments_self` policy already exists at 000004:137). `portal/schedule/page.tsx` embedded `class_schedules:class_id (...)` directly on `class_enrollments` — no such FK — so the embed resolved null and `if (!sched) return` skipped every enrollment. | `portal/schedule/page.tsx` now nests `class_schedules ( day_of_week, start_time, end_time )` UNDER `classes:class_id (...)` (FK path `class_schedules.class_id → classes.id`), and the grouping reads `enr.classes.class_schedules` as an array, expanding one card per weekly slot (so Mon + Wed both show). No RLS change. | Code-correct; **needs harness for visual PASS** |
+| **V1-F4** | `middleware.ts` used Node `crypto` in the Edge runtime → prod `next start` 500'd every route (harness had to run against `next dev`). | `middleware.ts` CSP nonce now uses Web Crypto (`globalThis.crypto.getRandomValues` + `btoa` base64url). | **PASS (verified locally):** `next build` compiles the Edge middleware with no "edge runtime does not support Node.js crypto" error; `next start` booted ("✓ Ready in 604ms") with no startup 500. |
+
+### Verification boundary (honest)
+- **Ran and GREEN:** `next build` (tsc clean, 120/120 pages generated, Edge middleware bundles); `next start` boots the production server with no 500 at startup. Static cross-checks: no remaining flat `student.name_*` reads, no stale `class_schedules:class_id` embed, RPC types present, RPC column/enum shapes match the schema (`students.current_belt_rank` is `belt_rank_enum` per 000010; `is_staff()`/`get_user_gym_id()` exist).
+- **Could NOT run in this environment:** the full Playwright browser harness. The sandbox denied (a) `npx playwright install chromium` (no Chromium present in `~/Library/Caches/ms-playwright`), (b) outbound HTTP to localhost and to the cloud Supabase DB, and (c) `supabase` cloud calls. So I could not produce a real "what rendered" table and have not fabricated one.
+- **Still needed to flip the gate to PASS:**
+  1. **Apply migration 000018 to the cloud DB** — already in the default list of `.github/workflows/verify-foundation.yml` (run it with `apply=true`; it uses the Management API + `SUPABASE_ACCESS_TOKEN`, no DB password). V1-F2 cannot pass until this is applied.
+  2. **Run the V1 harness** (`.github/workflows/e2e.yml` "E2E Verification", or locally `npx playwright install chromium && npm run test:e2e`) against the cloud DB. Expected with these fixes: owner/reception `/students` show Karim/Omar; owner add-student persists + appears; `student@` `/portal/schedule` shows Muay Thai Beginner Mon/Wed 18:00; all auth + prod-build (F4) assertions green.
+
+### F1 visual gate: PENDING (re-run required)
+Harness pass/fail count from THIS environment: **not executed (browser + network blocked)** — prior recorded run was 15 passed / 3 failed. The three failing assertions (V1-F1 names, V1-F2 add-student, V1-F3 schedule) each have a targeted code fix above, and V1-F4 (prod 500s) is fixed and locally confirmed, so the harness can now run against the **production** build. Gate flips to PASS once 000018 is applied to cloud and the harness is re-run green (0 failures).

@@ -25,6 +25,8 @@ export default async function StudentDetailPage({
         last_name_en,
         last_name_fr,
         phone,
+        gender,
+        date_of_birth,
         avatar_url
       )
     `)
