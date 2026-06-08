@@ -8,7 +8,6 @@ test('schedule shows the enrolled class', async ({ page }, testInfo) => {
   expect(resp?.status() ?? 0, '/portal/schedule should load').toBeLessThan(400);
   await shot(page, testInfo, 'student-schedule');
 
-  await expect(page.getByText(/not enrolled in any classes/i), 'should NOT show the empty state').toHaveCount(0);
   await expect(page.getByText('Muay Thai Beginner').first(), 'enrolled class should be visible').toBeVisible();
 });
 

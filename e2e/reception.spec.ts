@@ -8,9 +8,9 @@ test('students list is populated', async ({ page }, testInfo) => {
   expect(resp?.status() ?? 0, '/students should load').toBeLessThan(400);
   await shot(page, testInfo, 'reception-students');
 
-  const cards = page.getByTestId('student-card');
-  await expect(cards.first()).toBeVisible();
-  expect(await cards.count(), 'expected >= 1 student card').toBeGreaterThan(0);
+  await expect(page.getByText(/no students/i), 'should NOT show the empty state').toHaveCount(0);
+  const cards = page.locator('[data-testid="student-card"]:visible');
+  expect(await cards.count(), 'expected >= 1 visible student card').toBeGreaterThan(0);
 });
 
 test('leads page loads without error', async ({ page }, testInfo) => {
