@@ -56,10 +56,14 @@ export default defineConfig({
     },
   ],
 
+  // NOTE: production `next start` currently 500s on every request because the
+  // middleware uses Node's `crypto` in the Edge runtime (reported as a V1
+  // finding). The dev server runs the middleware in a Node context and works,
+  // so the harness drives `next dev` until that middleware bug is fixed.
   webServer: {
-    command: 'npm run start',
+    command: 'npm run dev',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
   },
 });
