@@ -22,7 +22,7 @@ on:
       migrations:
         description: 'Space-separated migration basenames to apply, in order'
         type: string
-        default: '000015_notifications_producer_rls 000016_pt_request_workflow 000017_foundation_identity'
+        default: '000010_add_belt_columns 000011_fix_rls_gym_scoping 000012_create_pt_assignments 000013_fix_rental_bookings_rls 000014_fix_pt_rls_gym_scoping 000015_notifications_producer_rls 000016_pt_request_workflow 000017_foundation_identity'
 
 jobs:
   verify:
@@ -100,6 +100,12 @@ jobs:
             f="supabase/migrations/${m}.sql"
             if [ ! -f "$f" ]; then echo "::error::missing $f"; exit 1; fi
             run_sql "apply ${m}" < "$f" || { echo "::error::apply ${m} failed"; exit 1; }
+            # Record in the migration ledger so a later `supabase db push` is consistent.
+            ver="${m%%_*}"
+            run_sql "record ${ver}" <<SQL || true
+          insert into supabase_migrations.schema_migrations(version)
+          values ('${ver}') on conflict (version) do nothing;
+          SQL
           done
 
           echo "===== AFTER: reproduce identity chain (expect 4 profiles WITH gym_id) ====="
