@@ -1041,3 +1041,32 @@ Scope: only V1-F1..F4 plus what the identity-correct add-student required. No ne
 
 ### F1 visual gate: PENDING (re-run required)
 Harness pass/fail count from THIS environment: **not executed (browser + network blocked)** — prior recorded run was 15 passed / 3 failed. The three failing assertions (V1-F1 names, V1-F2 add-student, V1-F3 schedule) each have a targeted code fix above, and V1-F4 (prod 500s) is fixed and locally confirmed, so the harness can now run against the **production** build. Gate flips to PASS once 000018 is applied to cloud and the harness is re-run green (0 failures).
+
+---
+
+## Cycle 5 / Phase 0 / Prompt F1.1 — Foundation Defect Fixes
+
+**Status:** COMPLETE · **F1 visual gate: PASS** · V1 harness: **18 passed / 0 failed** (against the production `next build && next start`)
+**Date:** 2026-06-09
+
+All four V1 findings fixed and verified by re-running the V1 Playwright harness (the judge) until green. `tsc --noEmit` ✅ · `next build` ✅. Migration `000018` applied to the cloud DB + recorded in the ledger via the Management-API workflow.
+
+### Per-defect results
+| Defect | Root cause (confirmed) | Fix | Harness |
+|--------|------------------------|-----|:--:|
+| **V1-F1** student names blank | `student-list.tsx` read flat `name_en/disciplines/belt_ranks`; query returns **nested `profiles`** | Rewrote `student-list.tsx` to build the name from `profiles.first_name_{locale}`+`last_name_{locale}` (en/ar fallback), belt from `students.current_belt_rank`, phone from `profiles.phone` | ✅ PASS (owner+reception) |
+| **V1-F2** add-student broken | Form upserted columns absent from `students` & never created a profile; `profiles.id` had a hard FK to `auth.users`, blocking login-less members | **`000018`**: drop `profiles.id`→`auth.users` FK + default `gen_random_uuid()`; atomic `create_student`/`update_student` **SECURITY DEFINER** RPCs (profile+student, staff-only, gym-scoped). Rewired `student-form.tsx` to call the RPC | ✅ PASS (persists + appears) |
+| **V1-F3** schedule empty | `portal/schedule` embedded `class_schedules:class_id` on `class_enrollments` (no such FK) → null → every enrollment skipped. **NOT RLS** (self-policy already exists) | Nested `class_schedules` **under `classes`** (FK `class_schedules.class_id→classes.id`); group code expands one entry per weekly slot | ✅ PASS (Muay Thai Beginner Mon/Wed visible) |
+| **V1-F4** prod 500s | `middleware.ts` imported Node `crypto` (`randomBytes`) — fails in the Edge runtime at prod build | CSP nonce now uses **Web Crypto** (`globalThis.crypto.getRandomValues` + `btoa` base64url); removed the `crypto` import (and unused `createHash`) | ✅ PASS (`next start` serves; harness runs on the prod build) |
+
+### Final harness matrix (run `e2e.yml`, screenshots in `e2e-screenshots` artifact)
+- setup auth ×4 ✅ · owner: dashboard count (2) ✅, students populated ✅, **names render** ✅, leads ✅, payments ✅, **add-student write path** ✅ · reception: students ✅, leads ✅, payments ✅ · coach: home ✅, roster (Karim) ✅ · student: **schedule** ✅, billing ✅, PT ✅.
+- **18 passed / 0 failed.**
+
+### F1 visual gate: **PASS**
+
+### Notes / deviations
+- **Add-student field scope:** dropped `discipline`/`belt`/`guardian` from the write path — they don't map to the `students` identity model (belt is the **enum** `current_belt_rank`, set later via promotions; discipline → enrollments is a separate flow). `current_belt_rank` is left null on create. Stated per the prompt's option to drop unmappable fields. Edit mode wired to `update_student` (no edit route currently uses it).
+- **`profiles.id` no longer FKs `auth.users`** (lost the `ON DELETE CASCADE` from auth-user deletion) — gym-managed members have no login; the app manages member lifecycle. Login users still get `profiles.id = auth.users.id` via `handle_new_user()`.
+- **Test side effect:** each add-student harness run writes a real `E2E <timestamp>` student to the demo gym (true write-path test). Harmless accumulation; prune later if desired.
+- Ledger: `000018` recorded in `supabase_migrations.schema_migrations`, so a future `supabase db push` stays consistent.
