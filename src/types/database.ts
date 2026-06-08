@@ -2290,6 +2290,15 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["students"]["Row"]
       }
+      get_gym_coaches: {
+        Args: never
+        Returns: {
+          id: string
+          first_name_ar: string | null
+          first_name_en: string | null
+          first_name_fr: string | null
+        }[]
+      }
       get_coach_pt_roster: {
         Args: never
         Returns: {
