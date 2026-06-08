@@ -40,6 +40,15 @@ test('<slice>: action by actor A is visible to actor B', async ({ page }, testIn
 Rule: assert the data the next actor must see (notification, roster row, invoice…). Never weaken
 RLS/auth or soften an assertion to go green — if the data isn't there, let it fail and report it.
 
+**Shipped slices:**
+- `pt.spec.ts` (project `pt`) — the PT vertical: student requests (`request_pt` RPC) → staff
+  approves (auto dual-currency invoice + `pt_approved`/`pt_assigned` notifications) → coach roster
+  shows the student + credits and Log session decrements / blocks at 0 → status + invoice flow back
+  to the student. It opens a fresh context per role from `e2e/.auth/*.json` (so it switches portals
+  in one test), is idempotent (acts on the newest request for the 1-session demo package), and fails
+  loudly if any portal doesn't reflect a step. Requires migration `000019` (1-session demo package)
+  applied to the DB.
+
 ## CI
 `.github/workflows/e2e.yml` builds the app, runs this harness against the linked Supabase project,
 and uploads `screenshots/` + `playwright-report/` as artifacts. Secrets/keys come from CI, never the repo.

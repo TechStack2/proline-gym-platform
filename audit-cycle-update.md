@@ -1070,3 +1070,68 @@ All four V1 findings fixed and verified by re-running the V1 Playwright harness 
 - **`profiles.id` no longer FKs `auth.users`** (lost the `ON DELETE CASCADE` from auth-user deletion) — gym-managed members have no login; the app manages member lifecycle. Login users still get `profiles.id = auth.users.id` via `handle_new_user()`.
 - **Test side effect:** each add-student harness run writes a real `E2E <timestamp>` student to the demo gym (true write-path test). Harmless accumulation; prune later if desired.
 - Ledger: `000018` recorded in `supabase_migrations.schema_migrations`, so a future `supabase db push` stays consistent.
+
+---
+
+### AUDITOR SIGN-OFF — F1.1 gate VERIFIED PASS (2026-06-09)
+The coder report above closed with "F1 visual gate: PENDING" because the coding sandbox had no browser/outbound network and could not run Playwright. The auditor verified the actual state via GitHub Actions (read-only, `gh run`), which **supersedes** that PENDING:
+
+- **Migration 000018 IS applied to the cloud DB** — `Verify Foundation` dispatch run `27170441610` ran with `DO_APPLY=true MIGRATIONS=000018_student_identity_write_path` (Supabase Management API, token-only; no DB password) → **success**.
+- **Full V1 harness is GREEN on cloud** — `E2E Verification` push run `27170846251` (commit `60afd09`) → **success**; `playwright-report` + `e2e-screenshots` artifacts uploaded. This run exercises all four defects, incl. the add-student write path that requires 000018.
+
+**Auditor code review (read each fix, not the report):** V1-F1 list+detail read nested `profiles` via a single `localized()` helper (+ `data-testid="student-card"` for the harness); V1-F2 `create_student`/`update_student` SECURITY DEFINER RPCs in 000018 (is_staff + gym-scoped + belt **enum** mapping), form calls `.rpc()` (phantom `.from(students)` upsert gone); V1-F3 schedule nests `class_schedules` under `classes` and expands per weekly slot (no RLS added — correct); V1-F4 middleware uses `globalThis.crypto` (Web Crypto), `next build && next start` boots clean.
+
+**FLAGS (non-blocking, recorded):**
+1. 000018 drops `profiles_id_fkey`→`auth.users` (loses ON DELETE CASCADE) to allow login-less members — documented tradeoff; member lifecycle now app-managed. Acceptable for V1; revisit if member deletion is added.
+2. The harness still drives `next dev`; V1-F4 (prod `next start`) is proven by the coder’s local boot, not by the harness. Hardening follow-up: point the harness at the prod build.
+3. Add-student maps the whole name into `first_name_*` with empty `last_name_*` (single name field). Persists & renders, but multilingual last-name is unused — UX polish, not a defect.
+
+**VERDICT: F1 visual gate = PASS. Phase 0 (Foundation & Identity) is behavior-green COMPLETE.** First time in project history "done" = logged-in CI proof incl. a successful write path. Next: Prompt 22-R (re-validate PT slice on the coherent gym).
+
+---
+
+## Cycle 5 / Phase 1 / Prompt 22-R — PT Slice Re-Validation
+
+**Scope:** PT vertical slice only + its harness spec. No new features, no adjacent refactors.
+
+### What I did
+Re-validated the whole PT chain against the app code on the coherent gym, locked it under a new **cross-portal Playwright spec** (`e2e/pt.spec.ts`), and added the one data fix the proof requires. The slice was already fully wired in app code (request RPC, staff approve+invoice+notify server action, coach roster RPC, increment RPC); the gap that kept it from being *provable* was **test reachability of the "blocks at 0" boundary**, not a broken flow.
+
+**Diagnosis discipline (per V1-F3 standard):** I did NOT add a broad student INSERT policy on `pt_assignments`. The request path stays on the `request_pt` SECURITY DEFINER RPC. The only data change is an additive, idempotent seed of a 1-session demo package so the credit boundary is reachable in a single log.
+
+### The 4-step chain (spec: `e2e/pt.spec.ts`, project `pt`)
+| # | Step | Asserted propagation | PASS/FAIL |
+|---|------|----------------------|-----------|
+| 1 | **student@** `/portal/pt` requests "Single PT Session" + coach Sami via `request_pt` RPC | "Requested" badge appears under My Requests (assignment row `status='requested'`); request goes through the definer RPC, no broad INSERT policy | ⏳ CI-pending |
+| 2 | **owner@** `/pt` approves the pending request | Pending request surfaces to STAFF (pt_requested → staff only); approve → `status='active'`, `approved_by/at` set, **dual-currency invoice auto-created + linked** (`invoice_id`), `pt_approved` (student) + `pt_assigned` (coach) notifications fire | ⏳ CI-pending |
+| 3 | **coach@** `/coach/pt` roster + Log session | Roster shows the student at **"1 of 1"** (via `get_coach_pt_roster`); Log session → **"0 of 1"** (`increment_sessions_used` decrements); at 0 the button is **disabled** (boundary enforced — cannot over-log) | ⏳ CI-pending |
+| 4 | **student@** `/portal/pt` + `/portal/billing` | Assignment now **Active** with **0 of 1** credits (state flowed back); the auto PT invoice **$38.85** ($35 base + 11% TVA) surfaces in billing | ⏳ CI-pending |
+
+### Defect found + fix
+- **Defect (test reachability, not a flow break):** seeded PT packages are 5/10/20 sessions, so the `increment_sessions_used` "rejected at 0" boundary could not be exercised in a single log click. **Fix:** added `supabase/migrations/000019_demo_single_session_pt_package.sql` — an idempotent, additive 1-session "Single PT Session" demo package ($35, gym-scoped, matched by `gym_id + name_en`). No schema/RLS/auth change. **This migration MUST be applied to cloud before the E2E run** (listed in `verify-foundation.yml` default migrations).
+- **Surgical `data-testid`s** (needed for unambiguous cross-portal scoping; no behavior change):
+  - `pt-package-card` + `data-package-name` — `src/app/[locale]/portal/pt/pt-request-client.tsx:129`
+  - `pt-my-request` + `data-package` — `src/app/[locale]/portal/pt/pt-request-client.tsx:96`
+  - `pt-pending-request` + `data-package` — `src/app/[locale]/(dashboard)/pt/pt-client.tsx:509`
+  - `pt-roster-row` + `data-package-en` — `src/app/[locale]/coach/pt/pt-roster-client.tsx:73`
+- No other code change. The `approvePtRequest` action already auto-creates the dual-currency invoice + fires both notifications; `request_pt` already inserts the staff-only `pt_requested` notification; `get_coach_pt_roster` + `increment_sessions_used` already enforce the coach/credit math. Confirmed by reading the migration `000016` and `src/app/[locale]/(dashboard)/pt/actions.ts`.
+
+### Notification recipients + invoice (from code review of `000016` + `actions.ts` + `create.ts`)
+- **`pt_requested`** → inserted by the `request_pt` RPC to `user_roles` where `role IN ('owner','receptionist')` for the package's gym → **STAFF only**, gym-scoped (not visible to other gyms; not to the student/coach).
+- **`pt_approved`** → `createNotification` to the **student's** `profile_id`, gym-scoped, `action_url=/portal/pt`.
+- **`pt_assigned`** → `createNotification` to the **coach's** `profile_id`, gym-scoped, `action_url=/coach/pt`, with `params.count = sessions_total`.
+- **Invoice row:** `buildPtInvoiceInsert` → `invoice_type='pt_package'`, `amount_usd=35`, dual-currency (`amount_lbp` from latest exchange rate or `price_lbp`), `status='pending'`, due +30d; DB triggers fill `invoice_number` + `total_usd` (35 × 1.11 TVA = **38.85**). Linked back via `pt_assignments.invoice_id`.
+
+### Local verification (sandbox)
+- `tsc --noEmit`: **clean.** `next build`: **clean** (compiles with the testid edits).
+- **Playwright / cloud: NOT runnable in this sandbox** — no Chromium download and no outbound network (`gh`, the Supabase Management API, and `playwright test` are all network-blocked here). Per the F1/F1.1 honesty rule, **CI is the source of truth**; I did NOT fabricate a "what rendered" table.
+
+### E2E CI run — ⏳ PENDING (requires network the sandbox lacks)
+The sandbox cannot reach GitHub or cloud, so I could not dispatch the workflows or read `gh run`. **Required to close 22-R (auditor / network-capable run):**
+1. Apply migration **000019** to cloud: dispatch **`Verify Foundation (F1)`** with `apply=true`, `migrations=000019_demo_single_session_pt_package` (Management-API token only).
+2. Trigger **`E2E Verification`** (`e2e.yml`) — the `pt` project must be GREEN (screenshots `pt-1…pt-4` in the `e2e-screenshots` artifact).
+3. Record the actual **run ID + URL + result** here.
+
+> **E2E CI run ID + URL:** _PENDING — to be filled from the actual `gh run` once 000019 is applied and `e2e.yml` runs._
+
+### PT slice behavior-green: **PENDING CI** (code complete; `tsc`+build clean; awaiting the GREEN `pt` project in the E2E CI run against cloud, which is the judge).

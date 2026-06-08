@@ -22,7 +22,7 @@ on:
       migrations:
         description: 'Space-separated migration basenames to apply, in order'
         type: string
-        default: '000010_add_belt_columns 000011_fix_rls_gym_scoping 000012_create_pt_assignments 000013_fix_rental_bookings_rls 000014_fix_pt_rls_gym_scoping 000015_notifications_producer_rls 000016_pt_request_workflow 000017_foundation_identity 000018_student_identity_write_path'
+        default: '000010_add_belt_columns 000011_fix_rls_gym_scoping 000012_create_pt_assignments 000013_fix_rental_bookings_rls 000014_fix_pt_rls_gym_scoping 000015_notifications_producer_rls 000016_pt_request_workflow 000017_foundation_identity 000018_student_identity_write_path 000019_demo_single_session_pt_package'
 
 jobs:
   verify:

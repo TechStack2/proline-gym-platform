@@ -506,7 +506,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
               const student = students.find((s) => s.id === req.student_id);
               const pkg = packages.find((p) => p.id === req.package_id);
               return (
-                <div key={req.id} className="flex flex-col gap-2 rounded-xl border bg-amber-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={req.id} data-testid="pt-pending-request" data-package={req.package_id} className="flex flex-col gap-2 rounded-xl border bg-amber-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className={cn('text-sm font-medium text-gray-900 truncate', isRTL && 'font-arabic')}>
                       {student ? getStudentName(student) : req.student_id.slice(0, 8)}

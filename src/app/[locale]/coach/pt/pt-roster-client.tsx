@@ -70,7 +70,7 @@ export function CoachPtRosterClient({ roster: initial, locale }: Props) {
       ) : (
         <div className="space-y-2">
           {roster.map((r) => (
-            <div key={r.assignment_id} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
+            <div key={r.assignment_id} data-testid="pt-roster-row" data-package-en={r.package_name_en} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
               <div className="min-w-0">
                 <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>
                   {r.student_name}
