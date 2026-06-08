@@ -1,0 +1,212 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useRouter } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
+import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
+import { renderNotification } from '@/lib/notifications/render';
+import { NotificationItem } from '@/components/notifications/notification-item';
+import { Button } from '@/components/ui/button';
+import { Bell, CheckCheck } from 'lucide-react';
+
+type Notification = {
+  id: string;
+  user_id: string;
+  title_ar?: string | null;
+  title_en?: string | null;
+  title_fr?: string | null;
+  body_ar?: string | null;
+  body_en?: string | null;
+  body_fr?: string | null;
+  title_key?: string | null;
+  body_key?: string | null;
+  params?: Record<string, unknown> | null;
+  action_url?: string | null;
+  is_read: boolean;
+  read_at?: string | null;
+  created_at: string;
+};
+
+type NotificationsClientProps = {
+  notifications: Notification[];
+  locale: string;
+};
+
+function timeAgo(date: string, locale: string, justNowLabel: string): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return justNowLabel;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(date).toLocaleDateString(locale === 'ar' ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US');
+}
+
+export function NotificationsClient({ notifications: initialNotifications, locale }: NotificationsClientProps) {
+  const router = useRouter();
+  const supabase = createClient();
+  const t = useTranslations('notifications');
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const [markingAll, setMarkingAll] = useState(false);
+  const isRTL = locale === 'ar';
+
+  // Group by read status
+  const unread = notifications.filter(n => !n.is_read);
+  const read = notifications.filter(n => n.is_read);
+
+  const handleMarkAsRead = useCallback(async (id: string, actionUrl?: string | null) => {
+    // Optimistic update
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n))
+    );
+
+    await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (actionUrl) {
+      router.push(actionUrl);
+    }
+  }, [supabase, router]);
+
+  const handleMarkAllAsRead = async () => {
+    if (unread.length === 0) return;
+    setMarkingAll(true);
+
+    const unreadIds = unread.map(n => n.id);
+    // Optimistic update
+    setNotifications(prev =>
+      prev.map(n => (unreadIds.includes(n.id) ? { ...n, is_read: true, read_at: new Date().toISOString() } : n))
+    );
+
+    await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .in('id', unreadIds);
+
+    setMarkingAll(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
+        <div>
+          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
+            {t('title')}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {t('subtitle')}
+          </p>
+        </div>
+        {unread.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleMarkAllAsRead}
+            disabled={markingAll}
+            className="text-primary-600"
+          >
+            <CheckCheck className="h-4 w-4" />
+            <span>
+              {t('markAllRead')}
+            </span>
+          </Button>
+        )}
+      </div>
+
+      {/* Empty state */}
+      {notifications.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <Bell className="h-8 w-8" />
+          </div>
+          <p className={cn('text-lg font-medium text-gray-500', isRTL && 'font-arabic')}>
+            {t('empty')}
+          </p>
+          <p className="text-sm text-gray-400 mt-1">
+            {t('emptyHint')}
+          </p>
+        </div>
+      )}
+
+      {/* Unread section */}
+      {unread.length > 0 && (
+        <section>
+          <div className={cn(
+            'flex items-center gap-2 mb-2 px-1',
+            isRTL && 'flex-row-reverse'
+          )}>
+            <h2 className={cn(
+              'text-xs font-semibold uppercase tracking-wider text-red-600',
+              isRTL && 'font-arabic'
+            )}>
+              {t('unread')}
+            </h2>
+            <span className="text-xs text-red-400">({unread.length})</span>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {unread.map(n => {
+              const { title, body } = renderNotification(n, t, locale);
+              return (
+              <NotificationItem
+                key={n.id}
+                title={title}
+                body={body}
+                isRead={false}
+                timeAgo={timeAgo(n.created_at, locale, t('justNow'))}
+                onClick={() => handleMarkAsRead(n.id, n.action_url)}
+                locale={locale}
+                actionUrl={n.action_url}
+              />
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Read section */}
+      {read.length > 0 && (
+        <section>
+          <div className={cn(
+            'flex items-center gap-2 mb-2 px-1',
+            isRTL && 'flex-row-reverse'
+          )}>
+            <h2 className={cn(
+              'text-xs font-semibold uppercase tracking-wider text-gray-400',
+              isRTL && 'font-arabic'
+            )}>
+              {t('read')}
+            </h2>
+            <span className="text-xs text-gray-400">({read.length})</span>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {read.map(n => {
+              const { title, body } = renderNotification(n, t, locale);
+              return (
+              <NotificationItem
+                key={n.id}
+                title={title}
+                body={body}
+                isRead={true}
+                timeAgo={timeAgo(n.created_at, locale, t('justNow'))}
+                onClick={() => {
+                  if (n.action_url) {
+                    router.push(n.action_url);
+                  }
+                }}
+                locale={locale}
+                actionUrl={n.action_url}
+              />
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

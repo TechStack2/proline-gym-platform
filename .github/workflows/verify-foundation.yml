@@ -1,0 +1,117 @@
+name: Verify Foundation (F1)
+
+# Applies the notification + PT + foundation-identity migrations to the linked
+# Supabase project and proves the identity chain via the reproduce query —
+# using the Supabase Management API with a revocable ACCESS TOKEN only
+# (no DB password, no service-role key). The token lives in GitHub Secrets and
+# is never exposed in logs.
+#
+# Setup (one time):
+#   1. Create a Supabase access token: https://supabase.com/dashboard/account/tokens
+#   2. Repo → Settings → Secrets and variables → Actions → New repository secret
+#        Name:  SUPABASE_ACCESS_TOKEN   Value: <the token>
+#   3. (optional) Variable SUPABASE_PROJECT_REF if it ever differs from the default.
+#   4. Actions tab → "Verify Foundation (F1)" → Run workflow.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply migrations + prove identity chain (Management API)
+        run: |
+          set -uo pipefail
+          : "${PROJECT_REF:=ufpuebfkcpohwubrutff}"
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN secret is not set. Add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query"
+
+          # run_sql <label> ; SQL is read from stdin
+          run_sql() {
+            local label="$1"; local sql; sql="$(cat)"
+            local body; body="$(jq -Rs '{query: .}' <<<"$sql")"
+            echo "::group::${label}"
+            local code; code="$(curl -sS -o /tmp/resp.json -w '%{http_code}' -X POST "$API" \
+              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data-binary "$body")"
+            jq . /tmp/resp.json 2>/dev/null || cat /tmp/resp.json
+            echo "(HTTP ${code})"
+            echo "::endgroup::"
+            if [ "${code}" -ge 400 ]; then
+              echo "::error::${label} failed (HTTP ${code})"
+              return 1
+            fi
+          }
+
+          REPRODUCE="select u.email, p.id as profile_id, p.gym_id
+                     from auth.users u left join profiles p on p.id = u.id
+                     where u.email like '%@prolinegym.lb'
+                     order by u.email;"
+
+          echo "===== BEFORE: reproduce identity chain (expect profile_id/gym_id NULL) ====="
+          run_sql "BEFORE reproduce" <<< "$REPRODUCE"
+
+          echo "===== APPLY migrations 000015 → 000016 → 000017 ====="
+          for m in 000015_notifications_producer_rls 000016_pt_request_workflow 000017_foundation_identity; do
+            run_sql "apply ${m}" < "supabase/migrations/${m}.sql" || exit 1
+          done
+
+          echo "===== AFTER: reproduce identity chain (expect 4 profiles WITH gym_id) ====="
+          run_sql "AFTER reproduce" <<< "$REPRODUCE" || exit 1
+
+          echo "===== Per-portal DATA proof (admin context — proves the rows exist) ====="
+          run_sql "owner/reception → students in gym" <<'SQL'
+          select pr.first_name_en as student, s.current_belt_rank
+          from students s
+          join profiles pr on pr.id = s.profile_id
+          join gyms g on g.id = s.gym_id
+          where g.slug = 'proline-gym' and s.is_active;
+          SQL
+
+          run_sql "student@ → schedule + belt + invoice" <<'SQL'
+          select 'enrollment' as kind, c.name_en as detail
+          from class_enrollments ce
+          join classes c on c.id = ce.class_id
+          join students s on s.id = ce.student_id
+          join profiles p on p.id = s.profile_id
+          join auth.users u on u.id = p.id
+          where u.email = 'student@prolinegym.lb'
+          union all
+          select 'belt', bp.to_rank::text
+          from belt_promotions bp
+          join students s on s.id = bp.student_id
+          join profiles p on p.id = s.profile_id
+          join auth.users u on u.id = p.id
+          where u.email = 'student@prolinegym.lb'
+          union all
+          select 'invoice', coalesce(i.invoice_number,'(pending#)') || ' $' || i.total_usd
+          from invoices i
+          join students s on s.id = i.student_id
+          join profiles p on p.id = s.profile_id
+          join auth.users u on u.id = p.id
+          where u.email = 'student@prolinegym.lb';
+          SQL
+
+          run_sql "coach@ → own class + roster" <<'SQL'
+          select c.name_en as class, pr.first_name_en as student
+          from classes c
+          join coaches co on co.id = c.coach_id
+          join profiles cp on cp.id = co.profile_id
+          join auth.users cu on cu.id = cp.id
+          left join class_enrollments ce on ce.class_id = c.id and ce.is_active
+          left join students s on s.id = ce.student_id
+          left join profiles pr on pr.id = s.profile_id
+          where cu.email = 'coach@prolinegym.lb';
+          SQL
+
+          echo "✅ Foundation verification complete — see the BEFORE/AFTER groups above."

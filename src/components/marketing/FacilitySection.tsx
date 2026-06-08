@@ -1,0 +1,105 @@
+import { cn } from '@/lib/utils';
+import { MapPin, Phone, Mail, Instagram } from 'lucide-react';
+
+type FacilitySectionProps = {
+  locale: string;
+};
+
+export function FacilitySection({ locale }: FacilitySectionProps) {
+  const isRTL = locale === 'ar';
+
+  return (
+    <section id="facility" className="py-20 lg:py-28 bg-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Facility image / map placeholder */}
+          <div className="relative">
+            <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-secondary-800 to-secondary-900 overflow-hidden shadow-elevation-3">
+              {/* Embedded Google Maps */}
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3313.5!2d35.52!3d33.84!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDUwJzI0LjAiTiAzNcKwMzEnMTIuMCJF!5e0!3m2!1sen!2slb!4v1689000000000"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="PRO LINE Gym Location"
+                className="absolute inset-0"
+              />
+            </div>
+            {/* Address badge */}
+            <div className="absolute -bottom-4 left-4 right-4 rounded-xl bg-white shadow-elevation-2 p-4"
+              style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50">
+                  <MapPin className="h-5 w-5 text-primary-600" />
+                </div>
+                <div>
+                  <p className={cn('text-sm font-semibold text-secondary-900', isRTL && 'font-arabic')}>
+                    {isRTL ? 'مركز سكاي للأعمال، ببدا' : 'Sky Business Center, Baabda'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {isRTL ? 'لبنان' : 'Lebanon'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact info */}
+          <div>
+            <h2 className={cn('text-3xl sm:text-4xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
+              {isRTL ? 'موقعنا' : 'Visit Us'}
+            </h2>
+            <p className="mt-3 text-gray-500 leading-relaxed">
+              {isRTL
+                ? 'تدرب في منشأتنا الحديثة في مركز سكاي للأعمال في ببدا. اتصل بنا أو راسلنا على واتساب للحجز.'
+                : 'Train at our modern facility in Sky Business Center, Baabda. Call or WhatsApp us to book your first session.'}
+            </p>
+
+            <div className="mt-8 space-y-4" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+              <a
+                href="tel:+96170628601"
+                className="flex items-center gap-3 rounded-xl border p-4 hover:border-primary-200 hover:bg-primary-50/50 transition-colors"
+              >
+                <Phone className="h-5 w-5 text-primary-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-secondary-900" dir="ltr">+961 70 628 601</p>
+                  <p className="text-xs text-gray-500">{isRTL ? 'اتصل بنا' : 'Call us'}</p>
+                </div>
+              </a>
+
+              <a
+                href="mailto:alifakih998@gmail.com"
+                className="flex items-center gap-3 rounded-xl border p-4 hover:border-primary-200 hover:bg-primary-50/50 transition-colors"
+              >
+                <Mail className="h-5 w-5 text-primary-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-secondary-900">alifakih998@gmail.com</p>
+                  <p className="text-xs text-gray-500">{isRTL ? 'البريد الإلكتروني' : 'Email'}</p>
+                </div>
+              </a>
+
+              <a
+                href="https://instagram.com/prolinegym.lb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-xl border p-4 hover:border-primary-200 hover:bg-primary-50/50 transition-colors"
+              >
+                <Instagram className="h-5 w-5 text-primary-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-secondary-900">@prolinegym.lb</p>
+                  <p className="text-xs text-gray-500">
+                    {isRTL ? '2,760 متابع • 177 منشور' : '2,760 followers • 177 posts'}
+                  </p>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

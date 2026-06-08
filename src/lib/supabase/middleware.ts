@@ -1,0 +1,95 @@
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+type PortalRole = 'owner' | 'head_coach' | 'coach' | 'receptionist' | 'student' | 'parent' | 'external_coach';
+
+const ROLE_PORTAL_MAP: Record<PortalRole, string> = {
+  owner: '/dashboard',
+  head_coach: '/dashboard',
+  coach: '/coach',
+  receptionist: '/dashboard',
+  student: '/portal',
+  parent: '/portal',
+  external_coach: '/dashboard',
+};
+
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Refresh session if expired — this keeps the user logged in
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Protected routes — unauthenticated users redirected to login
+  const protectedPaths = [
+    '/dashboard', '/students', '/classes', '/schedule', '/attendance',
+    '/payments', '/invoices', '/pt', '/rentals', '/camps', '/leads',
+    '/reports', '/settings', '/profile', '/coach', '/portal',
+  ];
+  const pathname = request.nextUrl.pathname;
+  const isProtectedRoute = protectedPaths.some((path) =>
+    pathname.includes(path)
+  );
+
+  // If user is not authenticated and trying to access a protected route
+  if (!user && isProtectedRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${getPreferredLocale(request)}/auth/login`;
+    return NextResponse.redirect(url);
+  }
+
+  // If user is authenticated and on the login page, redirect to role-specific portal
+  if (user && pathname.includes('/auth/login')) {
+    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+    const role = (roleData?.role || 'owner') as PortalRole;
+    const url = request.nextUrl.clone();
+    url.pathname = `/${getPreferredLocale(request)}${ROLE_PORTAL_MAP[role]}`;
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect coach/student/parent away from /dashboard
+  if (user && pathname.includes('/dashboard')) {
+    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+    const role = roleData?.role as PortalRole | undefined;
+    if (role === 'coach' || role === 'student' || role === 'parent') {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${getPreferredLocale(request)}${ROLE_PORTAL_MAP[role]}`;
+      return NextResponse.redirect(url);
+    }
+  }
+
+  return supabaseResponse;
+}
+
+function getPreferredLocale(request: NextRequest): string {
+  const acceptLanguage = request.headers.get('accept-language') || '';
+  if (acceptLanguage.includes('ar')) return 'ar';
+  if (acceptLanguage.includes('fr')) return 'fr';
+  return 'en';
+}

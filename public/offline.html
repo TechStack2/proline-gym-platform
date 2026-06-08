@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRO LINE Gym — Offline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #252525;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+    .container { max-width: 400px; }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 80px;
+      width: 80px;
+      border-radius: 16px;
+      background: #cd1419;
+      color: #fff;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 24px rgba(205,20,25,0.4);
+    }
+    .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 64px;
+      width: 64px;
+      border-radius: 50%;
+      background: rgba(245,158,11,0.15);
+      margin-bottom: 24px;
+    }
+    .icon svg { width: 32px; height: 32px; color: #f59e0b; }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+    p { color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+    .hint { color: #6b7280; font-size: 13px; margin-top: 16px; }
+    button {
+      margin-top: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      border-radius: 10px;
+      background: #cd1419;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #b01216; }
+    button svg { width: 16px; height: 16px; }
+    .rtl { direction: rtl; }
+  </style>
+</head>
+<body>
+  <div class="container" id="root">
+    <div class="logo">PL</div>
+    <div class="icon">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728M15.536 8.464a5 5 0 010 7.072M12 12h.01" />
+      </svg>
+    </div>
+    <h1 id="title">You are offline</h1>
+    <p id="desc">The app is working with saved data. You can continue using most features.</p>
+    <p class="hint" id="hint">Your data will sync automatically when connection is restored.</p>
+    <button onclick="location.reload()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      Retry
+    </button>
+  </div>
+  <script>
+    // Detect locale from URL path or cookie
+    var path = window.location.pathname;
+    var locale = path.startsWith('/ar') ? 'ar' : path.startsWith('/fr') ? 'fr' : 'en';
+    var isRtl = locale === 'ar';
+    if (isRtl) document.getElementById('root').classList.add('rtl');
+
+    var strings = {
+      ar: { title: 'أنت غير متصل بالإنترنت', desc: 'التطبيق يعمل بالبيانات المحفوظة. يمكنك متابعة استخدام معظم الميزات.', hint: 'ستتم مزامنة بياناتك تلقائياً عند عودة الاتصال.', retry: 'إعادة المحاولة' },
+      en: { title: 'You are offline', desc: 'The app is working with saved data. You can continue using most features.', hint: 'Your data will sync automatically when connection is restored.', retry: 'Retry' },
+      fr: { title: 'Vous êtes hors ligne', desc: "L'application fonctionne avec les données sauvegardées.", hint: 'Vos données seront synchronisées automatiquement.', retry: 'Réessayer' }
+    };
+    var t = strings[locale] || strings.en;
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('desc').textContent = t.desc;
+    document.getElementById('hint').textContent = t.hint;
+    document.querySelector('button').childNodes[1] && (document.querySelector('button').childNodes[1].textContent = t.retry);
+
+    // If back online, redirect to app
+    function checkOnline() {
+      if (navigator.onLine) {
+        window.location.href = '/' + locale;
+      }
+    }
+    window.addEventListener('online', function() {
+      setTimeout(checkOnline, 1000);
+    });
+    checkOnline();
+  </script>
+</body>
+</html>

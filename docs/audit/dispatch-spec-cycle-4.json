@@ -1,0 +1,114 @@
+{
+  "$schema": "../../../Config/templates/dispatch-spec.schema.json",
+  "mission_id": "cycle-4-cleanup",
+  "description": "Cycle 4 — FINAL cleanup cycle: Fix all 10 residual issues from Cycle 3 quality gates and run production readiness checks. Prompts 16-18 are independent (parallel), 19 depends on 16-18, 20 depends on 19.",
+  "created_at": "2026-06-08T14:56:00+03:00",
+  "timeout_minutes": 45,
+  "output_dir": "/Users/techstack/Desktop/Agentics/Shared/missions/cycle-4-cleanup/output",
+  "working_dir": "/Users/techstack/Desktop/Agentics/Projects/proline-gym-platform",
+  "clean_output_dir": true,
+
+  "agents": [
+    {
+      "id": "c4-code-residuals",
+      "name": "Fix Code Review Residuals (R1-R4)",
+      "agent_type": "api",
+      "mode": "code",
+      "provider": "deepseek-v4-pro",
+      "system_prompt": "You are a Next.js 14 full-stack developer working on the PRO LINE Gym Platform. Fix 4 code review residuals from Cycle 3: hardcoded i18n strings, locale ternaries, alert() calls, and zero UUID placeholders. All changes must be surgical — touch only the files specified. Use next-intl useTranslations() for all user-facing strings. Use sonner toast for all error handling. Follow existing patterns: getLocalizedName() for display names, try/catch + sonner for all Supabase operations.",
+      "prompt": "Fix 4 code review residual issues in the PRO LINE Gym Platform at /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform\n\nREFERENCE: docs/audit/cycle-4-prompts.md — PROMPT 16\nREFERENCE: docs/audit/quality-gate-c3-code-review.md — Sections 2, 4, 7\n\nFIX THESE 4 ISSUES:\n\n### R1: Hardcoded placeholders in pt-client.tsx (HIGH)\n- File: src/app/[locale]/(dashboard)/pt/pt-client.tsx\n- Line 361: Change placeholder=\"Name (EN)\" to placeholder={t('name_en')} using useTranslations('pt')\n- Line 369: Change placeholder=\"Name (FR)\" to placeholder={t('name_fr')} using useTranslations('pt')\n- Verify the 'pt' namespace has 'name_en' and 'name_fr' keys in all 3 locale files (en.json, ar.json, fr.json). Add them if missing.\n\n### R2: Hardcoded role label ternary in coach/profile/page.tsx (HIGH)\n- File: src/app/[locale]/coach/profile/page.tsx\n- Line 97: Replace {isRTL ? 'مدرب' : locale === 'fr' ? 'Entraîneur' : 'Coach'} with i18n\n- Check if this is a server or client component. If server: use getTranslations('coach') and t('role_label'). If client: use useTranslations('coach').\n- Verify 'role_label' exists with proper translations in coach namespace in all 3 locale files. Add if missing.\n\n### R3: alert() instead of sonner toast in rentals-client.tsx (MEDIUM)\n- File: src/app/[locale]/(dashboard)/rentals/rentals-client.tsx\n- Line 124: Replace alert(firstIssue?.message || 'Validation error') with toast.error(firstIssue?.message || t('validation_error'))\n- Line 136: Same — replace any remaining alert() with toast.error()\n- Ensure import { toast } from 'sonner' is present\n- Add try/catch around the Supabase insert (lines 140-153) if not already present\n\n### R4: Zero UUID external_coach_id in rentals-client.tsx (MEDIUM)\n- File: src/app/[locale]/(dashboard)/rentals/rentals-client.tsx\n- Line 115: Remove the hardcoded zero UUID — make external_coach_id nullable in the payload\n- Line 143: Same — omit from actual Supabase insert or use null\n- Check if the DB column allows NULL. If NOT NULL, fetch a real external coach or show a selector.\n- Update the Zod schema if needed to make external_coach_id optional\n\nIMPORTANT RULES:\n- Use Server Components for data fetching, 'use client' only for interactive elements\n- All text must use next-intl useTranslations() or getTranslations()\n- All error handling must use sonner toast, never alert()\n- Surgical changes only — touch only the 3 files specified\n- After changes, verify: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx tsc --noEmit 2>&1 | head -20\n\nDeliver: List of files changed and what was fixed in each.",
+      "output_file": "agent-c4-code-residuals.md",
+      "max_tokens": 8192,
+      "temperature": 0.1,
+      "depends_on": [],
+      "retry_count": 1
+    },
+    {
+      "id": "c4-security-residuals",
+      "name": "Fix Security Residuals (R5-R6)",
+      "agent_type": "api",
+      "mode": "code",
+      "provider": "deepseek-v4-pro",
+      "system_prompt": "You are a Next.js 14 full-stack developer working on the PRO LINE Gym Platform. Fix 2 security residuals: add Zod validation to the coach attendance form, and create a migration to add gym scoping to pt_sessions and pt_assignments RLS policies. Follow existing patterns from 000011 and 000013 migration files. All changes must be surgical.",
+      "prompt": "Fix 2 security residual issues in the PRO LINE Gym Platform at /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform\n\nREFERENCE: docs/audit/cycle-4-prompts.md — PROMPT 17\nREFERENCE: docs/audit/quality-gate-c3-security-review.md — Sections 1, 6\n\nFIX THESE 2 ISSUES:\n\n### R5: No Zod validation on attendance upsert (MEDIUM)\n- Create file: src/lib/validators/attendance.schema.ts\n- Define attendanceRecordSchema with:\n  - class_schedule_id: z.string().uuid()\n  - student_id: z.string().uuid()\n  - status: z.enum(['present', 'absent', 'late', 'excused'])\n  - date: z.string() (or z.coerce.date())\n- Export from barrel: add 'export { attendanceRecordSchema } from './attendance.schema' to src/lib/validators/index.ts\n- Wire into: src/app/[locale]/coach/attendance/page.tsx\n  - Import attendanceRecordSchema from '@/lib/validators'\n  - In handleSubmit (around line 222), add safeParse before the upsert call\n  - On failure: toast.error(firstIssue?.message || 'Validation error')\n  - On success: proceed with existing upsert\n\n### R6: pt_sessions + pt_assignments RLS lacks gym scoping (MEDIUM)\n- Create file: supabase/migrations/000014_fix_pt_rls_gym_scoping.sql\n- Content: Follow pattern from 000013_fix_rental_bookings_rls.sql\n- Drop existing pt_sessions_staff policy, recreate with gym scoping via pt_packages FK chain\n- Drop existing pt_assignments_staff policy, recreate with gym scoping via pt_packages FK chain\n- Both use: EXISTS (SELECT 1 FROM pt_packages WHERE pt_packages.id = [table].package_id AND pt_packages.gym_id = get_user_gym_id())\n\nIMPORTANT RULES:\n- Follow the existing migration numbering (000014)\n- Use the exact RLS pattern from 000013\n- Do not touch coach or student policies — only staff policies\n- After changes, verify: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx tsc --noEmit 2>&1 | head -20\n\nDeliver: List of files created/modified and what was fixed in each.",
+      "output_file": "agent-c4-security-residuals.md",
+      "max_tokens": 8192,
+      "temperature": 0.1,
+      "depends_on": [],
+      "retry_count": 1
+    },
+    {
+      "id": "c4-db-residuals",
+      "name": "Fix Database Residuals (R7-R10)",
+      "agent_type": "api",
+      "mode": "code",
+      "provider": "deepseek-v4-pro",
+      "system_prompt": "You are a Next.js 14 full-stack developer working on the PRO LINE Gym Platform. Fix 4 database residuals: add gym scoping comment to pt_assignments query, regenerate Supabase types, add seed data, and parallelize queries with Promise.all. All changes must be surgical — touch only the files specified.",
+      "prompt": "Fix 4 database residual issues in the PRO LINE Gym Platform at /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform\n\nREFERENCE: docs/audit/cycle-4-prompts.md — PROMPT 18\nREFERENCE: docs/audit/quality-gate-c3-database-review.md — Sections 2, 3, 4, 5\n\nFIX THESE 4 ISSUES:\n\n### R7: pt_assignments query unscoped (MEDIUM)\n- File: src/app/[locale]/(dashboard)/pt/page.tsx (around line 46-51)\n- The pt_assignments query filters by package_id IN-list from already-gym-scoped packages\n- This IS implicitly scoped, but needs documentation\n- Add a comment above the query: \"// Implicitly gym-scoped via package_id IN-filter — packages are filtered by gym_id above (line 30)\"\n- RLS (from migration 000014 if applied) provides server-side enforcement\n\n### R8: pt_assignments missing from database.ts (MEDIUM)\n- Run: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx supabase gen types typescript --local > src/types/database.ts\n- If --local fails, try --linked\n- Verify pt_assignments appears in the Tables section\n- Run tsc --noEmit to verify no type errors\n\n### R9: No pt_assignments seed data (LOW)\n- File: supabase/migrations/000006_seed_data.sql\n- Append at the end: 3-4 INSERT INTO pt_assignments records\n- Use WHERE NOT EXISTS guards to avoid duplicates\n- Reference existing students, pt_packages, coaches from seed data\n- Create realistic scenarios (sessions_used < sessions_total)\n- Example: SELECT existing IDs then INSERT with NOT EXISTS check\n\n### R10: Sequential awaits in pt/page.tsx (LOW)\n- File: src/app/[locale]/(dashboard)/pt/page.tsx (around line 26)\n- Convert 4 sequential awaits to:\n  - Phase 1: Promise.all([packages, students, coaches]) — all independent\n  - Phase 2: assignments query (depends on packages for package_id IN-filter)\n- Follow pattern from belts/page.tsx which already uses Promise.all\n\nIMPORTANT RULES:\n- Surgical changes only — touch only the files specified\n- After changes, verify: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx tsc --noEmit 2>&1 | head -20\n\nDeliver: List of files changed and what was fixed in each.",
+      "output_file": "agent-c4-db-residuals.md",
+      "max_tokens": 8192,
+      "temperature": 0.1,
+      "depends_on": [],
+      "retry_count": 1
+    },
+    {
+      "id": "c4-build-verify",
+      "name": "Full Build & Migration Verification",
+      "agent_type": "api",
+      "mode": "code",
+      "provider": "deepseek-v4-pro",
+      "system_prompt": "You are a build/CI engineer working on the PRO LINE Gym Platform. Run the full verification pipeline: reset and reapply all migrations, verify the migration chain, run next build, and run tsc --noEmit. This is the integration gate — ensure all fixes from the 3 parallel agents compose correctly.",
+      "prompt": "Run full build and migration verification for the PRO LINE Gym Platform at /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform\n\nREFERENCE: docs/audit/cycle-4-prompts.md — PROMPT 19\n\nRUN THESE VERIFICATION STEPS (in order, stop on first failure):\n\n### Step 1: Verify migration chain\n- Run: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && ls -1 supabase/migrations/ | sort\n- Expected: 000001 through 000014, sequentially numbered, no gaps\n- If any are missing, report which ones\n\n### Step 2: Reset and reapply all migrations\n- Run: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx supabase db reset\n- This drops and recreates the local DB, applying all migrations 000001-000014\n- Verify the output shows all 14 applied without errors\n- If any migration fails, capture the error and stop\n\n### Step 3: Regenerate types\n- Run: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx supabase gen types typescript --local > src/types/database.ts\n- If --local fails (no local Supabase), try --linked\n- Verify pt_assignments is present in the generated file\n\n### Step 4: TypeScript check\n- Run: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx tsc --noEmit 2>&1\n- Must exit with code 0 and zero errors\n- If errors, capture and report\n\n### Step 5: Next.js build\n- Run: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx next build 2>&1\n- Must exit with code 0\n- Expected: '✓ Compiled successfully' or '✓ Generating static pages'\n- If build fails, capture the error output\n\nIMPORTANT: Run each step sequentially. Stop and report on first failure. If all pass, confirm 'BUILD VERIFICATION: ALL PASSED'.\n\nDeliver: Output of each step and final pass/fail status.",
+      "output_file": "agent-c4-build-verify.md",
+      "max_tokens": 8192,
+      "temperature": 0.1,
+      "depends_on": ["c4-code-residuals", "c4-security-residuals", "c4-db-residuals"],
+      "retry_count": 1
+    },
+    {
+      "id": "c4-e2e-smoke",
+      "name": "E2E Smoke Tests",
+      "agent_type": "api",
+      "mode": "code",
+      "provider": "deepseek-v4-pro",
+      "system_prompt": "You are a QA engineer working on the PRO LINE Gym Platform. Create a smoke test checklist, start the dev server, and execute 9 manual smoke tests covering the most critical user journeys. This is the final quality gate before declaring Cycle 4 complete.",
+      "prompt": "Create and execute E2E smoke tests for the PRO LINE Gym Platform at /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform\n\nREFERENCE: docs/audit/cycle-4-prompts.md — PROMPT 20\n\nTASKS:\n\n### Task 1: Create smoke test checklist\n- Create file: docs/testing/smoke-test-checklist.md\n- Use the format from docs/testing/PHASE_C_TEST_REGISTER.md as a template\n- Include these 9 test cases:\n  1. Login as owner → verify dashboard loads\n  2. Login as coach → verify coach portal loads\n  3. Create a lead → verify appears in list\n  4. Change lead status → verify persists\n  5. Create a camp → verify appears (CRITICAL bug fix verification)\n  6. Create a PT package → verify credit tracking shows\n  7. Promote a student belt → verify stepper works\n  8. Switch language to Arabic → verify no English strings\n  9. Switch to French → verify no English strings\n\n### Task 2: Start dev server\n- Run: cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npm run dev &\n- Wait for server to be ready\n\n### Task 3: Execute smoke tests\n- For each test case, navigate the UI and verify the expected behavior\n- Mark each test PASS or FAIL in the checklist\n- For failures, document the exact error observed\n- Pay SPECIAL attention to Test 5 (camp creation was CRITICALLY broken before)\n\nIMPORTANT: This is MANUAL testing — create the checklist document, start the server, and verify each flow works. Document results in the checklist file.\n\nDeliver: Completed smoke-test-checklist.md with all 9 test results.",
+      "output_file": "agent-c4-e2e-smoke.md",
+      "max_tokens": 8192,
+      "temperature": 0.1,
+      "depends_on": ["c4-build-verify"],
+      "retry_count": 1
+    }
+  ],
+
+  "sub_orchestrator": {
+    "instructions": [
+      "1. Read docs/audit/cycle-4-prompts.md for full context on all 5 prompts",
+      "2. Read docs/audit/session-audit-plan.md — check current Cycle 4 status",
+      "3. DISPATCH c4-code-residuals, c4-security-residuals, c4-db-residuals in PARALLEL (no shared files, no dependencies)",
+      "4. WAIT for all 3 parallel agents to complete with PASS status",
+      "5. DISPATCH c4-build-verify (depends on all 3 parallel agents)",
+      "6. WAIT for build verification to complete with PASS status",
+      "7. DISPATCH c4-e2e-smoke (depends on clean build)",
+      "8. Collect all output files to output_dir",
+      "9. Update docs/audit/session-audit-plan.md: set status to CYCLE 4 COMPLETE",
+      "10. Append completion entry to audit-cycle-update.md"
+    ]
+  },
+
+  "verification": {
+    "commands": [
+      "cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx tsc --noEmit",
+      "cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && npx next build",
+      "cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && ls -1 supabase/migrations/ | sort",
+      "cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && grep -c 'pt_assignments' src/types/database.ts",
+      "cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && grep -rn 'alert(' src/app/ | grep -v node_modules | grep -v '.json'",
+      "cd /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform && grep -rn 'locale === .ar.' src/app/ | grep -v 'isRTL' | grep -v 'node_modules' | wc -l"
+    ]
+  },
+
+  "notification": {
+    "on_complete": "terminal_bell",
+    "on_error": "terminal_bell"
+  }
+}

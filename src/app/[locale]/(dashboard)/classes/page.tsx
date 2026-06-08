@@ -1,0 +1,122 @@
+import { Suspense } from 'react'
+import { createClient } from '@/lib/supabase/server'
+import ClassesList from './ClassesList'
+import { Skeleton } from '@/components/ui/skeleton'
+
+export const dynamic = 'force-dynamic'
+
+async function getClasses(searchParams: { [key: string]: string | undefined }) {
+  const supabase = await createClient()
+  
+  let query = supabase
+    .from('classes')
+    .select(`
+      *,
+      discipline:disciplines(id, name_ar, name_en, name_fr),
+      coach:coaches(id, first_name, last_name),
+      schedules:class_schedules(*)
+    `)
+    .order('created_at', { ascending: false })
+
+  if (searchParams.search) {
+    query = query.or(`name_ar.ilike.%${searchParams.search}%,name_en.ilike.%${searchParams.search}%,name_fr.ilike.%${searchParams.search}%`)
+  }
+
+  if (searchParams.discipline_id) {
+    query = query.eq('discipline_id', searchParams.discipline_id)
+  }
+
+  if (searchParams.coach_id) {
+    query = query.eq('coach_id', searchParams.coach_id)
+  }
+
+  if (searchParams.day_of_week) {
+    query = query.contains('schedules', [{ day_of_week: parseInt(searchParams.day_of_week) }])
+  }
+
+  if (searchParams.status) {
+    query = query.eq('status', searchParams.status)
+  }
+
+  const { data: classes, error } = await query
+
+  if (error) {
+    console.error('Error fetching classes:', error)
+    return []
+  }
+
+  // Get enrollment counts for each class
+  const classIds = classes.map(c => c.id)
+  const { data: enrollments } = await supabase
+    .from('class_enrollments')
+    .select('class_id, count')
+    .in('class_id', classIds)
+    .eq('status', 'active')
+    .then(({ data }) => {
+      // Manual count aggregation
+      return { data: data }
+    })
+
+  // Count enrollments per class
+  const enrollmentCounts: { [key: string]: number } = {}
+  if (enrollments) {
+    enrollments.forEach(e => {
+      enrollmentCounts[e.class_id] = (enrollmentCounts[e.class_id] || 0) + 1
+    })
+  }
+
+  return classes.map(c => ({
+    ...c,
+    enrollments_count: enrollmentCounts[c.id] || 0
+  }))
+}
+
+async function getDisciplines() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('disciplines')
+    .select('*')
+    .eq('status', 'active')
+    .order('name_en')
+  return data || []
+}
+
+async function getCoaches() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('coaches')
+    .select('*')
+    .eq('status', 'active')
+    .order('first_name')
+  return data || []
+}
+
+export default async function ClassesPage({
+  params: { locale },
+  searchParams,
+}: {
+  params: { locale: string }
+  searchParams: { [key: string]: string | undefined }
+}) {
+  const [classes, disciplines, coaches] = await Promise.all([
+    getClasses(searchParams),
+    getDisciplines(),
+    getCoaches(),
+  ])
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Classes</h1>
+      </div>
+      <Suspense fallback={<Skeleton className="h-96" />}>
+        <ClassesList
+          classes={classes}
+          disciplines={disciplines}
+          coaches={coaches}
+          locale={locale}
+        />
+      </Suspense>
+    </div>
+  )
+}
