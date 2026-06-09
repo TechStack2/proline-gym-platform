@@ -3,6 +3,7 @@
 > **Created:** 2026-06-09 · **Auditor:** Project Auditor (read-only — design, not code)
 > **Status:** DESIGN — awaiting sign-off before the rebuild prompt.
 > **This is D1 in** [`../journey-catalog.md`](../journey-catalog.md) — the **record→reconcile** half of money. It rounds out Phase 1: it's where every invoice (from Lead-convert, PT-approval, manual, or a future renewal) gets **paid and reconciled**. The **time-triggered dunning/overdue/renewal automation is D3 / Phase 4** and out of scope here.
+> **Deep re-review (triggers + notifications, Lebanese cash/OMT/Whish):** [`analysis-billing-triggers-and-notifications-lebanon.md`](./analysis-billing-triggers-and-notifications-lebanon.md) — reframes invoice=obligation / payment=settlement; its resolved decisions are folded into §5/§6/§10/§11.
 > **Method:** as-is verified against code + schema; to-be targets **L3 Managed**.
 > **Decided forks:** partial payments = **full support**; overpayment = **blocked**; receipts = **printable view in scope**.
 
@@ -195,12 +196,15 @@ Notifications via the **sanctioned F2 pattern** (authed client, recipient `profi
 
 ---
 
-## 10. Open decisions for the user
+## 10. Decisions — RESOLVED (re-review, 2026-06-09)
 
-Forks decided (partial-support; block overpayment; printable receipt). Defaults I'll take unless redirected:
-1. **`invoice_issued` retrofit scope:** wire it on the manual path now + add a one-line emit to the convert (23-R) and PT-approval (22-R) RPCs. *Default = yes, light retrofit* (so every issued invoice notifies). If you'd rather not touch those RPCs, I'll scope `invoice_issued` to the manual path only and flag the rest.
-2. **Reconciliation canonical currency:** sum on `amount_usd`. *Default = USD canonical* (matches `total_usd`).
-3. **Refund money handling:** status + audit + reference only (cash returned out-of-band, Lebanese model); no payment-gateway refund. *Default = reference-only.*
+Forks decided: partial-support **yes**; overpayment **blocked**; printable receipt **yes**. From the Lebanese-context re-review ([analysis](./analysis-billing-triggers-and-notifications-lebanon.md)):
+1. **Issuance — centralize + retrofit.** A single canonical **`issue_invoice(...)`** service is the only issuance path; **retrofit convert (23-R) + PT-approval (22-R)** to call it (one-line emit each) so every invoice issues + fires `invoice_issued` uniformly. Camp/rental/renewal adopt it as they're built.
+2. **OMT/Whish — verify-then-record.** Staff records a transfer payment **only after confirming receipt**; every recorded payment is therefore verified. **No `verified` column / no pending-verification state / no `payment_pending_verification` producer** (simpler). (Reconsider a `verified` state in Phase 4 if a remote-claim worklist is wanted.)
+3. **Cash reconciliation — include a per-method daily tally** (cash USD, cash LBP, OMT, Whish) in D1, alongside the outstanding-balances view. Full MRR/churn analytics stay Phase 4.
+4. **Reconciliation canonical currency = `amount_usd`** (matches `total_usd`); LBP at the payment-day rate.
+5. **Refund = reference-only** (status + audit + reference; cash returned out-of-band; no gateway).
+6. **Notifications** tied to domain events (`invoice_issued`, `payment_received`+balance, refunded), **best-effort + login-aware** (the `notifications.user_id`→`auth.users` FK can't reach login-less members — `portal/billing` + receipt is the durable truth; WhatsApp is the future channel). Recipients = member (+guardian); **coaches excluded from billing**.
 
 ---
 
