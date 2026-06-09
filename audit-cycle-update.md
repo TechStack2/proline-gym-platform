@@ -1281,3 +1281,68 @@ The helper inserted with `.insert(...).select('id').single()`, which makes Postg
 **Read-path finding (B, non-blocking, for a later prompt):** the live `<NotificationBell>` renders only in the MOBILE dashboard top bar; the desktop `Header.tsx` bell is a static stub; `/portal` and `/coach` top bars have no bell. Recipients reach the live bell at mobile width on `(dashboard)` routes, or the full list via `/notifications` (any viewport, no role gate). Recommend mounting the real bell in the portal/coach top bars + replacing the desktop stub.
 
 **Notification producer path: ROOT-CAUSED + FIXED — yes.**
+
+---
+
+## Cycle 5 / Phase 1 / Prompt 23-R — Lead → Active-Member Journey Rebuild (2026-06-09)
+
+**Agent:** coding agent · **Branch:** `prompt-23-r-lead-journey` · **Strategy:** strangle (not rewrite) — rebuilt the ONE Lead→Member journey cleanly on the current base.
+
+### Behavior-green proof (the judge)
+- **E2E CI run `27214829204` — SUCCESS, 22 passed / 0 failed** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27214829204
+  - New cross-portal slice `e2e/leads.spec.ts` (project `leads`): `✓ Lead→Member slice: origination (web + staff) → trial → convert → member surfaces (25.6s)`, plus the standing 21 (owner/reception/coach/student/pt/notifications) still green. Screenshots uploaded (`leads-1-web-submit` … `leads-6-roster`).
+- **`tsc --noEmit` clean; `next build` clean.** No RLS/auth weakened to pass.
+
+### Migrations (applied to the cloud ledger, project `ufpuebfkcpohwubrutff`)
+- **`000023_lead_to_member_journey.sql`** — applied via Verify-Foundation dispatch **`27210628883`** (success; recorded in `supabase_migrations.schema_migrations`). Contents: `trial_classes` +`scheduled_time`/+`assigned_coach_id`/`class_id` nullable + RLS re-scoped to the lead's gym; explicit `leads_staff_insert` (staff-only, same-gym); `submit_public_lead` extended (program→discipline, last_name/email, in-RPC `lead_new`); `schedule_trial` / `record_trial_outcome` / `convert_lead_to_member` RPCs (atomic, staff-only, gym-scoped); `account_invites` table + RLS; `get_coach_trials()` + `member_phone_exists()` definer readers.
+- **`000024_fix_convert_return_types.sql`** — applied via Verify-Foundation dispatch **`27214332667`** (success). Fixes the convert RPC's `RETURN QUERY` to cast `invoice_number::TEXT` + `total_usd::NUMERIC` to the declared `RETURNS TABLE` types (a runtime plpgsql "structure of query does not match function result type" the e2e exposed — see drag read).
+
+### Per-transaction PASS/FAIL (file:line proof)
+
+| Txn | What | Proof (file:line) | CI verdict |
+|---|---|---|---|
+| **T1a** | Web origination: program→discipline map + `lead_new` emitted inside the anon RPC | `000023_lead_to_member_journey.sql:81` (`submit_public_lead`), `TrialCTASection.tsx:52` (`p_program`) | **PASS** — reception sees the `source=website` lead + `lead_new` |
+| **T1b** | Staff "Add Lead" surface (8 channels) + staff INSERT RLS + `lead_new` fan-out | `leads-client.tsx:564` (`AddLeadModal`), `actions.ts:42` (`addLead`), `000023…sql:71` (`leads_staff_insert`) | **PASS** — owner adds `source=phone`; card persists |
+| **T2** | Persist `assigned_to` on triage | `leads-client.tsx:165` (`handleAssignToMe`) | **PASS (impl)** — built; not separately e2e-gated |
+| **T3** | Schedule trial (date/time/coach) → row + notify coach + coach Trials tab | `000023…sql:140` (`schedule_trial`), `actions.ts:102`, `leads-client.tsx:434` (`TrialPanel`), `coach/trials/page.tsx:13` | **PASS** — card→`trial_scheduled`; coach sees it |
+| **T4** | Record trial outcome (show/no_show) → reflect lead status | `000023…sql:182` (`record_trial_outcome`), `coach/trials/trials-client.tsx:80` | **PASS** — coach row→`completed` (lead→`trial_completed`) |
+| **T5** | Atomic convert → profile+student+membership+invoice+link + `lead_converted` + provisioning seam | `000024…sql:14` (`convert_lead_to_member`), `actions.ts:187` (`convertLead`), `leads-client.tsx:701` (`ConvertModal`), `lib/provisioning/{types,simulated}.ts` | **PASS** — invite-badge + invoice `$55.50` surface |
+| **T6** | New member surfaces on admin roster | `e2e/leads.spec.ts` (unfiltered `/students`) | **PASS** — member on roster |
+
+### Notification recipients (sanctioned F2 pattern; helpers RETURNING-free)
+- **`lead_new`** → **owner + receptionist** of the gym. Web path: emitted *inside* `submit_public_lead` (SECURITY DEFINER, anon caller — the sanctioned exception). Staff path: `createNotificationForRole('owner')` + `createNotificationForRole('receptionist')` from the authed `addLead` action. *(Verified readable by reception on `/notifications` in CI.)*
+- **`trial_scheduled`** → the **assigned coach**'s `profile_id` (`createNotification` from `scheduleTrial`). *(Coach saw the trial on `/coach/trials`.)*
+- **`lead_converted`** → the **new member**'s `profile_id` (`createNotification` from `convertLead`). Login-less recipient by design → not browser-readable yet (no auth.users); the simulated-invite state is the observable proxy. All three side-effects are now **best-effort** (try/catch + log) — a notify/provisioning failure never rolls back the member.
+
+### Convert invoice row (dual-currency, trigger-computed)
+- Plan **Monthly $50.00** → `invoices` row `invoice_type='membership'`, `amount_usd=50.00`, `tax_rate=11.00` → trigger `calculate_invoice_totals` ⇒ **`total_usd=$55.50`** (50 × 1.11), `invoice_number` from `generate_invoice_number`. Surfaced in admin via the convert result on the lead card (asserted `$55.50` in CI).
+
+### Provisioning seam
+- `AccountProvisioning` interface (`lib/provisioning/types.ts:37`) + `SimulatedProvisioning` (`lib/provisioning/simulated.ts:18`) → records an `account_invites` row `status='sent', provider='simulated'`, **no `auth.users`, no external send**. Visible "Login invite sent (simulated)" badge on the converted lead card. Real WhatsApp/OTP = a one-file adapter swap (Phase 5/6).
+
+### **Lead→Member slice behavior-green: PASS.**
+
+### DRAG READ (candid) — strangle vs rewrite signal
+**Verdict: MOSTLY CLEAN on the parts F1/F1.1/22-R/F2 already hardened; a genuine SLOG against legacy cruft on the surfaces this slice newly touched.** Net: **strangle is working** — but the legacy admin surfaces are rotten and will each need their own slice.
+
+**What the sound base gave us for free (clean, like 22-R/F2):**
+- The **identity write-path (000018) + sanctioned notification pattern (F2)** were exactly the right primitives. `convert_lead_to_member` was a near-mechanical extension of `create_student` (profile+student) + membership + invoice + lead-link — the design doc's claim that "convert is not a big new build" held. The invoice **triggers** computed TVA/number with zero plumbing. The notification helpers worked first try (no `42501`); the F2 RETURNING-free contract paid off.
+- The **definer-reader pattern** (`get_coach_pt_roster` → `get_coach_trials`) and **migration/CI machinery** (Verify-Foundation apply + E2E gate) were turnkey.
+
+**What fought us (slog):**
+1. **A real convert bug only CI caught:** `RETURNS TABLE(... TEXT, NUMERIC)` vs `invoices.invoice_number` (VARCHAR) / `total_usd` (NUMERIC(12,2)) → plpgsql "structure of query does not match function result type" — *creates fine, fails only at runtime*. `tsc`/`build` are blind to it; the behavior harness earned its keep (→ 000024). Exactly the F1.1 lesson again: green build ≠ green behavior.
+2. **The `trial_classes` schema was a trap, not just thin:** its RLS (000011) keyed on `classes.class_id`, so making `class_id` nullable for a free-form trial would have **silently rejected every trial row** until I re-scoped the policy to the lead's gym. The original schema modeled a feature the app never built.
+3. **Legacy admin surfaces are broken against the real schema (pre-existing DeepSeek cruft, NOT my code):**
+   - **Admin `/invoices` page is dead on arrival** — it selects `students(first_name,last_name,email)` + `membership_plans(name)` and orders by `issue_date`/`currency`/`amount`, **none of which exist** in the real schema. So "T6 admin billing" had no working surface; I proved the membership invoice via the convert result instead. Needs its own rebuild slice.
+   - **Admin students text search is broken** — filters on embedded `profiles.*` columns via a top-level `.or()`, which PostgREST ignores → empty results. T6 had to assert the *unfiltered* roster.
+   - **`students.status.active` (+ earlier `students.cancel/female/gender/male`) MISSING_MESSAGE** still spams the server log (non-fatal — renders the key).
+4. **Harness friction (test, not product):** the `(dashboard)` **double responsive-shell** bit three times — a hidden-shell `.first()` matched on a notification assert, then *hung 180s* on a hidden Add-Lead button (actions have no per-step timeout), then again on the roster. Resolved by `:visible` scoping + asserting **durable state** instead of transient sonner toasts. This is a standing tax on every `(dashboard)` slice; worth a shared helper.
+
+**Bottom line for the strangle-vs-rewrite decision:** the *connective-tissue layer we're building* (RPCs, RLS, notifications, identity) is clean and compounding — each slice gets easier. The *legacy presentation layer* (admin invoices/billing, students search, i18n gaps) is independently rotten and will each cost a slice to rebuild. That's consistent with strangling: keep going slice-by-slice; the rot is in leaf surfaces, not the foundation, so a full rewrite isn't warranted on this evidence.
+
+### Notes / non-blocking findings for later prompts
+- Rebuild the admin **`/invoices`** page against the real schema (separate slice).
+- Fix the admin **students search** (filter on the base `students`/joined `profiles` correctly, or via an RPC).
+- Add the missing **`students.status.*`** i18n keys.
+- `<NotificationBell>` still mobile-`(dashboard)`-only (F2 finding stands); `lead_converted` won't be bell-visible until the member has a login (provisioning adapter swap) and a portal bell exists.
+- A shared Playwright helper for `:visible` `(dashboard)` scoping would cut harness friction.
