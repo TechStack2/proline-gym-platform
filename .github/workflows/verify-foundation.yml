@@ -90,6 +90,27 @@ jobs:
           echo "===== BEFORE: reproduce identity chain ====="
           run_sql "BEFORE reproduce" <<< "$REPRODUCE"
 
+          echo "===== DIAG: owner-context notifications INSERT conditions ====="
+          run_sql "owner notif conditions" <<'SQL'
+          set local role authenticated;
+          select set_config('request.jwt.claims',
+            (select json_build_object('sub', u.id::text, 'role','authenticated')::text
+             from auth.users u where u.email='owner@prolinegym.lb'), true);
+          select
+            (auth.uid())::text         as uid,
+            get_user_role()            as role,
+            is_staff()                 as is_staff,
+            get_user_gym_id()::text    as gym,
+            recipient_in_gym(
+              (select p.id from profiles p join auth.users u on u.id=p.id where u.email='student@prolinegym.lb'),
+              get_user_gym_id()
+            )                          as recipient_ok;
+          SQL
+          run_sql "notifications INSERT policy on cloud" <<'SQL'
+          select polname, pg_get_expr(polwithcheck, polrelid) as with_check
+          from pg_policy where polrelid='public.notifications'::regclass and polcmd='a';
+          SQL
+
           if [ "${DO_APPLY}" != "true" ]; then
             echo "Diagnose-only run (apply=false). Re-run with apply=true once the migration list is confirmed."
             exit 0
