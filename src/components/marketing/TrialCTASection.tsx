@@ -42,11 +42,14 @@ export function TrialCTASection({ locale }: TrialCTASectionProps) {
 
     setLoading(true);
     try {
+      // p_program is mapped to a real interested_discipline_id inside the RPC,
+      // which also emits the lead_new staff notification (anon caller → emitted
+      // in the SECURITY DEFINER RPC; sanctioned F2 exception).
       const { data, error: rpcError } = await supabase.rpc('submit_public_lead', {
         p_first_name: name,
         p_phone: phone,
         p_source: 'website',
-        p_notes: program || null,
+        p_program: program || null,
       });
 
       if (rpcError) throw rpcError;

@@ -48,7 +48,8 @@
     "billing": "Factures",
     "coaches": "Entraîneurs",
     "belts": "Ceintures",
-    "disciplines": "Disciplines"
+    "disciplines": "Disciplines",
+    "trials": "Essais"
   },
   "common": {
     "save": "Enregistrer",
@@ -566,7 +567,65 @@
     },
     "toast": {
       "status_updated": "Statut du prospect mis à jour avec succès",
-      "status_error": "Échec de la mise à jour du statut"
+      "status_error": "Échec de la mise à jour du statut",
+      "assigned": "Prospect assigné",
+      "assign_error": "Échec de l'assignation",
+      "trial_scheduled": "Essai planifié",
+      "trial_error": "Échec de la planification",
+      "trial_date_required": "Choisissez une date",
+      "outcome_recorded": "Résultat enregistré",
+      "outcome_error": "Échec de l'enregistrement",
+      "required_fields": "Nom et téléphone requis",
+      "lead_added": "Prospect ajouté",
+      "add_error": "Échec de l'ajout",
+      "converted": "Prospect converti en membre",
+      "convert_error": "Échec de la conversion",
+      "plan_required": "Choisissez une formule"
+    },
+    "add_lead": "Ajouter un prospect",
+    "save_lead": "Enregistrer",
+    "cancel": "Annuler",
+    "plan_days": "j",
+    "trial_on": "Essai :",
+    "record_outcome": "Enregistrer le résultat de l'essai",
+    "mark_show": "Présent",
+    "mark_no_show": "Absent",
+    "select_coach": "Choisir un coach",
+    "assign_to_me": "M'assigner",
+    "invite_simulated": "Invitation de connexion envoyée (simulée)",
+    "convert_title": "Convertir en membre",
+    "convert_subtitle": "Créer un compte membre pour {name} avec un abonnement actif et une première facture.",
+    "convert_note": "Crée le profil, l'élève, l'abonnement et une première facture de façon atomique. L'invitation est simulée (aucun message envoyé).",
+    "select_plan": "Formule d'abonnement",
+    "no_plans": "Aucune formule active",
+    "convert_confirm": "Convertir",
+    "dup_phone_warning": "Un membre avec ce numéro existe déjà. Vous pouvez continuer.",
+    "trial_status": {
+      "scheduled": "Planifié",
+      "completed": "Terminé",
+      "no_show": "Absent",
+      "cancelled": "Annulé"
+    },
+    "source": {
+      "walk_in": "Sur place",
+      "phone": "Téléphone",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "whatsapp": "WhatsApp",
+      "referral": "Recommandation",
+      "website": "Site web",
+      "other": "Autre"
+    },
+    "field": {
+      "first_name": "Prénom",
+      "last_name": "Nom",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "source": "Source",
+      "source_detail": "Détail de la source",
+      "discipline": "Discipline souhaitée",
+      "notes": "Notes",
+      "no_discipline": "— Aucune —"
     }
   },
   "camps": {
@@ -901,8 +960,8 @@
         "body": "Un nouveau prospect, {leadName}, a été enregistré"
       },
       "trial_scheduled": {
-        "title": "Cours d'essai programmé",
-        "body": "Votre cours d'essai est programmé le {date}"
+        "title": "Cours d'essai planifié",
+        "body": "Essai avec {leadName} le {date} à {time}"
       },
       "lead_converted": {
         "title": "Bienvenue chez {gymName}",
@@ -992,5 +1051,10 @@
     "profile": {
       "role_label": "Entraîneur"
     }
+  },
+  "coachTrials": {
+    "title": "Essais",
+    "empty": "Aucun essai assigné",
+    "unnamed": "Prospect"
   }
 }

@@ -1,0 +1,186 @@
+import { test, expect, type Page, type BrowserContext, type Browser } from '@playwright/test';
+import { ROLES, shot } from './roles';
+
+/**
+ * Lead → Active-Member cross-portal vertical slice (Cycle 5 / Phase 1 / Prompt 23-R).
+ *
+ * Drives the WHOLE acquisition→onboarding journey as real logins against the
+ * coherent cloud DB and asserts the cross-portal propagation at each hop:
+ *
+ *   T1a (anon) landing trial form → submit_public_lead → gym-scoped lead
+ *              (source=website) + lead_new to staff.
+ *   T1b owner@ /leads "Add Lead" (source=phone) → staff INSERT + lead_new fan-out;
+ *              reception@ reads lead_new on /notifications (staff-only).
+ *   T3  owner@ schedules a trial (date/time/coach Sami) → trial_classes row;
+ *       coach@ /coach/trials sees it (trial_scheduled notified the coach).
+ *   T4  coach@ records "showed up" → lead → trial_completed.
+ *   T5  owner@ Convert → pick Monthly plan → atomic profile+student+membership+
+ *              invoice($50 + 11% TVA = $55.50) + converted_student_id + lead_converted
+ *              + simulated login invite. The invoice number + total + invite badge
+ *              surface in admin.
+ *   T6  the new member appears on the admin students roster.
+ *
+ * Opens a fresh context per role from e2e/.auth/*.json (and one anon context for
+ * the public submit). Idempotent: a unique RUN suffix names this run's leads, so
+ * re-runs never collide. Fails loudly (never skips) if any portal does not
+ * reflect a step. Leads/students finds use URL ?search= for determinism.
+ */
+
+const RUN = Date.now().toString().slice(-6);
+const WEB_NAME = `WebLead ${RUN}`;
+const STAFF_FIRST = 'StaffLead';
+const STAFF_LAST = RUN; // unique → search key
+const STAFF_NAME = `${STAFF_FIRST} ${STAFF_LAST}`;
+const COACH_EN = 'Sami'; // demo coach (coach@prolinegym.lb), seeded by 000017
+const PLAN_NAME = 'Monthly'; // seeded Monthly plan ($50) → $55.50 incl. 11% TVA
+
+function tomorrow(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+async function contextFor(browser: Browser, role: keyof typeof ROLES): Promise<{ ctx: BrowserContext; page: Page }> {
+  const ctx = await browser.newContext({ storageState: ROLES[role].storage, locale: 'en' });
+  const page = await ctx.newPage();
+  return { ctx, page };
+}
+
+test('Lead→Member slice: origination (web + staff) → trial → convert → member surfaces', async ({ browser }, testInfo) => {
+  test.setTimeout(180_000);
+
+  // ── T1a — public web origination (anon, no session) ─────────────────────────
+  const anonCtx = await browser.newContext({ locale: 'en' });
+  const anon = await anonCtx.newPage();
+  try {
+    const resp = await anon.goto('/en');
+    expect(resp?.status() ?? 0, 'landing page should load').toBeLessThan(400);
+
+    const form = anon.locator('section#trial');
+    await anon.locator('#trial-name').fill(WEB_NAME);
+    await anon.locator('#trial-phone').fill(`+96170${RUN}`);
+    await anon.locator('#trial-program').selectOption({ label: 'Muay Thai' }).catch(() => {});
+    await form.locator('button[type="submit"]').click();
+
+    await expect(
+      anon.getByText(/Got it!/i),
+      'public submit should reach the success state',
+    ).toBeVisible({ timeout: 15_000 });
+    await shot(anon, testInfo, 'leads-1-web-submit');
+  } finally {
+    await anonCtx.close();
+  }
+
+  // ── T1a propagation + lead_new — reception sees the web lead + the notification
+  const recep = await contextFor(browser, 'reception');
+  try {
+    await recep.page.goto(`/en/leads?search=${encodeURIComponent(WEB_NAME)}`);
+    const webCard = recep.page.locator(`[data-testid="lead-card"][data-lead-name="${WEB_NAME}"]:visible`).first();
+    await expect(webCard, 'the public web lead should propagate to the admin board').toBeVisible({ timeout: 15_000 });
+    await expect(webCard.getByTestId('lead-source'), 'the web lead must be source-tagged Website').toHaveText(/Website/i);
+    await shot(recep.page, testInfo, 'leads-2-reception-board');
+
+    await recep.page.goto('/en/notifications');
+    await expect(
+      recep.page.getByText(/New lead/i).first(),
+      'lead_new should be readable by staff (reception)',
+    ).toBeVisible({ timeout: 15_000 });
+    await shot(recep.page, testInfo, 'leads-2-reception-lead_new');
+  } finally {
+    await recep.ctx.close();
+  }
+
+  // ── T1b — staff-manual origination (owner "Add Lead", source=phone) ─────────
+  const owner = await contextFor(browser, 'owner');
+  try {
+    await owner.page.goto('/en/leads');
+    await owner.page.getByTestId('add-lead-button').first().click();
+    const modal = owner.page.getByTestId('add-lead-modal');
+    await expect(modal).toBeVisible();
+    await modal.getByTestId('lead-first-name').fill(STAFF_FIRST);
+    await modal.getByTestId('lead-last-name').fill(STAFF_LAST);
+    await modal.getByTestId('lead-phone').fill(`+96171${RUN}`);
+    await modal.getByTestId('lead-source-select').selectOption('phone');
+    await modal.getByTestId('add-lead-submit').click();
+    await expect(modal).toBeHidden({ timeout: 15_000 });
+
+    await owner.page.goto(`/en/leads?search=${encodeURIComponent(STAFF_LAST)}`);
+    const staffCard = owner.page.locator(`[data-testid="lead-card"][data-lead-name="${STAFF_NAME}"]:visible`).first();
+    await expect(staffCard, 'the staff-added lead should be persisted (staff INSERT RLS)').toBeVisible({ timeout: 15_000 });
+    await expect(staffCard.getByTestId('lead-source'), 'manual lead must carry source=Phone').toHaveText(/Phone/i);
+    await shot(owner.page, testInfo, 'leads-3-staff-added');
+
+    // ── T3 — schedule a trial (date/time/coach) on the staff lead ─────────────
+    await staffCard.getByRole('button', { name: /Schedule Trial/i }).click();
+    await staffCard.getByTestId('trial-date').fill(tomorrow());
+    await staffCard.getByTestId('trial-time').selectOption('17:00');
+    await staffCard.getByTestId('trial-coach').selectOption({ label: COACH_EN });
+    await staffCard.getByTestId('trial-confirm').click();
+    await expect(
+      owner.page.locator('[data-sonner-toast]').filter({ hasText: /Trial scheduled/i }).first(),
+      'scheduling should confirm (trial_classes row written + coach notified)',
+    ).toBeVisible({ timeout: 15_000 });
+    await shot(owner.page, testInfo, 'leads-3-trial-scheduled');
+  } finally {
+    await owner.ctx.close();
+  }
+
+  // ── T3 propagation + T4 — coach sees the trial and records "showed up" ──────
+  const coach = await contextFor(browser, 'coach');
+  try {
+    await coach.page.goto('/en/coach/trials');
+    const trialRow = coach.page.locator(`[data-testid="coach-trial-row"][data-lead-name="${STAFF_NAME}"]`).first();
+    await expect(trialRow, 'the scheduled trial should surface on the coach Trials tab (notify + propagate)').toBeVisible({ timeout: 15_000 });
+    await shot(coach.page, testInfo, 'leads-4-coach-trials');
+
+    await trialRow.getByTestId('coach-trial-show').click();
+    await expect(
+      coach.page.locator('[data-sonner-toast]').first(),
+      'recording the outcome should confirm',
+    ).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await coach.ctx.close();
+  }
+
+  // ── T5 — owner converts the lead → atomic member + membership + invoice ─────
+  const owner2 = await contextFor(browser, 'owner');
+  try {
+    await owner2.page.goto(`/en/leads?search=${encodeURIComponent(STAFF_LAST)}`);
+    const card = owner2.page.locator(`[data-testid="lead-card"][data-lead-name="${STAFF_NAME}"]:visible`).first();
+    await expect(card).toBeVisible({ timeout: 15_000 });
+
+    await card.getByTestId('convert-open').click();
+    const cmodal = owner2.page.getByTestId('convert-modal');
+    await expect(cmodal).toBeVisible();
+    // Select the Monthly plan by reading its option value (labels carry price).
+    const monthlyValue = await cmodal
+      .locator('[data-testid="convert-plan"] option', { hasText: PLAN_NAME })
+      .first()
+      .getAttribute('value');
+    expect(monthlyValue, `a "${PLAN_NAME}" plan option should exist`).toBeTruthy();
+    await cmodal.getByTestId('convert-plan').selectOption(monthlyValue!);
+    await cmodal.getByTestId('convert-confirm').click();
+
+    await expect(
+      owner2.page.locator('[data-sonner-toast]').filter({ hasText: /converted/i }).first(),
+      'convert should succeed (atomic profile+student+membership+invoice)',
+    ).toBeVisible({ timeout: 20_000 });
+
+    // The converted card shows the simulated login-invite + the membership invoice
+    // (Monthly $50 + 11% Lebanese TVA = $55.50, computed by the invoice trigger).
+    const convertedCard = owner2.page.locator(`[data-testid="lead-card"][data-lead-name="${STAFF_NAME}"]:visible`).first();
+    await expect(convertedCard.getByTestId('invite-badge'), 'a simulated login-invite state must be visible in admin').toBeVisible({ timeout: 15_000 });
+    await expect(convertedCard.getByTestId('convert-result'), 'the membership invoice (TVA total) should surface').toContainText('$55.50');
+    await shot(owner2.page, testInfo, 'leads-5-converted');
+
+    // ── T6 — the new member surfaces on the admin students roster ─────────────
+    await owner2.page.goto(`/en/students?search=${encodeURIComponent(STAFF_FIRST)}`);
+    await expect(
+      owner2.page.getByText(STAFF_FIRST).first(),
+      'the converted lead should now be a real student on the admin roster (propagation)',
+    ).toBeVisible({ timeout: 15_000 });
+    await shot(owner2.page, testInfo, 'leads-6-roster');
+  } finally {
+    await owner2.ctx.close();
+  }
+});

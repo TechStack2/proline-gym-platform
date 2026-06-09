@@ -2160,41 +2160,108 @@ export type Database = {
           },
         ]
       }
+      account_invites: {
+        Row: {
+          channel: string
+          created_at: string
+          gym_id: string
+          id: string
+          profile_id: string
+          provider: string
+          status: string
+          student_id: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          gym_id: string
+          id?: string
+          profile_id: string
+          provider?: string
+          status?: string
+          student_id?: string | null
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          gym_id?: string
+          id?: string
+          profile_id?: string
+          provider?: string
+          status?: string
+          student_id?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_invites_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_invites_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trial_classes: {
         Row: {
-          class_id: string
+          assigned_coach_id: string | null
+          class_id: string | null
           created_at: string
           feedback: string | null
           id: string
           lead_id: string
           scheduled_date: string
+          scheduled_time: string | null
           show_up: boolean | null
           status: Database["public"]["Enums"]["trial_status_enum"]
           updated_at: string
         }
         Insert: {
-          class_id: string
+          assigned_coach_id?: string | null
+          class_id?: string | null
           created_at?: string
           feedback?: string | null
           id?: string
           lead_id: string
           scheduled_date: string
+          scheduled_time?: string | null
           show_up?: boolean | null
           status?: Database["public"]["Enums"]["trial_status_enum"]
           updated_at?: string
         }
         Update: {
-          class_id?: string
+          assigned_coach_id?: string | null
+          class_id?: string | null
           created_at?: string
           feedback?: string | null
           id?: string
           lead_id?: string
           scheduled_date?: string
+          scheduled_time?: string | null
           show_up?: boolean | null
           status?: Database["public"]["Enums"]["trial_status_enum"]
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "trial_classes_assigned_coach_id_fkey"
+            columns: ["assigned_coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trial_classes_class_id_fkey"
             columns: ["class_id"]
@@ -2329,11 +2396,61 @@ export type Database = {
       submit_public_lead: {
         Args: {
           p_first_name: string
-          p_notes?: string
           p_phone: string
           p_source?: string
+          p_notes?: string
+          p_last_name?: string
+          p_email?: string
+          p_program?: string
         }
         Returns: string
+      }
+      schedule_trial: {
+        Args: {
+          p_lead_id: string
+          p_scheduled_date: string
+          p_scheduled_time: string | null
+          p_coach_id: string | null
+        }
+        Returns: Database["public"]["Tables"]["trial_classes"]["Row"]
+      }
+      record_trial_outcome: {
+        Args: {
+          p_trial_id: string
+          p_status: Database["public"]["Enums"]["trial_status_enum"]
+          p_show_up: boolean
+          p_feedback: string | null
+        }
+        Returns: Database["public"]["Tables"]["trial_classes"]["Row"]
+      }
+      convert_lead_to_member: {
+        Args: { p_lead_id: string; p_plan_id: string }
+        Returns: {
+          student_id: string
+          profile_id: string
+          membership_id: string
+          invoice_id: string
+          invoice_number: string
+          total_usd: number
+        }[]
+      }
+      get_coach_trials: {
+        Args: never
+        Returns: {
+          id: string
+          lead_id: string
+          lead_name: string
+          lead_phone: string | null
+          scheduled_date: string
+          scheduled_time: string | null
+          status: Database["public"]["Enums"]["trial_status_enum"]
+          show_up: boolean | null
+          feedback: string | null
+        }[]
+      }
+      member_phone_exists: {
+        Args: { p_phone: string }
+        Returns: boolean
       }
     }
     Enums: {

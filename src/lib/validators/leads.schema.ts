@@ -11,7 +11,8 @@ export const leadInsertSchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   source: z.string().min(1, 'Source is required'),
-  discipline_id: z.string().uuid('Invalid discipline ID'),
+  // Optional: a walk-in / phone enquiry may not have picked a discipline yet.
+  discipline_id: z.string().uuid('Invalid discipline ID').optional().or(z.literal('')),
   notes: z.string().optional(),
 });
 

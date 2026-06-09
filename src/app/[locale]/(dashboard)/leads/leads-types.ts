@@ -37,6 +37,54 @@ export interface Discipline {
   name_fr: string;
 }
 
+export interface GymCoach {
+  id: string;
+  first_name_ar: string;
+  first_name_en: string;
+  first_name_fr: string;
+}
+
+export interface MembershipPlan {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  name_fr: string;
+  duration_days: number;
+  price_usd: number;
+}
+
+/** A scheduled trial surfaced on the lead card. */
+export interface TrialInfo {
+  id: string;
+  lead_id: string;
+  scheduled_date: string;
+  scheduled_time: string | null;
+  assigned_coach_id: string | null;
+  status: 'scheduled' | 'completed' | 'no_show' | 'cancelled';
+  show_up: boolean | null;
+}
+
+/** Simulated login-invite state for a converted member. */
+export interface InviteInfo {
+  student_id: string;
+  status: string;
+  channel: string;
+}
+
+/** Lead source channels for the staff "Add Lead" form (DB CHECK on leads.source). */
+export const LEAD_SOURCES = [
+  'walk_in',
+  'phone',
+  'instagram',
+  'facebook',
+  'whatsapp',
+  'referral',
+  'website',
+  'other',
+] as const;
+
+export type LeadSource = (typeof LEAD_SOURCES)[number];
+
 export const LEAD_STATUSES: readonly LeadStatus[] = [
   'new',
   'contacted',
@@ -69,4 +117,6 @@ export const SOURCE_ICONS: Record<string, string> = {
   website: '🌐',
   phone: '📞',
   walk_in: '🚶',
+  referral: '🤝',
+  other: '📋',
 };

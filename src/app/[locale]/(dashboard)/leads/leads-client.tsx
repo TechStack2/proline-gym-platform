@@ -1,20 +1,30 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Phone, Mail, Calendar, Search } from 'lucide-react';
+import {
+  Phone, Mail, Calendar, Search, Plus, KeyRound, CheckCircle2, XCircle, X, UserCheck,
+} from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
-import type { Lead, LeadStatus, Discipline, StatusFilter } from './leads-types';
-import { LEAD_STATUSES } from './leads-types';
+import type {
+  Lead, LeadStatus, Discipline, StatusFilter, GymCoach, MembershipPlan, TrialInfo, InviteInfo, LeadSource,
+} from './leads-types';
+import { LEAD_STATUSES, LEAD_SOURCES } from './leads-types';
 import { leadStatusUpdateSchema } from '@/lib/validators/leads.schema';
+import { addLead, scheduleTrial, recordTrialOutcome, convertLead } from './actions';
 
 type Props = {
   leads: Lead[];
   disciplines: Discipline[];
+  coaches: GymCoach[];
+  plans: MembershipPlan[];
+  trials: TrialInfo[];
+  invites: InviteInfo[];
   gymId: string;
   locale: string;
   statusColors: Record<string, string>;
@@ -30,15 +40,24 @@ const TRANSLATED_STATUS_MAP = {
   lost: 'status.lost',
 } as const satisfies Record<LeadStatus, string>;
 
+const TIME_SLOTS = ['09:00', '10:00', '11:00', '16:00', '17:00', '18:00', '19:00'];
+
+type ConvertResult = { invoiceNumber: string; totalUsd: number; inviteStatus: string };
+
 export function LeadsClient({
   leads: initialLeads,
   disciplines,
+  coaches,
+  plans,
+  trials,
+  invites,
   gymId,
   locale,
   statusColors,
   sourceIcons,
 }: Props) {
   const t = useTranslations('leads');
+  const router = useRouter();
   const supabase = createClient();
   const isRTL = locale === 'ar';
 
@@ -46,35 +65,47 @@ export function LeadsClient({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [expandedLead, setExpandedLead] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [convertLeadId, setConvertLeadId] = useState<string | null>(null);
+  const [convertResult, setConvertResult] = useState<Record<string, ConvertResult>>({});
 
   const debouncedSearch = useDebounce(search, 300);
   const prevDebouncedSearch = useRef(debouncedSearch);
   const prevStatusFilter = useRef(statusFilter);
   const isInitialMount = useRef(true);
 
-  // Sync initialLeads when server re-fetches (e.g., URL search params change)
   useEffect(() => {
     setLeads(initialLeads);
   }, [initialLeads]);
 
+  // Index trials + invites for quick per-lead lookup.
+  const trialByLead = useMemo(() => {
+    const m = new Map<string, TrialInfo>();
+    // `trials` is ordered by scheduled_date DESC → first seen is the latest.
+    for (const tr of trials) if (!m.has(tr.lead_id)) m.set(tr.lead_id, tr);
+    return m;
+  }, [trials]);
+
+  const inviteByStudent = useMemo(() => {
+    const m = new Map<string, InviteInfo>();
+    for (const inv of invites) m.set(inv.student_id, inv);
+    return m;
+  }, [invites]);
+
   // Debounced server-side search with .ilike()
   useEffect(() => {
-    // Skip the initial mount fetch — data already comes from the server
     if (isInitialMount.current) {
       isInitialMount.current = false;
       prevDebouncedSearch.current = debouncedSearch;
       prevStatusFilter.current = statusFilter;
       return;
     }
-
-    // Skip if nothing changed
     if (
       debouncedSearch === prevDebouncedSearch.current &&
       statusFilter === prevStatusFilter.current
     ) {
       return;
     }
-
     prevDebouncedSearch.current = debouncedSearch;
     prevStatusFilter.current = statusFilter;
 
@@ -84,76 +115,45 @@ export function LeadsClient({
         .select('*')
         .eq('gym_id', gymId)
         .order('created_at', { ascending: false });
-
       if (debouncedSearch) {
         const term = `%${debouncedSearch}%`;
         query = query.or(
           `first_name.ilike.${term},last_name.ilike.${term},phone.ilike.${term},email.ilike.${term}`,
         );
       }
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
+      if (statusFilter !== 'all') query = query.eq('status', statusFilter);
       const { data } = await query;
       if (data) setLeads(data as Lead[]);
     }
-
     fetchFiltered();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, statusFilter]);
 
-  // ── Status change with optimistic UI, try/catch, toast, single .update() ──
+  // ── Status change (optimistic, single .update) ──
   const handleStatusChange = useCallback(
     async (leadId: string, newStatus: LeadStatus) => {
-      // Zod validation before proceeding
       const statusPayload = {
         id: leadId,
         status: newStatus,
-        converted_at:
-          newStatus === 'converted' ? new Date().toISOString() : undefined,
+        converted_at: newStatus === 'converted' ? new Date().toISOString() : undefined,
       };
-
       const parsed = leadStatusUpdateSchema.safeParse(statusPayload);
       if (!parsed.success) {
-        const firstIssue = parsed.error.issues[0];
-        toast.error(firstIssue?.message || t('toast.status_error'));
+        toast.error(parsed.error.issues[0]?.message || t('toast.status_error'));
         return;
       }
-
       const previousLeads = [...leads];
-
-      // Optimistic update
       setLeads((prev) =>
-        prev.map((l) => {
-          if (l.id !== leadId) return l;
-          return {
-            ...l,
-            status: newStatus,
-            ...(newStatus === 'converted'
-              ? { converted_at: new Date().toISOString() }
-              : {}),
-          };
-        }),
+        prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)),
       );
-
       try {
-        // Single .update() call — merge converted_at when converting
-        const updateData: Record<string, string> = { status: newStatus };
-        if (newStatus === 'converted') {
-          updateData.converted_at = new Date().toISOString();
-        }
-
         const { error } = await supabase
           .from('leads')
-          .update(updateData)
+          .update({ status: newStatus })
           .eq('id', leadId);
-
         if (error) throw error;
         toast.success(t('toast.status_updated'));
       } catch {
-        // Rollback on error
         setLeads(previousLeads);
         toast.error(t('toast.status_error'));
       }
@@ -161,21 +161,46 @@ export function LeadsClient({
     [leads, supabase, t],
   );
 
-  // Resolve translated status label for display
-  const statusDisplay = (s: LeadStatus): string => {
-    return t(TRANSLATED_STATUS_MAP[s] as Parameters<typeof t>[0]);
+  // ── T2 — assign the lead to the current staffer (persist assigned_to) ──
+  const handleAssignToMe = useCallback(
+    async (leadId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from('leads')
+        .update({ assigned_to: user.id })
+        .eq('id', leadId);
+      if (error) {
+        toast.error(t('toast.assign_error'));
+        return;
+      }
+      setLeads((prev) =>
+        prev.map((l) => (l.id === leadId ? { ...l, assigned_to: user.id } : l)),
+      );
+      toast.success(t('toast.assigned'));
+    },
+    [supabase, t],
+  );
+
+  const statusDisplay = (s: LeadStatus): string =>
+    t(TRANSLATED_STATUS_MAP[s] as Parameters<typeof t>[0]);
+
+  const localizedName = (
+    o: { name_ar: string; name_en: string; name_fr: string } | { first_name_ar: string; first_name_en: string; first_name_fr: string },
+    base: 'name' | 'first_name',
+  ): string => {
+    const rec = o as Record<string, string>;
+    if (isRTL) return rec[`${base}_ar`];
+    if (locale === 'fr') return rec[`${base}_fr`];
+    return rec[`${base}_en`];
   };
 
-  // Resolve discipline name by locale
-  const disciplineName = (disc: Discipline): string => {
-    if (isRTL) return disc.name_ar;
-    if (locale === 'fr') return disc.name_fr;
-    return disc.name_en;
-  };
+  const planLabel = (p: MembershipPlan) =>
+    `${localizedName(p, 'name')} — $${Number(p.price_usd).toFixed(2)} / ${p.duration_days}${t('plan_days')}`;
 
   return (
     <div className="space-y-4">
-      {/* Search + Filter Bar */}
+      {/* Toolbar: search + filter + Add Lead */}
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search
@@ -207,18 +232,36 @@ export function LeadsClient({
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          data-testid="add-lead-button"
+          onClick={() => setAddOpen(true)}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 whitespace-nowrap"
+        >
+          <Plus className="h-4 w-4" />
+          {t('add_lead')}
+        </button>
       </div>
 
       {/* Lead Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {leads.map((lead) => {
-          const disc = disciplines.find(
-            (d) => d.id === lead.interested_discipline_id,
-          );
+          const disc = disciplines.find((d) => d.id === lead.interested_discipline_id);
           const isExpanded = expandedLead === lead.id;
+          const trial = trialByLead.get(lead.id);
+          const invite = lead.converted_student_id
+            ? inviteByStudent.get(lead.converted_student_id)
+            : undefined;
+          const result = convertResult[lead.id];
 
           return (
-            <Card key={lead.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={lead.id}
+              data-testid="lead-card"
+              data-lead-name={`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim()}
+              data-lead-status={lead.status}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardContent className="pt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -226,24 +269,22 @@ export function LeadsClient({
                       {lead.first_name} {lead.last_name}
                     </h3>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-xs">
-                        {sourceIcons[lead.source] || '📋'}
-                      </span>
-                      <span className="text-xs text-gray-400 capitalize">
-                        {lead.source}
+                      <span className="text-xs">{sourceIcons[lead.source] || '📋'}</span>
+                      <span
+                        data-testid="lead-source"
+                        className="text-xs text-gray-400 capitalize"
+                      >
+                        {t(`source.${lead.source}` as Parameters<typeof t>[0])}
                       </span>
                     </div>
                   </div>
-                  {/* Status Dropdown */}
                   <select
                     className={cn(
                       'text-xs px-2 py-1 rounded-full border font-medium',
                       statusColors[lead.status] || 'bg-gray-100',
                     )}
                     value={lead.status}
-                    onChange={(e) =>
-                      handleStatusChange(lead.id, e.target.value as LeadStatus)
-                    }
+                    onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
                   >
                     {LEAD_STATUSES.map((s) => (
                       <option key={s} value={s}>
@@ -257,10 +298,7 @@ export function LeadsClient({
                   {lead.phone && (
                     <div className="flex items-center gap-2 text-gray-600">
                       <Phone className="h-3.5 w-3.5 text-gray-400" />
-                      <a
-                        href={`tel:${lead.phone}`}
-                        className="hover:text-primary-600"
-                      >
+                      <a href={`tel:${lead.phone}`} className="hover:text-primary-600">
                         {lead.phone}
                       </a>
                     </div>
@@ -268,79 +306,82 @@ export function LeadsClient({
                   {lead.email && (
                     <div className="flex items-center gap-2 text-gray-600">
                       <Mail className="h-3.5 w-3.5 text-gray-400" />
-                      <a
-                        href={`mailto:${lead.email}`}
-                        className="hover:text-primary-600 text-xs"
-                      >
+                      <a href={`mailto:${lead.email}`} className="hover:text-primary-600 text-xs">
                         {lead.email}
                       </a>
                     </div>
                   )}
-                  {disc && (
-                    <p className="text-gray-500">{disciplineName(disc)}</p>
+                  {disc && <p className="text-gray-500">{localizedName(disc, 'name')}</p>}
+                  {trial && (
+                    <p className="text-xs text-purple-600 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {t('trial_on')} {trial.scheduled_date}
+                      {trial.scheduled_time ? ` · ${trial.scheduled_time.slice(0, 5)}` : ''}
+                      {trial.status !== 'scheduled' ? ` · ${t(`trial_status.${trial.status}` as Parameters<typeof t>[0])}` : ''}
+                    </p>
                   )}
                 </div>
 
                 {lead.notes && (
-                  <p className="text-xs text-gray-400 italic bg-gray-50 p-2 rounded">
-                    {lead.notes}
-                  </p>
+                  <p className="text-xs text-gray-400 italic bg-gray-50 p-2 rounded">{lead.notes}</p>
+                )}
+
+                {/* Converted: show simulated invite state (T5 provisioning seam) */}
+                {lead.status === 'converted' && (invite || result) && (
+                  <div
+                    data-testid="invite-badge"
+                    className="text-xs flex items-center gap-1.5 bg-green-50 text-green-700 p-2 rounded"
+                  >
+                    <KeyRound className="h-3.5 w-3.5" />
+                    {t('invite_simulated')}
+                    {result && (
+                      <span data-testid="convert-result" className="text-green-800">
+                        · {result.invoiceNumber} · ${result.totalUsd.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-2 border-t">
-                  <button
-                    onClick={() =>
-                      setExpandedLead(isExpanded ? null : lead.id)
-                    }
-                    className="flex-1 h-8 text-xs border rounded-lg hover:bg-gray-50 font-medium"
-                  >
-                    <Calendar className="inline h-3 w-3 mr-1" />
-                    {t('schedule_trial')}
-                  </button>
-                  {lead.status !== 'converted' &&
-                    lead.status !== 'lost' && (
-                      <button
-                        onClick={() =>
-                          handleStatusChange(lead.id, 'converted')
-                        }
-                        className="flex-1 h-8 text-xs bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 font-medium"
-                      >
-                        {t('convert')}
-                      </button>
-                    )}
-                </div>
-
-                {/* Expanded Trial Scheduling */}
-                {isExpanded && (
-                  <div className="pt-2 border-t space-y-2">
-                    <p className="text-xs font-medium text-gray-700">
-                      {t('schedule_trial_session')}
-                    </p>
-                    <div className="flex gap-2">
-                      <input
-                        type="date"
-                        className="flex-1 px-2 py-1 text-xs border rounded"
-                      />
-                      <select className="px-2 py-1 text-xs border rounded">
-                        <option>09:00</option>
-                        <option>10:00</option>
-                        <option>11:00</option>
-                        <option>16:00</option>
-                        <option>17:00</option>
-                        <option>18:00</option>
-                      </select>
-                    </div>
+                {lead.status !== 'converted' && lead.status !== 'lost' && (
+                  <div className="flex flex-wrap gap-2 pt-2 border-t">
                     <button
-                      className="w-full py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                      onClick={() => {
-                        handleStatusChange(lead.id, 'trial_scheduled');
-                        setExpandedLead(null);
-                      }}
+                      onClick={() => setExpandedLead(isExpanded ? null : lead.id)}
+                      className="flex-1 h-8 text-xs border rounded-lg hover:bg-gray-50 font-medium"
                     >
-                      {t('confirm_trial')}
+                      <Calendar className="inline h-3 w-3 mr-1" />
+                      {t('schedule_trial')}
+                    </button>
+                    <button
+                      data-testid="convert-open"
+                      onClick={() => setConvertLeadId(lead.id)}
+                      className="flex-1 h-8 text-xs bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 font-medium"
+                    >
+                      {t('convert')}
+                    </button>
+                    <button
+                      onClick={() => handleAssignToMe(lead.id)}
+                      title={t('assign_to_me')}
+                      className="h-8 px-2 text-xs border rounded-lg hover:bg-gray-50"
+                    >
+                      <UserCheck className="inline h-3.5 w-3.5" />
                     </button>
                   </div>
+                )}
+
+                {/* Trial scheduling + outcome (T3/T4) */}
+                {isExpanded && lead.status !== 'converted' && lead.status !== 'lost' && (
+                  <TrialPanel
+                    lead={lead}
+                    coaches={coaches}
+                    trial={trial}
+                    locale={locale}
+                    isRTL={isRTL}
+                    onDone={() => {
+                      setExpandedLead(null);
+                      router.refresh();
+                    }}
+                  />
                 )}
               </CardContent>
             </Card>
@@ -354,6 +395,411 @@ export function LeadsClient({
           <p className="text-gray-500">{t('no_leads_found')}</p>
         </div>
       )}
+
+      {addOpen && (
+        <AddLeadModal
+          disciplines={disciplines}
+          locale={locale}
+          isRTL={isRTL}
+          onClose={() => setAddOpen(false)}
+          onCreated={() => {
+            setAddOpen(false);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {convertLeadId && (
+        <ConvertModal
+          lead={leads.find((l) => l.id === convertLeadId)!}
+          plans={plans}
+          locale={locale}
+          isRTL={isRTL}
+          planLabel={planLabel}
+          onClose={() => setConvertLeadId(null)}
+          onConverted={(res) => {
+            setConvertResult((prev) => ({ ...prev, [convertLeadId]: res }));
+            setConvertLeadId(null);
+            router.refresh();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trial scheduling + outcome panel (T3/T4)
+// ─────────────────────────────────────────────────────────────────────────────
+function TrialPanel({
+  lead, coaches, trial, isRTL, onDone,
+}: {
+  lead: Lead;
+  coaches: GymCoach[];
+  trial?: TrialInfo;
+  locale: string;
+  isRTL: boolean;
+  onDone: () => void;
+}) {
+  const t = useTranslations('leads');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState(TIME_SLOTS[0]);
+  const [coachId, setCoachId] = useState(coaches[0]?.id ?? '');
+  const [busy, setBusy] = useState(false);
+
+  const coachName = (c: GymCoach) =>
+    isRTL ? c.first_name_ar : c.first_name_en;
+
+  const handleSchedule = async () => {
+    if (!date) {
+      toast.error(t('toast.trial_date_required'));
+      return;
+    }
+    setBusy(true);
+    const res = await scheduleTrial({
+      leadId: lead.id,
+      scheduledDate: date,
+      scheduledTime: time,
+      coachId,
+    });
+    setBusy(false);
+    if (res.ok) {
+      toast.success(t('toast.trial_scheduled'));
+      onDone();
+    } else {
+      toast.error(`${t('toast.trial_error')}: ${res.error}`);
+    }
+  };
+
+  const handleOutcome = async (status: 'completed' | 'no_show', showUp: boolean) => {
+    if (!trial) return;
+    setBusy(true);
+    const res = await recordTrialOutcome({ trialId: trial.id, status, showUp });
+    setBusy(false);
+    if (res.ok) {
+      toast.success(t('toast.outcome_recorded'));
+      onDone();
+    } else {
+      toast.error(`${t('toast.outcome_error')}: ${res.error}`);
+    }
+  };
+
+  return (
+    <div className="pt-2 border-t space-y-2">
+      {/* Record outcome if a trial is already scheduled */}
+      {trial && trial.status === 'scheduled' ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-700">{t('record_outcome')}</p>
+          <div className="flex gap-2">
+            <button
+              data-testid="trial-show"
+              disabled={busy}
+              onClick={() => handleOutcome('completed', true)}
+              className="flex-1 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              <CheckCircle2 className="inline h-3.5 w-3.5 mr-1" />
+              {t('mark_show')}
+            </button>
+            <button
+              data-testid="trial-noshow"
+              disabled={busy}
+              onClick={() => handleOutcome('no_show', false)}
+              className="flex-1 py-1.5 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50"
+            >
+              <XCircle className="inline h-3.5 w-3.5 mr-1" />
+              {t('mark_no_show')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-700">{t('schedule_trial_session')}</p>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              data-testid="trial-date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="flex-1 px-2 py-1 text-xs border rounded"
+            />
+            <select
+              data-testid="trial-time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="px-2 py-1 text-xs border rounded"
+            >
+              {TIME_SLOTS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <select
+            data-testid="trial-coach"
+            value={coachId}
+            onChange={(e) => setCoachId(e.target.value)}
+            className="w-full px-2 py-1 text-xs border rounded"
+          >
+            <option value="">{t('select_coach')}</option>
+            {coaches.map((c) => (
+              <option key={c.id} value={c.id}>{coachName(c)}</option>
+            ))}
+          </select>
+          <button
+            data-testid="trial-confirm"
+            disabled={busy}
+            onClick={handleSchedule}
+            className="w-full py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            {t('confirm_trial')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Add Lead modal (T1b — staff-manual origination)
+// ─────────────────────────────────────────────────────────────────────────────
+function AddLeadModal({
+  disciplines, isRTL, onClose, onCreated,
+}: {
+  disciplines: Discipline[];
+  locale: string;
+  isRTL: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const t = useTranslations('leads');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [source, setSource] = useState<LeadSource>('walk_in');
+  const [sourceDetail, setSourceDetail] = useState('');
+  const [disciplineId, setDisciplineId] = useState('');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const disciplineName = (d: Discipline) =>
+    isRTL ? d.name_ar : d.name_en;
+
+  const handleSubmit = async () => {
+    if (!firstName || !lastName || !phone) {
+      toast.error(t('toast.required_fields'));
+      return;
+    }
+    setBusy(true);
+    const res = await addLead({
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      email,
+      source,
+      source_detail: sourceDetail,
+      discipline_id: disciplineId,
+      notes,
+    });
+    setBusy(false);
+    if (res.ok) {
+      toast.success(t('toast.lead_added'));
+      onCreated();
+    } else {
+      toast.error(`${t('toast.add_error')}: ${res.error}`);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div
+        data-testid="add-lead-modal"
+        dir={isRTL ? 'rtl' : 'ltr'}
+        className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className={cn('text-lg font-bold', isRTL && 'font-arabic')}>{t('add_lead')}</h2>
+          <button onClick={onClose} aria-label="close"><X className="h-5 w-5 text-gray-400" /></button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('field.first_name')}>
+            <input data-testid="lead-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="modal-input" />
+          </Field>
+          <Field label={t('field.last_name')}>
+            <input data-testid="lead-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="modal-input" />
+          </Field>
+        </div>
+        <Field label={t('field.phone')}>
+          <input data-testid="lead-phone" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="modal-input" />
+        </Field>
+        <Field label={t('field.email')}>
+          <input data-testid="lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className="modal-input" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('field.source')}>
+            <select data-testid="lead-source-select" value={source} onChange={(e) => setSource(e.target.value as LeadSource)} className="modal-input">
+              {LEAD_SOURCES.map((s) => (
+                <option key={s} value={s}>{t(`source.${s}` as Parameters<typeof t>[0])}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t('field.source_detail')}>
+            <input data-testid="lead-source-detail" value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} className="modal-input" />
+          </Field>
+        </div>
+        <Field label={t('field.discipline')}>
+          <select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="modal-input">
+            <option value="">{t('field.no_discipline')}</option>
+            {disciplines.map((d) => (
+              <option key={d.id} value={d.id}>{disciplineName(d)}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label={t('field.notes')}>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="modal-input" />
+        </Field>
+
+        <div className="flex gap-2 pt-2">
+          <button onClick={onClose} className="flex-1 py-2 text-sm border rounded-lg hover:bg-gray-50">
+            {t('cancel')}
+          </button>
+          <button
+            data-testid="add-lead-submit"
+            disabled={busy}
+            onClick={handleSubmit}
+            className="flex-1 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            {t('save_lead')}
+          </button>
+        </div>
+      </div>
+      <style jsx>{`
+        .modal-input {
+          width: 100%;
+          border: 1px solid #e5e7eb;
+          border-radius: 0.5rem;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.875rem;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-xs font-medium text-gray-600">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Convert modal (T5 — plan picker + soft duplicate-phone warning)
+// ─────────────────────────────────────────────────────────────────────────────
+function ConvertModal({
+  lead, plans, isRTL, planLabel, onClose, onConverted,
+}: {
+  lead: Lead;
+  plans: MembershipPlan[];
+  locale: string;
+  isRTL: boolean;
+  planLabel: (p: MembershipPlan) => string;
+  onClose: () => void;
+  onConverted: (res: ConvertResult) => void;
+}) {
+  const t = useTranslations('leads');
+  const supabase = createClient();
+  const [planId, setPlanId] = useState(plans[0]?.id ?? '');
+  const [busy, setBusy] = useState(false);
+  const [dupWarning, setDupWarning] = useState(false);
+
+  // Soft duplicate-phone warning (no hard block).
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!lead.phone) return;
+      const { data } = await supabase.rpc('member_phone_exists', { p_phone: lead.phone });
+      if (active && data === true) setDupWarning(true);
+    })();
+    return () => { active = false; };
+  }, [lead.phone, supabase]);
+
+  const handleConvert = async () => {
+    if (!planId) {
+      toast.error(t('toast.plan_required'));
+      return;
+    }
+    setBusy(true);
+    const res = await convertLead({ leadId: lead.id, planId });
+    setBusy(false);
+    if (res.ok) {
+      toast.success(t('toast.converted'));
+      onConverted({
+        invoiceNumber: res.invoiceNumber,
+        totalUsd: res.totalUsd,
+        inviteStatus: res.inviteStatus,
+      });
+    } else {
+      toast.error(`${t('toast.convert_error')}: ${res.error}`);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div
+        data-testid="convert-modal"
+        dir={isRTL ? 'rtl' : 'ltr'}
+        className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-4"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className={cn('text-lg font-bold', isRTL && 'font-arabic')}>
+            {t('convert_title')}
+          </h2>
+          <button onClick={onClose} aria-label="close"><X className="h-5 w-5 text-gray-400" /></button>
+        </div>
+
+        <p className="text-sm text-gray-500">
+          {t('convert_subtitle', { name: `${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() })}
+        </p>
+
+        {dupWarning && (
+          <div data-testid="dup-phone-warning" className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg p-2">
+            ⚠️ {t('dup_phone_warning')}
+          </div>
+        )}
+
+        <Field label={t('select_plan')}>
+          <select
+            data-testid="convert-plan"
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm"
+          >
+            {plans.length === 0 && <option value="">{t('no_plans')}</option>}
+            {plans.map((p) => (
+              <option key={p.id} value={p.id}>{planLabel(p)}</option>
+            ))}
+          </select>
+        </Field>
+
+        <p className="text-xs text-gray-400">{t('convert_note')}</p>
+
+        <div className="flex gap-2 pt-2">
+          <button onClick={onClose} className="flex-1 py-2 text-sm border rounded-lg hover:bg-gray-50">
+            {t('cancel')}
+          </button>
+          <button
+            data-testid="convert-confirm"
+            disabled={busy || !planId}
+            onClick={handleConvert}
+            className="flex-1 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {t('convert_confirm')}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

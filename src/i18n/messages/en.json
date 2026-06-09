@@ -48,7 +48,8 @@
     "billing": "Billing",
     "coaches": "Coaches",
     "belts": "Belts",
-    "disciplines": "Disciplines"
+    "disciplines": "Disciplines",
+    "trials": "Trials"
   },
   "common": {
     "save": "Save",
@@ -566,7 +567,65 @@
     },
     "toast": {
       "status_updated": "Lead status updated successfully",
-      "status_error": "Failed to update lead status"
+      "status_error": "Failed to update lead status",
+      "assigned": "Lead assigned to you",
+      "assign_error": "Failed to assign lead",
+      "trial_scheduled": "Trial scheduled",
+      "trial_error": "Failed to schedule trial",
+      "trial_date_required": "Pick a date",
+      "outcome_recorded": "Outcome recorded",
+      "outcome_error": "Failed to record outcome",
+      "required_fields": "Name and phone are required",
+      "lead_added": "Lead added",
+      "add_error": "Failed to add lead",
+      "converted": "Lead converted to member",
+      "convert_error": "Failed to convert",
+      "plan_required": "Select a plan"
+    },
+    "add_lead": "Add Lead",
+    "save_lead": "Save Lead",
+    "cancel": "Cancel",
+    "plan_days": "d",
+    "trial_on": "Trial:",
+    "record_outcome": "Record trial outcome",
+    "mark_show": "Showed up",
+    "mark_no_show": "No-show",
+    "select_coach": "Select a coach",
+    "assign_to_me": "Assign to me",
+    "invite_simulated": "Login invite sent (simulated)",
+    "convert_title": "Convert to member",
+    "convert_subtitle": "Create a member account for {name} with an active membership and first invoice.",
+    "convert_note": "This creates a profile, student, membership and a first invoice atomically. A login invite is simulated (no message sent).",
+    "select_plan": "Membership plan",
+    "no_plans": "No active plans",
+    "convert_confirm": "Convert",
+    "dup_phone_warning": "A member with this phone already exists. You can still proceed.",
+    "trial_status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "no_show": "No-show",
+      "cancelled": "Cancelled"
+    },
+    "source": {
+      "walk_in": "Walk-in",
+      "phone": "Phone",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "whatsapp": "WhatsApp",
+      "referral": "Referral",
+      "website": "Website",
+      "other": "Other"
+    },
+    "field": {
+      "first_name": "First name",
+      "last_name": "Last name",
+      "phone": "Phone",
+      "email": "Email",
+      "source": "Source",
+      "source_detail": "Source detail",
+      "discipline": "Interested discipline",
+      "notes": "Notes",
+      "no_discipline": "— None —"
     }
   },
   "camps": {
@@ -902,7 +961,7 @@
       },
       "trial_scheduled": {
         "title": "Trial class scheduled",
-        "body": "Your trial class is scheduled for {date}"
+        "body": "Trial with {leadName} on {date} at {time}"
       },
       "lead_converted": {
         "title": "Welcome to {gymName}",
@@ -992,5 +1051,10 @@
     "profile": {
       "role_label": "Coach"
     }
+  },
+  "coachTrials": {
+    "title": "Trials",
+    "empty": "No trials assigned yet",
+    "unnamed": "Lead"
   }
 }

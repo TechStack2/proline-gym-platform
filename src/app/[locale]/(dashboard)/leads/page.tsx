@@ -3,7 +3,14 @@ import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { LeadsClient } from './leads-client';
-import type { Lead, Discipline } from './leads-types';
+import type {
+  Lead,
+  Discipline,
+  GymCoach,
+  MembershipPlan,
+  TrialInfo,
+  InviteInfo,
+} from './leads-types';
 import { COUNTABLE_STATUSES, STATUS_COLORS, SOURCE_ICONS } from './leads-types';
 
 type Props = {
@@ -79,6 +86,30 @@ export default async function LeadsPage({ params, searchParams }: Props) {
     .select('id, name_ar, name_en, name_fr')
     .eq('gym_id', gymId);
 
+  // ── Journey data: coaches (trial assignment), active plans (convert picker),
+  //    scheduled trials (lead card), simulated invites (converted members) ──
+  const [coachesRes, plansRes, trialsRes, invitesRes] = await Promise.all([
+    supabase.rpc('get_gym_coaches'),
+    supabase
+      .from('membership_plans')
+      .select('id, name_ar, name_en, name_fr, duration_days, price_usd')
+      .eq('gym_id', gymId)
+      .eq('is_active', true)
+      .order('price_usd', { ascending: true }),
+    // trial_classes RLS (000023) scopes to the lead's gym, so a plain select is
+    // already gym-isolated.
+    supabase
+      .from('trial_classes')
+      .select('id, lead_id, scheduled_date, scheduled_time, assigned_coach_id, status, show_up')
+      .order('scheduled_date', { ascending: false }),
+    supabase.from('account_invites').select('student_id, status, channel'),
+  ]);
+
+  const coaches = (coachesRes.data || []) as GymCoach[];
+  const plans = (plansRes.data || []) as MembershipPlan[];
+  const trials = (trialsRes.data || []) as TrialInfo[];
+  const invites = (invitesRes.data || []) as InviteInfo[];
+
   // ── Stats data prepared for render ────────────────────
   const statsData = [
     { label: t('stats.all'), count: counts.all, color: 'bg-gray-100 text-gray-700' },
@@ -119,6 +150,10 @@ export default async function LeadsPage({ params, searchParams }: Props) {
         <LeadsClient
           leads={(leads || []) as Lead[]}
           disciplines={(disciplines || []) as Discipline[]}
+          coaches={coaches}
+          plans={plans}
+          trials={trials}
+          invites={invites}
           gymId={gymId}
           locale={locale}
           statusColors={STATUS_COLORS}

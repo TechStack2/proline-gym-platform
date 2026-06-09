@@ -48,7 +48,8 @@
     "billing": "الفواتير",
     "coaches": "المدربون",
     "belts": "الأحزمة",
-    "disciplines": "التخصصات"
+    "disciplines": "التخصصات",
+    "trials": "التجارب"
   },
   "common": {
     "save": "حفظ",
@@ -566,7 +567,65 @@
     },
     "toast": {
       "status_updated": "تم تحديث حالة العميل بنجاح",
-      "status_error": "فشل تحديث حالة العميل"
+      "status_error": "فشل تحديث حالة العميل",
+      "assigned": "تم إسناد العميل إليك",
+      "assign_error": "تعذّر الإسناد",
+      "trial_scheduled": "تم جدولة التجربة",
+      "trial_error": "تعذّر جدولة التجربة",
+      "trial_date_required": "اختر تاريخاً",
+      "outcome_recorded": "تم تسجيل النتيجة",
+      "outcome_error": "تعذّر تسجيل النتيجة",
+      "required_fields": "الاسم والهاتف مطلوبان",
+      "lead_added": "تمت إضافة العميل",
+      "add_error": "تعذّرت الإضافة",
+      "converted": "تم تحويل العميل إلى عضو",
+      "convert_error": "تعذّر التحويل",
+      "plan_required": "اختر خطة"
+    },
+    "add_lead": "إضافة عميل محتمل",
+    "save_lead": "حفظ",
+    "cancel": "إلغاء",
+    "plan_days": "ي",
+    "trial_on": "تجربة:",
+    "record_outcome": "تسجيل نتيجة التجربة",
+    "mark_show": "حضر",
+    "mark_no_show": "لم يحضر",
+    "select_coach": "اختر مدرباً",
+    "assign_to_me": "إسناد إليّ",
+    "invite_simulated": "تم إرسال دعوة الدخول (محاكاة)",
+    "convert_title": "تحويل إلى عضو",
+    "convert_subtitle": "إنشاء حساب عضو لـ {name} مع اشتراك فعّال وأول فاتورة.",
+    "convert_note": "يتم إنشاء الملف والطالب والاشتراك وأول فاتورة دفعة واحدة. دعوة الدخول محاكاة (لا يتم إرسال رسالة).",
+    "select_plan": "خطة الاشتراك",
+    "no_plans": "لا توجد خطط فعّالة",
+    "convert_confirm": "تحويل",
+    "dup_phone_warning": "يوجد عضو بهذا الرقم بالفعل. يمكنك المتابعة.",
+    "trial_status": {
+      "scheduled": "مجدولة",
+      "completed": "تمت",
+      "no_show": "لم يحضر",
+      "cancelled": "ملغاة"
+    },
+    "source": {
+      "walk_in": "زيارة",
+      "phone": "هاتف",
+      "instagram": "إنستغرام",
+      "facebook": "فيسبوك",
+      "whatsapp": "واتساب",
+      "referral": "إحالة",
+      "website": "الموقع",
+      "other": "أخرى"
+    },
+    "field": {
+      "first_name": "الاسم الأول",
+      "last_name": "اسم العائلة",
+      "phone": "الهاتف",
+      "email": "البريد الإلكتروني",
+      "source": "المصدر",
+      "source_detail": "تفاصيل المصدر",
+      "discipline": "الرياضة المهتم بها",
+      "notes": "ملاحظات",
+      "no_discipline": "— بدون —"
     }
   },
   "camps": {
@@ -901,8 +960,8 @@
         "body": "تم تسجيل عميل محتمل جديد: {leadName}"
       },
       "trial_scheduled": {
-        "title": "تم تحديد موعد الحصة التجريبية",
-        "body": "حصتك التجريبية محددة بتاريخ {date}"
+        "title": "تم جدولة حصة تجريبية",
+        "body": "تجربة مع {leadName} يوم {date} الساعة {time}"
       },
       "lead_converted": {
         "title": "أهلاً بك في {gymName}",
@@ -992,5 +1051,10 @@
     "profile": {
       "role_label": "مدرب"
     }
+  },
+  "coachTrials": {
+    "title": "التجارب",
+    "empty": "لا توجد تجارب مسندة بعد",
+    "unnamed": "عميل"
   }
 }

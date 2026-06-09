@@ -63,6 +63,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // Lead → Active-Member cross-portal slice (Prompt 23-R): origination both
+      // ways (anon web submit + staff Add Lead) → trial (coach handoff) → atomic
+      // convert → member on roster. Switches roles internally (fresh context per
+      // role from e2e/.auth/*.json + one anon context), so it must NOT pin a
+      // single session.
+      name: 'leads',
+      dependencies: ['setup'],
+      testMatch: /leads\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
       // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
       // SEE the notification on the bell + /notifications page. Opens a fresh
