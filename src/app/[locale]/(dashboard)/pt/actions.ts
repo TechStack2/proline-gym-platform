@@ -108,7 +108,7 @@ export async function approvePtRequest(
       entityType: 'pt_assignment',
       entityId: assignmentId,
       actionUrl: '/portal/pt',
-    });
+    }, supabase);
   }
 
   if (finalCoachId) {
@@ -128,7 +128,7 @@ export async function approvePtRequest(
         entityType: 'pt_assignment',
         entityId: assignmentId,
         actionUrl: '/coach/pt',
-      });
+      }, supabase);
     }
   }
 
