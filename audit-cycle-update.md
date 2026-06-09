@@ -1135,3 +1135,37 @@ The sandbox cannot reach GitHub or cloud, so I could not dispatch the workflows 
 > **E2E CI run ID + URL:** _PENDING — to be filled from the actual `gh run` once 000019 is applied and `e2e.yml` runs._
 
 ### PT slice behavior-green: **PENDING CI** (code complete; `tsc`+build clean; awaiting the GREEN `pt` project in the E2E CI run against cloud, which is the judge).
+
+---
+
+## Cycle 5 / Phase 1 / Prompt 22-R — PT Slice Re-Validation
+
+**Status:** COMPLETE · **PT slice behavior-green: PASS** · E2E **19 passed / 0 failed** against the production build on the coherent cloud DB.
+**E2E CI run:** 27189186582 — https://github.com/TechStack2/proline-gym-platform/actions/runs/27189186582
+**Date:** 2026-06-09
+
+The candidate branch `prompt-22-r-pt-slice` (e2e/pt.spec.ts + 000019 1-session package + testids) was verified, not rebuilt. Two real defects surfaced when run as real logins; both fixed within the PT slice (no broad RLS; the request stays on the `request_pt` definer RPC). Migrations applied to cloud via the Management-API workflow (access token only). `tsc` + `next build` clean.
+
+### 4-step chain (single cross-portal spec `e2e/pt.spec.ts`, all PASS)
+| # | Step | Result |
+|---|------|:--:|
+| 1 | **student@** `/portal/pt` → request "Single PT Session" + coach → `request_pt` → **Requested** badge | ✅ PASS |
+| 2 | **owner@** `/pt` → pending request surfaces (pt_requested → staff) → **approve** → dual-currency invoice auto-created + `pt_approved`/`pt_assigned` emitted | ✅ PASS |
+| 3 | **coach@** `/coach/pt` → roster shows student **1 of 1** → **Log session** → **0 of 1** → button disabled (blocks at 0) | ✅ PASS |
+| 4 | **student@** `/portal/pt` Active + 0 of 1 (state flows back); `/portal/billing` shows the PT invoice **$38.85** ($35 + 11% TVA) | ✅ PASS |
+
+### Defects found + fixes (PT-slice only)
+- **D1 — student "preferred coach" dropdown empty** → `selectOption('Sami')` hung. Cause (confirmed): `coaches` RLS is staff-all + coach-self only (000004); a student can't read `coaches`/`profiles`. **Fix:** `000020_gym_coaches_reader.sql` — `get_gym_coaches()` SECURITY DEFINER reader (id + first names, caller's gym only), wired into `portal/pt/page.tsx`. Same pattern as `get_coach_pt_roster`; no broad policy.
+- **D2 — approve threw "createNotification failed: new row violates RLS for notifications"** (a production Server-Action error). The notifications INSERT policy `(is_staff() AND gym_id=get_user_gym_id() AND recipient_in_gym(...))` is correct and clean (verified all 3 conditions satisfiable; the same action's invoice INSERT — which also needs `is_staff()` — succeeded), yet the staff insert via the helper's client was rejected at runtime. **Fix:** `000021_pt_approval_notifications.sql` — `pt_emit_approved_notifications(p_assignment_id)` SECURITY DEFINER RPC that emits `pt_approved` (student) + `pt_assigned` (coach), gym-authorized internally; `approvePtRequest` calls it (same definer pattern `request_pt` uses for `pt_requested`).
+- **Harness hardening:** scoped staff/coach assertions to `:visible` (the `(dashboard)` layout renders content twice across breakpoints) and added a toast-text capture so a failed approval surfaces its cause.
+
+### Notification recipients + invoice (acceptance #2/#3)
+- `pt_requested` → owner/receptionist only (via `request_pt`); `pt_approved` → the requesting student's profile; `pt_assigned` → the assigned coach's profile (skipped if no coach). All gym-scoped; readable only by the recipient (notifications_select_self).
+- Approval auto-creates a linked `pt_package` invoice, dual-currency, total **$38.85** = $35 + 11% TVA (DB trigger), surfaced in the student's billing.
+- Coach roster credit math: 1 of 1 → log → 0 of 1 → log-session disabled (increment_sessions_used blocks past total).
+
+### Finding for the auditor (affects Prompts 23/24)
+The shared `createNotification` helper, when called from a staff Server Action via the regular Supabase client, was rejected by the notifications INSERT RLS at runtime despite the policy being correct — root cause not fully pinned (search_path re-apply of 000015 and reusing the action's authed client did NOT resolve it; the definer RPC did). **Before Lead/Attendance/Belt flows (23/24) rely on staff `createNotification`, investigate this path** — those flows may need the same definer-RPC treatment.
+
+### Migrations applied to cloud (recorded in ledger)
+000019 (1-session package), 000020 (get_gym_coaches), 000021 (pt_emit_approved_notifications). Re-applied 000015 (recipient_in_gym search_path) — idempotent.
