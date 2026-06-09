@@ -37,8 +37,22 @@ Call **`createNotification` / `createNotificationForRole`** directly from a staf
 - `MISSING_MESSAGE` i18n gaps: `students.cancel/female/gender/male` render as the key (cosmetic).
 - Cloud demo gym has **accumulated test data** (e.g. `E2E <timestamp>` students, multiple pending "Single PT Session" requests) — harmless test residue.
 
+## Cycle-5 / Phase-1 progress (updated 2026-06-09 — strangler model, sequential slices)
+> Strategy changed from a parallel dispatch-mission to **design-first, one sequential vertical slice at a time** (see [`docs/audit/journey-catalog.md`](../journey-catalog.md) — the master registry of ~25 journeys + sequencing). Each journey gets a deep design doc, then ONE coder prompt; merge is FF on origin/main with recovery tags.
+- **A1 Lead → Active-Member — ✅ MERGED** (prompt 23-R; run 27214829204, 22/0). Migrations 000023/000024. Convert RPC + simulated-invite provisioning seam.
+- **B1 Member Activity Loop — ✅ MERGED** (prompt 24-R; run 27219997474, 23/0). Migrations 000025 (atomic `promote_student`) /000026. Eligibility hint (L4), `/portal/progress`, 3 handoffs.
+- **C1 PT Session Delivery — 📐 prompt ready, activating** ([prompt-C1-pt-session-delivery.md](./prompt-C1-pt-session-delivery.md)). Runs after 24-R (now merged); branch `prompt-c1-pt-delivery`.
+- **D1 Billing & Payment — 📐 designed, under re-review** ([journey-billing-and-payment.md](./journey-billing-and-payment.md)); D1 closes Phase 1.
+- **Recovery tags on origin:** `milestone/23R-green`@84a33a6, `milestone/24R-green`@7029083 (+ `backup/pre-2xR-main`). Restore = `git reset --hard milestone/24R-green && git push --force-with-lease`.
+
+### Standing findings to schedule (from 23-R/24-R drag reads)
+- ⚠️ **`notifications.user_id` FKs `auth.users`** → login-less gym-managed members can't receive notifications (relax FK→`profiles`, or provision real logins). Affects D1/C1 + 23-R `lead_converted`.
+- **Admin presentation layer is uniformly DOA** against the real schema: `/invoices` (name/issue_date/embedded-.or()), students search, classes list+detail+enroll (coaches.first_name / *.status non-existent). Each = its own repair slice; interleave when a journey touches it.
+- Coach attendance is **day-of-week scoped, no date picker** (product gap; seed 000026 = test workaround).
+- The `(dashboard)` double-shell `:visible` Playwright tax recurs every slice — a shared helper is overdue.
+
 ## Next step
-Auditor issues **Prompts 23 (Lead → Onboard) + 24 (Enroll/Attend/Progress/Bill) as a parallel `dispatch-mission`** using the proven notification pattern, then **Prompt 25** (Phase-1 integration gate). No new flow work should start until the auditor hands the next prompt.
+Continue the sequential slices: **activate C1** (PT delivery), then **D1** (Billing & Payment) to close Phase 1, then re-score the portals vs [`industry-benchmark.md`](../industry-benchmark.md) and decide Phase-2 entry. No new flow work starts until the auditor hands the next prompt.
 
 ## On resume
 1. Confirm `git status` clean, `git pull` (main = origin/main).

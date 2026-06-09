@@ -39,7 +39,7 @@ A **journey** is an end-to-end flow whose root entity is **created once (usually
 ### B. Engagement & Progression (the member's recurring life)
 | # | Journey | Spine | Portals | Key entities | Bench gap | Phase | Now | Status |
 |---|---|---|---|---|---|:--:|:--:|:--:|
-| B1 | **Member Activity Loop** | enroll → attend → eligibility → promote → see progress | Admin·Coach·Student | class_enrollments, attendance_records, belt_hierarchies, belt_promotions | Visible progress 1→3, attendance 4, assess 1→L4 | 1 | 2 | 🔵 24-R |
+| B1 | **Member Activity Loop** | enroll → attend → eligibility → promote → see progress | Admin·Coach·Student | class_enrollments, attendance_records, belt_hierarchies, belt_promotions | Visible progress 1→3, attendance 4, assess 1→L4 | 1 | 3 | ✅ 24-R (merged, run 27219997474) |
 | B2 | **Self-service booking + waitlist** | member books/cancels within policy; capacity + waitlist **auto-promote & notify-next** | Student·Admin·Coach | class_enrollments(+waitlist), classes(capacity) | Self-book 0/5, waitlist 0/5 | 2 | 0 | ⚪ |
 | B3 | **Family / household** | one parent manages ≥2 children's schedule/attendance/billing/belts | Student(parent)·Admin | guardians, guardian_students | Family 1/5 | 2 | 1 | ⚪ |
 | B4 | **Curriculum & skill assessment** | coach assesses skills → checkpoints → promotion eligibility → member-visible | Coach·Student·Admin | (curriculum—new), belt_hierarchies, belt_promotions | Assessments 1/5, curriculum 0/5 | 3 | 1 | ⚪ |
@@ -47,7 +47,7 @@ A **journey** is an end-to-end flow whose root entity is **created once (usually
 ### C. Service Delivery (Coach)
 | # | Journey | Spine | Portals | Key entities | Bench gap | Phase | Now | Status |
 |---|---|---|---|---|---|:--:|:--:|:--:|
-| C1 | **PT Session Delivery** (seam's other half) | schedule pt_session → deliver → complete (status + decrement) → state-back; **no-show/cancel/refund-credit** | Coach·Student·Admin | pt_sessions, pt_assignments | PT logging 0/5 (22-R partial) | 1/3 | 1 | 🟡 next |
+| C1 | **PT Session Delivery** (seam's other half) | schedule pt_session → deliver → complete (status + decrement) → state-back; **no-show/cancel/refund-credit** | Coach·Student·Admin | pt_sessions, pt_assignments | PT logging 0/5 (22-R partial) | 1/3 | 1 | 📐 prompt ready (activating) |
 | C2 | **Coach daily ops** | unified "today" (classes + PT) → check-in/log; attendance trends | Coach | classes, pt_sessions, attendance_records | Coach trends 1/5 | 3 | 2 | ⚪ |
 | C3 | **Sub / cover management** | coach requests cover → peer accepts → schedule updates + notify | Coach·Admin | classes, class_schedules, (covers—new) | Sub mgmt 0/5 | 3 | 0 | ⚪ |
 | C4 | **Coach ↔ member/parent messaging** | in-app threads on the notification spine | Coach·Student | (threads—new), notifications | Messaging 0/5 | 3 | 0 | ⚪ |
@@ -55,7 +55,7 @@ A **journey** is an end-to-end flow whose root entity is **created once (usually
 ### D. Money & Membership
 | # | Journey | Spine | Portals | Key entities | Bench gap | Phase | Now | Status |
 |---|---|---|---|---|---|:--:|:--:|:--:|
-| D1 | **Billing & Payment** | invoice issued → member pays (cash/OMT/Whish) → record → reconcile → receipt | Admin·Student | invoices, payments, exchange_rates | Billing 4 (record), recon 1/5 | 1/4 | 3 | ⚪ |
+| D1 | **Billing & Payment** | invoice issued → member pays (cash/OMT/Whish) → record → reconcile → receipt | Admin·Student | invoices, payments, exchange_rates | Billing 4 (record), recon 1/5 | 1/4 | 3 | 📐 designed (re-review in progress) |
 | D2 | **Membership lifecycle** | purchase → active → **freeze/pause** → upgrade/downgrade → expire | Admin·Student | student_memberships, membership_plans, invoices | Freeze/upgrade 1/5 | 2/4 | 1 | ⚪ |
 | D3 | **Renewal & Dunning** (cash-model) | expiring → renewal nudge + invoice (consume auto_renew); overdue → reminder | Admin·Student | student_memberships, invoices | Renewal 1/5, dunning 1/5 | 4 | 1 | ⚪ |
 | D4 | **PT package lifecycle** | request → approve → bill → deliver → consume → expire/renew | Student·Admin·Coach | pt_packages, pt_assignments, pt_sessions, invoices | PT 0/5 (22-R did req→approve→bill→roster) | 1/3 | 3 | ⚪ (C1 completes) |
