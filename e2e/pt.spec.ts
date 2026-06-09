@@ -75,14 +75,10 @@ test('PT slice: student request → staff approve+invoice → coach delivers →
     expect(resp?.status() ?? 0, '/pt (staff) should load').toBeLessThan(400);
 
     // The pending request must surface for staff (pt_requested → staff only).
-    await expect(
-      owner.page.getByText(/pending requests/i).first(),
-      'staff should see the Pending requests section (request propagated)',
-    ).toBeVisible({ timeout: 15_000 });
-
-    // Act on the NEWEST pending request for this package (top of the list).
-    const pendingCard = owner.page.locator('[data-testid="pt-pending-request"]').first();
-    await expect(pendingCard, 'a pending request should be visible to staff').toBeVisible();
+    // The (dashboard) layout duplicates content across breakpoints, so scope to
+    // the VISIBLE pending card. Act on the NEWEST (top) for this package.
+    const pendingCard = owner.page.locator('[data-testid="pt-pending-request"]:visible').first();
+    await expect(pendingCard, 'a pending request should be visible to staff (request propagated)').toBeVisible({ timeout: 15_000 });
     await expect(pendingCard, 'the pending request should be for this package').toContainText(PACKAGE_EN);
 
     await pendingCard.locator('select').selectOption({ label: COACH_EN }).catch(() => {});
@@ -105,7 +101,7 @@ test('PT slice: student request → staff approve+invoice → coach delivers →
 
     // Roster row for the approved single-session package. get_coach_pt_roster
     // orders by updated_at DESC → this run's assignment is first.
-    const rosterRow = coach.page.locator(`[data-testid="pt-roster-row"][data-package-en="${PACKAGE_EN}"]`).first();
+    const rosterRow = coach.page.locator(`[data-testid="pt-roster-row"][data-package-en="${PACKAGE_EN}"]:visible`).first();
     await expect(rosterRow, 'the approved student should appear in the coach roster').toBeVisible({ timeout: 15_000 });
     await expect(
       rosterRow.getByText(/1 of 1 sessions remaining/i),
