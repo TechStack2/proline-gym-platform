@@ -108,20 +108,22 @@ test('PT slice: student request → staff approve+invoice → coach delivers →
       rosterRow.getByText(/1 of 1 sessions remaining/i),
       'roster should show full credits (1 of 1) before any session is logged',
     ).toBeVisible();
+    const aid = await rosterRow.getAttribute('data-assignment-id');
+    expect(aid, 'roster row should carry the assignment id').toBeTruthy();
     await shot(coach.page, testInfo, 'pt-3-coach-roster');
 
-    // Log one session → increment_sessions_used decrements remaining 1 → 0.
+    // C1: "Log session" is now log-on-delivery (schedule + complete via the single
+    // credit writer). Completing the only credit auto-completes the assignment, so
+    // the exhausted pack leaves the ACTIVE coach roster.
     await rosterRow.getByRole('button', { name: /log session/i }).click();
     await expect(
-      rosterRow.getByText(/0 of 1 sessions remaining/i),
-      'logging a session should decrement remaining credits to 0',
+      coach.page.locator('[data-sonner-toast]').first(),
+      'logging the session should confirm',
     ).toBeVisible({ timeout: 15_000 });
-
-    // At 0 the button is disabled — the boundary is enforced (cannot over-log).
     await expect(
-      rosterRow.getByRole('button', { name: /log session/i }),
-      'log-session button must be disabled at 0 remaining (blocks past total)',
-    ).toBeDisabled();
+      coach.page.locator(`[data-testid="pt-roster-row"][data-assignment-id="${aid}"]:visible`),
+      'after delivery the exhausted pack auto-completes and leaves the active roster',
+    ).toHaveCount(0, { timeout: 15_000 });
     await shot(coach.page, testInfo, 'pt-3-coach-exhausted');
   } finally {
     await coach.ctx.close();
@@ -133,15 +135,15 @@ test('PT slice: student request → staff approve+invoice → coach delivers →
     const resp = await studentBack.page.goto('/en/portal/pt');
     expect(resp?.status() ?? 0, '/portal/pt should load').toBeLessThan(400);
 
-    // The assignment is now Active and reflects the consumed credit (0 of 1).
+    // The credit was consumed (0 of 1). Under C1 the assignment auto-completes at
+    // 0, so it no longer shows "Active" — assert the consumed-credit state instead.
     const myRequest = studentBack.page
       .locator('[data-testid="pt-my-request"]')
-      .filter({ hasText: 'Active' })
       .filter({ hasText: '0 of 1 sessions remaining' })
       .first();
     await expect(
       myRequest,
-      'the assignment should now show Active with updated credits for the student (state flowed back)',
+      'the assignment should show 0 of 1 remaining for the student (state flowed back)',
     ).toBeVisible({ timeout: 15_000 });
     await shot(studentBack.page, testInfo, 'pt-4-student-active');
 
