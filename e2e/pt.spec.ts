@@ -84,11 +84,12 @@ test('PT slice: student request → staff approve+invoice → coach delivers →
     await pendingCard.locator('select').selectOption({ label: COACH_EN }).catch(() => {});
     await pendingCard.getByRole('button', { name: /^approve$/i }).click();
 
-    await expect(
-      owner.page.getByText(/approved/i).first(),
-      'staff should see the approval confirmation toast',
-    ).toBeVisible({ timeout: 15_000 });
+    // Capture the toast (success or error) so a failed approval surfaces its cause.
+    const toast = owner.page.locator('[data-sonner-toast]');
+    await toast.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+    const toastText = (await toast.allTextContents()).join(' | ');
     await shot(owner.page, testInfo, 'pt-2-owner-approved');
+    expect(toastText, `approval should succeed (toast was: "${toastText}")`).toMatch(/approved|invoiced/i);
   } finally {
     await owner.ctx.close();
   }
