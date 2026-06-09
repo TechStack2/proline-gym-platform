@@ -33,6 +33,10 @@ export async function generateMetadata(props: Omit<Props, 'children'>) {
     },
     description: t('tagline'),
     icons: { icon: '/favicon.ico' },
+    // Prevent in-browser auto-translation (e.g. Chrome) from rewriting text
+    // nodes React owns, which corrupts reconciliation and crashes with
+    // "NotFoundError: Node.removeChild" on client navigations.
+    other: { google: 'notranslate' },
   };
 }
 
@@ -47,7 +51,7 @@ export default async function RootLayout({ children, params }: Props) {
   const isRTL = locale === 'ar';
 
   return (
-    <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'}>
+    <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'} translate="no">
       <body
         className={cn(
           latin.variable,
