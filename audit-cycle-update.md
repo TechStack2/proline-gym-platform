@@ -1265,3 +1265,19 @@ The helper inserted with `.insert(...).select('id').single()`, which makes Postg
 **Gates:** `tsc --noEmit` clean; `npm run build` clean (exit 0, "Compiled successfully"); notifications RLS untouched (read-path/harness only — no migrations, no producer code). Local full run (setup + pt + notifications) **7/7 passed** vs the cloud DB.
 
 **CI (behavior-green gate) on `f2-readpath-harness`:** run **27195909792** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27195909792 — **SUCCESS, 21/21 passed** (full suite incl. both new `notifications` specs: `student@` pt_approved ✅ + `coach@` pt_assigned ✅). NOT merged to main — the orchestrator owns the F2-A integration gate (B's bell assertions re-run on A's producer fix there).
+
+### F2 — Integration gate verdict (orchestrator)
+
+**Reconciled root cause: World C** (A's mechanism, corroborated by B). `createNotification` did `.insert(...).select('id').single()` → PostgREST emits `INSERT … RETURNING`; the INSERT `WITH CHECK` (`is_staff() AND gym_id = get_user_gym_id() AND recipient_in_gym`) passed, but RETURNING the row ALSO requires the **recipient-only SELECT policy** (`notifications_select_self`: `user_id = auth.uid()`), which a staff producer's row (`user_id` = the recipient ≠ the caller) fails → Postgres surfaces `42501 new row violates row-level security policy`. B's independent corroboration (student@ SEES `pt_approved`, coach@ SEES `pt_assigned` on current main) confirms the recipient profile ids were always valid + readable — eliminating World B (bad id) and World A (auth-context loss), consistent with World C.
+
+**Fix (general path; notifications RLS unchanged/not weakened):** `createNotification`/`createNotificationForRole` are now RETURNING-free (client-generated `crypto.randomUUID()` + plain insert, no `.select()`); staff Server Actions call the helper directly with the action's authenticated client + the recipient's `profile_id`. The `000021` definer RPC is superseded (left defined, no longer called); `000022` drops the temporary diagnostic.
+
+**Sanctioned notification pattern for Prompts 23/24:** call `createNotification` / `createNotificationForRole` directly from the staff Server Action (pass the action's authed `supabase` client; recipient = `profile_id`). The `000015` policy (`is_staff() + same-gym + recipient_in_gym`) is the guardrail — no per-flow `SECURITY DEFINER` bypass. **Never add `.select()`/RETURNING to a producer insert** (the helpers are RETURNING-free by contract).
+
+**Other writes at risk:** none — not World A (auth intact; the same action's `is_staff()`-gated invoice insert succeeded). The failure is unique to inserting a row the caller cannot read back (recipient ≠ caller) while requesting RETURNING.
+
+**Integration proof:** merged `f2-readpath-harness` → `f2-producer-fix` → `main`; full E2E **21 passed / 0 failed** on the fixed producer path — B's bell assertions (recipient sees `pt_approved`/`pt_assigned`) green, zero `42501`/`createNotification failed` in the server logs — run **27196640699** (https://github.com/TechStack2/proline-gym-platform/actions/runs/27196640699). `tsc` + `next build` clean.
+
+**Read-path finding (B, non-blocking, for a later prompt):** the live `<NotificationBell>` renders only in the MOBILE dashboard top bar; the desktop `Header.tsx` bell is a static stub; `/portal` and `/coach` top bars have no bell. Recipients reach the live bell at mobile width on `(dashboard)` routes, or the full list via `/notifications` (any viewport, no role gate). Recommend mounting the real bell in the portal/coach top bars + replacing the desktop stub.
+
+**Notification producer path: ROOT-CAUSED + FIXED — yes.**
