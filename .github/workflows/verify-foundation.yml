@@ -156,4 +156,29 @@ jobs:
           where cu.email = 'coach@prolinegym.lb';
           SQL
 
+          echo "===== TEMP: seed_e2e_gym / teardown_e2e_gym validation ====="
+          run_sql "seed e2e gym" <<'SQL'
+          select seed_e2e_gym('e2e-seedcheck') as gym_id;
+          SQL
+          run_sql "seed contents (expect users=4, students=2, classes=1, schedules=7, belts=20, pt=3, invoices=1)" <<'SQL'
+          select
+            (select count(*) from gyms where slug='e2e-seedcheck') as gyms,
+            (select count(*) from auth.users where email like '%+e2e-seedcheck@e2e.local') as users,
+            (select count(*) from students s join gyms g on g.id=s.gym_id where g.slug='e2e-seedcheck') as students,
+            (select count(*) from classes c join gyms g on g.id=c.gym_id where g.slug='e2e-seedcheck') as classes,
+            (select count(*) from class_schedules cs join classes c on c.id=cs.class_id join gyms g on g.id=c.gym_id where g.slug='e2e-seedcheck') as schedules,
+            (select count(*) from belt_hierarchies bh join disciplines d on d.id=bh.discipline_id join gyms g on g.id=d.gym_id where g.slug='e2e-seedcheck') as belts,
+            (select count(*) from pt_packages p join gyms g on g.id=p.gym_id where g.slug='e2e-seedcheck') as pt_packages,
+            (select count(*) from invoices i join gyms g on g.id=i.gym_id where g.slug='e2e-seedcheck') as invoices,
+            (select count(*) from membership_plans mp join gyms g on g.id=mp.gym_id where g.slug='e2e-seedcheck') as plans;
+          SQL
+          run_sql "teardown e2e gym" <<'SQL'
+          select teardown_e2e_gym('e2e-seedcheck');
+          SQL
+          run_sql "teardown residue (expect gyms_left=0, users_left=0, demo_gym_intact=1)" <<'SQL'
+          select
+            (select count(*) from gyms where slug='e2e-seedcheck') as gyms_left,
+            (select count(*) from auth.users where email like '%+e2e-seedcheck@e2e.local') as users_left,
+            (select count(*) from gyms where slug='proline-gym') as demo_gym_intact;
+          SQL
           echo "✅ Verification complete — see BEFORE/AFTER groups above."
