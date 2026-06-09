@@ -74,8 +74,8 @@ e2e.yml run:
 ## 6. Risks & operator dependency
 
 - **Biggest infra slice so far** — touches `e2e.yml` (provision/teardown steps + `SUPABASE_ACCESS_TOKEN` in env), a parameterized seed script, `auth.setup.ts`, `e2e/helpers.ts`, and every spec. Likely to iterate; that's acceptable — it's the investment that stops the 7-run-convergence tax.
-- **Operator dependency:** `SUPABASE_ACCESS_TOKEN` must be exposed to the `e2e.yml` workflow (it already exists as a repo secret — just add it to that job's `env`). No new secret to create. **Confirm this is acceptable** (it grants the e2e job admin DB access for provision/teardown).
-- **X1 is a real (small) production change** — the public-lead gym selector. If you'd rather not touch prod code, the fallback is to keep one e2e gym "newest" via provisioning order, but the slug selector is cleaner and correct.
+- **Operator dependency — RESOLVED (2026-06-10):** **add the existing `SUPABASE_ACCESS_TOKEN` repo secret to the `e2e.yml` job `env`** for provision/teardown (it's a Supabase Management API token; account-wide admin while active; **revoke in the Supabase dashboard once the demo is done** — fully reversible). No new secret.
+- **X1 — RESOLVED:** add the **public-lead gym selector** (small prod change; prod defaults to the demo gym, CI targets the run gym).
 
 ---
 
