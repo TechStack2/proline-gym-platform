@@ -96,8 +96,11 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
   const owner = await contextFor(browser, 'owner');
   try {
     await owner.page.goto('/en/leads');
-    await owner.page.getByTestId('add-lead-button').first().click();
-    const modal = owner.page.getByTestId('add-lead-modal');
+    // The (dashboard) page content renders twice (responsive shells); the hidden
+    // copy's button never becomes actionable, so scope every overlay interaction
+    // to the VISIBLE shell (card-scoped locators are already :visible).
+    await owner.page.locator('[data-testid="add-lead-button"]:visible').first().click();
+    const modal = owner.page.locator('[data-testid="add-lead-modal"]:visible');
     await expect(modal).toBeVisible();
     await modal.getByTestId('lead-first-name').fill(STAFF_FIRST);
     await modal.getByTestId('lead-last-name').fill(STAFF_LAST);
@@ -152,7 +155,7 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await expect(card).toBeVisible({ timeout: 15_000 });
 
     await card.getByTestId('convert-open').click();
-    const cmodal = owner2.page.getByTestId('convert-modal');
+    const cmodal = owner2.page.locator('[data-testid="convert-modal"]:visible');
     await expect(cmodal).toBeVisible();
     // Select the Monthly plan by reading its option value (labels carry price).
     const monthlyValue = await cmodal
