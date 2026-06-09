@@ -2315,6 +2315,10 @@ export type Database = {
           sessions_remaining: number
         }[]
       }
+      f2_diag: {
+        Args: { p_user_id: string; p_gym: string }
+        Returns: Json
+      }
       get_user_gym_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       increment_sessions_used: {

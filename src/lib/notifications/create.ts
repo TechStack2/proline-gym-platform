@@ -78,6 +78,8 @@ export async function createNotification(
     .single();
 
   if (error) {
+    // [F2-A DIAG] surface the raw Postgres error in the server logs.
+    console.error('[F2-A DIAG] createNotification INSERT error:', error.code, error.message, JSON.stringify(error));
     throw new Error(`createNotification failed: ${error.message}`);
   }
   return { id: data.id };

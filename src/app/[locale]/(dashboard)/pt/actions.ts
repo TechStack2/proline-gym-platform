@@ -10,6 +10,7 @@
  * RPC, not here.
  */
 import { createClient } from '@/lib/supabase/server';
+import { createNotification } from '@/lib/notifications/create';
 import { buildPtInvoiceInsert, shouldBillPtPackage } from '@/lib/pt/invoice';
 
 type ActionResult = { ok: true; invoiceId: string | null } | { ok: false; error: string };
@@ -91,15 +92,56 @@ export async function approvePtRequest(
     .eq('id', assignmentId);
   if (updErr) return { ok: false, error: updErr.message };
 
-  // 3) Notify the student (approved) + coach (assigned) via a SECURITY DEFINER
-  //    RPC. The staff notifications INSERT via the regular client is rejected by
-  //    notifications RLS at runtime; the definer RPC emits them safely (same
-  //    pattern request_pt uses for pt_requested). The RPC reads the just-updated
-  //    assignment (coach_id now set), so call it after the update.
-  const { error: notifyErr } = await supabase.rpc('pt_emit_approved_notifications', {
-    p_assignment_id: assignmentId,
-  });
-  if (notifyErr) return { ok: false, error: `notify: ${notifyErr.message}` };
+  // 3) Notify the student (approved) and the coach (assigned).
+  const { data: student } = await supabase
+    .from('students')
+    .select('profile_id')
+    .eq('id', assignment.student_id)
+    .single();
+
+  // [F2-A DIAG] Capture the auth context AS THE AUTHENTICATED ROLE SEES IT,
+  // via the SAME client, immediately before the failing notifications INSERT.
+  if (student?.profile_id) {
+    const { data: diag, error: diagErr } = await supabase.rpc('f2_diag', {
+      p_user_id: student.profile_id,
+      p_gym: gymId,
+    });
+    console.error('[F2-A DIAG] student insert context:', JSON.stringify(diag), 'err:', diagErr?.message ?? null);
+  }
+
+  if (student?.profile_id) {
+    await createNotification({
+      recipientProfileId: student.profile_id,
+      gymId,
+      type: 'pt_approved',
+      titleKey: 'messages.pt_approved.title',
+      bodyKey: 'messages.pt_approved.body',
+      entityType: 'pt_assignment',
+      entityId: assignmentId,
+      actionUrl: '/portal/pt',
+    }, supabase);
+  }
+
+  if (finalCoachId) {
+    const { data: coach } = await supabase
+      .from('coaches')
+      .select('profile_id')
+      .eq('id', finalCoachId)
+      .single();
+    if (coach?.profile_id) {
+      await createNotification({
+        recipientProfileId: coach.profile_id,
+        gymId,
+        type: 'pt_assigned',
+        titleKey: 'messages.pt_assigned.title',
+        bodyKey: 'messages.pt_assigned.body',
+        params: { count: assignment.sessions_total },
+        entityType: 'pt_assignment',
+        entityId: assignmentId,
+        actionUrl: '/coach/pt',
+      }, supabase);
+    }
+  }
 
   return { ok: true, invoiceId };
 }
