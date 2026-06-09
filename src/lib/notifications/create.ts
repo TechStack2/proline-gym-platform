@@ -64,8 +64,13 @@ function buildRow(
  */
 export async function createNotification(
   input: CreateNotificationInput,
+  client?: Awaited<ReturnType<typeof createClient>>,
 ): Promise<{ id: string }> {
-  const supabase = await createClient();
+  // Reuse the caller's authenticated client when provided. Creating a fresh
+  // server client mid-request (e.g. inside a Server Action after the first
+  // client refreshed the auth token) can run unauthenticated → RLS rejects the
+  // staff INSERT. Passing the action's client keeps the auth context.
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
     .from('notifications')
     .insert(buildRow(input.recipientProfileId, input.gymId, input))
@@ -85,8 +90,9 @@ export async function createNotification(
  */
 export async function createNotificationForRole(
   input: CreateNotificationForRoleInput,
+  client?: Awaited<ReturnType<typeof createClient>>,
 ): Promise<{ count: number; recipientIds: string[] }> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
 
   const { data: holders, error: holdersError } = await supabase
     .from('user_roles')

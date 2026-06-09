@@ -39,11 +39,9 @@ export default async function PortalPtPage({ params }: Props) {
       .eq('gym_id', gymId)
       .eq('is_active', true)
       .order('session_count'),
-    supabase
-      .from('coaches')
-      .select('id, profile:profiles(first_name_ar, first_name_en, first_name_fr)')
-      .eq('gym_id', gymId)
-      .eq('is_active', true),
+    // Students can't read `coaches`/`profiles` directly (RLS); use the gym-scoped
+    // SECURITY DEFINER reader so the "preferred coach" dropdown is populated.
+    supabase.rpc('get_gym_coaches'),
   ]);
 
   const { data: assignments } = student
@@ -54,10 +52,10 @@ export default async function PortalPtPage({ params }: Props) {
         .order('requested_at', { ascending: false, nullsFirst: false })
     : { data: [] };
 
-  const coachOptions = (coaches || []).map((c: Record<string, unknown>) => {
-    const p = (Array.isArray(c.profile) ? c.profile[0] : c.profile) as Record<string, unknown> | null;
-    return { id: c.id as string, name: coachName(p, locale) };
-  });
+  const coachOptions = (coaches || []).map((c: Record<string, unknown>) => ({
+    id: c.id as string,
+    name: coachName(c, locale),
+  }));
 
   const t = await getTranslations('pt');
 

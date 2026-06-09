@@ -54,6 +54,14 @@ export default defineConfig({
       testMatch: /student\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/student.json' },
     },
+    {
+      // Cross-portal slice: switches roles internally (opens a fresh context
+      // per role from e2e/.auth/*.json), so it must NOT pin a single session.
+      name: 'pt',
+      dependencies: ['setup'],
+      testMatch: /pt\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

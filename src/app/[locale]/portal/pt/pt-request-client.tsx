@@ -93,7 +93,7 @@ export function PtRequestClient({ packages, coaches, assignments: initial, local
           </h2>
           <div className="space-y-2">
             {assignments.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
+              <div key={a.id} data-testid="pt-my-request" data-package={a.package_id} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
                 <div className="min-w-0">
                   <p className={cn('text-sm font-medium text-gray-900 truncate', isRTL && 'font-arabic')}>
                     {packageName(a.package_id)}
@@ -126,7 +126,7 @@ export function PtRequestClient({ packages, coaches, assignments: initial, local
 
         <div className="grid gap-3 sm:grid-cols-2">
           {packages.map((pkg) => (
-            <div key={pkg.id} className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100 space-y-3">
+            <div key={pkg.id} data-testid="pt-package-card" data-package-name={pkg.name_en} className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <div className="h-9 w-9 rounded-xl bg-[#cd1419]/10 flex items-center justify-center">
