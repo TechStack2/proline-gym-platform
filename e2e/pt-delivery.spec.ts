@@ -127,7 +127,8 @@ test('PT delivery: schedule → complete (E1) → exhausted-block (E2) → resto
     const o = await contextFor(browser, 'owner');
     try {
       await o.page.goto('/en/pt');
-      const row = `[data-testid="pt-restore-row"][data-assignment-id="${assignmentId}"]`;
+      // /pt is a (dashboard) route → content renders twice; scope to the visible shell.
+      const row = `[data-testid="pt-restore-row"][data-assignment-id="${assignmentId}"]:visible`;
       await expect(o.page.locator(row).first(), 'the assignment should appear in the restore panel').toBeVisible({ timeout: 15_000 });
       await expect(o.page.locator(row).first(), 'one credit was consumed').toHaveAttribute('data-used', '1');
 

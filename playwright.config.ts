@@ -83,15 +83,6 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // PT Session Delivery lifecycle (Prompt C1): request→approve→schedule→
-      // complete (the single credit writer) with edge cases E1/E2/E3. Switches
-      // roles internally (fresh context per role); must NOT pin a session.
-      name: 'pt-delivery',
-      dependencies: ['setup'],
-      testMatch: /pt-delivery\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
       // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
       // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
       // SEE the notification on the bell + /notifications page. Opens a fresh
@@ -99,9 +90,22 @@ export default defineConfig({
       // fresh approval has emitted the rows in this run (pt.spec never opens the
       // bell, so they stay unread); the (dashboard) layout's functional bell
       // renders only at the mobile breakpoint, set per-context in the spec.
+      // NB: runs BEFORE pt-delivery so the bell's "latest 5" still surfaces
+      // pt_approved (pt-delivery emits several pt_session_* to the student).
       name: 'notifications',
       dependencies: ['setup', 'pt'],
       testMatch: /notifications\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // PT Session Delivery lifecycle (Prompt C1): request→approve→schedule→
+      // complete (the single credit writer) with edge cases E1/E2/E3. Switches
+      // roles internally (fresh context per role); must NOT pin a session.
+      // Runs LAST: it emits several pt_session_* notifications to the student,
+      // which would otherwise bury pt_approved out of the notifications bell test.
+      name: 'pt-delivery',
+      dependencies: ['setup'],
+      testMatch: /pt-delivery\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],
