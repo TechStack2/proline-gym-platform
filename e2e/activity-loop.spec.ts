@@ -88,8 +88,10 @@ test('Activity loop: enroll → attend (transition-guarded) → atomic promote �
     try {
       const resp = await owner.page.goto(`/en/classes/${classId}`);
       expect(resp?.status() ?? 0, 'class detail page should load (not 404)').toBeLessThan(400);
-      await owner.page.getByTestId('enroll-open').click();
-      const modal = owner.page.getByTestId('enroll-modal');
+      // The (dashboard) layout renders content twice; the hidden shell's controls
+      // never become actionable, so scope every interaction to the VISIBLE shell.
+      await owner.page.locator('[data-testid="enroll-open"]:visible').first().click();
+      const modal = owner.page.locator('[data-testid="enroll-modal"]:visible');
       await expect(modal).toBeVisible();
       await modal.getByTestId('enroll-search').fill(STUDENT_FIRST);
       const row = modal.locator('[data-testid="enroll-student-row"]', { hasText: STUDENT_FIRST }).first();
@@ -141,15 +143,17 @@ test('Activity loop: enroll → attend (transition-guarded) → atomic promote �
     const owner = await contextFor(browser, 'owner');
     try {
       await owner.page.goto('/en/belts');
-      await owner.page.locator('[data-testid="be-student"]').selectOption(await optionValueByText(owner.page, 'be-student', STUDENT_FIRST));
-      await owner.page.locator('[data-testid="be-discipline"]').selectOption(await optionValueByText(owner.page, 'be-discipline', 'Muay Thai'));
-      const currentRank = await owner.page.locator('[data-testid="be-current-rank"]').getAttribute('data-rank');
-      await owner.page.getByTestId('be-next').click(); // step 0 → 1
+      // (dashboard) double-shell → scope every control to the visible copy.
+      await owner.page.locator('[data-testid="be-student"]:visible').selectOption(await optionValueByText(owner.page, 'be-student', STUDENT_FIRST));
+      await owner.page.locator('[data-testid="be-discipline"]:visible').selectOption(await optionValueByText(owner.page, 'be-discipline', 'Muay Thai'));
+      const currentRank = await owner.page.locator('[data-testid="be-current-rank"]').first().getAttribute('data-rank');
+      await owner.page.locator('[data-testid="be-next"]:visible').first().click(); // step 0 → 1
 
       // Pick the immediate next belt (smallest sort_order above current).
-      const next = await owner.page.$$eval(
-        '[data-testid="be-belt"] option[data-rank]',
-        (opts, currentRank) => {
+      // Use a Playwright locator (:visible is not valid CSS for $$eval).
+      const next = await owner.page
+        .locator('[data-testid="be-belt"]:visible option[data-rank]')
+        .evaluateAll((opts, currentRank) => {
           const list = (opts as HTMLOptionElement[]).map((o) => ({
             value: o.value,
             rank: o.getAttribute('data-rank') || '',
@@ -159,23 +163,21 @@ test('Activity loop: enroll → attend (transition-guarded) → atomic promote �
           const curSort = cur ? cur.sort : -1;
           const higher = list.filter((o) => o.sort > curSort).sort((a, b) => a.sort - b.sort);
           return higher.length ? higher[0] : null;
-        },
-        currentRank,
-      );
+        }, currentRank);
       expect(next, 'a next belt above the current rank should exist').toBeTruthy();
       nextRankLabel = (next!.rank || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-      await owner.page.locator('[data-testid="be-belt"]').selectOption(next!.value);
-      await owner.page.locator('[data-testid="be-coach"]').selectOption(await optionValueByText(owner.page, 'be-coach', COACH_EN));
-      await owner.page.getByTestId('be-next').click(); // step 1 → 2 (review)
-      await owner.page.getByTestId('be-confirm').click();
+      await owner.page.locator('[data-testid="be-belt"]:visible').selectOption(next!.value);
+      await owner.page.locator('[data-testid="be-coach"]:visible').selectOption(await optionValueByText(owner.page, 'be-coach', COACH_EN));
+      await owner.page.locator('[data-testid="be-next"]:visible').first().click(); // step 1 → 2 (review)
+      await owner.page.locator('[data-testid="be-confirm"]:visible').first().click();
 
       // On success the wizard resets to step 0 (be-confirm disappears). If the
       // atomic RPC failed, the wizard stays on review → this times out (loudly).
       await expect(
-        owner.page.getByTestId('be-confirm'),
+        owner.page.locator('[data-testid="be-confirm"]:visible'),
         'a successful atomic promotion resets the wizard',
-      ).toBeHidden({ timeout: 20_000 });
+      ).toHaveCount(0, { timeout: 20_000 });
       await shot(owner.page, testInfo, 'al-3-promoted');
     } finally {
       await owner.ctx.close();
