@@ -90,6 +90,17 @@ jobs:
           echo "===== BEFORE: reproduce identity chain ====="
           run_sql "BEFORE reproduce" <<< "$REPRODUCE"
 
+          echo "===== DIAG: ALL notifications policies ====="
+          run_sql "all notifications policies" <<'SQL'
+          select polname,
+                 polcmd,
+                 polpermissive as permissive,
+                 pg_get_expr(polqual, polrelid) as using_expr,
+                 pg_get_expr(polwithcheck, polrelid) as with_check
+          from pg_policy where polrelid='public.notifications'::regclass
+          order by polcmd, polname;
+          SQL
+
           if [ "${DO_APPLY}" != "true" ]; then
             echo "Diagnose-only run (apply=false). Re-run with apply=true once the migration list is confirmed."
             exit 0
