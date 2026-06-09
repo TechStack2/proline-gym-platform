@@ -184,9 +184,13 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await shot(owner2.page, testInfo, 'leads-5-converted');
 
     // ── T6 — the new member surfaces on the admin students roster ─────────────
-    await owner2.page.goto(`/en/students?search=${encodeURIComponent(STAFF_FIRST)}`);
+    // NB: the admin students-page text search filters on EMBEDDED profiles.*
+    // columns via a top-level .or(), which PostgREST does not apply (pre-existing
+    // legacy bug → empty results). Assert against the unfiltered roster instead;
+    // the new member is the newest row and carries the unique run name.
+    await owner2.page.goto('/en/students');
     await expect(
-      owner2.page.locator('h3:visible', { hasText: STAFF_FIRST }).first(),
+      owner2.page.locator('h3:visible', { hasText: STAFF_NAME }).first(),
       'the converted lead should now be a real student on the admin roster (propagation)',
     ).toBeVisible({ timeout: 15_000 });
     await shot(owner2.page, testInfo, 'leads-6-roster');
