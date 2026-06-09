@@ -17,6 +17,11 @@ export const NOTIFICATION_TYPES = [
   'membership_expiring',
   'invoice_overdue',
   'enrollment_confirmed',
+  'pt_session_scheduled',
+  'pt_session_completed',
+  'pt_session_cancelled',
+  'pt_session_no_show',
+  'pt_credits_exhausted',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

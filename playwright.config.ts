@@ -83,6 +83,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PT Session Delivery lifecycle (Prompt C1): request→approve→schedule→
+      // complete (the single credit writer) with edge cases E1/E2/E3. Switches
+      // roles internally (fresh context per role); must NOT pin a session.
+      name: 'pt-delivery',
+      dependencies: ['setup'],
+      testMatch: /pt-delivery\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
       // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
       // SEE the notification on the bell + /notifications page. Opens a fresh

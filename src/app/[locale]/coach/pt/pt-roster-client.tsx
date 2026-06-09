@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { Dumbbell, PlayCircle } from 'lucide-react';
+import { Dumbbell, PlayCircle, CalendarPlus, CheckCircle2, XCircle, Ban } from 'lucide-react';
+import {
+  schedulePtSession, logPtDelivery, completePtSession, cancelOrNoShowPtSession,
+} from './actions';
 
 type RosterRow = {
   assignment_id: string;
@@ -17,51 +20,55 @@ type RosterRow = {
   sessions_remaining: number;
 };
 
-type Props = { roster: RosterRow[]; locale: string };
+type SessionRow = {
+  session_id: string;
+  assignment_id: string | null;
+  student_name: string;
+  package_name_ar: string;
+  package_name_en: string;
+  package_name_fr: string;
+  scheduled_at: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  sessions_total: number | null;
+  sessions_remaining: number | null;
+};
 
-export function CoachPtRosterClient({ roster: initial, locale }: Props) {
+type Props = { roster: RosterRow[]; sessions: SessionRow[]; locale: string };
+
+const STATUS_STYLE: Record<string, string> = {
+  scheduled: 'bg-blue-100 text-blue-700',
+  completed: 'bg-green-100 text-green-700',
+  cancelled: 'bg-gray-100 text-gray-600',
+  no_show: 'bg-red-100 text-red-700',
+};
+
+export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
   const t = useTranslations('pt');
-  const supabase = createClient();
+  const router = useRouter();
   const isRTL = locale === 'ar';
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const [roster, setRoster] = useState(initial);
-  const [processing, setProcessing] = useState<string | null>(null);
+  const pkg = (r: { package_name_ar: string; package_name_en: string; package_name_fr: string }) =>
+    locale === 'ar' ? r.package_name_ar || r.package_name_en
+      : locale === 'fr' ? r.package_name_fr || r.package_name_en
+        : r.package_name_en;
 
-  const pkgName = (r: RosterRow) => {
-    if (locale === 'ar') return r.package_name_ar || r.package_name_en;
-    if (locale === 'fr') return r.package_name_fr || r.package_name_en;
-    return r.package_name_en;
-  };
-
-  const handleLogSession = async (r: RosterRow) => {
-    if (r.sessions_remaining <= 0) return;
-    setProcessing(r.assignment_id);
-    setRoster((prev) =>
-      prev.map((x) => (x.assignment_id === r.assignment_id ? { ...x, sessions_remaining: x.sessions_remaining - 1 } : x)),
-    );
-    try {
-      const { error } = await supabase.rpc('increment_sessions_used', { assignment_id: r.assignment_id });
-      if (error) throw error;
-      toast.success(t('log_session_success'));
-    } catch (err: unknown) {
-      setRoster((prev) =>
-        prev.map((x) => (x.assignment_id === r.assignment_id ? { ...x, sessions_remaining: x.sessions_remaining + 1 } : x)),
-      );
-      toast.error(err instanceof Error ? err.message : t('log_session_error'));
-    } finally {
-      setProcessing(null);
-    }
+  const run = async (key: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
+    setBusy(key);
+    const res = await fn();
+    setBusy(null);
+    if (res.ok) { toast.success(okMsg); router.refresh(); }
+    else toast.error(res.error || t('log_session_error'));
   };
 
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+    <div className={cn('p-4 space-y-5', isRTL && 'rtl')}>
       <div>
-        <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
-          {t('my_pt_students')}
-        </h2>
+        <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>{t('my_pt_students')}</h2>
         <p className="text-sm text-gray-500 mt-0.5">{t('my_pt_students_subtitle')}</p>
       </div>
 
+      {/* Active assignments — schedule or log-on-delivery */}
       {roster.length === 0 ? (
         <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
           <Dumbbell className="mx-auto h-10 w-10 mb-3" />
@@ -70,28 +77,100 @@ export function CoachPtRosterClient({ roster: initial, locale }: Props) {
       ) : (
         <div className="space-y-2">
           {roster.map((r) => (
-            <div key={r.assignment_id} data-testid="pt-roster-row" data-package-en={r.package_name_en} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
+            <div key={r.assignment_id} data-testid="pt-roster-row" data-assignment-id={r.assignment_id} data-package-en={r.package_name_en} data-remaining={r.sessions_remaining} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
               <div className="min-w-0">
-                <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>
-                  {r.student_name}
-                </p>
+                <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>{r.student_name}</p>
                 <p className="text-xs text-gray-500 truncate">
-                  {pkgName(r)} · {t('sessions_remaining', { remaining: r.sessions_remaining, total: r.sessions_total })}
+                  {pkg(r)} · {t('sessions_remaining', { remaining: r.sessions_remaining, total: r.sessions_total })}
                 </p>
               </div>
-              <button
-                type="button"
-                disabled={processing === r.assignment_id || r.sessions_remaining <= 0}
-                onClick={() => handleLogSession(r)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#cd1419]/30 px-3 py-1.5 text-xs font-medium text-[#cd1419] disabled:opacity-40"
-              >
-                <PlayCircle className="h-4 w-4" />
-                {t('log_session')}
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  data-testid="pt-schedule"
+                  disabled={busy !== null || r.sessions_remaining <= 0}
+                  onClick={() => run(`sch-${r.assignment_id}`, () => schedulePtSession({ assignmentId: r.assignment_id }), t('session_scheduled'))}
+                  className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-40"
+                >
+                  <CalendarPlus className="h-3.5 w-3.5" />{t('schedule')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="pt-log"
+                  disabled={busy !== null || r.sessions_remaining <= 0}
+                  onClick={() => run(`log-${r.assignment_id}`, () => logPtDelivery({ assignmentId: r.assignment_id }), t('log_session_success'))}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#cd1419]/30 px-2.5 py-1.5 text-xs font-medium text-[#cd1419] disabled:opacity-40"
+                >
+                  <PlayCircle className="h-3.5 w-3.5" />{t('log_session')}
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Session lifecycle */}
+      <div>
+        <h3 className={cn('text-sm font-bold text-gray-900 mb-2', isRTL && 'font-arabic')}>{t('sessions')}</h3>
+        {sessions.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-6">{t('no_sessions')}</p>
+        ) : (
+          <div className="space-y-2">
+            {sessions.map((s) => (
+              <div key={s.session_id} data-testid="pt-session-row" data-session-id={s.session_id} data-assignment-id={s.assignment_id ?? ''} data-status={s.status} data-remaining={s.sessions_remaining ?? ''} className="rounded-xl bg-white p-3 shadow-sm border border-gray-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>{s.student_name}</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {pkg(s)} · {new Date(s.scheduled_at).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}
+                      {s.sessions_remaining != null ? ` · ${t('sessions_remaining', { remaining: s.sessions_remaining, total: s.sessions_total ?? 0 })}` : ''}
+                    </p>
+                  </div>
+                  <span className={cn('shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium', STATUS_STYLE[s.status])}>
+                    {t(`session_status.${s.status}` as Parameters<typeof t>[0])}
+                  </span>
+                </div>
+                {(s.status === 'scheduled' || s.status === 'completed') && (
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      data-testid="pt-complete"
+                      disabled={busy !== null}
+                      onClick={() => run(`cmp-${s.session_id}`, () => completePtSession({ sessionId: s.session_id }), t('session_completed'))}
+                      className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {s.status === 'completed' ? t('session_status.completed') : t('complete')}
+                    </button>
+                    {s.status === 'scheduled' && (
+                      <>
+                        <button
+                          type="button"
+                          data-testid="pt-noshow"
+                          disabled={busy !== null}
+                          onClick={() => run(`ns-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'no_show' }), t('session_no_show'))}
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-red-50 text-red-700 border border-red-200 px-2 py-1.5 text-xs font-medium disabled:opacity-50"
+                        >
+                          <XCircle className="h-3.5 w-3.5" />{t('no_show')}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="pt-cancel"
+                          disabled={busy !== null}
+                          onClick={() => run(`cn-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'cancelled' }), t('session_cancelled'))}
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-50"
+                        >
+                          <Ban className="h-3.5 w-3.5" />{t('cancel')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

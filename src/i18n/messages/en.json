@@ -702,7 +702,7 @@
     "new_package": "New Package",
     "purchase": "Purchase Package",
     "no_packages": "No PT packages yet",
-    "sessions": "sessions",
+    "sessions": "Sessions",
     "validity": "days validity",
     "name_ar_placeholder": "Name (AR)",
     "name_en": "Name (EN)",
@@ -777,7 +777,27 @@
     "log_session_error": "Could not log the session",
     "my_pt_students": "My PT Students",
     "my_pt_students_subtitle": "Your assigned personal-training students",
-    "no_pt_students": "No PT students assigned yet"
+    "no_pt_students": "No PT students assigned yet",
+    "no_sessions": "No sessions yet",
+    "schedule": "Schedule",
+    "complete": "Complete",
+    "no_show": "No-show",
+    "session_scheduled": "Session scheduled",
+    "session_completed": "Session completed",
+    "session_cancelled": "Session cancelled",
+    "session_no_show": "Marked no-show",
+    "session_status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
+    },
+    "pt_sessions_title": "My PT Sessions",
+    "credits_remaining": "{count} credits left",
+    "restore_panel_title": "Restore PT credits",
+    "restore_credit": "Restore credit",
+    "credit_restored": "Credit restored",
+    "restore_error": "Could not restore credit"
   },
   "rentals": {
     "title": "Coach Rentals",
@@ -868,7 +888,14 @@
       "stripe": "stripe(s)",
       "mo": "mo",
       "classes": "classes"
-    }
+    },
+    "pt_policy_title": "PT Session Policy",
+    "pt_policy_subtitle": "How no-shows and late cancellations affect PT credits.",
+    "pt_no_show_forfeits": "No-show forfeits the credit",
+    "pt_late_cancel_window": "Late-cancel window (hours)",
+    "pt_policy_save": "Save policy",
+    "pt_policy_saved": "PT policy saved",
+    "pt_policy_error": "Could not save policy"
   },
   "reportsDashboard": {
     "title": "Reports",
@@ -990,6 +1017,26 @@
       "enrollment_confirmed": {
         "title": "Enrollment confirmed",
         "body": "You are enrolled in {className}"
+      },
+      "pt_session_scheduled": {
+        "title": "PT session scheduled",
+        "body": "A PT session is scheduled for {date}"
+      },
+      "pt_session_completed": {
+        "title": "PT session completed",
+        "body": "Your PT session has been recorded"
+      },
+      "pt_session_cancelled": {
+        "title": "PT session cancelled",
+        "body": "Your PT session on {date} was cancelled"
+      },
+      "pt_session_no_show": {
+        "title": "PT session missed",
+        "body": "You were marked no-show for {date}"
+      },
+      "pt_credits_exhausted": {
+        "title": "PT credits used up",
+        "body": "All PT sessions in this package have been used"
       }
     }
   },

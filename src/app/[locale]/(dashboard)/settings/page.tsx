@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { SettingsClient } from './_components/settings-client';
+import { PtPolicySettings } from './_components/pt-policy-settings';
 
 type Props = { params: { locale: string } };
 
@@ -66,6 +67,15 @@ export default async function SettingsPage({ params }: Props) {
           disciplines={disciplines || []}
         />
       </Suspense>
+
+      {gymData && (
+        <PtPolicySettings
+          locale={locale}
+          gymId={gymData.id}
+          noShowForfeits={!!gymData.pt_no_show_forfeits}
+          lateCancelWindowHours={gymData.pt_late_cancel_window_hours ?? 0}
+        />
+      )}
     </div>
   );
 }

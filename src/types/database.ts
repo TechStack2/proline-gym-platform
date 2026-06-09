@@ -1117,6 +1117,8 @@ export type Database = {
           name_en: string
           name_fr: string
           phone: string | null
+          pt_late_cancel_window_hours: number
+          pt_no_show_forfeits: boolean
           slug: string
           timezone: string | null
           tva_registration_number: string | null
@@ -1140,6 +1142,8 @@ export type Database = {
           name_en: string
           name_fr: string
           phone?: string | null
+          pt_late_cancel_window_hours?: number
+          pt_no_show_forfeits?: boolean
           slug: string
           timezone?: string | null
           tva_registration_number?: string | null
@@ -1163,6 +1167,8 @@ export type Database = {
           name_en?: string
           name_fr?: string
           phone?: string | null
+          pt_late_cancel_window_hours?: number
+          pt_no_show_forfeits?: boolean
           slug?: string
           timezone?: string | null
           tva_registration_number?: string | null
@@ -1856,6 +1862,7 @@ export type Database = {
       }
       pt_sessions: {
         Row: {
+          assignment_id: string | null
           coach_id: string
           created_at: string
           duration_minutes: number
@@ -1870,6 +1877,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assignment_id?: string | null
           coach_id: string
           created_at?: string
           duration_minutes?: number
@@ -1884,6 +1892,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assignment_id?: string | null
           coach_id?: string
           created_at?: string
           duration_minutes?: number
@@ -2389,6 +2398,59 @@ export type Database = {
         Returns: Database["public"]["Tables"]["pt_assignments"]["Row"]
       }
       is_staff: { Args: never; Returns: boolean }
+      schedule_pt_session: {
+        Args: {
+          p_assignment_id: string
+          p_coach_id?: string | null
+          p_scheduled_at?: string | null
+          p_duration?: number | null
+        }
+        Returns: Database["public"]["Tables"]["pt_sessions"]["Row"]
+      }
+      complete_pt_session: {
+        Args: { p_session_id: string }
+        Returns: Database["public"]["Tables"]["pt_sessions"]["Row"]
+      }
+      cancel_or_no_show_pt_session: {
+        Args: { p_session_id: string; p_outcome: string }
+        Returns: Database["public"]["Tables"]["pt_sessions"]["Row"]
+      }
+      reschedule_pt_session: {
+        Args: { p_session_id: string; p_scheduled_at: string; p_coach_id?: string | null }
+        Returns: Database["public"]["Tables"]["pt_sessions"]["Row"]
+      }
+      restore_pt_credit: {
+        Args: { p_assignment_id: string; p_session_id?: string | null; p_reason?: string | null }
+        Returns: Database["public"]["Tables"]["pt_assignments"]["Row"]
+      }
+      get_coach_pt_sessions: {
+        Args: never
+        Returns: {
+          session_id: string
+          assignment_id: string | null
+          student_name: string
+          package_name_ar: string | null
+          package_name_en: string | null
+          package_name_fr: string | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["pt_session_status_enum"]
+          sessions_total: number | null
+          sessions_remaining: number | null
+        }[]
+      }
+      get_student_pt_sessions: {
+        Args: never
+        Returns: {
+          session_id: string
+          assignment_id: string | null
+          coach_name: string
+          package_name_ar: string | null
+          package_name_en: string | null
+          package_name_fr: string | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["pt_session_status_enum"]
+        }[]
+      }
       request_pt: {
         Args: { p_package_id: string; p_coach_id?: string }
         Returns: Database["public"]["Tables"]["pt_assignments"]["Row"]

@@ -162,3 +162,25 @@ export async function rejectPtRequest(
 
   return { ok: true, invoiceId: null };
 }
+
+// ── C1 / T5 — restore a PT credit (staff-only, guarded ≥0, audited) ──────────
+export async function restorePtCredit(input: {
+  assignmentId: string;
+  sessionId?: string | null;
+  reason?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'unauthenticated' };
+
+  const { error } = await supabase.rpc('restore_pt_credit', {
+    p_assignment_id: input.assignmentId,
+    p_session_id: input.sessionId ?? null,
+    p_reason: input.reason ?? null,
+  });
+  if (error) {
+    console.error('[restorePtCredit] RPC failed:', error.message);
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}

@@ -702,7 +702,7 @@
     "new_package": "Nouveau Forfait",
     "purchase": "Acheter",
     "no_packages": "Aucun forfait",
-    "sessions": "séances",
+    "sessions": "Séances",
     "validity": "jours de validité",
     "name_ar_placeholder": "Nom (AR)",
     "name_en": "Nom (EN)",
@@ -777,7 +777,27 @@
     "log_session_error": "Impossible d'enregistrer la séance",
     "my_pt_students": "Mes élèves PT",
     "my_pt_students_subtitle": "Vos élèves de coaching privé assignés",
-    "no_pt_students": "Aucun élève PT assigné pour l'instant"
+    "no_pt_students": "Aucun élève PT assigné pour l'instant",
+    "no_sessions": "Aucune séance",
+    "schedule": "Planifier",
+    "complete": "Terminer",
+    "no_show": "Absence",
+    "session_scheduled": "Séance planifiée",
+    "session_completed": "Séance terminée",
+    "session_cancelled": "Séance annulée",
+    "session_no_show": "Marquée absente",
+    "session_status": {
+      "scheduled": "Planifiée",
+      "completed": "Terminée",
+      "cancelled": "Annulée",
+      "no_show": "Absence"
+    },
+    "pt_sessions_title": "Mes séances PT",
+    "credits_remaining": "{count} crédits restants",
+    "restore_panel_title": "Restaurer des crédits PT",
+    "restore_credit": "Restaurer le crédit",
+    "credit_restored": "Crédit restauré",
+    "restore_error": "Impossible de restaurer le crédit"
   },
   "rentals": {
     "title": "Location Espaces",
@@ -868,7 +888,14 @@
       "stripe": "bande(s)",
       "mo": "mois",
       "classes": "cours"
-    }
+    },
+    "pt_policy_title": "Politique des séances PT",
+    "pt_policy_subtitle": "Comment les absences et annulations tardives affectent les crédits PT.",
+    "pt_no_show_forfeits": "L'absence fait perdre le crédit",
+    "pt_late_cancel_window": "Délai d'annulation tardive (heures)",
+    "pt_policy_save": "Enregistrer",
+    "pt_policy_saved": "Politique enregistrée",
+    "pt_policy_error": "Échec de l'enregistrement"
   },
   "reportsDashboard": {
     "title": "Rapports",
@@ -990,6 +1017,26 @@
       "enrollment_confirmed": {
         "title": "Inscription confirmée",
         "body": "Vous êtes inscrit au cours {className}"
+      },
+      "pt_session_scheduled": {
+        "title": "Séance PT planifiée",
+        "body": "Une séance PT est planifiée le {date}"
+      },
+      "pt_session_completed": {
+        "title": "Séance PT terminée",
+        "body": "Votre séance PT a été enregistrée"
+      },
+      "pt_session_cancelled": {
+        "title": "Séance PT annulée",
+        "body": "Votre séance PT du {date} a été annulée"
+      },
+      "pt_session_no_show": {
+        "title": "Séance PT manquée",
+        "body": "Vous avez été marqué absent le {date}"
+      },
+      "pt_credits_exhausted": {
+        "title": "Crédits PT épuisés",
+        "body": "Toutes les séances de ce forfait sont utilisées"
       }
     }
   },

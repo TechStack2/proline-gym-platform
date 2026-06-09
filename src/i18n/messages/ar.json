@@ -702,7 +702,7 @@
     "new_package": "باقة جديدة",
     "purchase": "شراء الباقة",
     "no_packages": "لا توجد باقات",
-    "sessions": "جلسات",
+    "sessions": "الجلسات",
     "validity": "يوم صلاحية",
     "name_ar_placeholder": "الاسم (AR)",
     "name_en": "الاسم (EN)",
@@ -777,7 +777,27 @@
     "log_session_error": "تعذّر تسجيل الحصة",
     "my_pt_students": "طلاب التدريب الشخصي",
     "my_pt_students_subtitle": "الطلاب المسندون إليك للتدريب الشخصي",
-    "no_pt_students": "لا يوجد طلاب تدريب شخصي بعد"
+    "no_pt_students": "لا يوجد طلاب تدريب شخصي بعد",
+    "no_sessions": "لا توجد جلسات بعد",
+    "schedule": "جدولة",
+    "complete": "إكمال",
+    "no_show": "لم يحضر",
+    "session_scheduled": "تم جدولة الجلسة",
+    "session_completed": "تم إكمال الجلسة",
+    "session_cancelled": "تم إلغاء الجلسة",
+    "session_no_show": "تم وضع علامة عدم حضور",
+    "session_status": {
+      "scheduled": "مجدولة",
+      "completed": "مكتملة",
+      "cancelled": "ملغاة",
+      "no_show": "لم يحضر"
+    },
+    "pt_sessions_title": "جلساتي الخاصة",
+    "credits_remaining": "{count} حصة متبقية",
+    "restore_panel_title": "استرجاع رصيد التدريب",
+    "restore_credit": "استرجاع رصيد",
+    "credit_restored": "تم استرجاع الرصيد",
+    "restore_error": "تعذّر استرجاع الرصيد"
   },
   "rentals": {
     "title": "تأجير المساحات",
@@ -868,7 +888,14 @@
       "stripe": "شريط",
       "mo": "شهر",
       "classes": "حصص"
-    }
+    },
+    "pt_policy_title": "سياسة جلسات التدريب",
+    "pt_policy_subtitle": "كيف تؤثر حالات عدم الحضور والإلغاء المتأخر على أرصدة التدريب.",
+    "pt_no_show_forfeits": "عدم الحضور يُفقد الرصيد",
+    "pt_late_cancel_window": "نافذة الإلغاء المتأخر (ساعات)",
+    "pt_policy_save": "حفظ السياسة",
+    "pt_policy_saved": "تم حفظ السياسة",
+    "pt_policy_error": "تعذّر حفظ السياسة"
   },
   "reportsDashboard": {
     "title": "التقارير",
@@ -990,6 +1017,26 @@
       "enrollment_confirmed": {
         "title": "تم تأكيد التسجيل",
         "body": "تم تسجيلك في {className}"
+      },
+      "pt_session_scheduled": {
+        "title": "تم جدولة جلسة تدريب",
+        "body": "جلسة تدريب مجدولة في {date}"
+      },
+      "pt_session_completed": {
+        "title": "اكتملت جلسة التدريب",
+        "body": "تم تسجيل جلستك"
+      },
+      "pt_session_cancelled": {
+        "title": "أُلغيت جلسة التدريب",
+        "body": "أُلغيت جلستك في {date}"
+      },
+      "pt_session_no_show": {
+        "title": "فاتتك جلسة تدريب",
+        "body": "تم وضع علامة عدم حضور بتاريخ {date}"
+      },
+      "pt_credits_exhausted": {
+        "title": "نفدت أرصدة التدريب",
+        "body": "تم استخدام كل جلسات هذه الباقة"
       }
     }
   },

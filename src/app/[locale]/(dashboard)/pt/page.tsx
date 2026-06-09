@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { getTranslations } from 'next-intl/server';
 import { PTPackagesClient } from './pt-client';
+import { PtRestorePanel, type PtRestoreAssignment } from './pt-restore-panel';
 
 type Props = { params: { locale: string } };
 
@@ -66,6 +67,16 @@ export default async function PTPage({ params }: Props) {
       .order('requested_at', { ascending: false, nullsFirst: false }),
   ]);
 
+  // C1 — assignments with consumed credits, for the staff Restore-credit panel
+  // (any status, so a reactivated/zeroed assignment stays visible to test the guard).
+  const { data: restoreAssignments } = await supabase
+    .from('pt_assignments')
+    .select('id, sessions_total, sessions_used, sessions_remaining, status, student:students(profile:profiles(first_name_ar, first_name_en, last_name_ar, last_name_en))')
+    .filter('package_id', 'in', packageIds)
+    .neq('status', 'requested')
+    .order('updated_at', { ascending: false })
+    .limit(50);
+
   const t = await getTranslations('pt');
 
   return (
@@ -78,6 +89,7 @@ export default async function PTPage({ params }: Props) {
           {t('subtitle')}
         </p>
       </div>
+      <PtRestorePanel assignments={(restoreAssignments || []) as PtRestoreAssignment[]} locale={locale} />
       <Suspense fallback={<div className="animate-pulse h-96 bg-gray-100 rounded-xl" />}>
         <PTPackagesClient
           packages={packages || []}
