@@ -72,7 +72,7 @@ export function NotificationDropdown({ locale, open, onClose }: NotificationDrop
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(15);
 
       setNotifications((data as Notification[]) || []);
       setLoading(false);
@@ -102,7 +102,7 @@ export function NotificationDropdown({ locale, open, onClose }: NotificationDrop
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            setNotifications(prev => [payload.new as Notification, ...prev].slice(0, 5));
+            setNotifications(prev => [payload.new as Notification, ...prev].slice(0, 15));
           }
         )
         .subscribe();
