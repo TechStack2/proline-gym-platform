@@ -22,7 +22,7 @@ on:
       migrations:
         description: 'Space-separated migration basenames to apply, in order'
         type: string
-        default: '000010_add_belt_columns 000011_fix_rls_gym_scoping 000012_create_pt_assignments 000013_fix_rental_bookings_rls 000014_fix_pt_rls_gym_scoping 000015_notifications_producer_rls 000016_pt_request_workflow 000017_foundation_identity 000018_student_identity_write_path 000019_demo_single_session_pt_package 000020_gym_coaches_reader'
+        default: '000010_add_belt_columns 000011_fix_rls_gym_scoping 000012_create_pt_assignments 000013_fix_rental_bookings_rls 000014_fix_pt_rls_gym_scoping 000015_notifications_producer_rls 000016_pt_request_workflow 000017_foundation_identity 000018_student_identity_write_path'
 
 jobs:
   verify:
@@ -89,25 +89,6 @@ jobs:
 
           echo "===== BEFORE: reproduce identity chain ====="
           run_sql "BEFORE reproduce" <<< "$REPRODUCE"
-
-          echo "===== DIAG (admin-safe): recipient_in_gym + policy + owner roles ====="
-          run_sql "recipient_in_gym(student, owner_gym)" <<'SQL'
-          select recipient_in_gym(
-            (select p.id from profiles p join auth.users u on u.id=p.id where u.email='student@prolinegym.lb'),
-            (select p.gym_id from profiles p join auth.users u on u.id=p.id where u.email='owner@prolinegym.lb')
-          ) as recipient_ok;
-          SQL
-          run_sql "notifications INSERT policies on cloud" <<'SQL'
-          select polname, pg_get_expr(polwithcheck, polrelid) as with_check
-          from pg_policy where polrelid='public.notifications'::regclass and polcmd='a';
-          SQL
-          run_sql "owner user_roles + recipient_in_gym defn" <<'SQL'
-          select
-            (select string_agg(role::text, ',') from user_roles ur join auth.users u on u.id=ur.user_id where u.email='owner@prolinegym.lb') as owner_roles,
-            (select count(*) from pg_proc where proname='recipient_in_gym') as rig_count,
-            (select prosecdef from pg_proc where proname='recipient_in_gym' limit 1) as rig_secdef,
-            (select array_to_string(proconfig,',') from pg_proc where proname='recipient_in_gym' limit 1) as rig_config;
-          SQL
 
           if [ "${DO_APPLY}" != "true" ]; then
             echo "Diagnose-only run (apply=false). Re-run with apply=true once the migration list is confirmed."
