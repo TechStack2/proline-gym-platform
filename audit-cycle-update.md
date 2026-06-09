@@ -1346,3 +1346,61 @@ The helper inserted with `.insert(...).select('id').single()`, which makes Postg
 - Add the missing **`students.status.*`** i18n keys.
 - `<NotificationBell>` still mobile-`(dashboard)`-only (F2 finding stands); `lead_converted` won't be bell-visible until the member has a login (provisioning adapter swap) and a portal bell exists.
 - A shared Playwright helper for `:visible` `(dashboard)` scoping would cut harness friction.
+
+---
+
+## Cycle 5 / Phase 1 / Prompt 24-R — Member Activity Loop Rebuild (2026-06-09)
+
+**Agent:** coding agent · **Branch:** `prompt-24-r-activity-loop` · **Strategy:** strangle the platform's *strongest* flow (group-class attendance) + fix the belt-engine atomicity defect.
+
+### Behavior-green proof (the judge)
+- **E2E CI run `27219997474` — SUCCESS, 23 passed / 0 failed** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27219997474
+  - New cross-portal slice `e2e/activity-loop.spec.ts` (project `activity-loop`): `✓ Activity loop: enroll → attend (transition-guarded) → atomic promote → progress (50.7s)`, plus the standing 22 (owner/reception/coach/student/pt/leads/notifications) still green. Screenshots `al-1`…`al-4` uploaded.
+- **`tsc --noEmit` clean; `next build` clean.** No PT table touched; `increment_sessions_used` never called. No RLS/auth weakened.
+
+### Migrations (applied to the cloud ledger, project `ufpuebfkcpohwubrutff`)
+- **`000025_member_activity_loop.sql`** — applied via Verify-Foundation dispatch **`27218268665`** (success). `promote_student(p_student_id, p_discipline_id, p_to_hierarchy_id, p_coach_id, p_promotion_date, p_notes)` — atomic, staff-only, gym-scoped SECURITY DEFINER (`000025…sql:19`): inserts `belt_promotions` + updates `students.current_belt_rank`/`belt_promotion_date` in ONE transaction; enforces forward-only rank (target sort_order > current).
+- **`000026_seed_demo_class_all_days.sql`** — applied via Verify-Foundation dispatch **`27219942636`** (success). Test-support seed: the demo "Muay Thai Beginner" class now has a `class_schedules` row for every weekday so the day-scoped coach attendance view is always reachable (the original Mon/Wed-only seed made attendance impossible on other days — see drag read).
+
+### Per-transaction PASS/FAIL (file:line proof)
+
+| Txn | What | Proof (file:line) | CI verdict |
+|---|---|---|---|
+| **T1** | Enroll (idempotent) + `enrollment_confirmed` → student (+guardians) | `classes/[id]/actions.ts:17` (`enrollStudent`), `EnrollStudentModal.tsx` (rebuilt) | **PASS** — student reads `enrollment_confirmed`; class on `/portal/schedule` |
+| **T2** | Attend: keep idempotent upsert; transition-guarded `attendance_absent`; present/excused silent | `coach/attendance/actions.ts:18` (`saveAttendance`), guard at `:63` (`transitioned = …`) | **PASS** — present→absent = +1 notif; re-save absent = +0 |
+| **T3** | Read-only eligibility hint (classes-since-promotion + months-in-rank vs next `belt_hierarchies`); never auto-promotes | `lib/eligibility.ts:38` (`computeEligibility`); coach roster badge `coach/attendance/page.tsx` (`attendance-eligibility`); member number on progress | **PASS** — surfaced staff "eligible / X of Y" + member "X of Y toward next belt" |
+| **T4** | Atomic `promote_student` RPC + `belt_promoted` → student (+guardians); old two-write path removed | `000025…sql:19`, `belts/actions.ts:16` (`promoteStudent`), `belt-engine-client.tsx` (RPC call replaces insert+update+JS-rollback) | **PASS** — wizard reset on success; rank ↔ history consistent |
+| **T5** | `/portal/progress`: rank per discipline + history + streak + eligibility number, RLS-scoped, RTL | `portal/progress/page.tsx:79` (`portal-progress`), `:105` (`progress-eligibility`) | **PASS** — rank == latest history to_rank; history/streak/eligibility render |
+
+### Notification recipients + guardian fan-out + transition-guard proof
+- All three producers use the **sanctioned F2 pattern** (RETURNING-free, authed staff/coach client) and are **best-effort** (try/catch; never roll back the primary write). Recipients resolved via `studentNotificationRecipients` (`lib/notifications/recipients.ts:19`): the student's own `profiles.id` **and** linked guardians via `guardian_students → guardians.profile_id` (primary contact first). (The demo student has no guardians, so recipients = the student.)
+  - **`enrollment_confirmed`** → student (read in CI on `/notifications`).
+  - **`attendance_absent`** → student, **transition-guarded**: the spec marks present (save), counts baseline B; marks absent (save) → count B+1 (one notify on the present→absent transition); marks absent again (save) → count unchanged (no re-notify). All three asserted in CI.
+  - **`belt_promoted`** → student (read in CI on `/notifications`).
+
+### Promotion atomicity proof
+- `promote_student` is a **single SECURITY DEFINER plpgsql function = one transaction**: the `belt_promotions` INSERT and the `students.current_belt_rank` UPDATE either both commit or both roll back — a crash between them cannot leave rank ↔ history divergent (vs the removed client path's two separate calls + manual JS `delete`-rollback). CI corroborates the consistency invariant: after promotion, `/portal/progress`'s `progress-rank` **equals** the latest `progress-history-item`'s `to_rank` (asserted via the same rank label).
+
+### **Member activity loop behavior-green: PASS.**
+
+### DRAG READ (candid) — strangling the platform's STRONGEST flow
+**Verdict: the BACKEND of the strong flow extended cleanly; the group-class ADMIN UI turned out to be as rotten as the leaf surfaces 23-R found.** Mixed, and informative.
+
+**Clean (the sound base paid off):**
+- The **attendance upsert** (idempotent, UNIQUE-keyed) was genuinely strong — wrapping it in a server action + a transition guard (read prior status → diff → notify) was a ~20-line addition with zero fighting. This is the 4/5 flow living up to its score.
+- `promote_student` was a near-mechanical sibling of 23-R's `convert_lead_to_member` — the atomic-RPC pattern is now a **reusable idiom** (auth/gym guard → writes → return). The F2 notification pattern + guardian fan-out helper dropped in first-try (no `42501`). The isomorphic `computeEligibility` reused the same readable tables across coach/member with no RLS friction (`belt_hierarchies` is authenticated-readable). Belt-rank ordering + `belt_hierarchies.min_*` columns already existed — eligibility was pure read-assembly, no schema work.
+
+**Slog (legacy cruft on the admin side — a third rotten cluster after 23-R's /invoices + students-search):**
+1. **The group-class admin UI is broken against the real schema.** `EnrollStudentModal` searched `students.first_name/email/status` and inserted `class_enrollments.status` — none exist (students are normalized via `profiles`; enrollments use `is_active`). Worse, **`classes/[id]/page.tsx` 404'd outright**: its `.single()` embed selected `coaches.first_name/email` (non-existent) → PostgREST error → `notFound()`. The enroll modal — T1's whole surface — was *unreachable*. I had to rebuild the modal and repair the class-detail query just to reach it. The classes **list** (`classes/page.tsx`) is also DOA (`coaches.first_name`, `class_enrollments.status`, `disciplines.status`). This is the same DeepSeek-stub anatomy: a plausible-looking UI written against an imagined schema, never run.
+2. **A day-scoped trap.** The coach attendance view only lists classes scheduled for *today's* weekday, and the demo class was Mon/Wed only → on a Tuesday CI run the coach literally had no class to mark (a real coach would hit this too). Needed a seed (000026) to make attendance reachable any day — and it's a latent product gap worth a flag.
+3. **The login-less recipient FK.** CI logs show `notifications_user_id_fkey` rejecting 23-R's `lead_converted` to a login-less member — `notifications.user_id` still FKs `auth.users`, so a gym-managed member with no login can't *receive* a notification until provisioned. Best-effort swallowing keeps it non-fatal, but the producer pattern silently can't reach login-less members. (24-R's notifications target the demo student, who has a login, so unaffected — but flagged for the PT/Coach journey and any minor-without-guardian case.)
+4. **Harness tax again.** The `(dashboard)` double-shell bit the enroll button + every belt-engine control (hidden-shell `.first()` → 180s action hang) — the *third* slice paying this tax. Fixed with `:visible`, but a shared helper is overdue.
+
+**Bottom line for strangle-vs-rewrite:** the **service/data layer** (RPCs, RLS, notifications, eligibility, the attendance upsert) is compounding nicely — each slice is faster and the idioms are stabilizing; strangling is clearly working there. The **admin presentation layer is uniformly rotten** (invoices, students-search, classes list+detail+enroll all broken against the real schema) — but it's rotten *leaf-by-leaf*, repairable per-slice, and not entangled with the foundation. So the evidence still favors **continue strangling**, with a clear-eyed note: a meaningful fraction of each slice's cost is now *repairing the legacy admin surface it must touch*, not building the new connective tissue. If a future slice's admin surface is more entangled than these isolated query bugs, revisit.
+
+### Notes / non-blocking findings for later prompts
+- Rebuild the admin **classes list + class-detail + enroll** UI against the normalized schema (its own slice); the enrolled-students list still renders blank names (cosmetic, not repaired here).
+- **`notifications.user_id` FK to `auth.users`** blocks notifying login-less members — reconcile when the provisioning adapter creates real logins (Phase 5/6), or relax the FK to `profiles`.
+- Coach attendance is **day-of-week scoped** with no date picker — a coach can't mark a class outside its scheduled days (flagged; seed 000026 is a test-support workaround, not the product fix).
+- Eligibility uses `students.belt_promotion_date` (single, last-promotion-across-disciplines) for the streak; per-discipline streak baselines would be more correct once multi-discipline ranks are common.
+- The standing **`:visible` `(dashboard)` scoping** tax recurred — a shared Playwright helper would cut it across all future slices.
