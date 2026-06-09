@@ -13,6 +13,7 @@ import { Bell, CheckCheck } from 'lucide-react';
 type Notification = {
   id: string;
   user_id: string;
+  type?: string | null;
   title_ar?: string | null;
   title_en?: string | null;
   title_fr?: string | null;
@@ -149,7 +150,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
             </h2>
             <span className="text-xs text-red-400">({unread.length})</span>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-testid="notifications-unread-list">
             {unread.map(n => {
               const { title, body } = renderNotification(n, t, locale);
               return (
@@ -162,6 +163,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
                 onClick={() => handleMarkAsRead(n.id, n.action_url)}
                 locale={locale}
                 actionUrl={n.action_url}
+                notificationType={n.type}
               />
               );
             })}
@@ -184,7 +186,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
             </h2>
             <span className="text-xs text-gray-400">({read.length})</span>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-testid="notifications-read-list">
             {read.map(n => {
               const { title, body } = renderNotification(n, t, locale);
               return (
@@ -201,6 +203,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
                 }}
                 locale={locale}
                 actionUrl={n.action_url}
+                notificationType={n.type}
               />
               );
             })}

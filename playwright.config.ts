@@ -62,6 +62,19 @@ export default defineConfig({
       testMatch: /pt\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
+      // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
+      // SEE the notification on the bell + /notifications page. Opens a fresh
+      // context per role internally (no pinned session). Depends on `pt` so a
+      // fresh approval has emitted the rows in this run (pt.spec never opens the
+      // bell, so they stay unread); the (dashboard) layout's functional bell
+      // renders only at the mobile breakpoint, set per-context in the spec.
+      name: 'notifications',
+      dependencies: ['setup', 'pt'],
+      testMatch: /notifications\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

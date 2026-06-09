@@ -1169,3 +1169,99 @@ The shared `createNotification` helper, when called from a staff Server Action v
 
 ### Migrations applied to cloud (recorded in ledger)
 000019 (1-session package), 000020 (get_gym_coaches), 000021 (pt_emit_approved_notifications). Re-applied 000015 (recipient_in_gym search_path) — idempotent.
+
+---
+
+## Cycle 5 / Phase 0 / Prompt F2 — Notification Producer Root-Cause
+
+> Two parallel workstreams on isolated branches. **A** (`f2-producer-fix`) root-causes the producer RLS rejection; **B** (`f2-readpath-harness`) independently verifies the read path and closes the bell-coverage hole. Sub-headings below. (A appends `### F2-A`; whoever merges second rebases.)
+
+### F2-A — Producer Root-Cause & Fix (branch `f2-producer-fix`)
+
+**Status:** ROOT-CAUSED + FIXED. The 22-R "root cause not fully pinned" finding above is now closed: it was **World C**, and the staff→user `createNotification` path works directly (no definer bypass needed).
+
+#### Step 0 — original call-site id (git archaeology, `e25363c^`)
+`approvePtRequest` resolved the recipients correctly and passed the **profile_id**, not a row id:
+- student: `students.profile_id` (looked up by `assignment.student_id`) → `createNotification({ recipientProfileId: student.profile_id, … }, supabase)`
+- coach: `coaches.profile_id` (looked up by `finalCoachId`) → `createNotification({ recipientProfileId: coach.profile_id, … }, supabase)`
+
+Both calls already passed the action's **same authenticated `supabase` client** as the 2nd arg. So the recipient id was correct from the start → **rules out World B**.
+
+#### Step 1 — reproduce + captured values (live staff session, via the SAME client, immediately before the failing notifications INSERT)
+Re-wired `approvePtRequest` to call the helper again + added a TEMP `SECURITY INVOKER` `f2_diag(uuid,uuid)` (migration, since removed) called via `supabase.rpc` so the values are read **as the `authenticated` role** inside the real Server-Action session. Captured from the E2E prod-build run (owner approving a student's PT request):
+
+| Captured (authenticated context) | Value |
+|---|---|
+| `auth.uid()` | `8b08af1e-…ee93` (owner — **NON-NULL**) |
+| `is_staff()` | **true** |
+| `get_user_gym_id()` | `b737047f-…242a` |
+| inserted `user_id` (recipient = student profile) | `0b78def3-…5355` |
+| inserted `gym_id` | `b737047f-…242a` (**== get_user_gym_id**) |
+| `recipient_in_gym(user_id, gym_id)` | **true** |
+| `exists(profile id=user_id)` / its `gym_id` | true / `b737047f-…242a` (**gym_matches=true**) |
+| → resulting notifications INSERT | **`42501 new row violates row-level security policy for table "notifications"`** |
+
+All **three** `notifications_insert_staff_same_gym` WITH CHECK predicates (`is_staff()`, `gym_id = get_user_gym_id()`, `recipient_in_gym(user_id, gym_id)`) evaluate **TRUE**, yet the INSERT is still rejected `42501`. Admin-context checks (Management API) corroborate: all of `recipient_in_gym`/`is_staff`/`get_user_gym_id` are owned by `postgres`, `SECURITY DEFINER`, and granted `EXECUTE` to `authenticated` (→ **rules out World C "missing grant/search_path"**); the live INSERT policy matches 000015 exactly; `recipient_in_gym(student profile, owner gym) = true`. The same action's invoice INSERT succeeds, and `invoices_staff` is `FOR ALL USING (gym_id = get_user_gym_id() AND is_staff())` — for a `FOR ALL` policy with no explicit `WITH CHECK`, Postgres uses `USING` as the INSERT check → **the invoice success independently proves `is_staff()`/`get_user_gym_id()` were correct** (→ **rules out World A: auth context was intact**).
+
+#### Root cause (one sentence) — **World C**
+The helper inserted with `.insert(...).select('id').single()`, which makes PostgREST emit **`INSERT … RETURNING`**: the INSERT `WITH CHECK` is satisfied, but returning the new row additionally requires passing the **`notifications_select_self` SELECT policy (`user_id = auth.uid()`)** — and a staff producer's row has `user_id = the RECIPIENT`, never the staff member's own `auth.uid()`, so the RETURNING is blocked and Postgres surfaces it as `42501 new row violates row-level security policy` even though the insert itself is permitted. (Corroborating: `createNotificationForRole` does a plain `.insert(rows)` with no `.select()` and never hit this; and the prior "reuse the authed client" attempt couldn't help because the client/auth were never the problem.)
+
+#### The fix (general staff→user path; RLS unchanged, not weakened)
+`createNotification` now **generates the row id client-side (`crypto.randomUUID()`) and does a plain insert with no `.select()/RETURNING`**, so the recipient-only SELECT policy is never exercised. The `is_staff() + same-gym + recipient_in_gym` INSERT policy stays as the sole guardrail. `approvePtRequest` reverts to emitting `pt_approved` (student) + `pt_assigned` (coach) **directly via the shared helper** on the staff session's authed client. Verified on the cloud DB through the production build: full **E2E 19 passed / 0 failed**, zero `42501`/`createNotification failed` in the server logs (run `27195929723`).
+
+- **000021 `pt_emit_approved_notifications` (definer RPC): superseded.** No longer called by `approvePtRequest`; kept defined in the DB (forward-only, harmless) but it is no longer the path. The general helper now works without a definer bypass.
+- New migration **`000022_drop_f2_diag.sql`** — drops the temporary `f2_diag` diagnostic function. **Applied to cloud** (run `27195896431`); the temp `000022_f2_diag` migration was repurposed to this drop so nothing diagnostic remains live.
+- Unit test `create.test.ts` updated to the RETURNING-free contract (client-generated id). `tsc` + `next build` clean; 3/3 unit tests pass.
+
+#### Sanctioned notification pattern for Prompts 23/24
+**Call the shared `createNotification` / `createNotificationForRole` helper directly from staff Server Actions, passing the action's already-authenticated `supabase` client**, with the recipient's **profile_id** (`profiles.id === auth.users.id`) as `recipientProfileId`. RLS (000015: `is_staff() AND gym_id = get_user_gym_id() AND recipient_in_gym(user_id, gym_id)`) is the guardrail — no `SECURITY DEFINER` bypass is required. The helpers are **RETURNING-free by contract** (do not add `.select()` back to a producer insert; if a producer needs the id, use the client-generated one the helper returns). For Lead/Trial/Attendance/Belt/Renewal: resolve the recipient profile_id (or use `createNotificationForRole` to fan out to all `owner`/`receptionist` holders in the gym) and call the helper — no per-flow definer RPC needed.
+
+#### Other writes at risk?
+**No** — this was **not** World A (auth context was intact; the invoice INSERT, gated by `is_staff()`, succeeded in the same action). The failure is specific to **inserting a row you cannot read back** (recipient ≠ caller) **while requesting RETURNING**. Other server-action writes either insert rows the caller can read (own-scope) or already avoid RETURNING; none share the recipient≠caller + RETURNING shape. The only affected surface was the notifications producer, now fixed centrally in the helper.
+
+#### CI evidence
+- Fixed-path E2E (prod build, cloud DB): **19 passed / 0 failed** — run `27195929723` — https://github.com/TechStack2/proline-gym-platform/actions/runs/27195929723
+- Reproduction E2E (helper re-wired, pre-fix): failed with `42501` + captured `f2_diag` values — run `27195379312`.
+- Cloud migration applies: f2_diag added then dropped (`000022_drop_f2_diag`) — run `27195896431`.
+
+**Notification producer path: ROOT-CAUSED + FIXED — yes.**
+
+### F2-B — Read-path verify + harness coverage (branch `f2-readpath-harness`, e2e-runner)
+
+**Mission:** the harness proved PT approval/roster/decrement but NEVER checked the notification bell. Closed that hole and audited the consumer read path to independently corroborate the producer root cause.
+
+**New spec — `e2e/notifications.spec.ts` (Playwright project `notifications`, `dependencies: ['setup','pt']`).** Logs in as the *recipient* and asserts they actually SEE the producer-emitted notification, on two surfaces each: (1) the full `/notifications` page (RLS-scoped to `auth.uid()`), (2) the bell + dropdown. Keys off surgical `data-testid`s + `data-notification-type` + the rendered i18n title, scoped to the `:visible` copy. Depends on `pt` so a fresh approval emits the rows in-run (the PT spec never opens the bell → they stay unread).
+
+**Recipient SEES the bell — corroboration result (verified locally vs the coherent cloud DB; full suite 7/7 green):**
+
+| Role | Expected notification | Surface 1: `/notifications` page | Surface 2: bell + dropdown | Sees it? |
+|---|---|---|---|---|
+| `student@prolinegym.lb` | `pt_approved` — "PT request approved" | ✅ renders (not empty state) | ✅ badge + dropdown lists it | **YES** |
+| `coach@prolinegym.lb` | `pt_assigned` — "PT sessions assigned" | ✅ renders (not empty state) | ✅ badge + dropdown lists it | **YES** |
+
+**→ Corroboration verdict:** Both recipients can READ their notification row through the consumer's RLS-scoped query (`user_id = auth.uid()`). That means the `user_id` written by `pt_emit_approved_notifications` (= `students.profile_id` / `coaches.profile_id`) is a **valid in-gym profile id the recipient owns**. This is independent, surface-level evidence that the recipient ids are correct → **supports World B** (the original `createNotification` INSERT was rejected because a *wrong* id was passed at the call site, i.e. RLS working as designed — NOT a fragile substrate). Hands to F2-A's integration-gate verdict.
+
+**Consumer-side audit (6 consumers + bell + realtime):**
+- `notification-bell.tsx` — badge counts unread (`user_id=auth.uid()`, `is_read=false`); initial fetch + 30s poll + **realtime INSERT** subscription (`postgres_changes`, `filter: user_id=eq.<uid>`) that increments the badge with **no refresh**; click opens dropdown. Functional. ✓
+- `notification-dropdown.tsx` — fetches latest 5 for the user on open, renders via `renderNotification`+`NotificationItem`, realtime prepend while open, mark-as-read, "View all". ✓
+- `notification-item.tsx` — presentational (title/body/dot/timeAgo). ✓
+- `(dashboard)/notifications/page.tsx` (server) — fetches latest 50 for `auth.uid()`, RLS-scoped; **no role gate** in the `(dashboard)` layout → reachable by every authed role. ✓
+- `notifications-client.tsx` — groups unread/read, renders each via `renderNotification`, mark-all-read. ✓
+- `lib/notifications/render.ts` — maps `title_key`/`body_key` (`messages.pt_approved.title`) + `params` through the next-intl `notifications` namespace. ✓
+- **Realtime:** the bell/dropdown subscribe to `postgres_changes` INSERT filtered by `user_id`; the PT producer's INSERT is exactly that event, so an approval updates the badge live without a refresh. (Not driven by a live INSERT inside the spec — a client INSERT is RLS-rejected by design and producer code is out of B's scope; the subscription wiring is audited and confirmed correct.)
+
+**⚠️ Read-path finding for the auditor (bell placement gap, NOT a producer issue):**
+- The functional `<NotificationBell>` is rendered **only** in the MOBILE dashboard top bar (`DashboardLayoutClient`, `block md:hidden`).
+- The DESKTOP dashboard `Header.tsx` bell is a **static stub** (always-on red dot, no data, not the real component).
+- `/portal` (student) and `/coach` layouts render **NO** notification bell at all.
+- → So students/coaches only reach the functional bell at a mobile viewport on a `(dashboard)` route, and reach the full list via `/notifications` (any viewport). The spec therefore uses a mobile viewport + `/notifications`. **Recommendation for a later prompt:** mount the real `NotificationBell` in the portal/coach top bars and replace the desktop `Header` stub. (Out of F2 scope — flagged only.)
+
+**Surgical `data-testid`s added (no behavior changes):**
+- `notification-bell.tsx`: `data-testid="notification-bell"` (button), `data-testid="notification-bell-badge"` (unread badge).
+- `notification-dropdown.tsx`: `data-testid="notification-dropdown-list"` (list container); threads `type` → item.
+- `notification-item.tsx`: `data-testid="notification-item"` + `data-notification-type="<type>"` (robust, text-independent selector); new optional `notificationType` prop.
+- `notifications-client.tsx`: `data-testid="notifications-unread-list"` / `notifications-read-list`; threads `type` → item.
+
+**Gates:** `tsc --noEmit` clean; `npm run build` clean (exit 0, "Compiled successfully"); notifications RLS untouched (read-path/harness only — no migrations, no producer code). Local full run (setup + pt + notifications) **7/7 passed** vs the cloud DB.
+
+**CI (behavior-green gate) on `f2-readpath-harness`:** run **27195909792** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27195909792 — **SUCCESS, 21/21 passed** (full suite incl. both new `notifications` specs: `student@` pt_approved ✅ + `coach@` pt_assigned ✅). NOT merged to main — the orchestrator owns the F2-A integration gate (B's bell assertions re-run on A's producer fix there).

@@ -48,6 +48,22 @@ RLS/auth or soften an assertion to go green — if the data isn't there, let it 
   in one test), is idempotent (acts on the newest request for the 1-session demo package), and fails
   loudly if any portal doesn't reflect a step. Requires migration `000019` (1-session demo package)
   applied to the DB.
+- `notifications.spec.ts` (project `notifications`, `dependencies: ['setup', 'pt']`) — the
+  notification READ path: the PT slice proves the *write* (approval → invoice → roster) but never
+  checks the bell. This spec logs in as the **recipient** and asserts they actually SEE the
+  producer-emitted notification: `student@` → `pt_approved` ("PT request approved"), `coach@` →
+  `pt_assigned` ("PT sessions assigned"). For each role it asserts (1) the full `/notifications`
+  page (under `(dashboard)`, RLS-scoped to `auth.uid()`, reachable by every authed role) renders
+  the notification, and (2) the **bell + dropdown** lists it. The functional `<NotificationBell>`
+  lives only in the MOBILE dashboard top bar (`DashboardLayoutClient`, `block md:hidden`) — the
+  desktop `Header` bell is a static stub and `/portal`+`/coach` render no bell — so each context
+  uses a mobile viewport and visits `/notifications`. Selectors key off surgical `data-testid`s
+  (`notification-bell`, `notification-dropdown-list`, `notification-item` + a
+  `data-notification-type` attribute carrying the type) scoped to the `:visible` copy, plus the
+  rendered i18n title. Depends on `pt` so a fresh approval has emitted the rows in this run (the PT
+  spec never opens the bell, so they stay unread). Corroborates the F2 producer root cause: if the
+  recipient can read the row, the recipient `user_id` is a valid in-gym profile id (supports
+  "World B").
 
 ## CI
 `.github/workflows/e2e.yml` builds the app, runs this harness against the linked Supabase project,

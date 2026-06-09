@@ -12,6 +12,7 @@ import { ChevronRight, Bell } from 'lucide-react';
 type Notification = {
   id: string;
   user_id: string;
+  type?: string | null;
   title_ar?: string | null;
   title_en?: string | null;
   title_fr?: string | null;
@@ -187,7 +188,7 @@ export function NotificationDropdown({ locale, open, onClose }: NotificationDrop
       </div>
 
       {/* List */}
-      <div className="max-h-80 overflow-y-auto">
+      <div className="max-h-80 overflow-y-auto" data-testid="notification-dropdown-list">
         {loading ? (
           <div className="p-6 space-y-3">
             {[1, 2, 3].map(i => (
@@ -220,6 +221,7 @@ export function NotificationDropdown({ locale, open, onClose }: NotificationDrop
               onClick={() => markAsRead(n.id, n.action_url)}
               locale={locale}
               actionUrl={n.action_url}
+              notificationType={n.type}
             />
             );
           })
