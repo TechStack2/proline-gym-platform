@@ -81,8 +81,10 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await shot(recep.page, testInfo, 'leads-2-reception-board');
 
     await recep.page.goto('/en/notifications');
+    // The (dashboard) layout renders content twice (responsive shells), so scope
+    // to the VISIBLE copy — the notification title is a <p>.
     await expect(
-      recep.page.getByText(/New lead/i).first(),
+      recep.page.locator('p:visible', { hasText: 'New lead' }).first(),
       'lead_new should be readable by staff (reception)',
     ).toBeVisible({ timeout: 15_000 });
     await shot(recep.page, testInfo, 'leads-2-reception-lead_new');
@@ -176,7 +178,7 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     // ── T6 — the new member surfaces on the admin students roster ─────────────
     await owner2.page.goto(`/en/students?search=${encodeURIComponent(STAFF_FIRST)}`);
     await expect(
-      owner2.page.getByText(STAFF_FIRST).first(),
+      owner2.page.locator('h3:visible', { hasText: STAFF_FIRST }).first(),
       'the converted lead should now be a real student on the admin roster (propagation)',
     ).toBeVisible({ timeout: 15_000 });
     await shot(owner2.page, testInfo, 'leads-6-roster');
