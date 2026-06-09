@@ -2290,6 +2290,10 @@ export type Database = {
         }
         Returns: Database["public"]["Tables"]["students"]["Row"]
       }
+      pt_emit_approved_notifications: {
+        Args: { p_assignment_id: string }
+        Returns: undefined
+      }
       get_gym_coaches: {
         Args: never
         Returns: {
