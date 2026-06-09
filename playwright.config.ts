@@ -74,6 +74,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // Member Activity Loop cross-portal slice (Prompt 24-R): enroll → attend
+      // (transition-guarded absence) → atomic promote → /portal/progress. Switches
+      // roles internally (fresh context per role), so it must NOT pin a session.
+      name: 'activity-loop',
+      dependencies: ['setup'],
+      testMatch: /activity-loop\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
       // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
       // SEE the notification on the bell + /notifications page. Opens a fresh

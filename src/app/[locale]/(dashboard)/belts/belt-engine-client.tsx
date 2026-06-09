@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { createClient } from '@/lib/supabase/client';
+import { promoteStudent } from './actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -71,7 +71,6 @@ export function BeltEngineClient({
   const t = useTranslations('belts');
   const { toast } = useToast();
   const router = useRouter();
-  const supabase = createClient();
   const isRTL = locale === 'ar';
   const [mounted, setMounted] = useState(false);
 
@@ -143,6 +142,11 @@ export function BeltEngineClient({
       toast({ title: t('error_title'), description: t('validation_fill_all_fields'), variant: 'destructive' });
       return;
     }
+    // promote_student requires a coach (belt_promotions.coach_id is NOT NULL).
+    if (!selectedCoach) {
+      toast({ title: t('error_title'), description: t('validation_coach_required'), variant: 'destructive' });
+      return;
+    }
 
     // ─── Zod Validation ───
     const promoDate = new Date().toISOString().split('T')[0];
@@ -183,44 +187,20 @@ export function BeltEngineClient({
       currentStudent.belt_promotion_date = promoDate;
     }
 
-    // ─── Atomic Promotion: try/catch with manual rollback (2.5) ───
-    let promotionInserted = false;
+    // ─── Atomic Promotion via the promote_student RPC (000025) ───
+    // Replaces the old two-write + manual-JS-rollback path: the RPC inserts
+    // belt_promotions AND updates students.current_belt_rank in ONE transaction,
+    // then the server action emits belt_promoted (+ guardian fan-out).
     try {
-      // Step 1: Insert belt promotion record
-      const { error: insertError } = await supabase.from('belt_promotions').insert({
-        student_id: selectedStudent,
-        coach_id: selectedCoach || null,
-        discipline_id: selectedDiscipline,
-        belt_hierarchy_id: selectedBelt,
-        from_rank: prevRank,
-        to_rank: targetRank,
-        promotion_date: promoDate,
-        notes_en: notes || null,
-        notes_ar: notes || null,
-        notes_fr: notes || null,
+      const res = await promoteStudent({
+        studentId: selectedStudent,
+        disciplineId: selectedDiscipline,
+        toHierarchyId: selectedBelt,
+        coachId: selectedCoach,
+        promotionDate: promoDate,
+        notes: notes || undefined,
       });
-
-      if (insertError) {
-        throw new Error(insertError.message);
-      }
-      promotionInserted = true;
-
-      // Step 2: Update student's current belt
-      const { error: updateError } = await supabase.from('students').update({
-        current_belt_rank: targetRank,
-        belt_promotion_date: promoDate,
-      }).eq('id', selectedStudent);
-
-      if (updateError) {
-        // Rollback: delete the just-inserted promotion
-        if (promotionInserted) {
-          await supabase.from('belt_promotions').delete()
-            .eq('student_id', selectedStudent)
-            .eq('belt_hierarchy_id', selectedBelt)
-            .eq('promotion_date', promoDate);
-        }
-        throw new Error(updateError.message);
-      }
+      if (!res.ok) throw new Error(res.error);
 
       // ─── Success ───
       toast({ title: t('promote_success_title'), description: t('promote_success_description') });
@@ -286,16 +266,19 @@ export function BeltEngineClient({
                 <>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('student_label')}</label>
-                    <select className={selectClass} value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}>
+                    <select data-testid="be-student" className={selectClass} value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}>
                       <option value="">{t('select_student')}</option>
                       {students.map(s => (
                         <option key={s.id} value={s.id}>{getStudentName(s)}</option>
                       ))}
                     </select>
+                    {selectedStudentData && (
+                      <span data-testid="be-current-rank" data-rank={selectedStudentData.current_belt_rank || ''} className="hidden" />
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('discipline_label')}</label>
-                    <select className={selectClass} value={selectedDiscipline}
+                    <select data-testid="be-discipline" className={selectClass} value={selectedDiscipline}
                       onChange={e => { setSelectedDiscipline(e.target.value); setSelectedBelt(''); }}>
                       <option value="">{t('select_discipline')}</option>
                       {disciplines.filter(d => beltHierarchies.some(b => b.discipline_id === d.id)).map(d => (
@@ -311,10 +294,10 @@ export function BeltEngineClient({
                 <>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('new_belt')}</label>
-                    <select className={selectClass} value={selectedBelt} onChange={e => setSelectedBelt(e.target.value)} disabled={!selectedDiscipline}>
+                    <select data-testid="be-belt" className={selectClass} value={selectedBelt} onChange={e => setSelectedBelt(e.target.value)} disabled={!selectedDiscipline}>
                       <option value="">{t('select_belt')}</option>
                       {filteredBelts.map(b => (
-                        <option key={b.id} value={b.id}>
+                        <option key={b.id} value={b.id} data-rank={b.rank} data-sort={b.sort_order}>
                           {getLocalizedName(b, locale)}
                           {b.is_black_belt ? ' 🏆' : ''}
                         </option>
@@ -323,7 +306,7 @@ export function BeltEngineClient({
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('coach_label')}</label>
-                    <select className={selectClass} value={selectedCoach} onChange={e => setSelectedCoach(e.target.value)}>
+                    <select data-testid="be-coach" className={selectClass} value={selectedCoach} onChange={e => setSelectedCoach(e.target.value)}>
                       <option value="">{t('select_coach')}</option>
                       {coaches.map(c => (
                         <option key={c.id} value={c.id}>{getCoachName(c)}</option>
@@ -388,11 +371,11 @@ export function BeltEngineClient({
                   </Button>
                 )}
                 {step < 2 ? (
-                  <Button onClick={goNext} disabled={!canGoNext()} className="flex-1">
+                  <Button data-testid="be-next" onClick={goNext} disabled={!canGoNext()} className="flex-1">
                     {t('next')}<ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 ) : (
-                  <Button onClick={handlePromote} disabled={submitting} className="flex-1">
+                  <Button data-testid="be-confirm" onClick={handlePromote} disabled={submitting} className="flex-1">
                     {submitting ? t('promoting') : t('confirm_promotion')}
                   </Button>
                 )}

@@ -133,7 +133,7 @@ export default function ClassDetail({ classData, locale }: ClassDetailProps) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t('enrolledStudents')} ({classData.enrollments_count})</CardTitle>
-              <Button onClick={() => setShowEnrollModal(true)}>
+              <Button data-testid="enroll-open" onClick={() => setShowEnrollModal(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 {t('enrollStudent')}
               </Button>

@@ -49,7 +49,8 @@
     "coaches": "المدربون",
     "belts": "الأحزمة",
     "disciplines": "التخصصات",
-    "trials": "التجارب"
+    "trials": "التجارب",
+    "progress": "تقدمي"
   },
   "common": {
     "save": "حفظ",
@@ -285,7 +286,9 @@
     "nameEn": "الاسم (بالإنجليزية)",
     "nameFr": "الاسم (بالفرنسية)",
     "description": "الوصف",
-    "searchStudents": "بحث عن طلاب..."
+    "searchStudents": "بحث عن طلاب...",
+    "noStudentsFound": "لم يتم العثور على طلاب",
+    "cancel": "إلغاء"
   },
   "schedule": {
     "title": "الجدول",
@@ -538,7 +541,8 @@
     "promotion_failed": "فشلت الترقية. يرجى المحاولة مرة أخرى.",
     "validation_fill_all_fields": "يرجى اختيار الطالب والتخصص والحزام",
     "validation_error": "خطأ في التحقق — يرجى مراجعة المدخلات",
-    "validation_rank_not_higher": "يجب أن يكون الحزام المستهدف أعلى من الحزام الحالي"
+    "validation_rank_not_higher": "يجب أن يكون الحزام المستهدف أعلى من الحزام الحالي",
+    "validation_coach_required": "يرجى اختيار مدرب"
   },
   "leads": {
     "title": "خط أنابيب العملاء",
@@ -1032,7 +1036,9 @@
       "present": "حاضر",
       "absent": "غائب",
       "late": "متأخر",
-      "excused": "معذور"
+      "excused": "معذور",
+      "eligible": "مؤهل",
+      "notYet": "ليس بعد"
     },
     "students": {
       "title": "طلابي",
@@ -1056,5 +1062,17 @@
     "title": "التجارب",
     "empty": "لا توجد تجارب مسندة بعد",
     "unnamed": "عميل"
+  },
+  "progress": {
+    "title": "تقدمي",
+    "subtitle": "رتبتك وحضورك ومسارك إلى الحزام التالي",
+    "current_belt": "الحزام الحالي",
+    "classes_since_promotion": "الحصص منذ آخر ترقية",
+    "toward_next": "{attended} من {required} حصة نحو {next}",
+    "top_rank": "أنت في أعلى رتبة — تهانينا!",
+    "no_rank_yet": "لا توجد رتبة مسجلة بعد",
+    "promotion_history": "سجل الترقيات",
+    "no_history": "لا توجد ترقيات بعد",
+    "no_student": "لم يتم العثور على ملف عضو"
   }
 }

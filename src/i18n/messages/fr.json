@@ -49,7 +49,8 @@
     "coaches": "Entraîneurs",
     "belts": "Ceintures",
     "disciplines": "Disciplines",
-    "trials": "Essais"
+    "trials": "Essais",
+    "progress": "Progression"
   },
   "common": {
     "save": "Enregistrer",
@@ -285,7 +286,9 @@
     "nameEn": "Nom (Anglais)",
     "nameFr": "Nom (Français)",
     "description": "Description",
-    "searchStudents": "Rechercher des élèves..."
+    "searchStudents": "Rechercher des élèves...",
+    "noStudentsFound": "Aucun élève trouvé",
+    "cancel": "Annuler"
   },
   "schedule": {
     "title": "Emploi du temps",
@@ -538,7 +541,8 @@
     "promotion_failed": "La promotion a échoué. Veuillez réessayer.",
     "validation_fill_all_fields": "Veuillez sélectionner l'élève, la discipline et la ceinture",
     "validation_error": "Erreur de validation — veuillez vérifier vos saisies",
-    "validation_rank_not_higher": "La ceinture cible doit être supérieure à la ceinture actuelle"
+    "validation_rank_not_higher": "La ceinture cible doit être supérieure à la ceinture actuelle",
+    "validation_coach_required": "Veuillez choisir un coach"
   },
   "leads": {
     "title": "Pipeline Prospects",
@@ -1032,7 +1036,9 @@
       "present": "Présent",
       "absent": "Absent",
       "late": "En retard",
-      "excused": "Excusé"
+      "excused": "Excusé",
+      "eligible": "Éligible",
+      "notYet": "Pas encore"
     },
     "students": {
       "title": "Mes Élèves",
@@ -1056,5 +1062,17 @@
     "title": "Essais",
     "empty": "Aucun essai assigné",
     "unnamed": "Prospect"
+  },
+  "progress": {
+    "title": "Ma progression",
+    "subtitle": "Votre grade, présence et progression vers la ceinture suivante",
+    "current_belt": "Ceinture actuelle",
+    "classes_since_promotion": "Cours depuis la dernière promotion",
+    "toward_next": "{attended} sur {required} cours vers {next}",
+    "top_rank": "Vous êtes au grade le plus élevé — félicitations !",
+    "no_rank_yet": "Aucun grade enregistré",
+    "promotion_history": "Historique des promotions",
+    "no_history": "Aucune promotion",
+    "no_student": "Aucun profil membre trouvé"
   }
 }

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { attendanceRecordSchema } from '@/lib/validators';
+import { saveAttendance } from './actions';
+import { computeEligibility } from '@/lib/eligibility';
 import {
   Calendar,
   ClipboardCheck,
@@ -26,6 +28,8 @@ interface StudentEntry {
   last_name: string;
   discipline: string;
   status: AttendanceStatus;
+  eligible?: boolean;
+  eligibilityLabel?: string;
 }
 
 interface ClassOption {
@@ -161,13 +165,13 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
       const today = new Date().toISOString().split('T')[0];
 
-      // Get enrolled students
+      // Get enrolled students (+ belt fields for the eligibility hint, T3)
       const { data: enrollments } = await supabase
         .from('class_enrollments')
         .select(`
           student_id,
           students!inner (
-            id,
+            id, current_belt_rank, belt_promotion_date,
             profiles!inner (
               first_name_ar, first_name_en, first_name_fr,
               last_name_ar, last_name_en, last_name_fr
@@ -176,6 +180,14 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         `)
         .eq('class_id', selectedClassId)
         .eq('is_active', true);
+
+      // The class's discipline drives eligibility (per-discipline rank).
+      const { data: cls } = await supabase
+        .from('classes')
+        .select('discipline_id')
+        .eq('id', selectedClassId)
+        .single();
+      const disciplineId = cls?.discipline_id ?? null;
 
       // Get existing attendance records for today
       const { data: existingRecords } = await supabase
@@ -189,19 +201,40 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         statusMap[r.student_id] = r.status as AttendanceStatus;
       }
 
-      const studentEntries: StudentEntry[] = (enrollments || []).map((e: any) => {
-        const student = e.students && (Array.isArray(e.students) ? e.students[0] : e.students);
-        const profile = student?.profiles && (Array.isArray(student.profiles) ? student.profiles[0] : student.profiles);
+      const studentEntries: StudentEntry[] = await Promise.all(
+        (enrollments || []).map(async (e: any) => {
+          const student = e.students && (Array.isArray(e.students) ? e.students[0] : e.students);
+          const profile = student?.profiles && (Array.isArray(student.profiles) ? student.profiles[0] : student.profiles);
 
-        return {
-          student_id: e.student_id,
-          class_id: selectedClassId,
-          first_name: profile?.[`first_name_${locale}`] || profile?.first_name_en || '',
-          last_name: profile?.[`last_name_${locale}`] || profile?.last_name_en || '',
-          discipline: '',
-          status: statusMap[e.student_id] || 'present',
-        };
-      });
+          let eligible: boolean | undefined;
+          let eligibilityLabel: string | undefined;
+          if (disciplineId && student?.id) {
+            try {
+              const el = await computeEligibility(supabase, {
+                studentId: student.id,
+                disciplineId,
+                currentRank: student.current_belt_rank ?? null,
+                beltPromotionDate: student.belt_promotion_date ?? null,
+              });
+              eligible = el.hasNext ? el.eligible : undefined;
+              eligibilityLabel = el.hasNext ? `${el.attended} / ${el.requiredClasses ?? '—'}` : undefined;
+            } catch {
+              // eligibility is a read-only hint; never block attendance on it
+            }
+          }
+
+          return {
+            student_id: e.student_id,
+            class_id: selectedClassId,
+            first_name: profile?.[`first_name_${locale}`] || profile?.first_name_en || '',
+            last_name: profile?.[`last_name_${locale}`] || profile?.last_name_en || '',
+            discipline: '',
+            status: statusMap[e.student_id] || 'present',
+            eligible,
+            eligibilityLabel,
+          };
+        }),
+      );
 
       setStudents(studentEntries);
       setLoading(false);
@@ -245,28 +278,18 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         return;
       }
 
-      // Upsert attendance records one by one (Supabase doesn't support bulk upsert well)
-      const upserts = students.map(s =>
-        supabase
-          .from('attendance_records')
-          .upsert(
-            {
-              class_id: s.class_id,
-              student_id: s.student_id,
-              attendance_date: today,
-              status: s.status,
-              marked_by: markedBy,
-            },
-            {
-              onConflict: 'class_id, student_id, attendance_date',
-            }
-          )
-      );
+      // Server action: idempotent upsert + transition-guarded attendance_absent
+      // notifications (sanctioned F2 pattern, RETURNING-free). marked_by is set
+      // server-side from the authed session.
+      void markedBy;
+      const res = await saveAttendance({
+        classId: selectedClassId,
+        date: today,
+        records: students.map(s => ({ studentId: s.student_id, status: s.status })),
+      });
 
-      const results = await Promise.all(upserts);
-      const errors = results.filter(r => r.error);
-      if (errors.length > 0) {
-        console.error('Attendance save errors:', errors);
+      if (!res.ok) {
+        console.error('Attendance save error:', res.error);
         toast.error(msg('coach.attendance.saveError'));
       } else {
         toast.success(msg('coach.attendance.savedSuccess'));
@@ -309,6 +332,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
           {msg('coach.attendance.selectClass')}
         </label>
         <select
+          data-testid="attendance-class-select"
           value={selectedClassId}
           onChange={e => setSelectedClassId(e.target.value)}
           className={cn(
@@ -391,6 +415,9 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                   return (
                     <div
                       key={student.student_id}
+                      data-testid="attendance-student"
+                      data-student-name={`${student.first_name} ${student.last_name}`.trim()}
+                      data-status={student.status}
                       className="rounded-xl bg-white p-3 shadow-sm border border-gray-100"
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -399,6 +426,17 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                             {student.first_name} {student.last_name}
                           </p>
                         </div>
+                        {student.eligibilityLabel && (
+                          <span
+                            data-testid="attendance-eligibility"
+                            className={cn(
+                              'shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium',
+                              student.eligible ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500',
+                            )}
+                          >
+                            {student.eligible ? msg('coach.attendance.eligible') : msg('coach.attendance.notYet')} · {student.eligibilityLabel}
+                          </span>
+                        )}
                       </div>
 
                       {/* Status Toggle Buttons */}
@@ -408,6 +446,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                           return (
                             <button
                               key={status}
+                              data-testid={`att-status-${status}`}
                               onClick={() => toggleStatus(student.student_id, status)}
                               className={cn(
                                 'flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-all border',
@@ -429,6 +468,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
               {/* Submit Button */}
               <button
+                data-testid="attendance-save"
                 onClick={handleSubmit}
                 disabled={saving}
                 className={cn(

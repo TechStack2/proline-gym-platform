@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { X, Search, Loader2, Check, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { enrollStudent } from './actions'
 
 interface EnrollStudentModalProps {
   classId: string
@@ -16,133 +17,121 @@ interface EnrollStudentModalProps {
   onSuccess: () => void
 }
 
+type ProfileShape = {
+  first_name_ar: string | null; first_name_en: string | null; first_name_fr: string | null
+  last_name_ar: string | null; last_name_en: string | null; last_name_fr: string | null
+  phone: string | null
+}
+type StudentRow = { id: string; current_belt_rank: string | null; profiles: ProfileShape | ProfileShape[] | null }
+
+function profileOf(s: StudentRow): ProfileShape | null {
+  return Array.isArray(s.profiles) ? s.profiles[0] : s.profiles
+}
+function nameOf(s: StudentRow, locale: string): string {
+  const p = profileOf(s)
+  if (!p) return ''
+  const fn = (p as Record<string, string | null>)[`first_name_${locale}`] || p.first_name_en || ''
+  const ln = (p as Record<string, string | null>)[`last_name_${locale}`] || p.last_name_en || ''
+  return `${fn} ${ln}`.trim()
+}
+
 export default function EnrollStudentModal({ classId, locale, onClose, onSuccess }: EnrollStudentModalProps) {
   const t = useTranslations('classes')
   const [search, setSearch] = useState('')
-  const [students, setStudents] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [enrolling, setEnrolling] = useState<string | null>(null)
+  const [allStudents, setAllStudents] = useState<StudentRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [enrolling, setEnrolling] = useState(false)
   const [error, setError] = useState('')
-  const [selectedStudent, setSelectedStudent] = useState<any>(null)
+  const [selectedStudent, setSelectedStudent] = useState<StudentRow | null>(null)
   const isRTL = locale === 'ar'
 
+  // Students are normalized via profiles; the legacy embedded-column .or() search
+  // does not filter through PostgREST, so fetch the gym's students once and
+  // filter client-side by the localized name.
   useEffect(() => {
-    const searchStudents = async () => {
-      if (!search.trim()) {
-        setStudents([])
-        return
-      }
-
+    let active = true
+    ;(async () => {
       setLoading(true)
-      try {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('students')
-          .select('*')
-          .eq('status', 'active')
-          .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`)
-          .limit(10)
-
-        setStudents(data || [])
-      } catch (err) {
-        console.error('Error searching students:', err)
-      } finally {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('students')
+        .select(`
+          id, current_belt_rank,
+          profiles!inner (
+            first_name_ar, first_name_en, first_name_fr,
+            last_name_ar, last_name_en, last_name_fr, phone
+          )
+        `)
+        .eq('is_active', true)
+        .limit(200)
+      if (active) {
+        setAllStudents((data || []) as StudentRow[])
         setLoading(false)
       }
-    }
+    })()
+    return () => { active = false }
+  }, [])
 
-    const debounce = setTimeout(searchStudents, 300)
-    return () => clearTimeout(debounce)
-  }, [search])
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return allStudents.slice(0, 12)
+    return allStudents
+      .filter((s) => {
+        const p = profileOf(s)
+        const hay = [
+          nameOf(s, locale),
+          p?.first_name_en, p?.last_name_en, p?.first_name_ar, p?.last_name_ar, p?.phone,
+        ].filter(Boolean).join(' ').toLowerCase()
+        return hay.includes(q)
+      })
+      .slice(0, 12)
+  }, [search, allStudents, locale])
+
+  const getBeltColor = (belt: string | null) => {
+    const colors: { [key: string]: string } = {
+      white: 'bg-gray-100 text-gray-800', yellow: 'bg-yellow-100 text-yellow-800',
+      orange: 'bg-orange-100 text-orange-800', green: 'bg-green-100 text-green-800',
+      blue: 'bg-blue-100 text-blue-800', purple: 'bg-purple-100 text-purple-800',
+      brown: 'bg-amber-100 text-amber-800', red: 'bg-red-100 text-red-800',
+    }
+    return colors[(belt || '').toLowerCase()] || 'bg-gray-100 text-gray-800'
+  }
 
   const handleEnroll = async () => {
     if (!selectedStudent) return
-
-    setEnrolling(selectedStudent.id)
+    setEnrolling(true)
     setError('')
-
-    try {
-      const supabase = createClient()
-      
-      // Check if already enrolled
-      const { data: existing } = await supabase
-        .from('class_enrollments')
-        .select('id')
-        .eq('class_id', classId)
-        .eq('student_id', selectedStudent.id)
-        .eq('status', 'active')
-        .single()
-
-      if (existing) {
-        throw new Error('Student is already enrolled in this class')
-      }
-
-      const { error: enrollError } = await supabase
-        .from('class_enrollments')
-        .insert({
-          class_id: classId,
-          student_id: selectedStudent.id,
-          status: 'active',
-        })
-
-      if (enrollError) throw enrollError
-
+    const res = await enrollStudent({ classId, studentId: selectedStudent.id })
+    setEnrolling(false)
+    if (res.ok) {
       onSuccess()
-    } catch (err: any) {
-      setError(err.message || 'Failed to enroll student')
-    } finally {
-      setEnrolling(null)
+    } else {
+      setError(res.error || 'Failed to enroll student')
     }
-  }
-
-  const getBeltColor = (belt: string) => {
-    const colors: { [key: string]: string } = {
-      white: 'bg-gray-100 text-gray-800',
-      yellow: 'bg-yellow-100 text-yellow-800',
-      orange: 'bg-orange-100 text-orange-800',
-      green: 'bg-green-100 text-green-800',
-      blue: 'bg-blue-100 text-blue-800',
-      purple: 'bg-purple-100 text-purple-800',
-      brown: 'bg-amber-100 text-amber-800',
-      red: 'bg-red-100 text-red-800',
-      black: 'bg-gray-900 text-white',
-    }
-    return colors[belt.toLowerCase()] || 'bg-gray-100 text-gray-800'
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className={cn(
-        "bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto",
-        isRTL && "rtl"
-      )}>
+      <div
+        data-testid="enroll-modal"
+        className={cn('bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto', isRTL && 'rtl')}
+      >
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold">{t('enrollStudent')}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
         </div>
 
         <div className="p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">{error}</div>}
 
           <div className="relative">
-            <Search className={cn(
-              "absolute top-2.5 h-4 w-4 text-muted-foreground",
-              isRTL ? "right-3" : "left-3"
-            )} />
+            <Search className={cn('absolute top-2.5 h-4 w-4 text-muted-foreground', isRTL ? 'right-3' : 'left-3')} />
             <Input
+              data-testid="enroll-search"
               placeholder={t('searchStudents')}
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setSelectedStudent(null)
-              }}
-              className={cn(isRTL ? "pr-10" : "pl-10")}
+              onChange={(e) => { setSearch(e.target.value); setSelectedStudent(null) }}
+              className={cn(isRTL ? 'pr-10' : 'pl-10')}
               autoFocus
             />
           </div>
@@ -153,59 +142,48 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
             </div>
           )}
 
-          {!loading && students.length > 0 && (
+          {!loading && filtered.length > 0 && (
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {students.map((student) => (
-                <div
-                  key={student.id}
-                  className={cn(
-                    "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors",
-                    selectedStudent?.id === student.id
-                      ? "bg-primary/10 border border-primary"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  )}
-                  onClick={() => setSelectedStudent(student)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">
-                        {student.first_name} {student.last_name}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={getBeltColor(student.belt_rank)}>
-                          {student.belt_rank}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {student.email}
-                        </span>
+              {filtered.map((student) => {
+                const name = nameOf(student, locale)
+                return (
+                  <div
+                    key={student.id}
+                    data-testid="enroll-student-row"
+                    data-student-name={name}
+                    className={cn(
+                      'flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors',
+                      selectedStudent?.id === student.id ? 'bg-primary/10 border border-primary' : 'bg-gray-50 hover:bg-gray-100',
+                    )}
+                    onClick={() => setSelectedStudent(student)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{name || '—'}</p>
+                        {student.current_belt_rank && (
+                          <Badge className={getBeltColor(student.current_belt_rank)}>
+                            {student.current_belt_rank}
+                          </Badge>
+                        )}
                       </div>
                     </div>
+                    {selectedStudent?.id === student.id && <Check className="h-5 w-5 text-primary" />}
                   </div>
-                  {selectedStudent?.id === student.id && (
-                    <Check className="h-5 w-5 text-primary" />
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
-          {!loading && search && students.length === 0 && (
-            <p className="text-center text-muted-foreground py-4">
-              {t('noStudentsFound')}
-            </p>
+          {!loading && search && filtered.length === 0 && (
+            <p className="text-center text-muted-foreground py-4">{t('noStudentsFound')}</p>
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleEnroll}
-              disabled={!selectedStudent || enrolling !== null}
-            >
+            <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+            <Button data-testid="enroll-confirm" onClick={handleEnroll} disabled={!selectedStudent || enrolling}>
               {enrolling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t('confirmEnroll')}
             </Button>

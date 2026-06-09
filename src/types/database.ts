@@ -2452,6 +2452,17 @@ export type Database = {
         Args: { p_phone: string }
         Returns: boolean
       }
+      promote_student: {
+        Args: {
+          p_student_id: string
+          p_discipline_id: string
+          p_to_hierarchy_id: string
+          p_coach_id: string
+          p_promotion_date?: string | null
+          p_notes?: string | null
+        }
+        Returns: Database["public"]["Tables"]["belt_promotions"]["Row"]
+      }
     }
     Enums: {
       attendance_status_enum: "present" | "absent" | "late" | "excused"

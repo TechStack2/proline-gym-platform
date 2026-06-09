@@ -49,7 +49,8 @@
     "coaches": "Coaches",
     "belts": "Belts",
     "disciplines": "Disciplines",
-    "trials": "Trials"
+    "trials": "Trials",
+    "progress": "Progress"
   },
   "common": {
     "save": "Save",
@@ -285,7 +286,9 @@
     "nameEn": "Name (English)",
     "nameFr": "Name (French)",
     "description": "Description",
-    "searchStudents": "Search students..."
+    "searchStudents": "Search students...",
+    "noStudentsFound": "No students found",
+    "cancel": "Cancel"
   },
   "schedule": {
     "title": "Schedule",
@@ -538,7 +541,8 @@
     "promotion_failed": "Promotion failed. Please try again.",
     "validation_fill_all_fields": "Please select student, discipline, and belt",
     "validation_error": "Validation error — please check your inputs",
-    "validation_rank_not_higher": "Target belt must be higher than current belt rank"
+    "validation_rank_not_higher": "Target belt must be higher than current belt rank",
+    "validation_coach_required": "Please select a coach"
   },
   "leads": {
     "title": "Lead Pipeline",
@@ -1032,7 +1036,9 @@
       "present": "Present",
       "absent": "Absent",
       "late": "Late",
-      "excused": "Excused"
+      "excused": "Excused",
+      "eligible": "Eligible",
+      "notYet": "Not yet"
     },
     "students": {
       "title": "My Students",
@@ -1056,5 +1062,17 @@
     "title": "Trials",
     "empty": "No trials assigned yet",
     "unnamed": "Lead"
+  },
+  "progress": {
+    "title": "My Progress",
+    "subtitle": "Your rank, attendance and path to the next belt",
+    "current_belt": "Current belt",
+    "classes_since_promotion": "Classes since last promotion",
+    "toward_next": "{attended} of {required} classes toward {next}",
+    "top_rank": "You're at the top rank — congratulations!",
+    "no_rank_yet": "No rank recorded yet",
+    "promotion_history": "Promotion history",
+    "no_history": "No promotions yet",
+    "no_student": "No member profile found"
   }
 }
