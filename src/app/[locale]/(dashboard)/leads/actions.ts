@@ -71,22 +71,27 @@ export async function addLead(
   if (error) return { ok: false, error: error.message };
 
   // lead_new → the whole front desk (owner + receptionist), sanctioned pattern.
+  // Best-effort: a notification failure must never abort the lead creation.
   const leadName = `${parsed.data.first_name} ${parsed.data.last_name}`.trim();
-  for (const role of ['owner', 'receptionist'] as const) {
-    await createNotificationForRole(
-      {
-        role,
-        gymId,
-        type: 'lead_new',
-        titleKey: 'messages.lead_new.title',
-        bodyKey: 'messages.lead_new.body',
-        params: { leadName },
-        entityType: 'lead',
-        entityId: lead.id,
-        actionUrl: '/leads',
-      },
-      supabase,
-    );
+  try {
+    for (const role of ['owner', 'receptionist'] as const) {
+      await createNotificationForRole(
+        {
+          role,
+          gymId,
+          type: 'lead_new',
+          titleKey: 'messages.lead_new.title',
+          bodyKey: 'messages.lead_new.body',
+          params: { leadName },
+          entityType: 'lead',
+          entityId: lead.id,
+          actionUrl: '/leads',
+        },
+        supabase,
+      );
+    }
+  } catch (e) {
+    console.error('[addLead] lead_new notify failed (non-fatal):', e);
   }
 
   revalidatePath('/[locale]/(dashboard)/leads', 'page');
@@ -115,33 +120,38 @@ export async function scheduleTrial(input: {
   if (error || !trial) return { ok: false, error: error?.message ?? 'schedule_failed' };
 
   // trial_scheduled → the assigned coach (recipient = coach profile_id).
+  // Best-effort: a notification failure must never abort the trial write.
   if (input.coachId) {
-    const { data: coach } = await supabase
-      .from('coaches')
-      .select('profile_id')
-      .eq('id', input.coachId)
-      .single();
-    const { data: lead } = await supabase
-      .from('leads')
-      .select('first_name, last_name')
-      .eq('id', input.leadId)
-      .single();
-    if (coach?.profile_id) {
-      const leadName = `${lead?.first_name ?? ''} ${lead?.last_name ?? ''}`.trim();
-      await createNotification(
-        {
-          recipientProfileId: coach.profile_id,
-          gymId,
-          type: 'trial_scheduled',
-          titleKey: 'messages.trial_scheduled.title',
-          bodyKey: 'messages.trial_scheduled.body',
-          params: { leadName, date: input.scheduledDate, time: input.scheduledTime || '' },
-          entityType: 'trial',
-          entityId: (trial as { id: string }).id,
-          actionUrl: '/coach/trials',
-        },
-        supabase,
-      );
+    try {
+      const { data: coach } = await supabase
+        .from('coaches')
+        .select('profile_id')
+        .eq('id', input.coachId)
+        .single();
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('first_name, last_name')
+        .eq('id', input.leadId)
+        .single();
+      if (coach?.profile_id) {
+        const leadName = `${lead?.first_name ?? ''} ${lead?.last_name ?? ''}`.trim();
+        await createNotification(
+          {
+            recipientProfileId: coach.profile_id,
+            gymId,
+            type: 'trial_scheduled',
+            titleKey: 'messages.trial_scheduled.title',
+            bodyKey: 'messages.trial_scheduled.body',
+            params: { leadName, date: input.scheduledDate, time: input.scheduledTime || '' },
+            entityType: 'trial',
+            entityId: (trial as { id: string }).id,
+            actionUrl: '/coach/trials',
+          },
+          supabase,
+        );
+      }
+    } catch (e) {
+      console.error('[scheduleTrial] trial_scheduled notify failed (non-fatal):', e);
     }
   }
 
@@ -189,7 +199,10 @@ export async function convertLead(input: {
     p_lead_id: input.leadId,
     p_plan_id: input.planId,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error('[convertLead] convert_lead_to_member RPC failed:', error.message);
+    return { ok: false, error: error.message };
+  }
   const result = Array.isArray(rows) ? rows[0] : rows;
   if (!result) return { ok: false, error: 'convert_returned_no_row' };
 
@@ -205,33 +218,47 @@ export async function convertLead(input: {
     total_usd: number;
   };
 
+  // The member + membership + invoice are now committed (the RPC is atomic). The
+  // notification and provisioning are BEST-EFFORT side-effects — a failure here
+  // must never roll back or abort the conversion.
+
   // lead_converted → the new member's profile (login-less now; readable once a
   // real login is provisioned). Sanctioned pattern, RETURNING-free.
-  const { data: gym } = await supabase
-    .from('gyms')
-    .select('name_en')
-    .eq('id', gymId)
-    .single();
-  await createNotification(
-    {
-      recipientProfileId: profileId,
-      gymId,
-      type: 'lead_converted',
-      titleKey: 'messages.lead_converted.title',
-      bodyKey: 'messages.lead_converted.body',
-      params: { gymName: gym?.name_en ?? 'PRO LINE Gym' },
-      entityType: 'student',
-      entityId: studentId,
-      actionUrl: '/portal/dashboard',
-    },
-    supabase,
-  );
+  try {
+    const { data: gym } = await supabase
+      .from('gyms')
+      .select('name_en')
+      .eq('id', gymId)
+      .single();
+    await createNotification(
+      {
+        recipientProfileId: profileId,
+        gymId,
+        type: 'lead_converted',
+        titleKey: 'messages.lead_converted.title',
+        bodyKey: 'messages.lead_converted.body',
+        params: { gymName: gym?.name_en ?? 'PRO LINE Gym' },
+        entityType: 'student',
+        entityId: studentId,
+        actionUrl: '/portal/dashboard',
+      },
+      supabase,
+    );
+  } catch (e) {
+    console.error('[convertLead] lead_converted notify failed (non-fatal):', e);
+  }
 
   // Provisioning seam — simulated invite (no auth.users, no external send).
-  const invite = await provisioning.inviteMember(
-    { profileId, studentId, gymId, channel: 'whatsapp' },
-    supabase,
-  );
+  let inviteStatus = 'pending';
+  try {
+    const invite = await provisioning.inviteMember(
+      { profileId, studentId, gymId, channel: 'whatsapp' },
+      supabase,
+    );
+    inviteStatus = invite.status;
+  } catch (e) {
+    console.error('[convertLead] provisioning failed (non-fatal):', e);
+  }
 
   revalidatePath('/[locale]/(dashboard)/leads', 'page');
   revalidatePath('/[locale]/(dashboard)/students', 'page');
@@ -240,6 +267,6 @@ export async function convertLead(input: {
     studentId,
     invoiceNumber,
     totalUsd: Number(totalUsd),
-    inviteStatus: invite.status,
+    inviteStatus,
   };
 }
