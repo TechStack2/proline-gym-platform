@@ -1212,4 +1212,6 @@ The shared `createNotification` helper, when called from a staff Server Action v
 - `notification-item.tsx`: `data-testid="notification-item"` + `data-notification-type="<type>"` (robust, text-independent selector); new optional `notificationType` prop.
 - `notifications-client.tsx`: `data-testid="notifications-unread-list"` / `notifications-read-list`; threads `type` → item.
 
-**Gates:** `tsc --noEmit` clean; `npm run build` clean (exit 0, "Compiled successfully"); notifications RLS untouched (read-path/harness only — no migrations, no producer code). Local full run (setup + pt + notifications) **7/7 passed** vs the cloud DB. CI run on `f2-readpath-harness`: see below.
+**Gates:** `tsc --noEmit` clean; `npm run build` clean (exit 0, "Compiled successfully"); notifications RLS untouched (read-path/harness only — no migrations, no producer code). Local full run (setup + pt + notifications) **7/7 passed** vs the cloud DB.
+
+**CI (behavior-green gate) on `f2-readpath-harness`:** run **27195909792** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27195909792 — **SUCCESS, 21/21 passed** (full suite incl. both new `notifications` specs: `student@` pt_approved ✅ + `coach@` pt_assigned ✅). NOT merged to main — the orchestrator owns the F2-A integration gate (B's bell assertions re-run on A's producer fix there).
