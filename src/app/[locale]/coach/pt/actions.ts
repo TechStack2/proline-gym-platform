@@ -139,13 +139,29 @@ export async function completePtSession(input: {
 }
 
 // ── T1 log-on-delivery — schedule + complete in one step ─────────────────────
+// The session is delivered instantly, so we DON'T emit pt_session_scheduled here
+// (a "scheduled" alert for an already-completed session is noise) — only the
+// completion notification fires. (The standalone Schedule path still notifies.)
 export async function logPtDelivery(input: {
   assignmentId: string;
   coachId?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const sched = await schedulePtSession({ assignmentId: input.assignmentId, coachId: input.coachId });
-  if (!sched.ok) return sched;
-  return completePtSession({ sessionId: sched.sessionId });
+  const c = await ctx();
+  if ('error' in c) return { ok: false, error: c.error };
+
+  const { data: session, error } = await c.supabase
+    .rpc('schedule_pt_session', {
+      p_assignment_id: input.assignmentId,
+      p_coach_id: input.coachId || null,
+      p_scheduled_at: null,
+      p_duration: 60,
+    })
+    .single();
+  if (error || !session) {
+    console.error('[logPtDelivery] schedule RPC failed:', error?.message);
+    return { ok: false, error: error?.message ?? 'schedule_failed' };
+  }
+  return completePtSession({ sessionId: (session as SessionRow).id });
 }
 
 // ── T3/T4 — no-show / cancel (policy-aware, server-side) ─────────────────────
