@@ -31,10 +31,11 @@ async function contextFor(browser: Browser, role: keyof typeof ROLES): Promise<{
 }
 
 async function optionValueByText(page: Page, testid: string, text: string): Promise<string> {
-  const v = await page
-    .locator(`[data-testid="${testid}"] option`, { hasText: text })
-    .first()
-    .getAttribute('value');
+  const opt = page.locator(`[data-testid="${testid}"] option`, { hasText: text }).first();
+  // Fail fast (don't let getAttribute auto-wait the whole test timeout) if the
+  // option never appears.
+  await expect(opt, `an option matching "${text}" should exist in ${testid}`).toBeAttached({ timeout: 15_000 });
+  const v = await opt.getAttribute('value');
   return v ?? '';
 }
 
