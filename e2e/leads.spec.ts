@@ -121,10 +121,14 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await staffCard.getByTestId('trial-time').selectOption('17:00');
     await staffCard.getByTestId('trial-coach').selectOption({ label: COACH_EN });
     await staffCard.getByTestId('trial-confirm').click();
+    // Durable proof (toasts are transient): after the action + refresh the card
+    // reflects trial_scheduled (trial_classes row written + lead flipped).
     await expect(
-      owner.page.locator('[data-sonner-toast]').filter({ hasText: /Trial scheduled/i }).first(),
-      'scheduling should confirm (trial_classes row written + coach notified)',
-    ).toBeVisible({ timeout: 15_000 });
+      owner.page
+        .locator(`[data-testid="lead-card"][data-lead-name="${STAFF_NAME}"][data-lead-status="trial_scheduled"]:visible`)
+        .first(),
+      'scheduling should persist (trial_classes row + lead → trial_scheduled)',
+    ).toBeVisible({ timeout: 20_000 });
     await shot(owner.page, testInfo, 'leads-3-trial-scheduled');
   } finally {
     await owner.ctx.close();
@@ -139,10 +143,14 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await shot(coach.page, testInfo, 'leads-4-coach-trials');
 
     await trialRow.getByTestId('coach-trial-show').click();
+    // Durable proof: the row reflects the recorded outcome after refresh
+    // (trial → completed; the RPC also flips the lead → trial_completed).
     await expect(
-      coach.page.locator('[data-sonner-toast]').first(),
-      'recording the outcome should confirm',
-    ).toBeVisible({ timeout: 15_000 });
+      coach.page
+        .locator(`[data-testid="coach-trial-row"][data-lead-name="${STAFF_NAME}"][data-trial-status="completed"]`)
+        .first(),
+      'recording show should persist (trial → completed)',
+    ).toBeVisible({ timeout: 20_000 });
   } finally {
     await coach.ctx.close();
   }
@@ -166,15 +174,12 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await cmodal.getByTestId('convert-plan').selectOption(monthlyValue!);
     await cmodal.getByTestId('convert-confirm').click();
 
-    await expect(
-      owner2.page.locator('[data-sonner-toast]').filter({ hasText: /converted/i }).first(),
-      'convert should succeed (atomic profile+student+membership+invoice)',
-    ).toBeVisible({ timeout: 20_000 });
-
-    // The converted card shows the simulated login-invite + the membership invoice
-    // (Monthly $50 + 11% Lebanese TVA = $55.50, computed by the invoice trigger).
+    // Durable proof (toasts are transient): the converted card shows the simulated
+    // login-invite + the membership invoice (Monthly $50 + 11% Lebanese TVA =
+    // $55.50, computed by the invoice trigger). The invite-badge appearing means
+    // the atomic convert (profile+student+membership+invoice+link) succeeded.
     const convertedCard = owner2.page.locator(`[data-testid="lead-card"][data-lead-name="${STAFF_NAME}"]:visible`).first();
-    await expect(convertedCard.getByTestId('invite-badge'), 'a simulated login-invite state must be visible in admin').toBeVisible({ timeout: 15_000 });
+    await expect(convertedCard.getByTestId('invite-badge'), 'a simulated login-invite state must be visible in admin (convert succeeded)').toBeVisible({ timeout: 20_000 });
     await expect(convertedCard.getByTestId('convert-result'), 'the membership invoice (TVA total) should surface').toContainText('$55.50');
     await shot(owner2.page, testInfo, 'leads-5-converted');
 
