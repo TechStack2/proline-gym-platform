@@ -9,6 +9,8 @@ type NotificationItemProps = {
   onClick: () => void;
   locale: string;
   actionUrl?: string | null;
+  /** Notification `type` (e.g. pt_approved) — surfaced as a stable test hook only. */
+  notificationType?: string | null;
 };
 
 export function NotificationItem({
@@ -19,12 +21,15 @@ export function NotificationItem({
   onClick,
   locale,
   actionUrl,
+  notificationType,
 }: NotificationItemProps) {
   const isRTL = locale === 'ar';
 
   return (
     <button
       onClick={onClick}
+      data-testid="notification-item"
+      data-notification-type={notificationType ?? undefined}
       className={cn(
         'w-full text-left px-4 py-3 flex gap-3 items-start transition-all duration-150',
         'hover:bg-gray-50 active:bg-gray-100',

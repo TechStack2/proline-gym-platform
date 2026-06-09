@@ -1169,3 +1169,47 @@ The shared `createNotification` helper, when called from a staff Server Action v
 
 ### Migrations applied to cloud (recorded in ledger)
 000019 (1-session package), 000020 (get_gym_coaches), 000021 (pt_emit_approved_notifications). Re-applied 000015 (recipient_in_gym search_path) — idempotent.
+
+---
+
+## Cycle 5 / Phase 0 / Prompt F2 — Notification Producer Root-Cause
+
+> Two parallel workstreams on isolated branches. **A** (`f2-producer-fix`) root-causes the producer RLS rejection; **B** (`f2-readpath-harness`) independently verifies the read path and closes the bell-coverage hole. Sub-headings below. (A appends `### F2-A`; whoever merges second rebases.)
+
+### F2-B — Read-path verify + harness coverage (branch `f2-readpath-harness`, e2e-runner)
+
+**Mission:** the harness proved PT approval/roster/decrement but NEVER checked the notification bell. Closed that hole and audited the consumer read path to independently corroborate the producer root cause.
+
+**New spec — `e2e/notifications.spec.ts` (Playwright project `notifications`, `dependencies: ['setup','pt']`).** Logs in as the *recipient* and asserts they actually SEE the producer-emitted notification, on two surfaces each: (1) the full `/notifications` page (RLS-scoped to `auth.uid()`), (2) the bell + dropdown. Keys off surgical `data-testid`s + `data-notification-type` + the rendered i18n title, scoped to the `:visible` copy. Depends on `pt` so a fresh approval emits the rows in-run (the PT spec never opens the bell → they stay unread).
+
+**Recipient SEES the bell — corroboration result (verified locally vs the coherent cloud DB; full suite 7/7 green):**
+
+| Role | Expected notification | Surface 1: `/notifications` page | Surface 2: bell + dropdown | Sees it? |
+|---|---|---|---|---|
+| `student@prolinegym.lb` | `pt_approved` — "PT request approved" | ✅ renders (not empty state) | ✅ badge + dropdown lists it | **YES** |
+| `coach@prolinegym.lb` | `pt_assigned` — "PT sessions assigned" | ✅ renders (not empty state) | ✅ badge + dropdown lists it | **YES** |
+
+**→ Corroboration verdict:** Both recipients can READ their notification row through the consumer's RLS-scoped query (`user_id = auth.uid()`). That means the `user_id` written by `pt_emit_approved_notifications` (= `students.profile_id` / `coaches.profile_id`) is a **valid in-gym profile id the recipient owns**. This is independent, surface-level evidence that the recipient ids are correct → **supports World B** (the original `createNotification` INSERT was rejected because a *wrong* id was passed at the call site, i.e. RLS working as designed — NOT a fragile substrate). Hands to F2-A's integration-gate verdict.
+
+**Consumer-side audit (6 consumers + bell + realtime):**
+- `notification-bell.tsx` — badge counts unread (`user_id=auth.uid()`, `is_read=false`); initial fetch + 30s poll + **realtime INSERT** subscription (`postgres_changes`, `filter: user_id=eq.<uid>`) that increments the badge with **no refresh**; click opens dropdown. Functional. ✓
+- `notification-dropdown.tsx` — fetches latest 5 for the user on open, renders via `renderNotification`+`NotificationItem`, realtime prepend while open, mark-as-read, "View all". ✓
+- `notification-item.tsx` — presentational (title/body/dot/timeAgo). ✓
+- `(dashboard)/notifications/page.tsx` (server) — fetches latest 50 for `auth.uid()`, RLS-scoped; **no role gate** in the `(dashboard)` layout → reachable by every authed role. ✓
+- `notifications-client.tsx` — groups unread/read, renders each via `renderNotification`, mark-all-read. ✓
+- `lib/notifications/render.ts` — maps `title_key`/`body_key` (`messages.pt_approved.title`) + `params` through the next-intl `notifications` namespace. ✓
+- **Realtime:** the bell/dropdown subscribe to `postgres_changes` INSERT filtered by `user_id`; the PT producer's INSERT is exactly that event, so an approval updates the badge live without a refresh. (Not driven by a live INSERT inside the spec — a client INSERT is RLS-rejected by design and producer code is out of B's scope; the subscription wiring is audited and confirmed correct.)
+
+**⚠️ Read-path finding for the auditor (bell placement gap, NOT a producer issue):**
+- The functional `<NotificationBell>` is rendered **only** in the MOBILE dashboard top bar (`DashboardLayoutClient`, `block md:hidden`).
+- The DESKTOP dashboard `Header.tsx` bell is a **static stub** (always-on red dot, no data, not the real component).
+- `/portal` (student) and `/coach` layouts render **NO** notification bell at all.
+- → So students/coaches only reach the functional bell at a mobile viewport on a `(dashboard)` route, and reach the full list via `/notifications` (any viewport). The spec therefore uses a mobile viewport + `/notifications`. **Recommendation for a later prompt:** mount the real `NotificationBell` in the portal/coach top bars and replace the desktop `Header` stub. (Out of F2 scope — flagged only.)
+
+**Surgical `data-testid`s added (no behavior changes):**
+- `notification-bell.tsx`: `data-testid="notification-bell"` (button), `data-testid="notification-bell-badge"` (unread badge).
+- `notification-dropdown.tsx`: `data-testid="notification-dropdown-list"` (list container); threads `type` → item.
+- `notification-item.tsx`: `data-testid="notification-item"` + `data-notification-type="<type>"` (robust, text-independent selector); new optional `notificationType` prop.
+- `notifications-client.tsx`: `data-testid="notifications-unread-list"` / `notifications-read-list`; threads `type` → item.
+
+**Gates:** `tsc --noEmit` clean; `npm run build` clean (exit 0, "Compiled successfully"); notifications RLS untouched (read-path/harness only — no migrations, no producer code). Local full run (setup + pt + notifications) **7/7 passed** vs the cloud DB. CI run on `f2-readpath-harness`: see below.

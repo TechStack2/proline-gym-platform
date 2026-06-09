@@ -89,12 +89,14 @@ export function NotificationBell({ locale }: NotificationBellProps) {
     <div className="relative">
       <button
         onClick={handleBellClick}
+        data-testid="notification-bell"
         className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 relative transition-colors"
         aria-label={locale === 'ar' ? 'الإشعارات' : locale === 'fr' ? 'Notifications' : 'Notifications'}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
           <span
+            data-testid="notification-bell-badge"
             className={cn(
               'absolute -top-1 -right-1 min-w-[18px] h-[18px]',
               'flex items-center justify-center',
