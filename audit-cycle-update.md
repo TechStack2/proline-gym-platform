@@ -1169,3 +1169,57 @@ The shared `createNotification` helper, when called from a staff Server Action v
 
 ### Migrations applied to cloud (recorded in ledger)
 000019 (1-session package), 000020 (get_gym_coaches), 000021 (pt_emit_approved_notifications). Re-applied 000015 (recipient_in_gym search_path) — idempotent.
+
+---
+
+## Cycle 5 / Phase 0 / Prompt F2 — Notification Producer Root-Cause
+
+### F2-A — Producer Root-Cause & Fix (branch `f2-producer-fix`)
+
+**Status:** ROOT-CAUSED + FIXED. The 22-R "root cause not fully pinned" finding above is now closed: it was **World C**, and the staff→user `createNotification` path works directly (no definer bypass needed).
+
+#### Step 0 — original call-site id (git archaeology, `e25363c^`)
+`approvePtRequest` resolved the recipients correctly and passed the **profile_id**, not a row id:
+- student: `students.profile_id` (looked up by `assignment.student_id`) → `createNotification({ recipientProfileId: student.profile_id, … }, supabase)`
+- coach: `coaches.profile_id` (looked up by `finalCoachId`) → `createNotification({ recipientProfileId: coach.profile_id, … }, supabase)`
+
+Both calls already passed the action's **same authenticated `supabase` client** as the 2nd arg. So the recipient id was correct from the start → **rules out World B**.
+
+#### Step 1 — reproduce + captured values (live staff session, via the SAME client, immediately before the failing notifications INSERT)
+Re-wired `approvePtRequest` to call the helper again + added a TEMP `SECURITY INVOKER` `f2_diag(uuid,uuid)` (migration, since removed) called via `supabase.rpc` so the values are read **as the `authenticated` role** inside the real Server-Action session. Captured from the E2E prod-build run (owner approving a student's PT request):
+
+| Captured (authenticated context) | Value |
+|---|---|
+| `auth.uid()` | `8b08af1e-…ee93` (owner — **NON-NULL**) |
+| `is_staff()` | **true** |
+| `get_user_gym_id()` | `b737047f-…242a` |
+| inserted `user_id` (recipient = student profile) | `0b78def3-…5355` |
+| inserted `gym_id` | `b737047f-…242a` (**== get_user_gym_id**) |
+| `recipient_in_gym(user_id, gym_id)` | **true** |
+| `exists(profile id=user_id)` / its `gym_id` | true / `b737047f-…242a` (**gym_matches=true**) |
+| → resulting notifications INSERT | **`42501 new row violates row-level security policy for table "notifications"`** |
+
+All **three** `notifications_insert_staff_same_gym` WITH CHECK predicates (`is_staff()`, `gym_id = get_user_gym_id()`, `recipient_in_gym(user_id, gym_id)`) evaluate **TRUE**, yet the INSERT is still rejected `42501`. Admin-context checks (Management API) corroborate: all of `recipient_in_gym`/`is_staff`/`get_user_gym_id` are owned by `postgres`, `SECURITY DEFINER`, and granted `EXECUTE` to `authenticated` (→ **rules out World C "missing grant/search_path"**); the live INSERT policy matches 000015 exactly; `recipient_in_gym(student profile, owner gym) = true`. The same action's invoice INSERT succeeds, and `invoices_staff` is `FOR ALL USING (gym_id = get_user_gym_id() AND is_staff())` — for a `FOR ALL` policy with no explicit `WITH CHECK`, Postgres uses `USING` as the INSERT check → **the invoice success independently proves `is_staff()`/`get_user_gym_id()` were correct** (→ **rules out World A: auth context was intact**).
+
+#### Root cause (one sentence) — **World C**
+The helper inserted with `.insert(...).select('id').single()`, which makes PostgREST emit **`INSERT … RETURNING`**: the INSERT `WITH CHECK` is satisfied, but returning the new row additionally requires passing the **`notifications_select_self` SELECT policy (`user_id = auth.uid()`)** — and a staff producer's row has `user_id = the RECIPIENT`, never the staff member's own `auth.uid()`, so the RETURNING is blocked and Postgres surfaces it as `42501 new row violates row-level security policy` even though the insert itself is permitted. (Corroborating: `createNotificationForRole` does a plain `.insert(rows)` with no `.select()` and never hit this; and the prior "reuse the authed client" attempt couldn't help because the client/auth were never the problem.)
+
+#### The fix (general staff→user path; RLS unchanged, not weakened)
+`createNotification` now **generates the row id client-side (`crypto.randomUUID()`) and does a plain insert with no `.select()/RETURNING`**, so the recipient-only SELECT policy is never exercised. The `is_staff() + same-gym + recipient_in_gym` INSERT policy stays as the sole guardrail. `approvePtRequest` reverts to emitting `pt_approved` (student) + `pt_assigned` (coach) **directly via the shared helper** on the staff session's authed client. Verified on the cloud DB through the production build: full **E2E 19 passed / 0 failed**, zero `42501`/`createNotification failed` in the server logs (run `27195929723`).
+
+- **000021 `pt_emit_approved_notifications` (definer RPC): superseded.** No longer called by `approvePtRequest`; kept defined in the DB (forward-only, harmless) but it is no longer the path. The general helper now works without a definer bypass.
+- New migration **`000022_drop_f2_diag.sql`** — drops the temporary `f2_diag` diagnostic function. **Applied to cloud** (run `27195896431`); the temp `000022_f2_diag` migration was repurposed to this drop so nothing diagnostic remains live.
+- Unit test `create.test.ts` updated to the RETURNING-free contract (client-generated id). `tsc` + `next build` clean; 3/3 unit tests pass.
+
+#### Sanctioned notification pattern for Prompts 23/24
+**Call the shared `createNotification` / `createNotificationForRole` helper directly from staff Server Actions, passing the action's already-authenticated `supabase` client**, with the recipient's **profile_id** (`profiles.id === auth.users.id`) as `recipientProfileId`. RLS (000015: `is_staff() AND gym_id = get_user_gym_id() AND recipient_in_gym(user_id, gym_id)`) is the guardrail — no `SECURITY DEFINER` bypass is required. The helpers are **RETURNING-free by contract** (do not add `.select()` back to a producer insert; if a producer needs the id, use the client-generated one the helper returns). For Lead/Trial/Attendance/Belt/Renewal: resolve the recipient profile_id (or use `createNotificationForRole` to fan out to all `owner`/`receptionist` holders in the gym) and call the helper — no per-flow definer RPC needed.
+
+#### Other writes at risk?
+**No** — this was **not** World A (auth context was intact; the invoice INSERT, gated by `is_staff()`, succeeded in the same action). The failure is specific to **inserting a row you cannot read back** (recipient ≠ caller) **while requesting RETURNING**. Other server-action writes either insert rows the caller can read (own-scope) or already avoid RETURNING; none share the recipient≠caller + RETURNING shape. The only affected surface was the notifications producer, now fixed centrally in the helper.
+
+#### CI evidence
+- Fixed-path E2E (prod build, cloud DB): **19 passed / 0 failed** — run `27195929723` — https://github.com/TechStack2/proline-gym-platform/actions/runs/27195929723
+- Reproduction E2E (helper re-wired, pre-fix): failed with `42501` + captured `f2_diag` values — run `27195379312`.
+- Cloud migration applies: f2_diag added then dropped (`000022_drop_f2_diag`) — run `27195896431`.
+
+**Notification producer path: ROOT-CAUSED + FIXED — yes.**
