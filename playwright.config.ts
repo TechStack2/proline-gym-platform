@@ -63,6 +63,20 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
+      // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
+      // SEE the notification on the bell + /notifications page. Depends on `pt`.
+      // Runs IMMEDIATELY after `pt` (before leads/activity-loop/pt-delivery) so
+      // the freshly-emitted pt_approved/pt_assigned are still within the bell's
+      // "latest 5" — the other slices emit member notifications that would
+      // otherwise bury them. The functional bell renders only at the mobile
+      // breakpoint, set per-context in the spec.
+      name: 'notifications',
+      dependencies: ['setup', 'pt'],
+      testMatch: /notifications\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Lead → Active-Member cross-portal slice (Prompt 23-R): origination both
       // ways (anon web submit + staff Add Lead) → trial (coach handoff) → atomic
       // convert → member on roster. Switches roles internally (fresh context per
@@ -80,21 +94,6 @@ export default defineConfig({
       name: 'activity-loop',
       dependencies: ['setup'],
       testMatch: /activity-loop\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
-      // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
-      // SEE the notification on the bell + /notifications page. Opens a fresh
-      // context per role internally (no pinned session). Depends on `pt` so a
-      // fresh approval has emitted the rows in this run (pt.spec never opens the
-      // bell, so they stay unread); the (dashboard) layout's functional bell
-      // renders only at the mobile breakpoint, set per-context in the spec.
-      // NB: runs BEFORE pt-delivery so the bell's "latest 5" still surfaces
-      // pt_approved (pt-delivery emits several pt_session_* to the student).
-      name: 'notifications',
-      dependencies: ['setup', 'pt'],
-      testMatch: /notifications\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
