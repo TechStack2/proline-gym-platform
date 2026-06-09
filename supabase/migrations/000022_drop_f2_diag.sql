@@ -1,0 +1,12 @@
+-- ============================================================
+-- 000022: drop the F2-A temporary diagnostic function
+-- PRO LINE Gym Platform — Cycle 5 / Phase 0 / Prompt F2 (Workstream A)
+--
+-- The temporary SECURITY INVOKER `f2_diag(uuid, uuid)` was applied to the cloud
+-- to capture auth.uid()/is_staff()/get_user_gym_id()/recipient_in_gym() inside
+-- the live Server-Action session (root-cause investigation). The investigation
+-- is complete — drop it so no diagnostic surface remains in production.
+--
+-- Forward-only, idempotent.
+-- ============================================================
+DROP FUNCTION IF EXISTS f2_diag(UUID, UUID);

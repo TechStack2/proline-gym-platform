@@ -72,7 +72,7 @@ describe('createNotification', () => {
     calls = c.calls;
   });
 
-  it('writes a single gym-scoped row of i18n keys + params', async () => {
+  it('writes a single gym-scoped row of i18n keys + params (RETURNING-free)', async () => {
     const result = await createNotification({
       recipientProfileId: 'student-1',
       type: 'enrollment_confirmed',
@@ -84,9 +84,12 @@ describe('createNotification', () => {
       gymId: 'gym-1',
     });
 
-    expect(result).toEqual({ id: 'notif-1' });
+    // id is generated client-side (so no INSERT ... RETURNING is issued, which
+    // would otherwise be blocked by the recipient-only SELECT policy).
+    expect(result.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(calls.inserts).toHaveLength(1);
     expect(calls.inserts[0]).toEqual({
+      id: result.id,
       user_id: 'student-1',
       gym_id: 'gym-1',
       type: 'enrollment_confirmed',

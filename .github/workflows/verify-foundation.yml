@@ -90,40 +90,6 @@ jobs:
           echo "===== BEFORE: reproduce identity chain ====="
           run_sql "BEFORE reproduce" <<< "$REPRODUCE"
 
-          echo "===== F2-A DIAG: function owners + EXECUTE grants ====="
-          run_sql "F2 function privileges" <<'SQL'
-          select p.proname,
-                 pg_get_userbyid(p.proowner) as owner,
-                 p.prosecdef as security_definer,
-                 p.proconfig as config,
-                 coalesce(array_to_string(p.proacl::text[], ' | '), 'NULL(=default PUBLIC EXECUTE)') as acl
-          from pg_proc p
-          join pg_namespace n on n.oid = p.pronamespace
-          where n.nspname = 'public'
-            and p.proname in ('recipient_in_gym','is_staff','get_user_gym_id','get_user_role','pt_emit_approved_notifications')
-          order by p.proname;
-          SQL
-
-          run_sql "F2 notifications INSERT policy (live)" <<'SQL'
-          select polname,
-                 pg_get_expr(polqual, polrelid)      as using_expr,
-                 pg_get_expr(polwithcheck, polrelid) as with_check_expr,
-                 polcmd
-          from pg_policy
-          where polrelid = 'public.notifications'::regclass
-          order by polname;
-          SQL
-
-          run_sql "F2 recipient_in_gym(student profile, owner gym) as admin" <<'SQL'
-          with s as (
-            select p.id as student_profile, p.gym_id
-            from auth.users u join profiles p on p.id = u.id
-            where u.email = 'student@prolinegym.lb'
-          )
-          select s.student_profile, s.gym_id, public.recipient_in_gym(s.student_profile, s.gym_id) as recip_ok
-          from s;
-          SQL
-
           if [ "${DO_APPLY}" != "true" ]; then
             echo "Diagnose-only run (apply=false). Re-run with apply=true once the migration list is confirmed."
             exit 0

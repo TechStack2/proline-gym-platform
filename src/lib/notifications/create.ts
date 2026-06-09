@@ -61,28 +61,31 @@ function buildRow(
 /**
  * Create a single notification addressed to one recipient, gym-scoped.
  * Returns the new row id.
+ *
+ * IMPORTANT — no `INSERT ... RETURNING`. A staff producer writes a row whose
+ * `user_id` is the RECIPIENT, never the staff member's own `auth.uid()`. The
+ * notifications INSERT policy permits that write, but the `notifications_select_self`
+ * SELECT policy (`user_id = auth.uid()`) would block the row from being read
+ * BACK — and PostgREST's `.select()` on an insert issues `INSERT ... RETURNING`,
+ * which Postgres rejects as `42501 new row violates row-level security policy`
+ * even though the INSERT itself is allowed. We therefore generate the id
+ * client-side and do a plain insert, so the RETURNING/SELECT policy is never
+ * exercised. (`createNotificationForRole` below is already RETURNING-free.)
  */
 export async function createNotification(
   input: CreateNotificationInput,
   client?: Awaited<ReturnType<typeof createClient>>,
 ): Promise<{ id: string }> {
-  // Reuse the caller's authenticated client when provided. Creating a fresh
-  // server client mid-request (e.g. inside a Server Action after the first
-  // client refreshed the auth token) can run unauthenticated → RLS rejects the
-  // staff INSERT. Passing the action's client keeps the auth context.
   const supabase = client ?? (await createClient());
-  const { data, error } = await supabase
+  const id = crypto.randomUUID();
+  const { error } = await supabase
     .from('notifications')
-    .insert(buildRow(input.recipientProfileId, input.gymId, input))
-    .select('id')
-    .single();
+    .insert({ id, ...buildRow(input.recipientProfileId, input.gymId, input) });
 
   if (error) {
-    // [F2-A DIAG] surface the raw Postgres error in the server logs.
-    console.error('[F2-A DIAG] createNotification INSERT error:', error.code, error.message, JSON.stringify(error));
     throw new Error(`createNotification failed: ${error.message}`);
   }
-  return { id: data.id };
+  return { id };
 }
 
 /**

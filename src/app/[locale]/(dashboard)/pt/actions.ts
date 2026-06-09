@@ -92,22 +92,15 @@ export async function approvePtRequest(
     .eq('id', assignmentId);
   if (updErr) return { ok: false, error: updErr.message };
 
-  // 3) Notify the student (approved) and the coach (assigned).
+  // 3) Notify the student (approved) and the coach (assigned) via the shared
+  //    producer helper, using THIS staff session's authenticated client. The
+  //    notifications INSERT policy (000015) is the guardrail; the helper does a
+  //    RETURNING-free insert so the recipient-only SELECT policy is not tripped.
   const { data: student } = await supabase
     .from('students')
     .select('profile_id')
     .eq('id', assignment.student_id)
     .single();
-
-  // [F2-A DIAG] Capture the auth context AS THE AUTHENTICATED ROLE SEES IT,
-  // via the SAME client, immediately before the failing notifications INSERT.
-  if (student?.profile_id) {
-    const { data: diag, error: diagErr } = await supabase.rpc('f2_diag', {
-      p_user_id: student.profile_id,
-      p_gym: gymId,
-    });
-    console.error('[F2-A DIAG] student insert context:', JSON.stringify(diag), 'err:', diagErr?.message ?? null);
-  }
 
   if (student?.profile_id) {
     await createNotification({
