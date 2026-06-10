@@ -37,24 +37,33 @@ Call **`createNotification` / `createNotificationForRole`** directly from a staf
 - `MISSING_MESSAGE` i18n gaps: `students.cancel/female/gender/male` render as the key (cosmetic).
 - Cloud demo gym has **accumulated test data** (e.g. `E2E <timestamp>` students, multiple pending "Single PT Session" requests) — harmless test residue.
 
-## Cycle-5 / Phase-1 progress (updated 2026-06-09 — strangler model, sequential slices)
-> Strategy changed from a parallel dispatch-mission to **design-first, one sequential vertical slice at a time** (see [`docs/audit/journey-catalog.md`](../journey-catalog.md) — the master registry of ~25 journeys + sequencing). Each journey gets a deep design doc, then ONE coder prompt; merge is FF on origin/main with recovery tags.
-- **A1 Lead → Active-Member — ✅ MERGED** (prompt 23-R; run 27214829204, 22/0). Migrations 000023/000024. Convert RPC + simulated-invite provisioning seam.
-- **B1 Member Activity Loop — ✅ MERGED** (prompt 24-R; run 27219997474, 23/0). Migrations 000025 (atomic `promote_student`) /000026. Eligibility hint (L4), `/portal/progress`, 3 handoffs.
-- **C1 PT Session Delivery — 📐 prompt ready, activating** ([prompt-C1-pt-session-delivery.md](./prompt-C1-pt-session-delivery.md)). Runs after 24-R (now merged); branch `prompt-c1-pt-delivery`.
-- **D1 Billing & Payment — 📐 designed, under re-review** ([journey-billing-and-payment.md](./journey-billing-and-payment.md)); D1 closes Phase 1.
-- **Recovery tags on origin:** `milestone/23R-green`@84a33a6, `milestone/24R-green`@7029083 (+ `backup/pre-2xR-main`). Restore = `git reset --hard milestone/24R-green && git push --force-with-lease`.
+## RESUME HERE — current state (updated 2026-06-10)
+> **Model:** design-first, **one sequential slice at a time** on `main` (master plan = [`docs/audit/journey-catalog.md`](../journey-catalog.md); V1 scope-lock = [`docs/audit/v1-market-readiness-scope.md`](../v1-market-readiness-scope.md)). Each slice: deep design doc → ONE coder prompt → CI behavior-green → auditor merges to `main` (FF/clean) with a `milestone/<slice>-green` tag. The auditor verifies via CI + reading code, never assumes.
 
-### Standing findings to schedule (from 23-R/24-R drag reads)
-- ⚠️ **`notifications.user_id` FKs `auth.users`** → login-less gym-managed members can't receive notifications (relax FK→`profiles`, or provision real logins). Affects D1/C1 + 23-R `lead_converted`.
-- **Admin presentation layer is uniformly DOA** against the real schema: `/invoices` (name/issue_date/embedded-.or()), students search, classes list+detail+enroll (coaches.first_name / *.status non-existent). Each = its own repair slice; interleave when a journey touches it.
-- Coach attendance is **day-of-week scoped, no date picker** (product gap; seed 000026 = test workaround).
-- The `(dashboard)` double-shell `:visible` Playwright tax recurs every slice — a shared helper is overdue.
+**Phase 1 (Foundation + Connective Tissue) COMPLETE & merged**, then into the **V1 punch-list**:
+- ✅ **D1 Billing & Payment** (canonical `issue_invoice`/`record_payment`, atomic reconcile). 
+- ✅ **TI ephemeral-gym** test-infra (each CI run provisions/tears down its own gym → deterministic suite).
+- ✅ **FK** — `notifications.user_id` FK swapped `auth.users`→`profiles` (000032) so login-less members receive notifications.
+- ✅ **AR** — admin-presentation repair (classes list/detail, students search via profiles, /payments history view, i18n) — the DOA cluster fixed.
+- ✅ **B2 Recurring-Class Registration** (000033/000034) — request→approve(+discount)→bill→roster + waitlist auto-promote; `class_registrations` + `classes.monthly_fee`; `_system_issue_invoice` (REVOKE FROM PUBLIC).
+- 🔵 **LP Landing (public brand + live schedule/offerings)** — **PROMPT READY, ACTIVE next**: [`prompt-LP-landing-public.md`](./prompt-LP-landing-public.md). Branch `prompt-lp-landing` off main. Adds anon/public-read RLS (catalog only, no PII) so the landing renders LOGGED-OUT + brand + schedule grid + working map. **18 real gym photos already committed to `public/landing/`.**
+- ⏭ then **B3 family/household → D2 freeze/upgrade → D3 renewal/dunning → F3 e-sign → G1 WhatsApp delivery → E1 camps → G2 offline** → V1 readiness review → deploy.
 
-## Next step
-Continue the sequential slices: **activate C1** (PT delivery), then **D1** (Billing & Payment) to close Phase 1, then re-score the portals vs [`industry-benchmark.md`](../industry-benchmark.md) and decide Phase-2 entry. No new flow work starts until the auditor hands the next prompt.
+**Landing parallel-agent experiment — DISCARDED:** the `origin/prompt-landing-boost` branch (off pre-B2 main) is NOT merged; LP reuses its good NEW components via `git checkout origin/prompt-landing-boost -- <files>` then rebuilds on main. Delete that branch after LP merges. (Worktree `../proline-landing` removed.)
 
-## On resume
-1. Confirm `git status` clean, `git pull` (main = origin/main).
-2. `npm install` if `node_modules` is missing (it's gitignored).
-3. Read this file + the tail of `audit-cycle-update.md`, then wait for / open the next `docs/audit/cycle-5/prompt-*.md` the auditor provides.
+**Monetization model (3 products — see memory `proline-monetization-model`):** gym membership (monthly) · recurring-class registration (monthly, discountable — B2) · PT packages (count + validity). D2/D3 span the two monthly products.
+
+**Standing operator prefs:** dev server on **port 3000**; **NO Claude/Co-Authored-By trailer** in commits.
+**Pending operator actions:** (1) **revoke `SUPABASE_ACCESS_TOKEN`** in the Supabase dashboard once the demo phase ends (it's wired into `e2e.yml` for ephemeral-gym provisioning); (2) for LP: provide the **real Google Maps embed** (Sky Business Center, Baabda) + **affiliation logos** (LMF/IFMA/Arab-Muaythai → `public/landing/affiliations/`); create the **real classes + M/W/F schedule** in admin so the landing grid is real.
+
+**Recovery tags on `origin`:** `milestone/{23R,24R,C1,FK,AR,B2}-green` + `backup/pre-*-main`. Restore = `git reset --hard milestone/B2-green && git push --force-with-lease`.
+
+### Open findings to schedule (non-blocking)
+- **attendance/history + attendance/reports** are DOA on a deeper recurring-schedule model mismatch (`class_schedules.date` doesn't exist — it's `day_of_week`) → a dedicated "attendance reporting" slice (V1.1).
+- Coach attendance is day-of-week scoped, no date picker (product gap).
+
+## On resume (after VS Code reset / new session)
+1. `git -C /Users/techstack/Desktop/Agentics/Projects/proline-gym-platform status` clean? `git pull` (main should = origin/main).
+2. `npm install` if `node_modules` is missing (gitignored).
+3. **Read, in order:** this file → [`../v1-market-readiness-scope.md`](../v1-market-readiness-scope.md) → [`../journey-catalog.md`](../journey-catalog.md) → tail of `audit-cycle-update.md`. Memory (auto-loads) carries the rest.
+4. **Next action:** hand the **LP activation block** (bottom of [`prompt-LP-landing-public.md`](./prompt-LP-landing-public.md)) to the coder; the auditor verifies + merges on report, then advances to B3.
