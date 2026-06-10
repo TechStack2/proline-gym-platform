@@ -87,8 +87,13 @@ A credible launch = **operate the gym + engage members + get reliably paid + rea
 6. **D3 Renewal + overdue reminders** (cash-model) — the retention mechanism.
 7. **G1 WhatsApp delivery** — confirmations/reminders/receipts over WhatsApp (wraps the producers we built).
 8. **E1 Camps** — seasonal revenue line (client blueprint).
+9. **F3 E-sign waiver** — digital waiver at signup + on file (compliance/legal). *(pulled into V1)*
+10. **D2 Membership freeze/upgrade** — pause / upgrade / downgrade lifecycle. *(pulled into V1)*
+11. **G2 Offline-first finish** — attendance/payments work with zero internet; the client's stated key decision. Wired **last**, after the engagement core is stable (hardest lane). *(pulled into V1)*
 
-**V1.1 fast-follow:** membership freeze/upgrade (D2), e-sign waiver (F3), rentals (E2), PWA push, **offline-first finish (G2)**.
+> **BAR LOCKED (2026-06-10):** V1 = items 1–11 above. The "fuller" leapfrog/compliance items (F3, D2, G2) are **in V1** per the client decision.
+
+**V1.1 fast-follow:** coach/space **rentals (E2)**, **PWA push**.
 
 **V2 (post-launch growth):** self-serve signup/purchase + trial booking + referrals/SEO (A2/A3/5A), nurture automation (F1), retention analytics, coach assessments/curriculum/messaging/subs (B4/C2/C3/C4), gamification, video library.
 
@@ -96,14 +101,11 @@ A credible launch = **operate the gym + engage members + get reliably paid + rea
 **CUT for this client / launch:** account-credit balances · commissions/payroll · POS/pro-shop/inventory · multi-location · advanced analytics dashboards · curriculum video library · gamification/leaderboards · automated nurture drip · in-app messaging. None are needed for one gym to run, engage, and get paid; several are genuine boutique-chain features that would be *fluff* here. They're parked in V2, not built speculatively.
 
 ## 4. Remaining execution roadmap to V1 (JIT-designed, in order)
-`D1 (closing)` → **Phase-1 exit re-score** → `FK-fix` → `admin-UI repairs` → `B2 booking+waitlist` → `B3 family` → `D3 renewal/dunning reminders` → `G1 WhatsApp delivery` → `E1 camps` → **V1 readiness review** (re-score all portals; deploy). Then V1.1 (D2, F3, E2, push, **G2 offline**).
+`D1 (closing)` → **Phase-1 exit re-score** → `FK-fix` → `admin-UI repairs` → `B2 booking+waitlist` → `B3 family` → `D2 freeze/upgrade` → `D3 renewal/overdue reminders` → `F3 e-sign waiver` → `G1 WhatsApp delivery` → `E1 camps` → `G2 offline-first` (hardest, last) → **V1 readiness review** (re-score all portals; deploy). Then V1.1 (rentals E2, PWA push).
 
 Each is deep-designed just-in-time (origination-first, error-recovery + edge cases, behavior-green) the slice before it's built, on the now-deterministic suite.
 
-## 5. Open decision — confirm the V1 bar
-The line in §2 assumes **"operationally complete + engaging + gets paid + reaches members,"** deferring the self-serve marketing funnel + analytics + chain-scale features to V2. Confirm that's the right bar for Proline, or adjust:
-- **Leaner** (cut camps/WhatsApp to V1.1; ship the operational+engagement core fastest), or
-- **Fuller** (pull e-sign / freeze-upgrade / offline into V1), or
-- **Growth-first** (the roadmap's alternative: pull the marketing funnel / nurture earlier if filling classes is the urgent business pain).
+## 5. V1 bar — RESOLVED (2026-06-10)
+**Bar = "operationally complete + engaging + gets paid + reaches members (WhatsApp)" + the fuller leapfrog/compliance items (F3 e-sign, D2 freeze/upgrade, G2 offline-first).** V1 = items 1–11 in §2, in the §4 order. Deferred to V2 (unchanged): self-serve marketing funnel, analytics dashboards, nurture automation, in-app messaging, POS/commissions/multi-location, curriculum video, gamification. V1.1 = rentals (E2), PWA push.
 
-→ Your answer sets the must-have line; everything else stays JIT-designed against it.
+Everything remaining stays **JIT-designed** (origination-first, error-recovery + edge cases, behavior-green) the slice before it's built, against this locked line.
