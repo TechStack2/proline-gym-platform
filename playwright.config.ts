@@ -127,6 +127,16 @@ export default defineConfig({
       testMatch: /ar-admin\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
     },
+    {
+      // Recurring-class registration (Prompt B2): request→approve→bill→roster +
+      // capacity/waitlist auto-promote. Switches roles internally (owner staff +
+      // Karim member), so it must NOT pin a single session. Runs last (emits
+      // class_* + invoice_issued to the student).
+      name: 'class-registration',
+      dependencies: ['setup'],
+      testMatch: /class-registration\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

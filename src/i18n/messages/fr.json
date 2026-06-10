@@ -1081,6 +1081,22 @@
       "pt_credits_exhausted": {
         "title": "Crédits PT épuisés",
         "body": "Toutes les séances de ce forfait sont utilisées"
+      },
+      "class_requested": {
+        "title": "Nouvelle demande de cours",
+        "body": "{studentName} a demandé à rejoindre {class}"
+      },
+      "class_approved": {
+        "title": "Inscription approuvée",
+        "body": "Vous êtes inscrit à {class} — {fee}$/mois"
+      },
+      "class_waitlisted": {
+        "title": "Sur liste d'attente",
+        "body": "Vous êtes n°{position} sur la liste d'attente de {class}"
+      },
+      "waitlist_promoted": {
+        "title": "Une place s'est libérée !",
+        "body": "Vous passez de la liste d'attente à {class} — {fee}$/mois"
       }
     }
   },

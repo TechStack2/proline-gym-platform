@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { localizedName, one } from '@/lib/names'
 import ClassDetail from './ClassDetail'
 
 export const dynamic = 'force-dynamic'
@@ -49,11 +50,36 @@ export default async function ClassDetailPage({
 }: {
   params: { locale: string; id: string }
 }) {
+  const supabase = await createClient()
   const classData = await getClass(id)
-
   if (!classData) {
     notFound()
   }
 
-  return <ClassDetail classData={classData} locale={locale} />
+  // B2: registrations (request→approve→bill→waitlist) + a member picker for walk-ins.
+  const { data: regsRaw } = await supabase
+    .from('class_registrations')
+    .select(`id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, invoice_id, requested_at,
+      student:students(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
+    .eq('class_id', id)
+    .in('status', ['requested', 'active', 'waitlisted'])
+    .order('requested_at', { ascending: true })
+
+  const registrations = (regsRaw ?? []).map((r: any) => ({
+    id: r.id, status: r.status, waitlist_position: r.waitlist_position,
+    monthly_fee_usd: r.monthly_fee_usd, invoice_id: r.invoice_id,
+    studentName: localizedName(one(r.student)?.profiles, locale),
+  }))
+
+  const { data: studentRows } = await supabase
+    .from('students')
+    .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+    .eq('gym_id', (classData as any).gym_id)
+    .eq('is_active', true)
+  const students = (studentRows ?? [])
+    .map((s: any) => ({ id: s.id, name: localizedName(one(s.profiles), locale) }))
+    .filter((s) => s.name)
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  return <ClassDetail classData={classData} locale={locale} registrations={registrations} students={students} />
 }

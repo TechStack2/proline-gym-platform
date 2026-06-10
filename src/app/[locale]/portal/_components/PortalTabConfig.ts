@@ -1,8 +1,9 @@
-import { Grid, Calendar, Dumbbell, CreditCard, User, Award } from 'lucide-react';
+import { Grid, Calendar, Dumbbell, CreditCard, User, Award, Users } from 'lucide-react';
 import type { TabItem } from '@/components/native';
 
 export const PORTAL_TABS: TabItem[] = [
   { key: 'home', icon: Grid, path: '/portal', label: 'Home' },
+  { key: 'classes', icon: Users, path: '/portal/classes' },
   { key: 'schedule', icon: Calendar, path: '/portal/schedule' },
   { key: 'progress', icon: Award, path: '/portal/progress' },
   { key: 'pt', icon: Dumbbell, path: '/portal/pt', label: 'PT' },

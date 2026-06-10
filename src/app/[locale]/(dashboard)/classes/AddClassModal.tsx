@@ -51,6 +51,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
     coach_id: '',
     description: '',
     capacity: 20,
+    monthly_fee_usd: '',
     status: 'scheduled' as const,
   })
 
@@ -81,6 +82,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
           description_en: formData.description,
           description_fr: formData.description,
           max_capacity: formData.capacity,
+          monthly_fee_usd: formData.monthly_fee_usd ? parseFloat(formData.monthly_fee_usd) : null,
           status: formData.status,
         })
         .select()
@@ -154,6 +156,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 {t('nameEn')} *
               </label>
               <Input
+                data-testid="class-name-en"
                 value={formData.name_en}
                 onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                 required
@@ -186,7 +189,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 value={formData.discipline_id}
                 onValueChange={(value) => setFormData({ ...formData, discipline_id: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger data-testid="class-discipline-trigger">
                   <SelectValue placeholder={t('selectDiscipline')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -206,7 +209,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 value={formData.coach_id}
                 onValueChange={(value) => setFormData({ ...formData, coach_id: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger data-testid="class-coach-trigger">
                   <SelectValue placeholder={t('selectCoach')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -226,8 +229,23 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 type="number"
                 min="1"
                 max="100"
+                data-testid="class-capacity"
                 value={formData.capacity}
                 onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 20 })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                {locale === 'ar' ? 'الرسوم الشهرية (دولار)' : locale === 'fr' ? 'Frais mensuels (USD)' : 'Monthly fee (USD)'}
+              </label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                data-testid="class-monthly-fee"
+                placeholder="0.00"
+                value={formData.monthly_fee_usd}
+                onChange={(e) => setFormData({ ...formData, monthly_fee_usd: e.target.value })}
               />
             </div>
             <div>
@@ -335,7 +353,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
             <Button type="button" variant="outline" onClick={onClose}>
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" data-testid="class-submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t('create')}
             </Button>

@@ -1081,6 +1081,22 @@
       "pt_credits_exhausted": {
         "title": "PT credits used up",
         "body": "All PT sessions in this package have been used"
+      },
+      "class_requested": {
+        "title": "New class request",
+        "body": "{studentName} requested to join {class}"
+      },
+      "class_approved": {
+        "title": "Class registration approved",
+        "body": "You're enrolled in {class} — monthly ${fee}"
+      },
+      "class_waitlisted": {
+        "title": "Added to the waitlist",
+        "body": "You're #{position} on the waitlist for {class}"
+      },
+      "waitlist_promoted": {
+        "title": "A spot opened up!",
+        "body": "You've been moved off the waitlist into {class} — monthly ${fee}"
       }
     }
   },

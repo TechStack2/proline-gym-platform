@@ -11,15 +11,18 @@ import { cn } from '@/lib/utils'
 import EnrollStudentModal from './EnrollStudentModal'
 import { createClient } from '@/lib/supabase/client'
 import { localizedName } from '@/lib/names'
+import { RegistrationsPanel } from './RegistrationsPanel'
 
 interface ClassDetailProps {
   classData: any
   locale: string
+  registrations?: Array<{ id: string; status: string; waitlist_position: number | null; monthly_fee_usd: number | null; invoice_id: string | null; studentName: string }>
+  students?: { id: string; name: string }[]
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function ClassDetail({ classData, locale }: ClassDetailProps) {
+export default function ClassDetail({ classData, locale, registrations = [], students = [] }: ClassDetailProps) {
   const t = useTranslations('classes')
   const router = useRouter()
   const [showEnrollModal, setShowEnrollModal] = useState(false)
@@ -185,6 +188,14 @@ export default function ClassDetail({ classData, locale }: ClassDetailProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* B2 — recurring-class registrations (request → approve → bill → waitlist) */}
+          <RegistrationsPanel
+            classId={classData.id}
+            registrations={registrations}
+            students={students}
+            locale={locale}
+          />
         </div>
 
         {/* Sidebar */}

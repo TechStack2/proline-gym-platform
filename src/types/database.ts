@@ -581,6 +581,64 @@ export type Database = {
           },
         ]
       }
+      class_registrations: {
+        Row: {
+          id: string
+          class_id: string
+          student_id: string
+          gym_id: string
+          status: Database["public"]["Enums"]["class_registration_status_enum"]
+          waitlist_position: number | null
+          monthly_fee_usd: number | null
+          monthly_fee_lbp: number | null
+          discount_pct: number | null
+          discount_amount_usd: number | null
+          start_date: string | null
+          end_date: string | null
+          invoice_id: string | null
+          requested_at: string
+          approved_by: string | null
+          approved_at: string | null
+          rejected_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          class_id: string
+          student_id: string
+          gym_id: string
+          status?: Database["public"]["Enums"]["class_registration_status_enum"]
+          waitlist_position?: number | null
+          monthly_fee_usd?: number | null
+          monthly_fee_lbp?: number | null
+          discount_pct?: number | null
+          discount_amount_usd?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          invoice_id?: string | null
+          requested_at?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          rejected_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          status?: Database["public"]["Enums"]["class_registration_status_enum"]
+          waitlist_position?: number | null
+          discount_pct?: number | null
+          discount_amount_usd?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          invoice_id?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          rejected_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           belt_requirement: Database["public"]["Enums"]["belt_rank_enum"] | null
@@ -598,6 +656,8 @@ export type Database = {
           max_age: number | null
           max_capacity: number
           min_age: number | null
+          monthly_fee_usd: number | null
+          monthly_fee_lbp: number | null
           name_ar: string
           name_en: string
           name_fr: string
@@ -623,6 +683,8 @@ export type Database = {
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
+          monthly_fee_usd?: number | null
+          monthly_fee_lbp?: number | null
           name_ar: string
           name_en: string
           name_fr: string
@@ -648,6 +710,8 @@ export type Database = {
           max_age?: number | null
           max_capacity?: number
           min_age?: number | null
+          monthly_fee_usd?: number | null
+          monthly_fee_lbp?: number | null
           name_ar?: string
           name_en?: string
           name_fr?: string
@@ -2327,6 +2391,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      request_class_registration: {
+        Args: { p_class_id: string; p_student_id?: string | null }
+        Returns: Database["public"]["Tables"]["class_registrations"]["Row"]
+      }
+      approve_class_registration: {
+        Args: { p_reg_id: string; p_discount_pct?: number; p_discount_amount_usd?: number }
+        Returns: Database["public"]["Tables"]["class_registrations"]["Row"]
+      }
+      reject_class_registration: {
+        Args: { p_reg_id: string; p_reason?: string | null }
+        Returns: Database["public"]["Tables"]["class_registrations"]["Row"]
+      }
+      cancel_class_registration: {
+        Args: { p_reg_id: string }
+        Returns: Database["public"]["Tables"]["class_registrations"]["Row"]
+      }
       issue_invoice: {
         Args: {
           p_gym_id: string
@@ -2605,6 +2685,13 @@ export type Database = {
         | "completed"
         | "cancelled"
       class_status_enum: "scheduled" | "in_progress" | "completed" | "cancelled"
+      class_registration_status_enum:
+        | "requested"
+        | "active"
+        | "waitlisted"
+        | "cancelled"
+        | "rejected"
+        | "expired"
       document_type_enum:
         | "waiver"
         | "medical"
@@ -2621,6 +2708,7 @@ export type Database = {
         | "rental"
         | "event"
         | "other"
+        | "class_registration"
       lead_status_enum:
         | "new"
         | "contacted"
@@ -2845,6 +2933,14 @@ export const Constants = {
         "cancelled",
       ],
       class_status_enum: ["scheduled", "in_progress", "completed", "cancelled"],
+      class_registration_status_enum: [
+        "requested",
+        "active",
+        "waitlisted",
+        "cancelled",
+        "rejected",
+        "expired",
+      ],
       document_type_enum: [
         "waiver",
         "medical",
@@ -2862,6 +2958,7 @@ export const Constants = {
         "rental",
         "event",
         "other",
+        "class_registration",
       ],
       lead_status_enum: [
         "new",

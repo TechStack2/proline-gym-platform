@@ -85,7 +85,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>{t('title')}</CardTitle>
-            <Button onClick={() => setShowAddModal(true)}>
+            <Button data-testid="add-class-btn" onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               {t('addClass')}
             </Button>

@@ -1081,6 +1081,22 @@
       "pt_credits_exhausted": {
         "title": "نفدت أرصدة التدريب",
         "body": "تم استخدام كل جلسات هذه الباقة"
+      },
+      "class_requested": {
+        "title": "طلب تسجيل جديد",
+        "body": "طلب {studentName} الانضمام إلى {class}"
+      },
+      "class_approved": {
+        "title": "تمت الموافقة على التسجيل",
+        "body": "تم تسجيلك في {class} — شهرياً {fee}$"
+      },
+      "class_waitlisted": {
+        "title": "على قائمة الانتظار",
+        "body": "أنت رقم {position} على قائمة انتظار {class}"
+      },
+      "waitlist_promoted": {
+        "title": "توفّر مكان!",
+        "body": "تم نقلك من قائمة الانتظار إلى {class} — شهرياً {fee}$"
       }
     }
   },
