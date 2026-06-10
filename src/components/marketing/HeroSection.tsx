@@ -12,11 +12,20 @@ export function HeroSection({ locale }: HeroSectionProps) {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Real gym photo background (graceful: covered by gradients if missing) */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/landing/hero.jpg"
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+
       {/* Dark gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-secondary-950 via-secondary-900 to-primary-950" />
+      <div className="absolute inset-0 bg-gradient-to-br from-secondary-950/90 via-secondary-900/85 to-primary-950/90" />
 
       {/* Crimson overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-secondary-950/90 via-secondary-950/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-secondary-950/95 via-secondary-950/50 to-secondary-950/30" />
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-32 text-center">
@@ -34,7 +43,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
 
         {/* Tagline */}
         <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary-400">
-          {isRTL ? 'أطلق العنان للمقاتل بداخلك 🥊' : 'Unleash the fighter in you 🥊'}
+          {isRTL ? 'ابدأ ملحمتك الخاصة' : 'Start Your Own Saga'}
         </p>
 
         {/* Headline */}
@@ -44,7 +53,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
             isRTL && 'font-arabic'
           )}
         >
-          {isRTL ? 'برو لاين جيم' : 'PRO LINE Gym'}
+          {isRTL ? 'تدرّب كبطل القصة' : 'Train Like the Main Character'}
         </h1>
 
         {/* Subheadline */}
@@ -53,8 +62,8 @@ export function HeroSection({ locale }: HeroSectionProps) {
             ? 'ملاكمة تايلاندية • ملاكمة • لياقة • زومبا • تدريب السيدات • أطفال'
             : 'Muay Thai • Boxing • Fitness • Zumba • Ladies Training • Kids'}
         </p>
-        <p className="mt-2 text-sm text-gray-400">
-          {isRTL ? 'من قبل الأخوة فقيه' : 'By Fakih Brothers'}
+        <p className="mt-2 text-sm font-semibold tracking-wide text-gray-300">
+          {isRTL ? 'من الأخوة فقيه' : 'by Fakih Brothers'}
         </p>
 
         {/* CTAs */}

@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { Dumbbell, Heart, Music, Users, Shield, Baby } from 'lucide-react';
+import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 
 type DisciplinesSectionProps = {
   locale: string;
+  gymSlug?: string;
 };
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -24,14 +26,20 @@ const colorMap: Record<string, string> = {
   Kids: 'from-yellow-500 to-amber-500',
 };
 
-export async function DisciplinesSection({ locale }: DisciplinesSectionProps) {
+export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSectionProps) {
   const isRTL = locale === 'ar';
   const supabase = await createClient();
+  const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
 
-  const { data: disciplines } = await supabase
-    .from('disciplines')
-    .select(`name_${locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'}, name_en`)
-    .order('sort_order');
+  // GYM-FILTER + active only (anon-readable via 000035). No gym → fallback grid.
+  const { data: disciplines } = gym
+    ? await supabase
+        .from('disciplines')
+        .select('name_ar, name_en, name_fr')
+        .eq('gym_id', gym.id)
+        .eq('is_active', true)
+        .order('sort_order')
+    : { data: null };
 
   const programs = (disciplines || []).map((d: any) => ({
     name: d[`name_${locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'}`] || d.name_en,

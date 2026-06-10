@@ -137,6 +137,15 @@ export default defineConfig({
       testMatch: /class-registration\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // Public landing (Prompt LP): a LOGGED-OUT (anon) visitor sees the run gym's
+      // live catalog (disciplines/schedule/pricing) + brand via the 000035 anon
+      // public-read policies. Creates its own anon context (no storageState).
+      name: 'landing',
+      dependencies: ['setup'],
+      testMatch: /landing\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

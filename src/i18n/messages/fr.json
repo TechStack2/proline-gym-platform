@@ -537,6 +537,36 @@
       "sunday": "Dim: 9h00 – 18h00",
       "rights": "Tous droits réservés.",
       "fakih": "Par Fakih Brothers."
+    },
+    "schedule": {
+      "title": "Programme Hebdomadaire",
+      "subtitle": "Entraînez-vous lundi, mercredi & vendredi — Enfants, Juniors, Femmes & Adultes",
+      "empty": "Le programme sera publié bientôt.",
+      "time": "Heure",
+      "days": {
+        "mon": "Lundi",
+        "wed": "Mercredi",
+        "fri": "Vendredi"
+      }
+    },
+    "affiliations": {
+      "title": "Affiliations & Homologation",
+      "subtitle": "Reconnu par les instances du sport",
+      "lmf": "Fédération Libanaise de Muaythaï",
+      "ifma": "Fédération Internationale de Muaythaï",
+      "arab": "Fédération Arabe de Muaythaï"
+    },
+    "champions": {
+      "title": "Nos Champions",
+      "subtitle": "Des combattants forgés sur nos tatamis",
+      "c1": "Champion PRO LINE",
+      "c2": "Champion PRO LINE",
+      "c3": "Champion PRO LINE",
+      "c4": "Champion PRO LINE"
+    },
+    "gallery": {
+      "title": "Dans la Salle",
+      "subtitle": "Là où s'écrit la saga"
     }
   },
   "belts": {

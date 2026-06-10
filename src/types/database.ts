@@ -2391,6 +2391,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_gym: {
+        Args: { p_slug: string }
+        Returns: {
+          id: string
+          slug: string
+          name_ar: string
+          name_en: string
+          name_fr: string
+        }[]
+      }
       request_class_registration: {
         Args: { p_class_id: string; p_student_id?: string | null }
         Returns: Database["public"]["Tables"]["class_registrations"]["Row"]

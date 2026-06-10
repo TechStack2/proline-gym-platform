@@ -537,6 +537,36 @@
       "sunday": "Sun: 9:00 AM – 6:00 PM",
       "rights": "All rights reserved.",
       "fakih": "By Fakih Brothers."
+    },
+    "schedule": {
+      "title": "Weekly Schedule",
+      "subtitle": "Train Monday, Wednesday & Friday — Kids, Juniors, Ladies & Adults",
+      "empty": "The schedule will be published soon.",
+      "time": "Time",
+      "days": {
+        "mon": "Monday",
+        "wed": "Wednesday",
+        "fri": "Friday"
+      }
+    },
+    "affiliations": {
+      "title": "Affiliations & Sanctioning",
+      "subtitle": "Recognized by the sport's governing bodies",
+      "lmf": "Lebanese Muaythai Federation",
+      "ifma": "International Federation of Muaythai Associations",
+      "arab": "Arab Muaythai Federation"
+    },
+    "champions": {
+      "title": "Our Champions",
+      "subtitle": "Fighters forged on our mats",
+      "c1": "PRO LINE Champion",
+      "c2": "PRO LINE Champion",
+      "c3": "PRO LINE Champion",
+      "c4": "PRO LINE Champion"
+    },
+    "gallery": {
+      "title": "Inside the Gym",
+      "subtitle": "Where the saga is written"
     }
   },
   "belts": {

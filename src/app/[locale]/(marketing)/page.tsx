@@ -1,78 +1,42 @@
-import { getTranslations } from 'next-intl/server';
 import { HeroSection } from '@/components/marketing/HeroSection';
+import { AffiliationsSection } from '@/components/marketing/AffiliationsSection';
 import { DisciplinesSection } from '@/components/marketing/DisciplinesSection';
+import { ScheduleSection } from '@/components/marketing/ScheduleSection';
+import { ChampionsSection } from '@/components/marketing/ChampionsSection';
+import { GallerySection } from '@/components/marketing/GallerySection';
 import { WhySection } from '@/components/marketing/WhySection';
 import { PricingSection } from '@/components/marketing/PricingSection';
 import { FacilitySection } from '@/components/marketing/FacilitySection';
 import { TrialCTASection } from '@/components/marketing/TrialCTASection';
 
+export const dynamic = 'force-dynamic';
+
 type Props = {
   params: { locale: string };
-  // X1: an explicit gym selector so CI's public-lead submit targets the run gym;
-  // prod (no ?gym) defaults to the demo gym.
+  // X1: an explicit gym selector so CI's public-lead submit + catalog target the
+  // run gym; prod (no ?gym) falls back to the demo gym (DEFAULT_GYM_SLUG).
   searchParams?: { gym?: string };
 };
 
-import { createClient } from '@/lib/supabase/server';
-import Link from 'next/link';
-
-function getLocalizedCampName(camp: any, locale: string): string {
-  if (locale === 'ar') return camp.name_ar || camp.name_en;
-  if (locale === 'fr') return camp.name_fr || camp.name_en;
-  return camp.name_en;
-}
-
-export default async function LandingPage({ params, searchParams }: Props) {
-  const { locale } = params;
+/**
+ * Public landing (Cycle 5 / V1 / LP). Renders the brand + the gym's live catalog
+ * to LOGGED-OUT visitors via the anon public-read policies (000035): disciplines,
+ * weekly schedule grid, membership plans + class monthly fees. Section order is
+ * the validated structure. All data sections are gym-scoped + active-only.
+ */
+export default async function LandingPage({ params: { locale }, searchParams }: Props) {
   const gymSlug = searchParams?.gym;
-  const t = await getTranslations('camps');
-  const supabase = await createClient();
-  const today = new Date().toISOString().split('T')[0];
-  const { data: upcomingCamps } = await supabase
-    .from('camps')
-    .select('*')
-    .gte('end_date', today)
-    .order('start_date', { ascending: true })
-    .limit(3);
 
   return (
     <>
       <HeroSection locale={locale} />
-      <DisciplinesSection locale={locale} />
+      <AffiliationsSection locale={locale} />
+      <DisciplinesSection locale={locale} gymSlug={gymSlug} />
+      <ScheduleSection locale={locale} gymSlug={gymSlug} />
+      <ChampionsSection locale={locale} />
+      <GallerySection locale={locale} />
       <WhySection locale={locale} />
-      <PricingSection locale={locale} />
-
-      {(upcomingCamps && upcomingCamps.length > 0) && (
-        <section id="camps" className="py-20 bg-gray-900">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                {t('upcoming_camps')}
-              </h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
-                {t('upcoming_subtitle')}
-              </p>
-            </div>
-            <div className="grid gap-6 md:grid-cols-3">
-              {upcomingCamps.map((camp: any) => (
-                <div key={camp.id} className="bg-gray-800 rounded-2xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-3">
-                    {getLocalizedCampName(camp, locale)}
-                  </h3>
-                  <p className="text-sm text-gray-400 mb-1">
-                    {new Date(camp.start_date).toLocaleDateString()} - {new Date(camp.end_date).toLocaleDateString()}
-                  </p>
-                  {camp.price_usd && <p className="text-primary-400 font-medium text-sm mt-2">${camp.price_usd}</p>}
-                  <Link href={`/${locale}/auth/login`} className="inline-block mt-3 text-sm text-primary-400 hover:text-primary-300 font-medium">
-                    {t('register_now')}
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
+      <PricingSection locale={locale} gymSlug={gymSlug} />
       <FacilitySection locale={locale} />
       <TrialCTASection locale={locale} gymSlug={gymSlug} />
     </>
