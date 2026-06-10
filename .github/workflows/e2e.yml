@@ -82,6 +82,57 @@ jobs:
       - name: Run E2E harness
         run: npm run test:e2e
 
+      # ── FK proof: a notification to a LOGIN-LESS member persists (000032) ──────
+      # The suite's leads.spec converts a lead → a login-less member and (via the
+      # D1 retrofit) issues them an invoice → fires invoice_issued to a profile
+      # with NO auth.users row. Pre-000032 that INSERT failed FK 23503 (→auth.users)
+      # and was swallowed. Here, in ADMIN context (Management API), we (a) confirm
+      # the FK now targets `profiles`, and (b) directly INSERT a notification to a
+      # seeded login-less member and prove it PERSISTS — pre-fix this same INSERT
+      # errors 23503; post-fix it succeeds.
+      - name: Verify login-less member notifications persist (FK → profiles)
+        run: |
+          set -uo pipefail
+          : "${PROJECT_REF:=ufpuebfkcpohwubrutff}"
+          if [ -z "${E2E_GYM_SLUG:-}" ]; then echo "::error::no run gym slug"; exit 1; fi
+          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query"
+          SQL="$(cat <<SQL
+          WITH g AS (SELECT id FROM gyms WHERE slug = '${E2E_GYM_SLUG}'),
+          ll AS (
+            SELECT p.id FROM profiles p JOIN g ON g.id = p.gym_id
+            LEFT JOIN auth.users u ON u.id = p.id
+            WHERE u.id IS NULL LIMIT 1
+          ),
+          ins AS (
+            INSERT INTO notifications (user_id, gym_id, type, title_key, body_key, params, entity_type)
+            SELECT ll.id, g.id, 'invoice_issued', 'messages.invoice_issued.title', 'messages.invoice_issued.body', '{}'::jsonb, 'invoice'
+            FROM ll, g RETURNING 1
+          )
+          SELECT
+            (SELECT confrelid::regclass::text FROM pg_constraint
+               WHERE conname='notifications_user_id_fkey' AND conrelid='notifications'::regclass) AS fk_target,
+            (SELECT count(*) FROM ins) AS direct_insert_persisted,
+            (SELECT count(*) FROM notifications n
+               JOIN profiles p ON p.id = n.user_id JOIN g ON g.id = p.gym_id
+               LEFT JOIN auth.users u ON u.id = p.id
+               WHERE u.id IS NULL
+                 AND n.type IN ('invoice_issued','payment_received','lead_converted')) AS loginless_member_notifs;
+          SQL
+          )"
+          BODY="$(jq -Rs '{query: .}' <<<"$SQL")"
+          CODE="$(curl -sS -o /tmp/fk.json -w '%{http_code}' -X POST "$API" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" --data-binary "$BODY")"
+          echo "HTTP ${CODE}"; jq . /tmp/fk.json 2>/dev/null || cat /tmp/fk.json
+          if [ "${CODE}" -ge 400 ]; then echo "::error::admin query failed (HTTP ${CODE}) — pre-fix the login-less INSERT errors 23503"; exit 1; fi
+          TARGET="$(jq -r '.[0].fk_target // empty' /tmp/fk.json 2>/dev/null)"
+          PERSISTED="$(jq -r '.[0].direct_insert_persisted // 0' /tmp/fk.json 2>/dev/null)"
+          LL="$(jq -r '.[0].loginless_member_notifs // 0' /tmp/fk.json 2>/dev/null)"
+          echo "fk_target=${TARGET} direct_insert_persisted=${PERSISTED} loginless_member_notifs=${LL}"
+          if [ "${TARGET}" != "profiles" ]; then echo "::error::FK targets '${TARGET}' (expected profiles)"; exit 1; fi
+          if [ "${PERSISTED}" != "1" ]; then echo "::error::login-less notification did NOT persist (pre-fix behavior)"; exit 1; fi
+          echo "✅ Login-less notification persistence: PASS (fk→profiles; direct insert persisted; ${LL} convert-flow login-less notif(s))"
+
       # ── Always tear the gym down (zero residue) ───────────────────────────────
       - name: Teardown ephemeral e2e gym
         if: always()
