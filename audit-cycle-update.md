@@ -1464,3 +1464,52 @@ All via the sanctioned F2 pattern (RETURNING-free, authed client, recipient `pro
 - **Notification bell** raised to 15 recent; the F2 "latest-N bell" assertion remains inherently fragile as producers grow — consider asserting the `/notifications` page (latest-50) as the primary read-proof.
 - **`notifications.user_id` FK to `auth.users`** still blocks notifying login-less members (23-R `lead_converted` logs the FK error, best-effort-swallowed) — reconcile when provisioning creates real logins.
 - The coach roster shows exhausted (auto-completed) packs leaving the active list — by design (C1); the restore panel reactivates them, which can leave reactivated test packs lingering as active (cosmetic residue).
+
+---
+
+## Cycle 5 / Test-Infra — Ephemeral Per-Run Gym (2026-06-10)
+
+**Agent:** coding agent · **Branch:** `prompt-ti-ephemeral-gym` · **Not a feature** — the test-infra investment my C1 drag read flagged (the drag had migrated to e2e-suite durability; C1 took 7 runs to converge). Every CI run now gets its OWN fully-seeded gym; the demo `proline-gym` is never touched by e2e again.
+
+### Determinism proof (the judge) — **two consecutive green runs from a dirty DB**
+- **Run A `27253790057` — SUCCESS, 24 passed (3.0m), teardown HTTP 201** (`e2e-27253790057-1` torn down) — https://github.com/TechStack2/proline-gym-platform/actions/runs/27253790057
+- **Run B `27253798745` — SUCCESS, 24 passed (2.9m), teardown HTTP 201** (`e2e-27253798745-1` torn down) — https://github.com/TechStack2/proline-gym-platform/actions/runs/27253798745
+- Both **24/0 first-try** (no convergence), back-to-back, while the demo gym + all historical accumulation still sat in the same cloud DB (each run used its own fresh gym). Compare: C1 = 7 runs.
+- **Teardown-clean evidence (Verify-Foundation `27254226933`, after both runs):** `e2e_gyms=0, e2e_users=0, demo_intact=1` — zero residue, demo untouched.
+
+### Seed / teardown approach (admin SQL via the Management API)
+- **`seed_e2e_gym(p_slug, p_password)`** (`000029_e2e_ephemeral_gym.sql:73`) — SECURITY DEFINER, `REVOKE ALL … FROM PUBLIC` (mints gyms + `auth.users`, so NOT callable by app users; only the Management API/postgres). Generalizes 000006/000017/000019 for a slug: gym; **4 run-scoped `auth.users`** `<role>+<slug>@e2e.local` (the `handle_new_user` trigger fills profiles via `raw_user_meta_data.gym_id`); roles; disciplines (Muay Thai + Boxing); **full 20-rank belt ladder**; classes with `class_schedules` on **every weekday** (kills the day-scoped trap); Monthly/Quarterly/Annual plans; Single-PT + 5/10 packs; exchange rate; student **Karim (enrolled, white belt, clean history)** + membership + invoice; coach **Sami** (roster); a 2nd roster student **Omar**. Idempotent per slug; sweeps stale `e2e-*` gyms (>2h) at the top.
+- **`teardown_e2e_gym(p_slug)`** (`000030_e2e_teardown_audit_fk.sql:40`) — drop the gym (CASCADE clears profiles/students/classes/notifications/leads/…), then clear the run users' `audit_logs` rows (the only non-gym-scoped FK to them — `audit_logs.changed_by`), then delete the `auth.users`; then **`sweep_stale_e2e_gyms()`** (X2 safety net). *(000029's original order — users before gym — was blocked by `audit_logs_changed_by_fkey`; 000030 reordered it; both proven via the Management API.)*
+- **Validated via the Management API** (Verify-Foundation `27237550248`): seed → users=4, students=2, classes=1, schedules=7, belts=20, plans=3, pt=3, invoices=1.
+
+### `e2e.yml` changes
+- `SUPABASE_ACCESS_TOKEN` + `PROJECT_REF` + `E2E_PASSWORD` in the job `env` (`e2e.yml:34`).
+- **Provision** step (`e2e.yml:60`, before build): `slug=e2e-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}`; `select seed_e2e_gym(slug, password)` via the Management API; exports `E2E_GYM_SLUG` to `$GITHUB_ENV`.
+- **Teardown** step (`e2e.yml:86`, `if: always()`): `select teardown_e2e_gym(slug)`.
+- **`concurrency`** group `e2e-cloud`, `cancel-in-progress: false` (`e2e.yml:22`) — serialize on the shared project; let each run finish so its teardown runs.
+
+### X1 — the only production-code change (public-lead gym selector)
+- `submit_public_lead` gains `p_gym_slug` (`000029…sql:271`): when set, target that gym; else the demo default (prod unchanged). Threaded through the landing route `searchParams.gym` (`(marketing)/page.tsx:27`) → `TrialCTASection gymSlug` → `p_gym_slug`. CI submits at `/en?gym=<run gym>`; `database.ts` updated.
+
+### Helpers + refactors
+- **`e2e/helpers.ts`:** `vis()`/`visibleShell()` (retire the `(dashboard)` `:visible` tax), `expectNotification`/`countNotifications` via the **`/notifications` page** (RLS-scoped full list, not the bell's latest-N), `runId()`, `gymSlug()`.
+- **`e2e/roles.ts`:** run-scoped logins derived from `E2E_GYM_SLUG`/`E2E_PASSWORD` env; `auth.setup.ts` uses them.
+- **`notifications.spec`** → page-based proof (dropped the fragile bell latest-N). **`leads.spec`** public submit → `?gym=<run gym>` (X1). **`activity-loop.spec`** count restored to precise `baseline+1` (fresh gym ⇒ deterministic). **Deleted the `000028` belt-reset band-aid** (the per-run seed starts the student at white).
+- `tsc` + `next build` clean. No RLS/auth weakened (the new functions are `REVOKE ALL FROM PUBLIC`; the only app-callable change is the backward-compatible X1 selector).
+
+### **Suite deterministic across consecutive dirty-DB runs: PASS.**
+
+### DRAG READ (candid) — did ephemeral isolation kill the flakiness tax?
+**Yes — decisively, and the difference is night-and-day.** C1 took **7 CI runs** to converge, every one of them a fresh whack-a-mole against a *different* shared-state symptom (belt-ladder exhaustion → notification-count cap → bell latest-N → cross-spec coupling). This slice ran the gate and got **24/0 on the FIRST run, then 24/0 again consecutively** — zero convergence iterations on the actual suite. The single bug I hit was in the *infra itself* (teardown FK ordering), caught and fixed in one targeted pass via the Management-API validation loop — exactly where a bug *should* surface (provisioning), not smeared across unrelated specs.
+
+**What made it clean:** the seed/teardown was a near-mechanical generalization of the four cycles of seed work (000006/017/019) — the identity-trigger (`raw_user_meta_data.gym_id`) and the gym-CASCADE did the heavy lifting, so isolation was mostly *data plumbing*, not new abstractions. The Management-API `run_sql` pattern (from `verify-foundation.yml`) let me validate seed+teardown+residue in ~40s loops *before* burning a full e2e run — the right feedback loop for infra. And because the run gym starts pristine, three of C1's four flakiness classes simply **cease to exist**: the belt ladder can't exhaust (fresh white student + 20 ranks), the notification count can't drift (clean list, well under the 50-cap), and no spec inherits another's rows.
+
+**What fought (briefly):** the one real snag was the teardown FK — `audit_logs.changed_by` has no `gym_id` and `NO ACTION`, so deleting the run users before the gym was rejected; the fix (gym-first, then audit_logs, then users) is obvious in hindsight and was a 10-minute 000030. The remaining honesty notes: the demo gym's *historical* accumulation (and orphan admin-context `audit_logs` rows whose `changed_by` is NULL) still sits in the cloud DB — harmless (no `e2e-*` gym/user residue; the acceptance is met) but not a from-scratch-clean DB; a deeper cleanup or a dedicated test project is a future nicety. The `:visible` tax is now *available* as a helper (`vis`/`visibleShell`) but I did not mechanically rewrite every pre-existing `:visible` locator (they work; rewriting risked breakage) — new specs should reach for the helper.
+
+**Bottom line:** the investment paid for itself immediately — the per-slice "7-run convergence tax" is gone; D1 and every Phase-2+ slice now start on a deterministic, isolated suite. The strategic recommendation from C1 ("test-infrastructure investment before flakiness exceeds build cost") is now **realized and proven** in two back-to-back green runs.
+
+### Notes / follow-ups (non-blocking)
+- **Revoke `SUPABASE_ACCESS_TOKEN`** in the Supabase dashboard once the demo is done (it's account-wide admin while active) — flagged in `e2e.yml`'s header.
+- A dedicated Supabase *test project* (separate from the demo project) would give a truly from-scratch DB + safe parallelization (`workers>1`); kept serial here per scope.
+- Orphan admin-context `audit_logs` rows (seed runs as postgres ⇒ `changed_by` NULL) persist by design (append-only audit trail); not gym/user residue.
+- The login-less-notification FK ([[notifications-fk-blocks-loginless]]) is unchanged here (run members have logins) — still a separate scheduled item.
