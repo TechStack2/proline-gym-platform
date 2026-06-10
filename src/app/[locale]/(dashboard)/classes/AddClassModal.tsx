@@ -68,10 +68,16 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
         throw new Error('Please fill in all required fields')
       }
 
+      // Resolve the staff member's gym (classes.gym_id is NOT NULL + RLS-scoped).
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: prof } = await supabase.from('profiles').select('gym_id').eq('id', user?.id ?? '').single()
+      if (!prof?.gym_id) throw new Error('No gym context')
+
       // Insert class
       const { data: classData, error: classError } = await supabase
         .from('classes')
         .insert({
+          gym_id: prof.gym_id,
           name_ar: formData.name_ar,
           name_en: formData.name_en,
           name_fr: formData.name_fr,
@@ -101,7 +107,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
               day_of_week: s.day_of_week,
               start_time: s.start_time,
               end_time: s.end_time,
-              room: s.room,
+              // NB: room lives on `classes`, not `class_schedules` — don't insert it here.
             }))
           )
 
