@@ -87,6 +87,13 @@ jobs:
             and column_name in ('gym_id','type','title_key','params');
           SQL
 
+          run_sql "TEMP e2e residue (expect e2e_gyms=0, e2e_users=0, demo_intact=1)" <<'SQL'
+          select
+            (select count(*) from gyms where slug like 'e2e-%') as e2e_gyms,
+            (select count(*) from auth.users where email like '%@e2e.local') as e2e_users,
+            (select count(*) from gyms where slug='proline-gym') as demo_intact;
+          SQL
+
           echo "===== BEFORE: reproduce identity chain ====="
           run_sql "BEFORE reproduce" <<< "$REPRODUCE"
 
