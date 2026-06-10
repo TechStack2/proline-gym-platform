@@ -1,5 +1,6 @@
 import { test, expect, type Page, type BrowserContext, type Browser } from '@playwright/test';
 import { ROLES, shot } from './roles';
+import { gymSlug } from './helpers';
 
 /**
  * Lead → Active-Member cross-portal vertical slice (Cycle 5 / Phase 1 / Prompt 23-R).
@@ -53,7 +54,8 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
   const anonCtx = await browser.newContext({ locale: 'en' });
   const anon = await anonCtx.newPage();
   try {
-    const resp = await anon.goto('/en');
+    // X1: target the run gym via the public-lead gym selector (prod defaults to demo).
+    const resp = await anon.goto(`/en?gym=${encodeURIComponent(gymSlug())}`);
     expect(resp?.status() ?? 0, 'landing page should load').toBeLessThan(400);
 
     const form = anon.locator('section#trial');

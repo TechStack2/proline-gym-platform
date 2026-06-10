@@ -1,5 +1,5 @@
 import { test as setup, expect } from '@playwright/test';
-import { ROLES, DEMO_PASSWORD, type Role } from './roles';
+import { ROLES, E2E_PASSWORD, type Role } from './roles';
 
 // Log in once per role via the real login form and persist the session so the
 // portal specs start authenticated. If login fails, the whole run fails loudly
@@ -10,7 +10,7 @@ for (const role of Object.keys(ROLES) as Role[]) {
   setup(`authenticate ${role}`, async ({ page }) => {
     await page.goto('/en/auth/login');
     await page.locator('#email').fill(email);
-    await page.locator('#password').fill(DEMO_PASSWORD);
+    await page.locator('#password').fill(E2E_PASSWORD);
     await page.locator('button[type="submit"]').click();
 
     // Login pushes to /dashboard; staff stay there, member/coach get routed to

@@ -127,16 +127,15 @@ test('Activity loop: enroll → attend (transition-guarded) → atomic promote �
   }
 
   // ── T2 — transition-guarded attendance_absent ──────────────────────────────
-  // NB: /notifications renders the latest 50 only, so absolute counts drift as the
-  // demo student accumulates notifications across runs. The TRANSITION GUARD is the
-  // property under test ("re-saving must NOT re-notify") — assert that the count is
-  // UNCHANGED across a re-save (cap-robust: no new rows ⇒ window unchanged), plus
-  // that marking absent surfaces at least one attendance_absent.
+  // The ephemeral per-run gym starts with a clean notification list (no
+  // accumulation, well under the /notifications 50-row window), so absolute counts
+  // are deterministic again: present→absent adds exactly ONE; re-saving adds NONE.
   await coachMark(browser, classId, 'present'); // establish a non-absent prior
+  const baseline = await countAbsentNotifs(browser);
 
   await coachMark(browser, classId, 'absent'); // present → absent: ONE notification
   const afterAbsent = await countAbsentNotifs(browser);
-  expect(afterAbsent, 'marking absent should surface an attendance_absent').toBeGreaterThanOrEqual(1);
+  expect(afterAbsent, 'marking absent should add exactly one attendance_absent').toBe(baseline + 1);
 
   await coachMark(browser, classId, 'absent'); // absent → absent: NO re-notify
   const afterResave = await countAbsentNotifs(browser);

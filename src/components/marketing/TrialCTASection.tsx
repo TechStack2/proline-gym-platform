@@ -8,6 +8,8 @@ import { Send, CheckCircle } from 'lucide-react';
 
 type TrialCTASectionProps = {
   locale: string;
+  // X1: when set (e.g. `/en?gym=<slug>`), public-lead submits target that gym.
+  gymSlug?: string;
 };
 
 const PROGRAM_OPTIONS_EN = [
@@ -17,7 +19,7 @@ const PROGRAM_OPTIONS_AR = [
   'ملاكمة تايلاندية', 'ملاكمة', 'لياقة بدنية', 'زومبا', 'تدريب السيدات', 'أطفال',
 ];
 
-export function TrialCTASection({ locale }: TrialCTASectionProps) {
+export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
   const t = useTranslations('landing');
   const isRTL = locale === 'ar';
   const supabase = createClient();
@@ -50,6 +52,7 @@ export function TrialCTASection({ locale }: TrialCTASectionProps) {
         p_phone: phone,
         p_source: 'website',
         p_program: program || null,
+        p_gym_slug: gymSlug || null,
       });
 
       if (rpcError) throw rpcError;

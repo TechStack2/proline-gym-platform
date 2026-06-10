@@ -8,6 +8,9 @@ import { TrialCTASection } from '@/components/marketing/TrialCTASection';
 
 type Props = {
   params: { locale: string };
+  // X1: an explicit gym selector so CI's public-lead submit targets the run gym;
+  // prod (no ?gym) defaults to the demo gym.
+  searchParams?: { gym?: string };
 };
 
 import { createClient } from '@/lib/supabase/server';
@@ -19,8 +22,9 @@ function getLocalizedCampName(camp: any, locale: string): string {
   return camp.name_en;
 }
 
-export default async function LandingPage({ params }: Props) {
+export default async function LandingPage({ params, searchParams }: Props) {
   const { locale } = params;
+  const gymSlug = searchParams?.gym;
   const t = await getTranslations('camps');
   const supabase = await createClient();
   const today = new Date().toISOString().split('T')[0];
@@ -70,7 +74,7 @@ export default async function LandingPage({ params }: Props) {
       )}
 
       <FacilitySection locale={locale} />
-      <TrialCTASection locale={locale} />
+      <TrialCTASection locale={locale} gymSlug={gymSlug} />
     </>
   );
 }

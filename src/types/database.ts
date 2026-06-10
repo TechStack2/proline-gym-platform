@@ -2464,6 +2464,7 @@ export type Database = {
           p_last_name?: string
           p_email?: string
           p_program?: string
+          p_gym_slug?: string | null
         }
         Returns: string
       }

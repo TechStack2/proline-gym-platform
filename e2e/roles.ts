@@ -1,15 +1,21 @@
-// Demo logins for the verification harness. The password is the public demo
-// password shown on the login page; overridable via DEMO_PASSWORD for non-demo
-// environments. No real secret lives here.
-export const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'ProlineDemo2024!';
+// Run-scoped logins for the verification harness (Test-Infra hardening).
+//
+// Each CI run provisions its OWN gym (slug = E2E_GYM_SLUG) with 4 run-scoped
+// auth.users `<role>+<slug>@e2e.local` (password = E2E_PASSWORD). Emails/creds are
+// derived from env so the suite never touches the shared demo gym. Locally
+// (no env), it falls back to a plausible slug so type-checks/imports work.
+export const E2E_GYM_SLUG = process.env.E2E_GYM_SLUG || 'proline-gym-local';
+export const E2E_PASSWORD = process.env.E2E_PASSWORD || 'E2eTestPass!23';
 
 export type Role = 'owner' | 'reception' | 'coach' | 'student';
 
+const email = (role: Role) => `${role}+${E2E_GYM_SLUG}@e2e.local`;
+
 export const ROLES: Record<Role, { email: string; storage: string }> = {
-  owner: { email: 'owner@prolinegym.lb', storage: 'e2e/.auth/owner.json' },
-  reception: { email: 'reception@prolinegym.lb', storage: 'e2e/.auth/reception.json' },
-  coach: { email: 'coach@prolinegym.lb', storage: 'e2e/.auth/coach.json' },
-  student: { email: 'student@prolinegym.lb', storage: 'e2e/.auth/student.json' },
+  owner: { email: email('owner'), storage: 'e2e/.auth/owner.json' },
+  reception: { email: email('reception'), storage: 'e2e/.auth/reception.json' },
+  coach: { email: email('coach'), storage: 'e2e/.auth/coach.json' },
+  student: { email: email('student'), storage: 'e2e/.auth/student.json' },
 };
 
 import type { Page, TestInfo } from '@playwright/test';
