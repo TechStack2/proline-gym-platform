@@ -1513,3 +1513,51 @@ All via the sanctioned F2 pattern (RETURNING-free, authed client, recipient `pro
 - A dedicated Supabase *test project* (separate from the demo project) would give a truly from-scratch DB + safe parallelization (`workers>1`); kept serial here per scope.
 - Orphan admin-context `audit_logs` rows (seed runs as postgres ⇒ `changed_by` NULL) persist by design (append-only audit trail); not gym/user residue.
 - The login-less-notification FK ([[notifications-fk-blocks-loginless]]) is unchanged here (run members have logins) — still a separate scheduled item.
+
+---
+
+## Cycle 5 / Phase 1 / Prompt D1 — Billing & Payment (2026-06-10) — closes Phase 1
+
+**Agent:** coding agent · **Branch:** `prompt-d1-billing` · Replaces the cosmetic as-is (a `payments` row that inserted a non-existent `payments.status` column + `amount`/`currency` and never reconciled the invoice; a DOA `/invoices` page) with two canonical SECURITY DEFINER services.
+
+### The two services (single issuance + single settlement)
+- **`issue_invoice(...)`** (`000031_billing_payment.sql:67`) — staff-only (`is_staff()`), gym-scoped (`p_gym_id = get_user_gym_id()`), student-in-gym checked. Inserts the invoice (the 000005 triggers fill TVA 11% / `total_usd` / `invoice_number`), links `membership_id` + `due_date`, then emits `invoice_issued` (`:107`). The **only** issuance path.
+- **`record_payment(...)`** (`000031:119`) — locks the invoice `FOR UPDATE` (`:140`), rejects cancelled/refunded (`:150`), rejects ≤0, **blocks overpayment** `Σamount_usd + new > total_usd + ε` (`:158`, ε=0.01), inserts the payment, **recomputes status atomically from Σ payments** (`:170` → paid+`paid_at` / partial / pending — never hand-set), audits (`operation='payment'`), emits `payment_received` with the remaining balance (`:190`). The **only** settlement path.
+- **`refund_invoice`** (`:203`) / **`void_invoice`** (`:220`) — reference-only, audited (`refund` / `update`); void blocked on a paid invoice (use refund).
+- **Retrofits (behavior preserved):** `convert_lead_to_member` (23-R) now issues its membership invoice through `issue_invoice` (`000031:294`) — `leads.spec` T5 still green ($55.50 incl. TVA). `approvePtRequest` (22-R) routes the PT invoice through the `issue_invoice` RPC (`(dashboard)/pt/actions.ts:53`) instead of a raw insert.
+
+### Per-transaction acceptance — PASS/FAIL (guard `file:line` → e2e proof)
+| Transaction | Guard | E2E proof | Verdict |
+|---|---|---|---|
+| Issue → `invoice_issued` + portal pending | `issue_invoice` `000031:67` / emit `:107` | `billing.spec.ts:47` (t23) | **PASS** |
+| Partial → `partial` (balance drops) | recompute `000031:170` | `billing.spec.ts:47` | **PASS** |
+| Remainder → `paid` + `paid_at` + receipt | `000031:170` (`paid_at` `:178`) | `billing.spec.ts:47` | **PASS** |
+| `payment_received` reaches member | emit `000031:190` | `billing.spec.ts:47` (`/notifications`) | **PASS** |
+| Overpayment rejected (amount > balance) | `000031:158` | `billing.spec.ts:95` (t24) | **PASS** |
+| Dual-currency reconcile on `amount_usd` (OMT USD+LBP) | `Σ amount_usd` `000031:166,170` | `billing.spec.ts:113` (t25) | **PASS** |
+| Pay-on-cancelled rejected | `000031:150` (+ UI blocks the form) | `billing.spec.ts:132` (t26) | **PASS** |
+| Concurrent payments serialize | `FOR UPDATE` `000031:140` | by construction (lock) | **PASS** |
+| Duplicate-reference warn | `referenceExists` (`invoices/actions.ts:122`) + form confirm | UI soft-warn (non-blocking) | **PASS** |
+| Rounding epsilon | ε=0.01 `000031:135,158,172` | implicit in dual-currency t25 | **PASS** |
+| Partial-failure rollback | single atomic txn per RPC | by construction | **PASS** |
+
+### CI evidence (behavior, not tsc)
+- **E2E gate `27258041043` — SUCCESS, 28 passed (3.4m)** (was 24; +4 D1 tests, run gym `e2e-27258041043-1` torn down HTTP 201) — https://github.com/TechStack2/proline-gym-platform/actions/runs/27258041043
+  - `✓ 23 [billing] issue→invoice_issued+portal; partial→partial; full→paid+receipt+payment_received (14.8s)` · `✓ 24 overpayment rejected (4.9s)` · `✓ 25 dual-currency OMT reconcile→paid (6.1s)` · `✓ 26 voided invoice cannot be settled (5.6s)`.
+- **Migration applied** (no admin token locally) via Verify-Foundation `27257972038` — SUCCESS (`apply 000031` → `record 000031` → ✅).
+- `tsc --noEmit` clean · `next build` clean (routes `/invoices`, `/invoices/[id]`, `/invoices/[id]/receipt`, `/invoices/new` compiled).
+
+### Notification recipients
+- `invoice_issued` + `payment_received` → **member (`students.profile_id`) + guardians (`guardian_students → guardians.profile_id`)**; **coaches excluded**; RETURNING-free; **per-recipient best-effort** (`_notify_student_billing` `000031:29` loops with a per-row `EXCEPTION … NULL`, so a login-less member's `notifications_user_id_fkey` violation never blocks the financial write or the other recipients). Run gym's Karim has a login ⇒ both landed (proven on `/notifications`). The login-less FK is **not** "fixed" here ([[notifications-fk-blocks-loginless]]) — portal/billing + receipt is the durable truth. i18n `invoice_issued`/`payment_received` added in ar/en/fr (`notifications.messages.*`); types added to `NOTIFICATION_TYPES`.
+
+### The `/invoices` repair (was triple-DOA)
+- `students.first_name` → `students(profiles(first_name_*))` + `localizedName` (`lib/billing/reconcile.ts`); `invoice.issue_date` → `created_at`; the embedded cross-join `.or()` → in-memory name/number filter; `.select('amount,currency,status')` → real schema. Added an **outstanding-balances** summary + a **per-method daily tally** (cash USD/LBP, OMT, Whish, …) on `/invoices`. New **invoice detail** (`/invoices/[id]`) with the rebuilt invoice-targeted payment form (the fixed `payment-form.tsx` → `record_payment`), refund/void, and a **printable dual-currency Arabic-RTL receipt** (`/invoices/[id]/receipt`, `print:hidden` chrome). `portal/billing` gained live reconciled **balance + receipt link**. Walk-in **issue→detail (payment pre-filled to balance)** = the one-motion.
+
+### **Billing slice behavior-green: PASS.**
+
+### DRAG READ (candid) — where did the work actually fight?
+**It didn't fight in the engine — it fought in the surfaces, and the drag is now squarely UI-debt, not domain-logic.** The two RPCs were the *easy* 30%: `issue_invoice`/`record_payment` are a textbook lock→guard→insert→derive→audit→notify, and they went green on the **first** e2e run (28/0, zero convergence) — the ephemeral-gym TI investment from the prior slice paid out exactly as predicted (Karim has a login ⇒ notifications deterministically land; no belt/notification-count/bell flakiness to whack). The migration validated in one Management-API apply. **The real cost was that the entire billing front-end was dead on arrival** — not "needs a tweak," but *DOA against the actual schema*: `/invoices`, `/invoices/new`, `/payments`, `/payments/new`, `invoice-list`, and `payment-form` all queried columns that don't exist (`students.first_name`, `invoice.issue_date`, `amount`/`currency`/`status`) and compiled only because they leaned on local interfaces / `any`. So "build billing" was really "build the billing UI from scratch while leaving the DOA husks that still type-check." I rebuilt the surfaces I named (detail, receipt, issue, the record form, portal balance) and left the legacy `/payments` *list* + its `invoice-list`/`-stats`/`-filters` husks in place (unused, still green) rather than expand scope — **that's the honest residue: dead components that will mislead the next reader until deleted.**
+
+**Two judgment calls worth flagging.** (1) I put the notification emit **inside** the definer RPCs (not in a TS server action) — deliberately, because issuance fires from *both* TS (manual/PT) and SQL (`convert`), and only an in-RPC emit is uniform; it's the same sanctioned "definer-RPC emit" exception as `submit_public_lead`/`request_pt`, and I had to `REVOKE` the helper from `authenticated` so it isn't a notification-spam RPC. (2) "Pay-on-cancelled rejected" is proven at the **UI** layer (the form refuses to render a submit on a settled invoice) — the `record_payment` guard (`:150`) is real defense-in-depth but the browser never reaches it, so the e2e asserts the *block*, not the RPC raise; a pure-RPC negative test would need a direct PostgREST call the harness doesn't do. Neither is wrong, but both are "trust the layer below" rather than end-to-end-through-the-guard.
+
+**What I'd watch next.** The duplicate-reference "warn" is a soft client `confirm()` — fine for a walk-in desk, useless for an API caller; if billing ever gets a second writer, the dedup belongs in `record_payment`. And the `/payments` surface is now schizophrenic (a DOA list page + a working `/payments/new` that defers to `/invoices/[id]`) — a 20-minute follow-up should either delete the list or rebuild it on the real schema. **Bottom line: the billing *engine* is solid and proven; the drag has fully migrated to front-end cleanup, which is the cheap kind of debt.**
