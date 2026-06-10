@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import EnrollStudentModal from './EnrollStudentModal'
 import { createClient } from '@/lib/supabase/client'
+import { localizedName } from '@/lib/names'
 
 interface ClassDetailProps {
   classData: any
@@ -95,13 +96,13 @@ export default function ClassDetail({ classData, locale }: ClassDetailProps) {
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">{t('coach')}</label>
-                  <p className="font-medium">
-                    {classData.coach?.first_name} {classData.coach?.last_name}
+                  <p className="font-medium" data-testid="detail-coach">
+                    {localizedName(classData.coach?.profiles, locale)}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">{t('capacity')}</label>
-                  <p className="font-medium">{classData.enrollments_count}/{classData.capacity}</p>
+                  <p className="font-medium">{classData.enrollments_count}/{classData.max_capacity}</p>
                 </div>
               </div>
 
@@ -155,16 +156,13 @@ export default function ClassDetail({ classData, locale }: ClassDetailProps) {
                           <Users className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium">
-                            {enrollment.student?.first_name} {enrollment.student?.last_name}
+                          <p className="font-medium" data-testid="enrolled-student">
+                            {localizedName(enrollment.student?.profiles, locale)}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge className={getBeltColor(enrollment.student?.belt_rank || 'white')}>
-                              {enrollment.student?.belt_rank}
+                            <Badge className={getBeltColor(enrollment.student?.current_belt_rank || 'white')}>
+                              {enrollment.student?.current_belt_rank}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {enrollment.student?.email}
-                            </span>
                           </div>
                         </div>
                       </div>

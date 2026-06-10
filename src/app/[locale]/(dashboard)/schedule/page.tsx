@@ -14,20 +14,19 @@ async function getScheduleData() {
       .select(`
         *,
         discipline:disciplines(id, name_ar, name_en, name_fr),
-        coach:coaches(id, first_name, last_name),
+        coach:coaches(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
         schedules:class_schedules(*)
       `)
-      .eq('status', 'active'),
+      .eq('is_active', true),
     supabase
       .from('disciplines')
       .select('*')
-      .eq('status', 'active')
+      .eq('is_active', true)
       .order('name_en'),
     supabase
       .from('coaches')
-      .select('*')
-      .eq('status', 'active')
-      .order('first_name'),
+      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .eq('is_active', true),
   ])
 
   const classes = classesResult.data || []
@@ -40,7 +39,7 @@ async function getScheduleData() {
     .from('class_enrollments')
     .select('class_id')
     .in('class_id', classIds)
-    .eq('status', 'active')
+    .eq('is_active', true)
 
   const enrollmentCounts: { [key: string]: number } = {}
   if (enrollments) {

@@ -201,7 +201,26 @@
     "allCoaches": "كل المدربين",
     "allDisciplines": "كل الرياضات",
     "allStatus": "كل الحالات",
-    "searchPlaceholder": "بحث بالاسم أو الهاتف..."
+    "searchPlaceholder": "بحث بالاسم أو الهاتف...",
+    "absent": "غائب",
+    "attendance_rate": "نسبة الحضور",
+    "attendance_stats": "إحصائيات الحضور",
+    "cancel": "إلغاء",
+    "end_date": "تاريخ الانتهاء",
+    "female": "أنثى",
+    "gender": "الجنس",
+    "male": "ذكر",
+    "phone": "الهاتف",
+    "plan": "الخطة",
+    "present": "حاضر",
+    "save": "حفظ",
+    "start_date": "تاريخ البدء",
+    "status_label": "الحالة",
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "suspended": "موقوف"
+    }
   },
   "coaches": {
     "title": "المدربين",
@@ -226,7 +245,20 @@
       "active": "نشط",
       "inactive": "غير نشط",
       "on_leave": "في إجازة"
-    }
+    },
+    "bio": "نبذة",
+    "cancel": "إلغاء",
+    "class_name": "الحصة",
+    "class_schedule": "جدول الحصص",
+    "day": "اليوم",
+    "disciplines": "الاختصاصات",
+    "email": "البريد الإلكتروني",
+    "no_classes": "لا توجد حصص",
+    "phone": "الهاتف",
+    "profile_info": "معلومات الملف",
+    "save": "حفظ",
+    "time": "الوقت",
+    "status_label": "الحالة"
   },
   "disciplines": {
     "title": "الرياضات",
@@ -288,7 +320,11 @@
     "description": "الوصف",
     "searchStudents": "بحث عن طلاب...",
     "noStudentsFound": "لم يتم العثور على طلاب",
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "create": "إنشاء",
+    "discipline": "الاختصاص",
+    "quickActions": "إجراءات سريعة",
+    "schedules": "المواعيد"
   },
   "schedule": {
     "title": "الجدول",

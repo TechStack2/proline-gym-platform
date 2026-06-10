@@ -201,7 +201,26 @@
     "allCoaches": "Tous les entraîneurs",
     "allDisciplines": "Toutes les disciplines",
     "allStatus": "Tous les statuts",
-    "searchPlaceholder": "Rechercher par nom ou téléphone..."
+    "searchPlaceholder": "Rechercher par nom ou téléphone...",
+    "absent": "Absent",
+    "attendance_rate": "Taux de présence",
+    "attendance_stats": "Statistiques de présence",
+    "cancel": "Annuler",
+    "end_date": "Date de fin",
+    "female": "Femme",
+    "gender": "Genre",
+    "male": "Homme",
+    "phone": "Téléphone",
+    "plan": "Forfait",
+    "present": "Présent",
+    "save": "Enregistrer",
+    "start_date": "Date de début",
+    "status_label": "Statut",
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif",
+      "suspended": "Suspendu"
+    }
   },
   "coaches": {
     "title": "Entraîneurs",
@@ -226,7 +245,20 @@
       "active": "Actif",
       "inactive": "Inactif",
       "on_leave": "En congé"
-    }
+    },
+    "bio": "Bio",
+    "cancel": "Annuler",
+    "class_name": "Cours",
+    "class_schedule": "Horaire des cours",
+    "day": "Jour",
+    "disciplines": "Disciplines",
+    "email": "E-mail",
+    "no_classes": "Aucun cours",
+    "phone": "Téléphone",
+    "profile_info": "Informations du profil",
+    "save": "Enregistrer",
+    "time": "Heure",
+    "status_label": "Statut"
   },
   "disciplines": {
     "title": "Disciplines",
@@ -288,7 +320,11 @@
     "description": "Description",
     "searchStudents": "Rechercher des élèves...",
     "noStudentsFound": "Aucun élève trouvé",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "create": "Créer",
+    "discipline": "Discipline",
+    "quickActions": "Actions rapides",
+    "schedules": "Horaires"
   },
   "schedule": {
     "title": "Emploi du temps",

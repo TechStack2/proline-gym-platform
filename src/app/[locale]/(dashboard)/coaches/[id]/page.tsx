@@ -34,12 +34,13 @@ export default async function CoachDetailPage({
     notFound()
   }
 
-  // Fetch coach's classes
+  // Fetch coach's classes (schedules live on class_schedules; classes has no
+  // start_time/name — use the embed + localized name_*).
   const { data: classes } = await supabase
     .from('classes')
-    .select('*')
+    .select('id, name_ar, name_en, name_fr, status, schedules:class_schedules(id, day_of_week, start_time, end_time)')
     .eq('coach_id', id)
-    .order('start_time', { ascending: true })
+    .order('created_at', { ascending: true })
 
   return (
     <CoachDetail

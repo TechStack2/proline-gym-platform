@@ -13,7 +13,7 @@ async function getClasses(searchParams: { [key: string]: string | undefined }) {
     .select(`
       *,
       discipline:disciplines(id, name_ar, name_en, name_fr),
-      coach:coaches(id, first_name, last_name),
+      coach:coaches(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
       schedules:class_schedules(*)
     `)
     .order('created_at', { ascending: false })
@@ -45,17 +45,13 @@ async function getClasses(searchParams: { [key: string]: string | undefined }) {
     return []
   }
 
-  // Get enrollment counts for each class
+  // Get enrollment counts for each class (active = is_active; there is no .status col)
   const classIds = classes.map(c => c.id)
   const { data: enrollments } = await supabase
     .from('class_enrollments')
-    .select('class_id, count')
+    .select('class_id')
     .in('class_id', classIds)
-    .eq('status', 'active')
-    .then(({ data }) => {
-      // Manual count aggregation
-      return { data: data }
-    })
+    .eq('is_active', true)
 
   // Count enrollments per class
   const enrollmentCounts: { [key: string]: number } = {}
@@ -76,18 +72,18 @@ async function getDisciplines() {
   const { data } = await supabase
     .from('disciplines')
     .select('*')
-    .eq('status', 'active')
+    .eq('is_active', true)
     .order('name_en')
   return data || []
 }
 
 async function getCoaches() {
   const supabase = await createClient()
+  // Names live on profiles; coaches has no name column. Active = is_active.
   const { data } = await supabase
     .from('coaches')
-    .select('*')
-    .eq('status', 'active')
-    .order('first_name')
+    .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+    .eq('is_active', true)
   return data || []
 }
 

@@ -118,6 +118,15 @@ export default defineConfig({
       testMatch: /billing\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // Admin Presentation Repair (Prompt AR): classes/students/coaches/schedule/
+      // payments render real normalized data. Owner-only; runs after billing so a
+      // settled invoice already exists in the gym (and AR also self-issues one).
+      name: 'ar-admin',
+      dependencies: ['setup'],
+      testMatch: /ar-admin\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

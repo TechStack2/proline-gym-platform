@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { localizedName } from '@/lib/names'
 
 interface AddClassModalProps {
   disciplines: any[]
@@ -50,7 +51,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
     coach_id: '',
     description: '',
     capacity: 20,
-    status: 'active' as const,
+    status: 'scheduled' as const,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,8 +76,11 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
           name_fr: formData.name_fr,
           discipline_id: formData.discipline_id,
           coach_id: formData.coach_id,
-          description: formData.description,
-          capacity: formData.capacity,
+          // Real schema: localized description_* + max_capacity (not description/capacity).
+          description_ar: formData.description,
+          description_en: formData.description,
+          description_fr: formData.description,
+          max_capacity: formData.capacity,
           status: formData.status,
         })
         .select()
@@ -208,7 +212,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 <SelectContent>
                   {coaches.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.first_name} {c.last_name}
+                      {localizedName(c.profiles, locale)}
                     </SelectItem>
                   ))}
                 </SelectContent>

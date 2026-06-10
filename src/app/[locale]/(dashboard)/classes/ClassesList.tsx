@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import AddClassModal from './AddClassModal'
 import { cn } from '@/lib/utils'
+import { localizedName } from '@/lib/names'
 
 interface ClassesListProps {
   classes: any[]
@@ -130,7 +131,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
                   <SelectItem value="all">{t('allCoaches')}</SelectItem>
                   {coaches.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.first_name} {c.last_name}
+                      {localizedName(c.profiles, locale)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -166,6 +167,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
               {filteredClasses.map((classItem) => (
                 <Card
                   key={classItem.id}
+                  data-testid="class-card"
                   className="cursor-pointer hover:shadow-lg transition-shadow"
                   onClick={() => router.push(`/${locale}/classes/${classItem.id}`)}
                 >
@@ -185,9 +187,9 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
                     </div>
                     
                     {classItem.coach && (
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                      <div className="flex items-center text-sm text-muted-foreground mb-2" data-testid="class-coach">
                         <Users className="h-4 w-4 mr-2" />
-                        {classItem.coach.first_name} {classItem.coach.last_name}
+                        {localizedName(classItem.coach.profiles, locale)}
                       </div>
                     )}
 
@@ -211,9 +213,9 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
                     )}
 
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground" data-testid="class-count">
                         <Users className="h-4 w-4 inline mr-1" />
-                        {classItem.enrollments_count || 0}/{classItem.capacity}
+                        {classItem.enrollments_count || 0}/{classItem.max_capacity}
                       </span>
                     </div>
                   </CardContent>

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { localizedName } from '@/lib/names'
 
 interface WeeklyScheduleProps {
   classes: any[]
@@ -119,7 +120,7 @@ export default function WeeklySchedule({ classes, disciplines, coaches, locale }
                 <SelectItem value="all">{t('allCoaches')}</SelectItem>
                 {coaches.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.first_name} {c.last_name}
+                    {localizedName(c.profiles, locale)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -180,10 +181,10 @@ export default function WeeklySchedule({ classes, disciplines, coaches, locale }
                             {classItem[`name_${locale}`] || classItem.name_en}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
-                            {classItem.coach?.first_name}
+                            {localizedName(classItem.coach?.profiles, locale)}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {classItem.enrollments_count}/{classItem.capacity}
+                            {classItem.enrollments_count}/{classItem.max_capacity}
                           </div>
                         </div>
                       ))}
@@ -230,7 +231,7 @@ export default function WeeklySchedule({ classes, disciplines, coaches, locale }
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                           <Users className="h-3 w-3" />
-                          <span>{classItem.coach?.first_name} {classItem.coach?.last_name}</span>
+                          <span>{localizedName(classItem.coach?.profiles, locale)}</span>
                           <Clock className="h-3 w-3 ml-2" />
                           {classItem.schedules?.map((s: any) => (
                             <span key={s.id}>
@@ -240,7 +241,7 @@ export default function WeeklySchedule({ classes, disciplines, coaches, locale }
                         </div>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {classItem.enrollments_count}/{classItem.capacity}
+                        {classItem.enrollments_count}/{classItem.max_capacity}
                       </div>
                     </div>
                   ))}

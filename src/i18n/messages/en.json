@@ -201,7 +201,26 @@
     "allCoaches": "All Coaches",
     "allDisciplines": "All Disciplines",
     "allStatus": "All Statuses",
-    "searchPlaceholder": "Search by name or phone..."
+    "searchPlaceholder": "Search by name or phone...",
+    "absent": "Absent",
+    "attendance_rate": "Attendance Rate",
+    "attendance_stats": "Attendance Stats",
+    "cancel": "Cancel",
+    "end_date": "End Date",
+    "female": "Female",
+    "gender": "Gender",
+    "male": "Male",
+    "phone": "Phone",
+    "plan": "Plan",
+    "present": "Present",
+    "save": "Save",
+    "start_date": "Start Date",
+    "status_label": "Status",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "suspended": "Suspended"
+    }
   },
   "coaches": {
     "title": "Coaches",
@@ -226,7 +245,20 @@
       "active": "Active",
       "inactive": "Inactive",
       "on_leave": "On Leave"
-    }
+    },
+    "bio": "Bio",
+    "cancel": "Cancel",
+    "class_name": "Class",
+    "class_schedule": "Class Schedule",
+    "day": "Day",
+    "disciplines": "Disciplines",
+    "email": "Email",
+    "no_classes": "No classes",
+    "phone": "Phone",
+    "profile_info": "Profile Info",
+    "save": "Save",
+    "time": "Time",
+    "status_label": "Status"
   },
   "disciplines": {
     "title": "Disciplines",
@@ -288,7 +320,11 @@
     "description": "Description",
     "searchStudents": "Search students...",
     "noStudentsFound": "No students found",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "create": "Create",
+    "discipline": "Discipline",
+    "quickActions": "Quick Actions",
+    "schedules": "Schedules"
   },
   "schedule": {
     "title": "Schedule",

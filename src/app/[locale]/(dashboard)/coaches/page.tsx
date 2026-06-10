@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CoachList } from './components/coach-list'
 import { CoachFilters } from './components/coach-filters'
+import { matchingProfileIds } from '@/lib/admin/profile-search'
 
 export default async function CoachesPage({
   params: { locale },
@@ -17,6 +18,12 @@ export default async function CoachesPage({
   const supabase = await createClient()
   const t = await getTranslations('coaches')
   const isRTL = locale === 'ar'
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+  const gymId = me?.gym_id
+  if (!gymId) return null
 
   let query = supabase
     .from('coaches')
@@ -34,13 +41,13 @@ export default async function CoachesPage({
         avatar_url
       )
     `)
+    .eq('gym_id', gymId)
     .order('created_at', { ascending: false })
 
   if (searchParams.search) {
-    const searchTerm = `%${searchParams.search}%`
-    query = query.or(
-      `profiles.first_name_ar.ilike.${searchTerm},profiles.first_name_en.ilike.${searchTerm},profiles.phone.ilike.${searchTerm}`
-    )
+    // Names/phone live on profiles — match there, then filter coaches by profile_id.
+    const ids = await matchingProfileIds(supabase, gymId, searchParams.search)
+    query = query.in('profile_id', ids)
   }
   if (searchParams.status) {
     query = query.eq('is_active', searchParams.status === 'active')

@@ -209,7 +209,7 @@ export function StudentDetail({ student, memberships, attendance, beltProgressio
                   <th className={cn("py-2 px-4 text-left", isRTL && "text-right")}>{t('plan')}</th>
                   <th className={cn("py-2 px-4 text-left", isRTL && "text-right")}>{t('start_date')}</th>
                   <th className={cn("py-2 px-4 text-left", isRTL && "text-right")}>{t('end_date')}</th>
-                  <th className={cn("py-2 px-4 text-left", isRTL && "text-right")}>{t('status')}</th>
+                  <th className={cn("py-2 px-4 text-left", isRTL && "text-right")}>{t('status_label')}</th>
                 </tr>
               </thead>
               <tbody>

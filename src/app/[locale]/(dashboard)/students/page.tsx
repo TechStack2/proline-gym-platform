@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { StudentList } from './components/student-list'
 import { StudentFilters } from './components/student-filters'
+import { matchingProfileIds } from '@/lib/admin/profile-search'
 
 export default async function StudentsPage({
   params: { locale },
@@ -52,10 +53,11 @@ export default async function StudentsPage({
     .order('created_at', { ascending: false })
 
   if (searchParams.search) {
-    const searchTerm = `%${searchParams.search}%`
-    query = query.or(
-      `profiles.first_name_ar.ilike.${searchTerm},profiles.first_name_en.ilike.${searchTerm},profiles.phone.ilike.${searchTerm}`
-    )
+    // Names/phone live on profiles — match there (gym-scoped), then filter
+    // students by profile_id. (The legacy top-level .or() over embedded
+    // profiles.* columns never matched anything.)
+    const ids = await matchingProfileIds(supabase, gymId, searchParams.search)
+    query = query.in('profile_id', ids)
   }
   if (searchParams.status) {
     query = query.eq('is_active', searchParams.status === 'active')

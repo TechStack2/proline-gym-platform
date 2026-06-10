@@ -177,7 +177,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
 
             <div>
               <label className="block text-sm font-medium mb-1">
-                {t('status')}
+                {t('status_label')}
               </label>
               <select
                 className="w-full border rounded-md px-3 py-2"
