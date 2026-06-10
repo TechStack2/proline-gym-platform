@@ -1593,3 +1593,60 @@ fk_target=profiles  direct_insert_persisted=1  loginless_member_notifs=2
 **This was the rare one-line fix that's actually one line — and the discipline was entirely in *proving* it, not writing it.** The migration is a drop-delete-add; the real work was the verification, because the thing under test is *invisible by definition*: a login-less member has no session, so no spec can log in and "see" the notification — the proof has to be an admin-context assertion. I leaned on the TI Management-API pattern (the residue checks) and got a genuinely strong result: not just the deterministic control (direct INSERT to seeded login-less Omar persists, which alone proves the FK accepts a non-`auth.users` recipient), but the **realistic end-to-end** number falling out of an *existing* spec — `leads.spec`'s convert already produces a login-less member, and post-D1 it fires `invoice_issued` too, so `loginless_member_notifs=2` is the bug's exact pre/post contrast (0 → 2) with zero new spec code. That's the cleanest kind of verification: the scenario the prompt described was already being exercised; I just had to look at it from the admin side.
 
 **What I deliberately did NOT do, and the one honest gap.** No RLS touch, no producer/consumer edit, no `user_id` nullable, no backfill, no A4/G1 — all correctly out of scope; the FK was provably the sole blocker (the helpers already addressed `profile_id`). The gap I can't paper over: **the orphan count is reported as 0 by inference, not by a captured number** — the Management API returns the last statement's result, not the `NOTICE`, so the pre-delete count isn't in the log. I'm confident it was 0 (the FK-add succeeded with no `NOT VALID`, and login-less rows couldn't have existed pre-fix), but if a future migration needs an auditable orphan count, it should `SELECT` the count as a returned row, not a `NOTICE`. Also worth flagging for the next reader: the best-effort try/catch in `_notify_student_billing` now *never fires* on login-less recipients (its reason for existing is gone) — I left it as cheap defense, but it's now belt-and-suspenders, not load-bearing. **Bottom line: substrate debt cleared, member comms can now actually reach members, and G1 is unblocked — proven 0→2 in CI.**
+
+---
+
+## Cycle 5 / V1 / AR — Admin Presentation Repair (2026-06-10) — V1 slice #2
+
+**Agent:** coding agent · **Branch:** `prompt-ar-admin-repair` · Closes the Phase-1 carried **admin-presentation DOA cluster** ([[strangle-validated-leaf-rot]]): the admin layer was uniformly written against an imagined denormalized schema (one bug class). Swept all of `(dashboard)` and repaired every reachable instance.
+
+### Schema-mismatched queries found + fixed (`file:line`)
+| # | Location | Bug | Fix |
+|---|---|---|---|
+| 1 | `classes/page.tsx:16` | `coaches(first_name,last_name)` embed | `coaches(profiles(first_name_*,last_name_*))` |
+| 2 | `classes/page.tsx:52–54` | enrollment count `.select('class_id,count').eq('status','active')` | `.select('class_id').eq('is_active',true)` |
+| 3 | `classes/page.tsx:79` | `disciplines.eq('status','active')` | `.eq('is_active',true)` |
+| 4 | `classes/page.tsx:89–90` | `coaches.eq('status','active').order('first_name')` | profiles embed + `.eq('is_active',true)` |
+| 5 | `classes/ClassesList.tsx:133,190` / `:216` | coach `first_name/last_name`; `capacity` | `localizedName(coach.profiles)`; `max_capacity` |
+| 6 | `classes/[id]/ClassDetail.tsx:99,104,159,162,166` | coach/student `first_name`; `capacity`; `belt_rank`; `student.email` | `localizedName(profiles)`; `max_capacity`; `current_belt_rank`; removed email |
+| 7 | `classes/[id]/page.tsx:19,34` | profile embeds missing `fr` | added `first_name_fr/last_name_fr` |
+| 8 | `classes/AddClassModal.tsx:211` + insert | coach name; insert `description/capacity/status:'active'` | `localizedName`; `description_*`/`max_capacity`/`'scheduled'` |
+| 9 | `students/page.tsx:56` | top-level `.or()` over embedded `profiles.*` (never matched) | profiles-first id lookup → `.in('profile_id', ids)` |
+| 10 | `coaches/page.tsx:41` | same broken `.or()` (+ not gym-scoped) | `matchingProfileIds` + `.in('profile_id', …)` + `gym_id` scope |
+| 11 | `coaches/components/coach-list.tsx` | reads `coach.name_ar/email/status/coach_disciplines` (none exist) | rewritten: `profiles` name/phone, `specialization_*`, `is_active`, `belt_rank` |
+| 12 | `coaches/components/coach-detail.tsx` | same + classes `cls.name/day_of_week/start_time` | rewritten: profiles + `class_schedules` embed |
+| 13 | `coaches/[id]/page.tsx:42` | coach classes `select('*').order('start_time')` | `name_*` + `schedules:class_schedules(...)`, `order('created_at')` |
+| 14 | `coaches/components/coach-form.tsx:180` | bare `t('status')` (object, not leaf) → MISSING | `t('status_label')` |
+| 15 | `schedule/page.tsx:17,20,24,29,43` | coach embed; classes/disciplines/coaches/enrollments `.status`/`order('first_name')` | profiles embed; `is_active` throughout |
+| 16 | `schedule/WeeklySchedule.tsx:122,183,233 / 186,243` | coach `first_name`; `capacity` | `localizedName(coach.profiles)`; `max_capacity` |
+| 17 | `students/components/student-detail.tsx:212` | bare `t('status')` (object) → MISSING | `t('status_label')` |
+| 18 | `payments/page.tsx` (whole) | `amount/currency/status`, `students.first_name`, top-level `.or()` | full rebuild (payments-history view) |
+
+**Shared helpers added:** `src/lib/names.ts` (`localizedName`, `one`) + `src/lib/admin/profile-search.ts` (`matchingProfileIds`). Already-correct surfaces (verified, untouched): `classes/[id]/page.tsx` query, `belts/page.tsx`, the main `attendance/page.tsx` dashboard, `EnrollStudentModal`, `coaches/[id]` query, `student-list.tsx`, `settings`.
+
+### Students-search approach
+The legacy top-level `.or()` over embedded `profiles.*` columns can't filter the base table, so it silently matched nothing. Replaced with a **profiles-first id lookup**: run the `.or()` against profiles' OWN top-level columns (gym-scoped; all six name locales + phone), collect ids, then `students/coaches.in('profile_id', ids)` (sentinel id when empty ⇒ empty result, not "no filter"). Verified by name **and** phone in CI.
+
+### Payments-history rebuild + husk disposition
+`/payments` rebuilt into a **staff-only, gym-scoped (RLS `payments_staff_gym`) payments-history/audit view**: per-payment **date · member (via students→profiles) · invoice # (link) · method · reference · amount (USD+LBP)**, filterable by **date range + method** (pairs with D1's per-method daily tally), Arabic-RTL, reading the rows D1's `record_payment` writes. **Deleted dead husks** (superseded by D1's `/invoices` + this rebuild): `invoices/components/{invoice-list,invoice-stats,invoice-filters,invoice-form}.tsx`, `payments/components/{payment-list,payment-stats,payment-filters,payment-detail}.tsx`, `payments/[id]/page.tsx`. **Kept** (D1): `payments/components/payment-form.tsx`, `payments/new/page.tsx`.
+
+### i18n keys added (ar/en/fr, no MISSING_MESSAGE)
+`students`: `status_label`, `status.{active,inactive,suspended}`, `cancel, female, gender, male, phone, plan, present, absent, save, start_date, end_date, attendance_rate, attendance_stats`. `coaches`: `status_label, profile_info, bio, class_schedule, class_name, day, time, no_classes, disciplines, email, phone, cancel, save`. `classes`: `create, discipline, quickActions, schedules`. (Split the `status` object vs the bare label to resolve a leaf/object collision.)
+
+### Deferred (reported, NOT half-fixed)
+`attendance/history/page.tsx` (`:21` `students.first_name`, `:27` `classes.name/discipline`, `:53` `order('date')`) and `attendance/reports/page.tsx` (`:27` `classes.name`, `:35` `students.first_name`, `:44` `class_schedules.eq('date')`) + their clients are DOA on a **deeper recurring-schedule model mismatch** (`class_schedules` has `day_of_week`, not `date`; `classes` has no `name`/`discipline`) — beyond the name bug class, and they are **unlinked secondary analytics pages**. Fixing only the name columns would leave them erroring on the others. Flagged for a dedicated attendance-reports slice; the main attendance dashboard is already schema-correct.
+
+### CI evidence (behavior, not tsc)
+- **E2E gate `27268951309` — SUCCESS, 31 passed (4.6m)** (was 28; +3 AR tests), run gym `e2e-27268951309-1` torn down HTTP 201 — https://github.com/TechStack2/proline-gym-platform/actions/runs/27268951309
+  - `✓ 27 [ar-admin] classes list coach name + counts; class detail enrolled NAMES (2.9s)` · `✓ 28 students search by name + phone (4.4s)` · `✓ 29 payments-history shows a recorded payment (8.3s)`. No `MISSING_MESSAGE` asserted on each surface.
+  - **No regression:** the FK login-less step still `PASS` and all prior slices green.
+- `tsc --noEmit` clean · `next build` clean.
+
+### **Admin surfaces render real data: PASS.**
+
+### DRAG READ (candid)
+**The strangler thesis was exactly right, and the rot was deeper and more uniform than "the known three."** This wasn't three broken queries — it was the *entire* admin presentation layer written against a denormalized fantasy schema (names on `students`/`coaches`, a `.status` column on everything, `capacity`/`description` on `classes`, a `.or()` that PostgREST can't honor), compiling only because the consumers leaned on `any`/local interfaces so the column errors surfaced at *runtime*, not build. The fix was mechanical once the pattern was named (profiles-join + `is_active` + profiles-first search), but it was *wide*: 18 query/consumer sites across classes/students/coaches/schedule/payments, several requiring full consumer rewrites (`coach-list`/`coach-detail` read fields that simply don't exist). The shared `localizedName`/`matchingProfileIds` helpers paid for themselves immediately — without them this would've been 18 copies of the same locale ternary.
+
+**Two honest scoping calls.** (1) **Attendance history/reports I deliberately did NOT touch** beyond reporting them. They have the name bug class *plus* a deeper one — they query `class_schedules.date` (recurring schedules have `day_of_week`, no date) and `classes.name` (it's `name_*`), which means a column swap leaves them still-DOA; they're also unlinked. Half-fixing them would've been dishonest "looks repaired, still broken." They need a real attendance-reporting rethink — a separate slice. I'd rather report a clean boundary than smear effort. (2) **The create flows (AddClassModal insert)** I fixed because they're the same bug class and trivial, but I did NOT exhaustively test every write path — the e2e covers the read surfaces (the operability win), and class-creation isn't in the harness. If someone adds a class via the UI it now writes valid columns, but that's tsc-proven, not behavior-proven.
+
+**What fought:** almost nothing — the run gym made verification deterministic (Sami coaches the seeded class with Karim+Omar enrolled, so "2/20" and the enrolled names are fixed targets), and the `:visible` double-shell tax is now a one-liner (`vis`). The only real thought was the i18n `status` leaf/object collision (a component wanted `t('status')` as a label while another wanted `t('status.active')` as a value — can't be both in one namespace), resolved with a `status_label` split. **Bottom line: Portal-D CRUD is restored from fantasy-schema to functional; the admin can actually run classes/students/coaches/payments now. The remaining leaf-rot is the attendance-reports cluster, cleanly bounded and handed back.**
