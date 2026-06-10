@@ -185,41 +185,35 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
               <label className="block text-sm font-medium mb-1">
                 {t('discipline')} *
               </label>
-              <Select
+              {/* Native select (e2e-deterministic; Radix triggers are flaky under
+                  the (dashboard) double-shell — they intercept the open click). */}
+              <select
+                data-testid="class-discipline"
                 value={formData.discipline_id}
-                onValueChange={(value) => setFormData({ ...formData, discipline_id: value })}
+                onChange={(e) => setFormData({ ...formData, discipline_id: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <SelectTrigger data-testid="class-discipline-trigger">
-                  <SelectValue placeholder={t('selectDiscipline')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {disciplines.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d[`name_${locale}`] || d.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">{t('selectDiscipline')}</option>
+                {disciplines.map((d) => (
+                  <option key={d.id} value={d.id}>{d[`name_${locale}`] || d.name_en}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
                 {t('coach')} *
               </label>
-              <Select
+              <select
+                data-testid="class-coach-select"
                 value={formData.coach_id}
-                onValueChange={(value) => setFormData({ ...formData, coach_id: value })}
+                onChange={(e) => setFormData({ ...formData, coach_id: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <SelectTrigger data-testid="class-coach-trigger">
-                  <SelectValue placeholder={t('selectCoach')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {coaches.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {localizedName(c.profiles, locale)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">{t('selectCoach')}</option>
+                {coaches.map((c) => (
+                  <option key={c.id} value={c.id}>{localizedName(c.profiles, locale)}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">

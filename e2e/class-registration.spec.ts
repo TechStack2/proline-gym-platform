@@ -42,10 +42,9 @@ test('B2 · request → approve(free)→active+invoice+roster → full→waitlis
     await owner.page.goto('/en/classes');
     await vis(owner.page, '[data-testid="add-class-btn"]').click();
     await owner.page.getByTestId('class-name-en').fill(CLASS_NAME);
-    await owner.page.getByTestId('class-discipline-trigger').click();
-    await owner.page.getByRole('option', { name: 'Muay Thai' }).first().click();
-    await owner.page.getByTestId('class-coach-trigger').click();
-    await owner.page.getByRole('option', { name: 'Sami' }).first().click();
+    // Native selects (index 1 = first real option; index 0 is the placeholder).
+    await owner.page.getByTestId('class-discipline').selectOption({ index: 1 });
+    await owner.page.getByTestId('class-coach-select').selectOption({ index: 1 });
     await owner.page.getByTestId('class-capacity').fill('1');
     await owner.page.getByTestId('class-monthly-fee').fill('40');
     await owner.page.getByTestId('class-submit').click();
