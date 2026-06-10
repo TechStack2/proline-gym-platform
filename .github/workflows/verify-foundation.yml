@@ -156,20 +156,4 @@ jobs:
           where cu.email = 'coach@prolinegym.lb';
           SQL
 
-          echo "===== TEMP: clean run#1 orphan + validate teardown roundtrip ====="
-          run_sql "teardown orphan e2e-27253376099-1" <<'SQL'
-          select teardown_e2e_gym('e2e-27253376099-1');
-          SQL
-          run_sql "seed roundtrip" <<'SQL'
-          select seed_e2e_gym('e2e-tdcheck') as gym_id;
-          SQL
-          run_sql "teardown roundtrip" <<'SQL'
-          select teardown_e2e_gym('e2e-tdcheck');
-          SQL
-          run_sql "residue (expect all 0 except demo_gym_intact=1, e2e_gyms_left=0)" <<'SQL'
-          select
-            (select count(*) from gyms where slug like 'e2e-%') as e2e_gyms_left,
-            (select count(*) from auth.users where email like '%@e2e.local') as e2e_users_left,
-            (select count(*) from gyms where slug='proline-gym') as demo_gym_intact;
-          SQL
           echo "✅ Verification complete — see BEFORE/AFTER groups above."
