@@ -1,7 +1,8 @@
-import { getTranslations } from 'next-intl/server'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { FileText, DollarSign, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
+import { balanceUsd } from '@/lib/billing/reconcile'
 
 type Props = { params: { locale: string } }
 
@@ -18,8 +19,17 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
     .eq('student_id', student?.id).order('created_at', { ascending: false }).limit(20)
 
   const { data: payments } = await supabase.from('payments')
-    .select('id, amount_usd, amount_lbp, payment_method, payment_date, reference_number')
-    .eq('student_id', student?.id).order('payment_date', { ascending: false }).limit(10)
+    .select('id, invoice_id, amount_usd, amount_lbp, payment_method, payment_date, reference_number')
+    .eq('student_id', student?.id).order('payment_date', { ascending: false }).limit(50)
+
+  // Reconcile each invoice's balance from this member's payments (canonical USD).
+  const paidByInvoice = new Map<string, number>()
+  for (const p of (payments ?? []) as any[]) {
+    if (!p.invoice_id) continue
+    paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+  }
+  const invBalance = (inv: { id: string; total_usd: number | null }) =>
+    balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
 
   const { data: membership } = await supabase.from('student_memberships')
     .select('status, end_date, membership_plans:plan_id (name_en, name_ar, name_fr, price_usd)')
@@ -55,8 +65,10 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
           <div className="space-y-2">
             {invoices.map((inv: any) => {
               const Icon = statusIcons[inv.status] || FileText
+              const bal = invBalance(inv)
               return (
-                <div key={inv.id} className="rounded-xl bg-white p-4 shadow-sm flex items-center justify-between">
+                <div key={inv.id} className="rounded-xl bg-white p-4 shadow-sm flex items-center justify-between"
+                  data-testid="portal-invoice" data-invoice-number={inv.invoice_number} data-status={inv.status}>
                   <div className="flex items-center gap-3">
                     <div className={cn('rounded-full p-2', inv.status==='paid'?'bg-green-50':inv.status==='overdue'?'bg-red-50':'bg-gray-50')}>
                       <Icon className={cn('h-4 w-4', inv.status==='paid'?'text-green-600':inv.status==='overdue'?'text-red-600':'text-gray-500')} />
@@ -64,11 +76,18 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                     <div>
                       <p className="text-sm font-medium text-gray-700">#{inv.invoice_number?.slice(-8)}</p>
                       <p className="text-xs text-gray-500">{fmtDate(inv.created_at)}</p>
+                      <Link href={`/${locale}/invoices/${inv.id}/receipt`} data-testid="portal-receipt-link"
+                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#cd1419] hover:underline">
+                        <Printer className="h-3 w-3" /> {isRTL ? 'الإيصال' : 'Receipt'}
+                      </Link>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-gray-900">${inv.total_usd?.toFixed(2)}</p>
-                    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[inv.status])}>{statusLabels[inv.status]}</span>
+                    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[inv.status])} data-testid="portal-invoice-status">{statusLabels[inv.status]}</span>
+                    <p className="mt-0.5 text-xs" data-testid="portal-invoice-balance">
+                      <span className={bal > 0 ? 'text-red-600' : 'text-green-600'}>{isRTL ? 'الرصيد' : 'Balance'}: ${bal.toFixed(2)}</span>
+                    </p>
                   </div>
                 </div>
               )

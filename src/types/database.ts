@@ -2327,6 +2327,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      issue_invoice: {
+        Args: {
+          p_gym_id: string
+          p_student_id: string
+          p_invoice_type: Database["public"]["Enums"]["invoice_type_enum"]
+          p_amount_usd: number
+          p_amount_lbp?: number
+          p_exchange_rate?: number | null
+          p_rate_date?: string | null
+          p_membership_id?: string | null
+          p_due_date?: string | null
+          p_notes_en?: string | null
+          p_notes_ar?: string | null
+          p_notes_fr?: string | null
+        }
+        Returns: Database["public"]["Tables"]["invoices"]["Row"]
+      }
+      record_payment: {
+        Args: {
+          p_invoice_id: string
+          p_amount_usd: number
+          p_amount_lbp?: number
+          p_method?: Database["public"]["Enums"]["payment_method_enum"]
+          p_reference?: string | null
+          p_exchange_rate?: number | null
+          p_payment_date?: string | null
+        }
+        Returns: Database["public"]["Tables"]["invoices"]["Row"]
+      }
+      refund_invoice: {
+        Args: { p_invoice_id: string; p_reason?: string | null }
+        Returns: Database["public"]["Tables"]["invoices"]["Row"]
+      }
+      void_invoice: {
+        Args: { p_invoice_id: string; p_reason?: string | null }
+        Returns: Database["public"]["Tables"]["invoices"]["Row"]
+      }
       create_student: {
         Args: {
           p_first_name_ar: string

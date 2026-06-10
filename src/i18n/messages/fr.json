@@ -1014,6 +1014,14 @@
         "title": "Facture en retard",
         "body": "La facture {invoiceNumber} est en retard de paiement"
       },
+      "invoice_issued": {
+        "title": "Facture émise",
+        "body": "La facture {invoice} de {amount}$ a été émise"
+      },
+      "payment_received": {
+        "title": "Paiement reçu",
+        "body": "Paiement de {amount}$ reçu — solde restant {balance}$"
+      },
       "enrollment_confirmed": {
         "title": "Inscription confirmée",
         "body": "Vous êtes inscrit au cours {className}"

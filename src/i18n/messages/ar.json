@@ -1014,6 +1014,14 @@
         "title": "فاتورة متأخرة",
         "body": "الفاتورة {invoiceNumber} متأخرة السداد"
       },
+      "invoice_issued": {
+        "title": "تم إصدار فاتورة",
+        "body": "تم إصدار الفاتورة {invoice} بقيمة {amount}$"
+      },
+      "payment_received": {
+        "title": "تم استلام الدفعة",
+        "body": "تم استلام دفعة بقيمة {amount}$ — الرصيد المتبقي {balance}$"
+      },
       "enrollment_confirmed": {
         "title": "تم تأكيد التسجيل",
         "body": "تم تسجيلك في {className}"

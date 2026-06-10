@@ -107,6 +107,17 @@ export default defineConfig({
       testMatch: /pt-delivery\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // Billing & Payment slice (Prompt D1): issue → record → reconcile across the
+      // staff /invoices surfaces and the member portal. Switches roles internally
+      // (owner issues/records; student=Karim reads portal + notifications), so it
+      // must NOT pin a single session. Runs LAST: it emits invoice_issued /
+      // payment_received to the student, which would otherwise bury the bell test.
+      name: 'billing',
+      dependencies: ['setup'],
+      testMatch: /billing\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

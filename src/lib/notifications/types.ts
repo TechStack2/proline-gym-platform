@@ -16,6 +16,8 @@ export const NOTIFICATION_TYPES = [
   'belt_promoted',
   'membership_expiring',
   'invoice_overdue',
+  'invoice_issued',
+  'payment_received',
   'enrollment_confirmed',
   'pt_session_scheduled',
   'pt_session_completed',

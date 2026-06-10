@@ -1014,6 +1014,14 @@
         "title": "Invoice overdue",
         "body": "Invoice {invoiceNumber} is overdue"
       },
+      "invoice_issued": {
+        "title": "Invoice issued",
+        "body": "Invoice {invoice} for ${amount} has been issued"
+      },
+      "payment_received": {
+        "title": "Payment received",
+        "body": "Payment of ${amount} received — remaining balance ${balance}"
+      },
       "enrollment_confirmed": {
         "title": "Enrollment confirmed",
         "body": "You are enrolled in {className}"

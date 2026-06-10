@@ -1,134 +1,157 @@
-import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
 import Link from 'next/link'
-import { getTranslations } from 'next-intl/server'
-import { InvoiceList } from './components/invoice-list'
-import { InvoiceFilters } from './components/invoice-filters'
-import { InvoiceStats } from './components/invoice-stats'
+import { createClient } from '@/lib/supabase/server'
+import { cn } from '@/lib/utils'
+import { Plus, FileText } from 'lucide-react'
+import { balanceUsd, localizedName, STATUS_BADGE, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-interface InvoicesPageProps {
-  params: { locale: string }
-  searchParams: { 
-    search?: string
-    status?: string
-    currency?: string
-    date_from?: string
-    date_to?: string
-    page?: string
-  }
-}
+type Props = { params: { locale: string }; searchParams: { search?: string; status?: string } }
 
-export default async function InvoicesPage({ params: { locale }, searchParams }: InvoicesPageProps) {
-  const t = await getTranslations('invoices')
+/**
+ * /invoices (D1 repair). The as-is page was DOA — it queried students.first_name
+ * (name lives on profiles), invoice.issue_date (the column is created_at), and an
+ * embedded PostgREST .or() across a join (unsupported). Rebuilt against the real
+ * schema with the canonical reconcile: status + balance are derived from
+ * Σ payments. Adds an outstanding-balances summary and a per-method daily tally
+ * (the cash drawer: USD/LBP/OMT/Whish/…).
+ */
+export default async function InvoicesPage({ params: { locale }, searchParams }: Props) {
+  const isRTL = locale === 'ar'
+  const t = (en: string, ar: string) => (isRTL ? ar : en)
   const supabase = await createClient()
-  
-  // Build query
-  let query = supabase
+
+  const { data: invoices } = await supabase
     .from('invoices')
-    .select(`
-      *,
-      students (
-        id,
-        first_name,
-        last_name,
-        email,
-        phone
-      ),
-      membership_plans (
-        id,
-        name,
-        price_usd,
-        price_lbp,
-        duration_days,
-        max_classes_per_week
-      )
-    `, { count: 'exact' })
-    .order('issue_date', { ascending: false })
-  
-  // Apply filters
-  if (searchParams.search) {
-    query = query.or(`students.first_name.ilike.%${searchParams.search}%,students.last_name.ilike.%${searchParams.search}%,invoice_number.ilike.%${searchParams.search}%`)
+    .select(`id, invoice_number, invoice_type, total_usd, status, due_date, created_at, student_id,
+      students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  const invList = invoices ?? []
+  const ids = invList.map((i) => i.id)
+
+  const { data: pays } = ids.length
+    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', ids)
+    : { data: [] as { invoice_id: string; amount_usd: number | null }[] }
+
+  const paidByInvoice = new Map<string, number>()
+  for (const p of pays ?? []) {
+    paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
   }
-  
-  if (searchParams.status) {
-    query = query.eq('status', searchParams.status)
+  const balOf = (inv: { id: string; total_usd: number | null }) =>
+    balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
+
+  // Outstanding = Σ balance over still-collectible invoices.
+  const outstanding = invList
+    .filter((i) => ['pending', 'partial', 'overdue'].includes(i.status))
+    .reduce((s, i) => s + balOf(i), 0)
+
+  // Per-method daily tally (today's drawer).
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: todayPays } = await supabase
+    .from('payments')
+    .select('amount_usd, amount_lbp, payment_method')
+    .gte('payment_date', today)
+  const tally = new Map<string, { usd: number; lbp: number }>()
+  for (const p of (todayPays ?? []) as any[]) {
+    const cur = tally.get(p.payment_method) ?? { usd: 0, lbp: 0 }
+    cur.usd += Number(p.amount_usd ?? 0)
+    cur.lbp += Number(p.amount_lbp ?? 0)
+    tally.set(p.payment_method, cur)
   }
-  
-  if (searchParams.currency) {
-    query = query.eq('currency', searchParams.currency)
-  }
-  
-  if (searchParams.date_from) {
-    query = query.gte('issue_date', searchParams.date_from)
-  }
-  
-  if (searchParams.date_to) {
-    query = query.lte('issue_date', searchParams.date_to)
-  }
-  
-  // Pagination
-  const page = parseInt(searchParams.page || '1')
-  const pageSize = 20
-  const from = (page - 1) * pageSize
-  const to = from + pageSize - 1
-  
-  query = query.range(from, to)
-  
-  const { data: invoices, error, count } = await query
-  
-  // Get stats
-  const { data: allInvoices } = await supabase
-    .from('invoices')
-    .select('amount, currency, status')
-  
-  const stats = {
-    total: allInvoices?.length || 0,
-    paid: allInvoices?.filter(i => i.status === 'paid').length || 0,
-    overdue: allInvoices?.filter(i => i.status === 'overdue').length || 0,
-    draft: allInvoices?.filter(i => i.status === 'draft').length || 0,
-    totalAmountUSD: allInvoices?.filter(i => i.currency === 'USD').reduce((sum, i) => sum + Number(i.amount), 0) || 0,
-    totalAmountLBP: allInvoices?.filter(i => i.currency === 'LBP').reduce((sum, i) => sum + Number(i.amount), 0) || 0,
-  }
-  
+
+  const search = (searchParams.search ?? '').toLowerCase()
+  const statusFilter = searchParams.status ?? ''
+  const filtered = invList.filter((inv: any) => {
+    const profRow = inv.students?.profiles
+    const profile = Array.isArray(profRow) ? profRow[0] : profRow
+    const name = localizedName(profile, locale).toLowerCase()
+    const matchSearch = !search || name.includes(search) || (inv.invoice_number || '').toLowerCase().includes(search)
+    const matchStatus = !statusFilter || inv.status === statusFilter
+    return matchSearch && matchStatus
+  })
+
+  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US') : '—')
+
   return (
-    <div className="space-y-6 p-6">
+    <div className={cn('space-y-6 p-6', isRTL && 'rtl text-right')}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('description')}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('Invoices', 'الفواتير')}</h1>
+          <p className="text-muted-foreground">{t('Issue, settle, and reconcile dual-currency invoices.', 'إصدار وتسوية ومطابقة الفواتير بعملتين.')}</p>
         </div>
-        <Link href={`/${locale}/invoices/new`}>
-          <Button className="bg-[#cd1419] hover:bg-[#a81014]">
-            <Plus className="mr-2 h-4 w-4" />
-            {t('generate_invoice')}
-          </Button>
+        <Link href={`/${locale}/invoices/new`} data-testid="new-invoice-btn"
+          className="inline-flex items-center rounded-md bg-[#cd1419] px-4 py-2 text-sm font-medium text-white hover:bg-[#a81014]">
+          <Plus className="mr-2 h-4 w-4" /> {t('New invoice', 'فاتورة جديدة')}
         </Link>
       </div>
-      
-      <InvoiceStats stats={stats} />
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('all_invoices')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InvoiceFilters locale={locale} />
-          <Suspense fallback={<div className="py-8 text-center">{t('loading')}</div>}>
-            <InvoiceList 
-              invoices={invoices || []} 
-              locale={locale}
-              totalPages={Math.ceil((count || 0) / pageSize)}
-              currentPage={page}
-            />
-          </Suspense>
-        </CardContent>
-      </Card>
+
+      {/* Outstanding + daily tally */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <p className="text-xs text-muted-foreground">{t('Outstanding balance', 'الرصيد المستحق')}</p>
+          <p className="mt-1 text-2xl font-bold text-red-600" data-testid="outstanding-total">${outstanding.toFixed(2)}</p>
+        </div>
+        <div className="rounded-2xl border bg-white p-4 shadow-sm sm:col-span-2">
+          <p className="mb-2 text-xs text-muted-foreground">{t("Today's collections (by method)", 'تحصيلات اليوم (حسب الطريقة)')}</p>
+          <div className="flex flex-wrap gap-3 text-sm" data-testid="daily-tally">
+            {tally.size === 0 ? (
+              <span className="text-muted-foreground">{t('No payments today.', 'لا مدفوعات اليوم.')}</span>
+            ) : (
+              [...tally.entries()].map(([method, v]) => (
+                <span key={method} className="rounded-full bg-muted px-3 py-1">
+                  {(isRTL ? METHOD_LABEL[method]?.ar : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}{v.lbp ? ` · ${v.lbp.toLocaleString()} LBP` : ''}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* List */}
+      <form className="flex gap-2" action={`/${locale}/invoices`} method="get">
+        <input name="search" defaultValue={searchParams.search ?? ''} placeholder={t('Search name or number…', 'ابحث بالاسم أو الرقم…')}
+          className="h-9 flex-1 rounded-md border px-3 text-sm" data-testid="invoice-search" />
+        <button className="h-9 rounded-md border px-3 text-sm hover:bg-muted">{t('Search', 'بحث')}</button>
+      </form>
+
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border bg-white p-10 text-center shadow-sm">
+          <FileText className="mx-auto mb-2 h-10 w-10 text-gray-300" />
+          <p className="text-sm text-muted-foreground">{t('No invoices found.', 'لا توجد فواتير.')}</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b bg-muted/50 text-left">
+              <th className="p-3">{t('Number', 'الرقم')}</th><th className="p-3">{t('Member', 'العضو')}</th>
+              <th className="p-3">{t('Total', 'الإجمالي')}</th><th className="p-3">{t('Balance', 'الرصيد')}</th>
+              <th className="p-3">{t('Due', 'الاستحقاق')}</th><th className="p-3">{t('Status', 'الحالة')}</th>
+            </tr></thead>
+            <tbody data-testid="invoice-list">
+              {filtered.map((inv: any) => {
+                const profRow = inv.students?.profiles
+                const profile = Array.isArray(profRow) ? profRow[0] : profRow
+                const bal = balOf(inv)
+                return (
+                  <tr key={inv.id} className="border-b hover:bg-muted/40" data-testid="invoice-row" data-invoice-number={inv.invoice_number}>
+                    <td className="p-3">
+                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono font-medium text-[#cd1419] hover:underline">{inv.invoice_number}</Link>
+                    </td>
+                    <td className="p-3">{localizedName(profile, locale)}</td>
+                    <td className="p-3 font-medium">${Number(inv.total_usd).toFixed(2)}</td>
+                    <td className={cn('p-3 font-medium', bal > 0 ? 'text-red-600' : 'text-green-600')}>${bal.toFixed(2)}</td>
+                    <td className="p-3 text-muted-foreground">{fmtDate(inv.due_date)}</td>
+                    <td className="p-3"><span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[inv.status])}>{statusLabel(inv.status, locale)}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

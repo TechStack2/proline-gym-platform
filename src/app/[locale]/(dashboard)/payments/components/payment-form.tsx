@@ -1,227 +1,148 @@
 'use client'
 
-import { useState } from 'react'
+/**
+ * RecordPaymentForm (Cycle 5 / Phase 1 / D1) — the single settlement surface.
+ *
+ * Replaces the cosmetic as-is form (which inserted payments.amount / .currency /
+ * .status — none of which exist — and never touched the invoice). It is now
+ * invoice-targeted and calls the canonical record_payment service via the
+ * recordPayment server action: the RPC locks the invoice, BLOCKS overpayment,
+ * inserts the payment, recomputes status from Σ payments, and emits
+ * payment_received. The amount defaults to the remaining balance (walk-in
+ * "issue & pay" one motion); LBP is recorded alongside for the receipt but the
+ * invoice reconciles on amount_usd.
+ */
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Save, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/components/ui/use-toast'
+import { recordPayment, referenceExists } from '../../invoices/actions'
 
-interface Student {
+type Method = 'cash_usd' | 'cash_lbp' | 'omt' | 'whish' | 'bank_transfer' | 'bob_finance'
+
+export interface PayableInvoice {
   id: string
-  first_name: string
-  last_name: string
+  invoice_number: string
+  total_usd: number
+  balance_usd: number
+  status: string
+  exchange_rate: number | null
 }
 
-interface PaymentFormProps {
-  students: Student[]
-  locale: string
-}
+const METHODS: { value: Method; en: string; ar: string }[] = [
+  { value: 'cash_usd', en: 'Cash (USD)', ar: 'نقداً (دولار)' },
+  { value: 'cash_lbp', en: 'Cash (LBP)', ar: 'نقداً (ليرة)' },
+  { value: 'omt', en: 'OMT', ar: 'OMT' },
+  { value: 'whish', en: 'Whish', ar: 'Whish' },
+  { value: 'bank_transfer', en: 'Bank transfer', ar: 'تحويل مصرفي' },
+  { value: 'bob_finance', en: 'BOB Finance', ar: 'BOB Finance' },
+]
 
-export function PaymentForm({ students, locale }: PaymentFormProps) {
-  const t = useTranslations('payments')
+export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; locale: string }) {
+  const isRTL = locale === 'ar'
+  const t = (en: string, ar: string) => (isRTL ? ar : en)
   const router = useRouter()
-  const { toast } = useToast()
-  const supabase = createClient()
-  
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    student_id: '',
-    amount: '',
-    currency: 'USD',
-    payment_method: 'cash',
-    reference_number: '',
-    notes: '',
-    payment_date: new Date().toISOString().split('T')[0],
-  })
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    
-    try {
-      const { error } = await supabase.from('payments').insert({
-        student_id: formData.student_id,
-        amount: parseFloat(formData.amount),
-        currency: formData.currency,
-        payment_method: formData.payment_method,
-        reference_number: formData.reference_number || null,
-        notes: formData.notes || null,
-        payment_date: formData.payment_date,
-        status: 'completed',
-      })
-      
-      if (error) throw error
-      
-      toast({
-        title: t('payment_recorded'),
-        description: t('payment_recorded_description'),
-      })
-      
-      router.push(`/${locale}/payments`)
-      router.refresh()
-    } catch (error: any) {
-      toast({
-        title: t('error'),
-        description: error.message,
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
+  const [pending, startTransition] = useTransition()
+
+  const settled = ['paid', 'cancelled', 'refunded'].includes(invoice.status)
+  const [amountUsd, setAmountUsd] = useState<string>(invoice.balance_usd.toFixed(2))
+  const [amountLbp, setAmountLbp] = useState<string>('')
+  const [method, setMethod] = useState<Method>('cash_usd')
+  const [reference, setReference] = useState<string>('')
+  const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10))
+  const [error, setError] = useState<string>('')
+
+  async function submit() {
+    setError('')
+    const usd = parseFloat(amountUsd)
+    if (!Number.isFinite(usd) || usd <= 0) {
+      setError(t('Enter a positive amount.', 'أدخل مبلغاً موجباً.'))
+      return
     }
+    // E10: duplicate-reference soft warn (non-blocking).
+    if (reference.trim()) {
+      const dup = await referenceExists(invoice.id, reference.trim())
+      if (dup && !window.confirm(t('A payment with this reference already exists on this invoice. Record anyway?', 'توجد دفعة بنفس المرجع على هذه الفاتورة. تسجيل على أي حال؟'))) {
+        return
+      }
+    }
+    startTransition(async () => {
+      const res = await recordPayment({
+        invoiceId: invoice.id,
+        amountUsd: usd,
+        amountLbp: amountLbp ? parseFloat(amountLbp) : 0,
+        method,
+        reference: reference.trim() || null,
+        exchangeRate: invoice.exchange_rate,
+        paymentDate: date,
+      })
+      if (!res.ok) {
+        setError(res.error)
+        return
+      }
+      // Full settlement → jump to the printable receipt (walk-in "issue & pay").
+      // Partial → stay to record the remainder.
+      if (res.data.status === 'paid') {
+        router.push(`/${locale}/invoices/${invoice.id}/receipt`)
+      }
+      router.refresh()
+    })
   }
-  
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+
+  if (settled) {
+    return (
+      <div data-testid="payment-form" className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
+        {t('This invoice is settled — no further payment can be recorded.', 'تمت تسوية هذه الفاتورة — لا يمكن تسجيل دفعة أخرى.')}
+      </div>
+    )
   }
-  
+
   return (
-    <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('payment_details')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="student_id">{t('student')} *</Label>
-              <Select
-                value={formData.student_id}
-                onValueChange={(value) => handleChange('student_id', value)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('select_student')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {students.map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.first_name} {student.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="amount">{t('amount')} *</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.amount}
-                onChange={(e) => handleChange('amount', e.target.value)}
-                required
-                placeholder="0.00"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="currency">{t('currency')} *</Label>
-              <Select
-                value={formData.currency}
-                onValueChange={(value) => handleChange('currency', value)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="LBP">LBP</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="payment_method">{t('payment_method')} *</Label>
-              <Select
-                value={formData.payment_method}
-                onValueChange={(value) => handleChange('payment_method', value)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">{t('cash')}</SelectItem>
-                  <SelectItem value="card">{t('card')}</SelectItem>
-                  <SelectItem value="transfer">{t('transfer')}</SelectItem>
-                  <SelectItem value="check">{t('check')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="reference_number">{t('reference_number')}</Label>
-              <Input
-                id="reference_number"
-                value={formData.reference_number}
-                onChange={(e) => handleChange('reference_number', e.target.value)}
-                placeholder={t('reference_number_placeholder')}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="payment_date">{t('payment_date')} *</Label>
-              <Input
-                id="payment_date"
-                type="date"
-                value={formData.payment_date}
-                onChange={(e) => handleChange('payment_date', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="notes">{t('notes')}</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder={t('notes_placeholder')}
-              rows={3}
-            />
-          </div>
-          
-          <div className="flex gap-4">
-            <Link href={`/${locale}/payments`}>
-              <Button type="button" variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {t('cancel')}
-              </Button>
-            </Link>
-            <Button type="submit" disabled={loading} className="bg-[#cd1419] hover:bg-[#a81014]">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('saving')}
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {t('save_payment')}
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </form>
+    <div data-testid="payment-form" className={`space-y-4 rounded-xl border p-4 ${isRTL ? 'text-right' : ''}`}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="pay-amount-usd">{t('Amount (USD)', 'المبلغ (دولار)')}</Label>
+          <Input id="pay-amount-usd" data-testid="pay-amount-usd" type="number" step="0.01" min="0"
+            value={amountUsd} onChange={(e) => setAmountUsd(e.target.value)} />
+          <p className="text-xs text-muted-foreground">
+            {t('Balance', 'الرصيد')}: ${invoice.balance_usd.toFixed(2)}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="pay-amount-lbp">{t('Amount (LBP)', 'المبلغ (ليرة)')}</Label>
+          <Input id="pay-amount-lbp" data-testid="pay-amount-lbp" type="number" step="1" min="0"
+            placeholder={t('optional', 'اختياري')} value={amountLbp} onChange={(e) => setAmountLbp(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="pay-method">{t('Method', 'طريقة الدفع')}</Label>
+          <select id="pay-method" data-testid="pay-method" value={method}
+            onChange={(e) => setMethod(e.target.value as Method)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            {METHODS.map((m) => (
+              <option key={m.value} value={m.value}>{t(m.en, m.ar)}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="pay-date">{t('Date', 'التاريخ')}</Label>
+          <Input id="pay-date" data-testid="pay-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label htmlFor="pay-reference">{t('Reference (OMT/Whish/transfer #)', 'المرجع (رقم OMT/Whish/تحويل)')}</Label>
+          <Input id="pay-reference" data-testid="pay-reference" value={reference}
+            onChange={(e) => setReference(e.target.value)} placeholder={t('optional', 'اختياري')} />
+        </div>
+      </div>
+
+      {error && (
+        <div data-testid="pay-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
+
+      <Button data-testid="pay-submit" onClick={submit} disabled={pending}
+        className="bg-[#cd1419] hover:bg-[#a81014]">
+        {pending ? t('Recording…', 'جارٍ التسجيل…') : t('Record payment', 'تسجيل الدفعة')}
+      </Button>
+    </div>
   )
 }

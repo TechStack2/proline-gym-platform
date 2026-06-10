@@ -11,7 +11,7 @@
  */
 import { createClient } from '@/lib/supabase/server';
 import { createNotification } from '@/lib/notifications/create';
-import { buildPtInvoiceInsert, shouldBillPtPackage } from '@/lib/pt/invoice';
+import { shouldBillPtPackage } from '@/lib/pt/invoice';
 
 type ActionResult = { ok: true; invoiceId: string | null } | { ok: false; error: string };
 
@@ -48,7 +48,9 @@ export async function approvePtRequest(
 
   const finalCoachId = opts?.coachId ?? assignment.coach_id ?? null;
 
-  // 1) Auto-create a dual-currency invoice (skip if free).
+  // 1) Auto-issue a dual-currency invoice through the canonical issuance
+  //    service (D1 retrofit; skip if free). issue_invoice runs the TVA/number
+  //    triggers and fires invoice_issued to the student (best-effort).
   let invoiceId: string | null = null;
   if (shouldBillPtPackage(pkg.price_usd)) {
     const { data: rate } = await supabase
@@ -58,25 +60,26 @@ export async function approvePtRequest(
       .limit(1)
       .maybeSingle();
 
-    const invoicePayload = buildPtInvoiceInsert({
-      gymId,
-      studentId: assignment.student_id,
-      priceUsd: pkg.price_usd,
-      priceLbp: pkg.price_lbp,
-      exchangeRate: rate?.rate ?? null,
-      rateDate: rate?.rate_date ?? null,
-      packageNameEn: pkg.name_en,
-      packageNameAr: pkg.name_ar,
-      packageNameFr: pkg.name_fr,
-    });
+    const amountLbp =
+      pkg.price_lbp != null
+        ? pkg.price_lbp
+        : rate?.rate ? Math.round(pkg.price_usd * rate.rate) : 0;
 
-    const { data: invoice, error: invErr } = await supabase
-      .from('invoices')
-      .insert(invoicePayload)
-      .select('id')
-      .single();
+    const { data: invoice, error: invErr } = await supabase.rpc('issue_invoice', {
+      p_gym_id: gymId,
+      p_student_id: assignment.student_id,
+      p_invoice_type: 'pt_package',
+      p_amount_usd: pkg.price_usd,
+      p_amount_lbp: amountLbp,
+      p_exchange_rate: rate?.rate ?? null,
+      p_rate_date: rate?.rate_date ?? null,
+      p_due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      p_notes_en: pkg.name_en ? `PT package: ${pkg.name_en}` : null,
+      p_notes_ar: pkg.name_ar ? `باقة تدريب خاص: ${pkg.name_ar}` : null,
+      p_notes_fr: pkg.name_fr ? `Forfait coaching privé : ${pkg.name_fr}` : null,
+    });
     if (invErr) return { ok: false, error: `invoice: ${invErr.message}` };
-    invoiceId = invoice.id;
+    invoiceId = (invoice as { id: string } | null)?.id ?? null;
   }
 
   // 2) Flip the assignment to active and stamp approval + link the invoice.
