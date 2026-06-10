@@ -40,7 +40,7 @@ A **journey** is an end-to-end flow whose root entity is **created once (usually
 | # | Journey | Spine | Portals | Key entities | Bench gap | Phase | Now | Status |
 |---|---|---|---|---|---|:--:|:--:|:--:|
 | B1 | **Member Activity Loop** | enroll → attend → eligibility → promote → see progress | Admin·Coach·Student | class_enrollments, attendance_records, belt_hierarchies, belt_promotions | Visible progress 1→3, attendance 4, assess 1→L4 | 1 | 3 | ✅ 24-R (merged, run 27219997474) |
-| B2 | **Self-service booking + waitlist** | member books/cancels within policy; capacity + waitlist **auto-promote & notify-next** | Student·Admin·Coach | class_enrollments(+waitlist), classes(capacity) | Self-book 0/5, waitlist 0/5 | 2 | 0 | ⚪ |
+| B2 | **Recurring-Class Registration** (reframed) | request → approve(+discount) → monthly bill → enroll; capacity + **waitlist auto-promote & notify** | Student·Admin·Coach | classes(+monthly_fee), class_registrations(NEW), class_enrollments(roster), invoices | Self-book 0/5, waitlist 0/5 | 2 | 0 | 📐 prompt ready (activating) |
 | B3 | **Family / household** | one parent manages ≥2 children's schedule/attendance/billing/belts | Student(parent)·Admin | guardians, guardian_students | Family 1/5 | 2 | 1 | ⚪ |
 | B4 | **Curriculum & skill assessment** | coach assesses skills → checkpoints → promotion eligibility → member-visible | Coach·Student·Admin | (curriculum—new), belt_hierarchies, belt_promotions | Assessments 1/5, curriculum 0/5 | 3 | 1 | ⚪ |
 
