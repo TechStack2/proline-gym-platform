@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, expectNotification } from './helpers';
+import { vis, visibleShell, expectNotification } from './helpers';
 
 /**
  * IA-1 — journey-centric nav + Inbox + Today (Cycle 5 / V1).
@@ -61,9 +61,10 @@ test('IA-1 · 7-workspace nav (desktop = mobile), /dashboard→/today, /today li
     // The marking flow is REAL end-to-end (IA-1 repaired the admin attendance
     // reads/writes against the actual schema): the seeded roster renders with
     // names, and a one-tap mark persists (badge renders from the saved record).
-    const seededCard = vis(owner.page, 'text=Muay Thai Beginner').first();
-    await expect(seededCard).toBeVisible({ timeout: 15_000 });
-    const omarRow = vis(owner.page, 'div.rounded-lg.border').filter({ hasText: 'Omar' }).first();
+    // NB: scope via the visible shell — `vis()` is CSS-only (no text= engine).
+    const shell = visibleShell(owner.page);
+    await expect(shell.getByText('Muay Thai Beginner').first()).toBeVisible({ timeout: 15_000 });
+    const omarRow = shell.locator('div.rounded-lg.border').filter({ hasText: 'Omar' }).first();
     await expect(omarRow, 'roster names render (profiles join)').toBeVisible();
     await omarRow.locator('button').first().click(); // first status button = present
     await expect(omarRow.getByText(/^Present$/), 'mark persisted → status badge').toBeVisible({ timeout: 15_000 });
