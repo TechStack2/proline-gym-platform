@@ -768,7 +768,9 @@
       "add_error": "Échec de l'ajout",
       "converted": "Prospect converti en membre",
       "convert_error": "Échec de la conversion",
-      "plan_required": "Choisissez une formule"
+      "plan_required": "Choisissez une formule",
+      "guardian_linked": "Tuteur lié",
+      "guardian_link_failed": "Échec de liaison du tuteur"
     },
     "add_lead": "Ajouter un prospect",
     "save_lead": "Enregistrer",
@@ -814,7 +816,9 @@
       "discipline": "Discipline souhaitée",
       "notes": "Notes",
       "no_discipline": "— Aucune —"
-    }
+    },
+    "guardian_optional": "Tuteur (optionnel, pour mineurs)",
+    "guardian_name_placeholder": "Nom du tuteur (si nouveau)"
   },
   "camps": {
     "title": "Camps et Événements",
@@ -1401,7 +1405,10 @@
     "beltProgress": "Progression ceintures",
     "currentRank": "Rang actuel",
     "noPromotions": "Aucune promotion.",
-    "ptTotals": "{remaining} séance(s) PT restante(s)"
+    "ptTotals": "{remaining} séance(s) PT restante(s)",
+    "payer": "Payeur",
+    "household": "Famille",
+    "noHouseholdInvoices": "Aucune facture en tant que payeur."
   },
   "money": {
     "title": "Finances",
@@ -1438,6 +1445,36 @@
       "thu": "Jeudi",
       "fri": "Vendredi",
       "sat": "Samedi"
+    }
+  },
+  "family": {
+    "me": "Moi",
+    "last30": "{count} sur 30 jours",
+    "streak": "Série de {count} sem.",
+    "registrations": "Inscriptions aux cours",
+    "requestClass": "Demander un cours",
+    "noRegistrations": "Aucune inscription.",
+    "mo": "mois",
+    "schedule": "Horaire hebdo",
+    "noSchedule": "Aucun cours planifié.",
+    "recentAttendance": "Présences récentes",
+    "noAttendance": "Aucune présence.",
+    "beltProgress": "Progression ceintures",
+    "noPromotions": "Aucune promotion.",
+    "householdBilling": "Facturation famille",
+    "staff": {
+      "guardians": "Tuteurs",
+      "linkGuardian": "Lier un tuteur",
+      "noGuardian": "Aucun tuteur lié — pour les mineurs, liez un parent (recherche par téléphone d'abord).",
+      "unlink": "Délier",
+      "search": "Rechercher",
+      "linkThis": "Lier",
+      "noMatch": "Aucun profil avec ce numéro — créez le tuteur :",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "createAndLink": "Créer et lier",
+      "linkFailed": "Échec de la liaison.",
+      "nameRequired": "Le prénom est requis."
     }
   }
 }

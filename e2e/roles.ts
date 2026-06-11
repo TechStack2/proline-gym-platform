@@ -7,7 +7,7 @@
 export const E2E_GYM_SLUG = process.env.E2E_GYM_SLUG || 'proline-gym-local';
 export const E2E_PASSWORD = process.env.E2E_PASSWORD || 'E2eTestPass!23';
 
-export type Role = 'owner' | 'reception' | 'coach' | 'student';
+export type Role = 'owner' | 'reception' | 'coach' | 'student' | 'parent';
 
 const email = (role: Role) => `${role}+${E2E_GYM_SLUG}@e2e.local`;
 
@@ -16,6 +16,8 @@ export const ROLES: Record<Role, { email: string; storage: string }> = {
   reception: { email: email('reception'), storage: 'e2e/.auth/reception.json' },
   coach: { email: email('coach'), storage: 'e2e/.auth/coach.json' },
   student: { email: email('student'), storage: 'e2e/.auth/student.json' },
+  // B3: the seeded guardian (Rana), linked to kid students Omar + Lina.
+  parent: { email: email('parent'), storage: 'e2e/.auth/parent.json' },
 };
 
 import type { Page, TestInfo } from '@playwright/test';

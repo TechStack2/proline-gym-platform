@@ -411,6 +411,7 @@ export function LeadsClient({
 
       {convertLeadId && (
         <ConvertModal
+          gymId={gymId}
           lead={leads.find((l) => l.id === convertLeadId)!}
           plans={plans}
           locale={locale}
@@ -699,7 +700,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // Convert modal (T5 — plan picker + soft duplicate-phone warning)
 // ─────────────────────────────────────────────────────────────────────────────
 function ConvertModal({
-  lead, plans, isRTL, planLabel, onClose, onConverted,
+  lead, plans, isRTL, planLabel, onClose, onConverted, gymId,
 }: {
   lead: Lead;
   plans: MembershipPlan[];
@@ -708,12 +709,48 @@ function ConvertModal({
   planLabel: (p: MembershipPlan) => string;
   onClose: () => void;
   onConverted: (res: ConvertResult) => void;
+  gymId: string;
 }) {
   const t = useTranslations('leads');
   const supabase = createClient();
   const [planId, setPlanId] = useState(plans[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
   const [dupWarning, setDupWarning] = useState(false);
+  // B3 origination C: optionally attach/create a guardian for a minor at
+  // conversion (search-by-phone first; create only if new). Best-effort —
+  // conversion itself is already committed when this runs.
+  const [guardianPhone, setGuardianPhone] = useState('');
+  const [guardianName, setGuardianName] = useState('');
+
+  const linkGuardianAfterConvert = async (studentId: string) => {
+    const phone = guardianPhone.trim();
+    if (!phone) return;
+    try {
+      const { data: prof } = await supabase
+        .from('profiles').select('id').eq('gym_id', gymId).eq('phone', phone).limit(1).maybeSingle();
+      let profileId = prof?.id as string | undefined;
+      if (!profileId) {
+        const nm = guardianName.trim() || (isRTL ? 'ولي أمر' : 'Guardian');
+        const { data: created, error: pErr } = await supabase
+          .from('profiles')
+          .insert({ gym_id: gymId, phone, first_name_en: nm, first_name_ar: nm, first_name_fr: nm, last_name_en: '', last_name_ar: '', last_name_fr: '' })
+          .select('id').single();
+        if (pErr) throw pErr;
+        profileId = created.id;
+      }
+      let { data: g } = await supabase.from('guardians').select('id').eq('profile_id', profileId!).maybeSingle();
+      if (!g) {
+        const { data: gNew, error: gErr } = await supabase
+          .from('guardians').insert({ profile_id: profileId!, gym_id: gymId, is_primary_contact: true }).select('id').single();
+        if (gErr) throw gErr;
+        g = gNew;
+      }
+      await supabase.from('guardian_students').insert({ guardian_id: g!.id, student_id: studentId });
+      toast.success(t('toast.guardian_linked'));
+    } catch (e: any) {
+      toast.error(`${t('toast.guardian_link_failed')}: ${e?.message ?? ''}`);
+    }
+  };
 
   // Soft duplicate-phone warning (no hard block).
   useEffect(() => {
@@ -736,6 +773,7 @@ function ConvertModal({
     setBusy(false);
     if (res.ok) {
       toast.success(t('toast.converted'));
+      await linkGuardianAfterConvert(res.studentId);
       onConverted({
         invoiceNumber: res.invoiceNumber,
         totalUsd: res.totalUsd,
@@ -769,6 +807,26 @@ function ConvertModal({
             ⚠️ {t('dup_phone_warning')}
           </div>
         )}
+
+        {/* B3: optional guardian for minors (search-by-phone first; created if new) */}
+        <div className="space-y-1.5 rounded-xl border bg-gray-50 p-3">
+          <p className="text-xs font-medium text-gray-600">{t('guardian_optional')}</p>
+          <input
+            data-testid="convert-guardian-phone"
+            dir="ltr"
+            placeholder="+961…"
+            value={guardianPhone}
+            onChange={(e) => setGuardianPhone(e.target.value)}
+            className="h-9 w-full rounded-md border px-3 text-sm"
+          />
+          <input
+            data-testid="convert-guardian-name"
+            placeholder={t('guardian_name_placeholder')}
+            value={guardianName}
+            onChange={(e) => setGuardianName(e.target.value)}
+            className="h-9 w-full rounded-md border px-3 text-sm"
+          />
+        </div>
 
         <Field label={t('select_plan')}>
           <select

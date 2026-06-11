@@ -21,8 +21,9 @@ export async function InvoicesView({ locale, searchParams }: Props) {
 
   const { data: invoices } = await supabase
     .from('invoices')
-    .select(`id, invoice_number, invoice_type, total_usd, status, due_date, created_at, student_id,
-      students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
+    .select(`id, invoice_number, invoice_type, total_usd, status, due_date, created_at, student_id, payer_profile_id,
+      students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
+      payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -138,6 +139,11 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                       <Link href={`/${locale}/students/${inv.student_id}`} data-testid="invoice-member-link" className="hover:underline">
                         {localizedName(profile, locale)}
                       </Link>
+                      {inv.payer_profile_id && (
+                        <span className="block text-[10px] text-gray-400" data-testid="invoice-payer">
+                          {t('Payer', 'الدافع')}: {localizedName(Array.isArray(inv.payer) ? inv.payer[0] : inv.payer, locale)}
+                        </span>
+                      )}
                     </td>
                     <td className="p-3 font-medium">${Number(inv.total_usd).toFixed(2)}</td>
                     <td className={cn('p-3 font-medium', bal > 0 ? 'text-red-600' : 'text-green-600')}>${bal.toFixed(2)}</td>

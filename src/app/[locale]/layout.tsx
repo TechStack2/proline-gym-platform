@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 import { Toaster } from 'sonner';
+import { UseToastRenderer } from '@/components/ui/toaster';
 import '@/app/globals.css';
 
 const latin = Inter({ subsets: ['latin'], variable: '--font-latin' });
@@ -63,6 +64,7 @@ export default async function RootLayout({ children, params }: Props) {
         <NextIntlClientProvider messages={messages}>
           {children}
           <Toaster richColors position={isRTL ? 'bottom-left' : 'bottom-right'} />
+          <UseToastRenderer />
         </NextIntlClientProvider>
       </body>
     </html>

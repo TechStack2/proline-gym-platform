@@ -5,7 +5,7 @@ import { PortalClassesClient } from './portal-classes-client'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: { locale: string } }
+type Props = { params: { locale: string }; searchParams?: { kid?: string } }
 
 /**
  * Member-facing class browse + request + status (Cycle 5 / V1 / B2 · T1/T6).
@@ -13,7 +13,7 @@ type Props = { params: { locale: string } }
  * recurring registration and sees their status (requested / active / waitlisted
  * #n) per class. Attendance stays B1 (portal/schedule). Arabic-RTL.
  */
-export default async function PortalClassesPage({ params: { locale } }: Props) {
+export default async function PortalClassesPage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -22,7 +22,23 @@ export default async function PortalClassesPage({ params: { locale } }: Props) {
   const { data: profile } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   const gymId = profile?.gym_id
   if (!gymId) return null
-  const { data: student } = await supabase.from('students').select('id').eq('profile_id', user.id).maybeSingle()
+  const { data: ownStudent } = await supabase.from('students').select('id').eq('profile_id', user.id).maybeSingle()
+
+  // B3: a linked guardian can act FOR a kid (?kid=<studentId>). The link is
+  // verified server-side (guardian RLS makes a non-linked kid unreadable).
+  let kid: { id: string; name: string } | null = null
+  if (searchParams?.kid) {
+    const { data: kidRow } = await supabase
+      .from('students')
+      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .eq('id', searchParams.kid)
+      .maybeSingle()
+    if (kidRow) {
+      const { localizedName: ln, one: o } = await import('@/lib/names')
+      kid = { id: kidRow.id, name: ln(o((kidRow as any).profiles), locale) }
+    }
+  }
+  const student = kid ? { id: kid.id } : ownStudent
 
   const { data: classesRaw } = await supabase
     .from('classes')
@@ -69,7 +85,12 @@ export default async function PortalClassesPage({ params: { locale } }: Props) {
           {isRTL ? 'سجّل في حصة متكررة برسوم شهرية' : 'Register for a recurring class for a monthly fee'}
         </p>
       </div>
-      <PortalClassesClient classes={classes} locale={locale} hasStudent={!!student} />
+      {kid && (
+        <p data-testid="acting-for-kid" className="rounded-xl bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700">
+          {isRTL ? `أنت تتصرف نيابة عن: ${kid.name}` : `Acting for: ${kid.name}`}
+        </p>
+      )}
+      <PortalClassesClient classes={classes} locale={locale} hasStudent={!!student} kidId={kid?.id} />
     </div>
   )
 }

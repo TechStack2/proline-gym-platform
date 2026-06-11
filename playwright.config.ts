@@ -193,6 +193,15 @@ export default defineConfig({
       testMatch: /adm1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // B3 (family/household): guardian switcher → request-for-kid → payer
+      // invoice → household billing → desk payment + the RLS negative.
+      // Switches roles internally (owner + parent).
+      name: 'b3',
+      dependencies: ['setup'],
+      testMatch: /b3\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
-type Props = { params: { locale: string } }
+type Props = { params: { locale: string }; searchParams?: { kid?: string } }
 
-export default async function PortalHomePage({ params: { locale } }: Props) {
+export default async function PortalHomePage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -25,7 +25,47 @@ export default async function PortalHomePage({ params: { locale } }: Props) {
     .from('students')
     .select('id, profile_id, join_date')
     .eq('profile_id', user.id)
-    .single()
+    .maybeSingle()
+
+  // ── B3: guardian detection + kid-switcher ──────────────────────────────────
+  const { data: guardianRow } = await supabase
+    .from('guardians')
+    .select('id')
+    .eq('profile_id', user.id)
+    .maybeSingle()
+  let kids: { id: string; name: string }[] = []
+  if (guardianRow) {
+    const { data: kidLinks } = await supabase
+      .from('guardian_students')
+      .select('students:student_id (id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))')
+      .eq('guardian_id', guardianRow.id)
+    const { localizedName: ln, one: o } = await import('@/lib/names')
+    kids = (kidLinks ?? [])
+      .map((l: any) => {
+        const st = o(l.students)
+        return st ? { id: st.id as string, name: ln(o(st.profiles), locale) } : null
+      })
+      .filter(Boolean) as { id: string; name: string }[]
+  }
+  const selectedKid = kids.find((k) => k.id === searchParams?.kid) ?? null
+
+  // Guardian with no own membership and no kid selected → default to the first kid.
+  if (!selectedKid && !student && kids.length > 0) {
+    const { redirect } = await import('next/navigation')
+    redirect(`/${locale}/portal?kid=${kids[0].id}`)
+  }
+
+  if (selectedKid) {
+    const KidDashboard = (await import('./_components/KidDashboard')).KidDashboard
+    return (
+      <KidDashboard
+        locale={locale}
+        kid={selectedKid}
+        kids={kids}
+        hasOwn={!!student}
+      />
+    )
+  }
 
   const { data: membership } = await supabase
     .from('student_memberships')
@@ -140,6 +180,21 @@ export default async function PortalHomePage({ params: { locale } }: Props) {
         </h1>
         <p className="text-sm text-gray-500 mt-1">{isRTL ? 'إليك ملخص حسابك' : "Here's your account summary"}</p>
       </div>
+
+      {kids.length > 0 && (
+        <div className="flex flex-wrap gap-2" data-testid="kid-switcher">
+          <span data-testid="kid-chip-me"
+            className="rounded-full bg-[#cd1419] px-4 py-1.5 text-sm font-semibold text-white">
+            {isRTL ? 'أنا' : 'Me'}
+          </span>
+          {kids.map((k) => (
+            <Link key={k.id} href={`/${locale}/portal?kid=${k.id}`} data-testid="kid-chip" data-kid-id={k.id}
+              className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
+              {k.name}
+            </Link>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: isRTL ? 'الحصص' : 'Classes', value: enrolledCount || 0, icon: Users, color: 'bg-blue-50 text-blue-600' },

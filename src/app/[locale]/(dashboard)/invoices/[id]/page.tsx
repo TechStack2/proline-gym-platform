@@ -19,8 +19,9 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   const { data: inv } = await supabase
     .from('invoices')
     .select(`id, invoice_number, invoice_type, amount_usd, amount_lbp, tax_amount_usd, total_usd, total_lbp,
-      exchange_rate, rate_date, status, due_date, paid_at, created_at, notes_en, notes_ar, notes_fr, student_id,
-      students(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
+      exchange_rate, rate_date, status, due_date, paid_at, created_at, notes_en, notes_ar, notes_fr, student_id, payer_profile_id,
+      students(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)),
+      payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
     .eq('id', id)
     .maybeSingle()
 
@@ -57,6 +58,11 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
           <div>
             <p className="font-mono text-lg font-bold" data-testid="invoice-number">{inv.invoice_number}</p>
             <p className="text-sm text-muted-foreground">{studentName} · {inv.invoice_type}</p>
+            {(inv as any).payer_profile_id && (
+              <p className="text-xs text-muted-foreground" data-testid="invoice-detail-payer">
+                {t('Payer', 'الدافع')}: {localizedName((Array.isArray((inv as any).payer) ? (inv as any).payer[0] : (inv as any).payer), locale)}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">{t('Due', 'الاستحقاق')}: {fmtDate(inv.due_date)}</p>
           </div>
           <span data-testid="invoice-status"

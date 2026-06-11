@@ -768,7 +768,9 @@
       "add_error": "Failed to add lead",
       "converted": "Lead converted to member",
       "convert_error": "Failed to convert",
-      "plan_required": "Select a plan"
+      "plan_required": "Select a plan",
+      "guardian_linked": "Guardian linked",
+      "guardian_link_failed": "Guardian link failed"
     },
     "add_lead": "Add Lead",
     "save_lead": "Save Lead",
@@ -814,7 +816,9 @@
       "discipline": "Interested discipline",
       "notes": "Notes",
       "no_discipline": "— None —"
-    }
+    },
+    "guardian_optional": "Guardian (optional, for minors)",
+    "guardian_name_placeholder": "Guardian name (if new)"
   },
   "camps": {
     "title": "Camps & Events",
@@ -1401,7 +1405,10 @@
     "beltProgress": "Belt progress",
     "currentRank": "Current rank",
     "noPromotions": "No promotions recorded.",
-    "ptTotals": "{remaining} PT session(s) remaining across active packages"
+    "ptTotals": "{remaining} PT session(s) remaining across active packages",
+    "payer": "Payer",
+    "household": "Household",
+    "noHouseholdInvoices": "No invoices as payer yet."
   },
   "money": {
     "title": "Money",
@@ -1438,6 +1445,36 @@
       "thu": "Thursday",
       "fri": "Friday",
       "sat": "Saturday"
+    }
+  },
+  "family": {
+    "me": "Me",
+    "last30": "{count} in 30 days",
+    "streak": "{count}-week streak",
+    "registrations": "Class registrations",
+    "requestClass": "Request a class",
+    "noRegistrations": "No registrations yet.",
+    "mo": "mo",
+    "schedule": "Weekly schedule",
+    "noSchedule": "No scheduled classes.",
+    "recentAttendance": "Recent attendance",
+    "noAttendance": "No attendance yet.",
+    "beltProgress": "Belt progress",
+    "noPromotions": "No promotions yet.",
+    "householdBilling": "Household billing",
+    "staff": {
+      "guardians": "Guardians",
+      "linkGuardian": "Link guardian",
+      "noGuardian": "No guardian linked — for minors, link a parent (search by phone first).",
+      "unlink": "Unlink",
+      "search": "Search",
+      "linkThis": "Link",
+      "noMatch": "No profile with this phone — create the guardian:",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "createAndLink": "Create & link",
+      "linkFailed": "Could not link the guardian.",
+      "nameRequired": "The first name is required."
     }
   }
 }

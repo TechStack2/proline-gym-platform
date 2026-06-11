@@ -17,7 +17,7 @@ type ClassItem = {
   registration: Reg | null
 }
 
-export function PortalClassesClient({ classes, locale, hasStudent }: { classes: ClassItem[]; locale: string; hasStudent: boolean }) {
+export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { classes: ClassItem[]; locale: string; hasStudent: boolean; kidId?: string }) {
   const isRTL = locale === 'ar'
   const t = (en: string, ar: string) => (isRTL ? ar : en)
   const DAYS = isRTL ? DAYS_AR : DAYS_EN
@@ -41,7 +41,7 @@ export function PortalClassesClient({ classes, locale, hasStudent }: { classes: 
   function request(classId: string) {
     setError(''); setBusyId(classId)
     startTransition(async () => {
-      const res = await requestClassRegistration(classId)
+      const res = await requestClassRegistration(classId, kidId)
       setBusyId(null)
       if (!res.ok) { setError(res.error); return }
       router.refresh()

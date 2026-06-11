@@ -22,9 +22,10 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const { data: inv } = await supabase
     .from('invoices')
     .select(`id, invoice_number, invoice_type, amount_usd, tax_amount_usd, total_usd, total_lbp,
-      exchange_rate, status, due_date, paid_at, created_at,
+      exchange_rate, status, due_date, paid_at, created_at, payer_profile_id,
       gyms(name_ar, name_en, name_fr),
-      students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
+      students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)),
+      payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
     .eq('id', id)
     .maybeSingle()
 
@@ -63,6 +64,11 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
           <div><span className="text-muted-foreground">{t('Invoice', 'الفاتورة')}: </span><span className="font-mono font-medium" data-testid="receipt-invoice-number">{inv.invoice_number}</span></div>
           <div><span className="text-muted-foreground">{t('Date', 'التاريخ')}: </span>{fmtDate(inv.created_at)}</div>
           <div><span className="text-muted-foreground">{t('Member', 'العضو')}: </span>{studentName}</div>
+          {(inv as any).payer_profile_id && (
+            <div data-testid="receipt-payer"><span className="text-muted-foreground">{t('Payer', 'الدافع')}: </span>
+              {localizedName((Array.isArray((inv as any).payer) ? (inv as any).payer[0] : (inv as any).payer), locale)}
+            </div>
+          )}
           <div><span className="text-muted-foreground">{t('Status', 'الحالة')}: </span><span data-testid="receipt-status">{statusLabel(inv.status, locale)}</span></div>
         </div>
 

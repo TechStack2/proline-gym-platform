@@ -9,6 +9,7 @@ import {
   User, Phone, Award, CreditCard, CalendarDays, Dumbbell, ClipboardList,
   DollarSign, ChevronRight, Users,
 } from 'lucide-react'
+import { GuardianPanel, type GuardianRow } from './guardian-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,7 +50,7 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
   ] = await Promise.all([
     supabase
       .from('guardian_students')
-      .select(`guardians:guardian_id (id, relationship_ar, relationship_en, relationship_fr,
+      .select(`id, guardians:guardian_id (id, relationship_ar, relationship_en, relationship_fr,
         profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
       .eq('student_id', id),
     supabase
@@ -78,7 +79,8 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
       .limit(5),
     supabase
       .from('invoices')
-      .select('id, invoice_number, invoice_type, total_usd, status, due_date, created_at')
+      .select(`id, invoice_number, invoice_type, total_usd, status, due_date, created_at, payer_profile_id,
+        payer:profiles!invoices_payer_profile_id_fkey (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
       .eq('student_id', id)
       .order('created_at', { ascending: false })
       .limit(10),
@@ -111,6 +113,43 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
   const paidByInvoice = new Map<string, number>()
   for (const p of (payments ?? []) as any[]) {
     if (p.invoice_id) paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+  }
+
+  // B3: structured guardian rows for the panel + the household view when this
+  // member is themselves a guardian (their kids + invoices they're payer on).
+  const guardianRows: GuardianRow[] = (guardianLinks ?? []).map((g: any) => {
+    const guard = one(g.guardians)
+    const rel = (isRTL ? guard?.relationship_ar : locale === 'fr' ? guard?.relationship_fr : guard?.relationship_en) || null
+    return {
+      linkId: g.id,
+      guardianId: guard?.id,
+      name: localizedName(one(guard?.profiles), locale),
+      phone: one(guard?.profiles)?.phone ?? null,
+      relationship: rel,
+    }
+  })
+
+  const profileId = (student as any).profile_id
+  const { data: ownGuardian } = await supabase
+    .from('guardians').select('id').eq('profile_id', profileId).maybeSingle()
+  let householdKids: { id: string; name: string }[] = []
+  let payerInvoices: any[] = []
+  if (ownGuardian) {
+    const { data: kidLinks } = await supabase
+      .from('guardian_students')
+      .select('students:student_id (id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))')
+      .eq('guardian_id', ownGuardian.id)
+    householdKids = (kidLinks ?? [])
+      .map((l: any) => { const st = one(l.students); return st ? { id: st.id, name: localizedName(one(st.profiles), locale) } : null })
+      .filter(Boolean) as { id: string; name: string }[]
+    const { data: pInv } = await supabase
+      .from('invoices')
+      .select(`id, invoice_number, total_usd, status, created_at, student_id,
+        students (profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
+      .eq('payer_profile_id', profileId)
+      .order('created_at', { ascending: false })
+      .limit(15)
+    payerInvoices = pInv ?? []
   }
 
   const prof: any = one((student as any).profiles)
@@ -275,9 +314,16 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
                 const bal = balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
                 return (
                   <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status}>
-                    <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-[#cd1419] hover:underline">
-                      {inv.invoice_number}
-                    </Link>
+                    <span className="flex flex-col">
+                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-[#cd1419] hover:underline">
+                        {inv.invoice_number}
+                      </Link>
+                      {inv.payer_profile_id && inv.payer_profile_id !== profileId && (
+                        <span className="text-[10px] text-gray-400" data-testid="invoice-payer">
+                          {t('payer')}: {localizedName(one(inv.payer), locale)}
+                        </span>
+                      )}
+                    </span>
                     <span className="text-xs text-gray-500">${Number(inv.total_usd).toFixed(2)}{bal > 0 ? ` · ${t('due')} $${bal.toFixed(2)}` : ''}</span>
                     <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[inv.status])}>{statusLabel(inv.status, locale)}</span>
                   </li>
@@ -335,6 +381,35 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
             </ul>
           )}
         </Panel>
+        {/* ── 7. Guardians (B3) ── */}
+        <GuardianPanel studentId={id} gymId={(student as any).gym_id} guardians={guardianRows} locale={locale} />
+
+        {/* ── 8. Household (this member is a guardian) ── */}
+        {ownGuardian && (
+          <section className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="panel-household">
+            <h2 className={cn('mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+              <Users className="h-4 w-4 text-primary-600" /> {t('household')}
+            </h2>
+            <p className="mb-2 text-xs text-gray-500">
+              {householdKids.map((k) => (
+                <Link key={k.id} href={`/${locale}/students/${k.id}`} className="mr-2 text-primary-600 hover:underline">{k.name}</Link>
+              ))}
+            </p>
+            {payerInvoices.length === 0 ? (
+              <p className="py-2 text-center text-sm text-gray-400">{t('noHouseholdInvoices')}</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {payerInvoices.map((inv: any) => (
+                  <li key={inv.id} className="flex items-center justify-between text-xs" data-testid="household-payer-row">
+                    <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-[#cd1419] hover:underline">{inv.invoice_number}</Link>
+                    <span className="text-gray-500">{localizedName(one(one(inv.students)?.profiles), locale)}</span>
+                    <span className={cn('rounded-full px-2 py-0.5 font-medium', STATUS_BADGE[inv.status])}>{statusLabel(inv.status, locale)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
       </div>
 
       {ptActive.length > 0 && (

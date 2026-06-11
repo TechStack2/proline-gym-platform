@@ -11,9 +11,14 @@ import { createClient } from '@/lib/supabase/server'
 
 type Result = { ok: true } | { ok: false; error: string }
 
-export async function requestClassRegistration(classId: string): Promise<Result> {
+export async function requestClassRegistration(classId: string, studentId?: string): Promise<Result> {
   const supabase = await createClient()
-  const { error } = await supabase.rpc('request_class_registration', { p_class_id: classId })
+  // B3: a linked guardian may request FOR a kid (the RPC authorizes via
+  // is_guardian_of); members request for themselves (no studentId).
+  const { error } = await supabase.rpc('request_class_registration', {
+    p_class_id: classId,
+    ...(studentId ? { p_student_id: studentId } : {}),
+  })
   if (error) return { ok: false, error: error.message }
   revalidatePath('/portal/classes')
   return { ok: true }

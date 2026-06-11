@@ -1265,6 +1265,7 @@ export type Database = {
           rate_source: string | null
           status: Database["public"]["Enums"]["payment_status_enum"]
           student_id: string
+          payer_profile_id: string | null
           tax_amount_usd: number | null
           tax_rate: number | null
           total_lbp: number | null
@@ -1291,6 +1292,7 @@ export type Database = {
           rate_source?: string | null
           status?: Database["public"]["Enums"]["payment_status_enum"]
           student_id: string
+          payer_profile_id?: string | null
           tax_amount_usd?: number | null
           tax_rate?: number | null
           total_lbp?: number | null
@@ -1317,6 +1319,7 @@ export type Database = {
           rate_source?: string | null
           status?: Database["public"]["Enums"]["payment_status_enum"]
           student_id?: string
+          payer_profile_id?: string | null
           tax_amount_usd?: number | null
           tax_rate?: number | null
           total_lbp?: number | null
@@ -2426,6 +2429,7 @@ export type Database = {
           p_student_id: string
           p_invoice_type: Database["public"]["Enums"]["invoice_type_enum"]
           p_amount_usd: number
+          p_payer_profile_id?: string | null
           p_amount_lbp?: number
           p_exchange_rate?: number | null
           p_rate_date?: string | null

@@ -768,7 +768,9 @@
       "add_error": "تعذّرت الإضافة",
       "converted": "تم تحويل العميل إلى عضو",
       "convert_error": "تعذّر التحويل",
-      "plan_required": "اختر خطة"
+      "plan_required": "اختر خطة",
+      "guardian_linked": "تم ربط ولي الأمر",
+      "guardian_link_failed": "فشل ربط ولي الأمر"
     },
     "add_lead": "إضافة عميل محتمل",
     "save_lead": "حفظ",
@@ -814,7 +816,9 @@
       "discipline": "الرياضة المهتم بها",
       "notes": "ملاحظات",
       "no_discipline": "— بدون —"
-    }
+    },
+    "guardian_optional": "ولي الأمر (اختياري، للقاصرين)",
+    "guardian_name_placeholder": "اسم ولي الأمر (إن كان جديداً)"
   },
   "camps": {
     "title": "المخيمات والفعاليات",
@@ -1401,7 +1405,10 @@
     "beltProgress": "تقدم الأحزمة",
     "currentRank": "الرتبة الحالية",
     "noPromotions": "لا ترقيات مسجلة.",
-    "ptTotals": "{remaining} جلسة تدريب خاص متبقية في الباقات النشطة"
+    "ptTotals": "{remaining} جلسة تدريب خاص متبقية في الباقات النشطة",
+    "payer": "الدافع",
+    "household": "العائلة",
+    "noHouseholdInvoices": "لا فواتير كدافع بعد."
   },
   "money": {
     "title": "المال",
@@ -1438,6 +1445,36 @@
       "thu": "الخميس",
       "fri": "الجمعة",
       "sat": "السبت"
+    }
+  },
+  "family": {
+    "me": "أنا",
+    "last30": "{count} في 30 يوماً",
+    "streak": "سلسلة {count} أسبوع",
+    "registrations": "تسجيلات الحصص",
+    "requestClass": "طلب حصة",
+    "noRegistrations": "لا تسجيلات بعد.",
+    "mo": "شهر",
+    "schedule": "الجدول الأسبوعي",
+    "noSchedule": "لا حصص مجدولة.",
+    "recentAttendance": "آخر الحضور",
+    "noAttendance": "لا حضور بعد.",
+    "beltProgress": "تقدم الأحزمة",
+    "noPromotions": "لا ترقيات بعد.",
+    "householdBilling": "فواتير العائلة",
+    "staff": {
+      "guardians": "أولياء الأمور",
+      "linkGuardian": "ربط ولي أمر",
+      "noGuardian": "لا ولي أمر مرتبط — للقاصرين اربط ولي الأمر (ابحث بالهاتف أولاً).",
+      "unlink": "فك الربط",
+      "search": "بحث",
+      "linkThis": "ربط",
+      "noMatch": "لا ملف بهذا الرقم — أنشئ ولي الأمر:",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "createAndLink": "إنشاء وربط",
+      "linkFailed": "تعذر ربط ولي الأمر.",
+      "nameRequired": "الاسم الأول مطلوب."
     }
   }
 }
