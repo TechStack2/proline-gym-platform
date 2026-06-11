@@ -78,3 +78,22 @@ Every IA surface reads gym-scoped data (already true via RLS). New rule enforced
 1. **Approve the 7-workspace IA** (§3) — or amend (e.g., keep Leads standalone, different workspace names).
 2. **Approve the two-slice plan** (§4) — IA-1 then IA-2, then B3.
 On approval, the auditor issues `prompt-IA1-nav-inbox-today.md` with the activation block.
+
+---
+
+## Addendum (2026-06-11, operator-approved IA): Schedule workspace — recurring classes + PT, multi-discipline, multi-coach
+
+**Operator question:** does Schedule cover PT scheduling too, with multiple disciplines and multiple PT coaches — and what's the best-practice shape?
+
+**The two calendar species (never conflate their *editing* models):**
+1. **Recurring group classes** — a weekly *template* (`classes` + `class_schedules.day_of_week`): low churn, capacity + roster, discipline-typed. Edited as a timetable ("Ladies moves to 7pm Wednesdays" changes every future week).
+2. **PT appointments** — one-off *bookings* (`pt_sessions` with a concrete date/time, per coach, per student, drawing down a package): high churn, rescheduled individually.
+
+**Industry pattern (Mindbody / Glofox / TeamUp / Arbox):** separate editing models, **one unified viewing surface** — a single calendar with two views and shared filters:
+- **Week · Timetable view** — the recurring grid (rows = time, cols = days), color-coded by discipline, discipline/coach filters. This is also the admin twin of the public landing grid (LP).
+- **Day · Coach diary view** — resource columns = coaches; each column shows that coach's classes *and* PT appointments for the day. This is how multi-coach PT stays legible.
+- PT sessions render on both views as appointment blocks; clicking opens the existing C1 session lifecycle (deliver / no-show / cancel per gym policy).
+- **Conflict guard:** when booking/rescheduling a PT session, warn if the coach overlaps their own class slot or another PT session (cheap query, high trust value — replaces the "phone-call double-check").
+- **Deliberately deferred (lean):** coach-availability/working-hours modeling and member self-booking of PT slots → V2. At Proline, PT times are agreed person-to-person (WhatsApp/front desk) and staff enter them — the diary + conflict guard serves that reality without inventing an availability engine.
+
+**Sequencing:** this is **IA-3 (Schedule unification)** after IA-2 — IA-1's *Today* already surfaces the daily slice of both species (today's classes + today's PT sessions), so the front desk gets the daily answer immediately; IA-3 adds the week/diary planning surface. B3 then follows IA-3? No — **B3 follows IA-2; IA-3 can run after B3** if demo pressure favors the member file first (auditor's call at that checkpoint).
