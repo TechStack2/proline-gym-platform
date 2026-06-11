@@ -104,10 +104,11 @@ test('ADM-2 · avatar upload renders on coach detail + wizard chip + diary; memb
     const coachDetailUrl = owner.page.url();
     await vis(owner.page, '[data-testid="coach-edit-btn"]').first().click();
     await expect(owner.page).toHaveURL(/\/edit/, { timeout: 15_000 });
+    // The form is a PAGE (double-shell renders two copies; the hidden one's
+    // input works for setInputFiles, but visibility asserts must be :visible).
     await owner.page.locator('[data-testid="avatar-upload"] [data-testid="avatar-file-input"]').first()
       .setInputFiles(FIXTURE);
-    // The uploader swaps to the uploaded image once storage + profiles confirm.
-    await expect(owner.page.locator('[data-testid="avatar-upload"] [data-testid="avatar-img"]').first())
+    await expect(vis(owner.page, '[data-testid="avatar-upload"] [data-testid="avatar-img"]').first())
       .toBeVisible({ timeout: 20_000 });
 
     // Renders on the coach detail…
@@ -135,7 +136,7 @@ test('ADM-2 · avatar upload renders on coach detail + wizard chip + diary; memb
     await expect(owner.page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
     await owner.page.locator('[data-testid="avatar-upload"] [data-testid="avatar-file-input"]').first()
       .setInputFiles(FIXTURE);
-    await expect(owner.page.locator('[data-testid="avatar-upload"] [data-testid="avatar-img"]').first())
+    await expect(vis(owner.page, '[data-testid="avatar-upload"] [data-testid="avatar-img"]').first())
       .toBeVisible({ timeout: 20_000 });
 
     await guardian.page.goto('/en/portal');
