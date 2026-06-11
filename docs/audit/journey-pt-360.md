@@ -18,6 +18,12 @@
 - **Sale** (desk or approved request): pick type → pick coach (chips; filtered by specialty if the type has a discipline) → optional price override (the existing discount discipline: % / fixed, manual) → `sell_pt_package` atomic RPC (guards → package row from the type snapshot [sessions, validity from sale date] → assignment → invoice via `issue_invoice` [payer = guardian for minors, B3] → notification). Type fields are SNAPSHOTTED onto the package at sale — later catalog edits never mutate sold packages.
 - **Allocation:** package binds to ONE coach at sale (matches reality); staff may reassign (audited; future sessions move with it or get rebooked).
 
+### 3.1 Package-centric presentation (operator amendment, 2026-06-12 — APPROVED with this addition)
+The current portal/admin PT surfaces render a **flat list of loose "single PT sessions"** with no tie to discipline, coach, when-used, or which package — the operator hit this on Karim's account. PT-1 must restructure EVERY PT surface package-first:
+- **The package card is the unit of display** (portal "My PT", Member-360 PT panel, coach roster): type name · coach · discipline · **X of Y remaining** · validity window with countdown · status (active/expired/frozen) · **its invoice + payment state (the billing tie — deep-link to the invoice/receipt)**.
+- **Sessions nest UNDER their package card** as history rows (date, outcome: completed/no-show/late-cancel, booked-upcoming) — never a flat sibling list. A session is meaningless without its package.
+- Loose legacy "Single PT Session" requests/sessions in the demo gym are accumulated test residue — archive them during PT-1 (data cleanup, not schema); any truly package-less session rows surface in a one-time "unlinked" admin notice for staff to resolve.
+
 ## 4. Signature scheduling — "Calendly for the gym" (PROPOSAL)
 **Goal: minimize back-and-forth.** Calendly kills negotiation with two moves: (1) only genuinely free slots are offered, (2) picking one BOOKS it. We adopt both, gym-policy-bounded:
 
