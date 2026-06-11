@@ -225,7 +225,9 @@
       "active": "نشط",
       "inactive": "غير نشط",
       "suspended": "موقوف"
-    }
+    },
+    "tabs_active": "النشطون",
+    "tabs_prospects": "العملاء المحتملون"
   },
   "coaches": {
     "title": "المدربين",
@@ -424,6 +426,10 @@
       "absent": "غائب",
       "late": "متأخر",
       "excused": "معذور"
+    },
+    "toast": {
+      "saved": "تم الحفظ",
+      "error": "حدث خطأ"
     }
   },
   "payments": {
@@ -1257,5 +1263,50 @@
     "sessions": "جلسات",
     "mo": "شهر",
     "promotedLine": "تمت ترقية {student} تلقائياً من قائمة الانتظار إلى {class}"
+  },
+  "member360": {
+    "age": "{age} سنة",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "recordPayment": "تسجيل دفعة",
+    "newRegistration": "تسجيل جديد",
+    "ptFlows": "تدريب خاص",
+    "membership": "العضوية",
+    "noMembership": "لا عضوية مسجلة — تسجيلات الحصص مستقلة.",
+    "registrations": "تسجيلات الحصص",
+    "noRegistrations": "لا تسجيلات حصص.",
+    "pendingInbox": "قيد الانتظار — افتح الوارد",
+    "mo": "شهر",
+    "pt": "التدريب الخاص",
+    "noPt": "لا باقات تدريب خاص.",
+    "validUntil": "صالح حتى",
+    "noExpiry": "بلا انتهاء",
+    "left": "متبقية",
+    "recentSessions": "الجلسات الأخيرة",
+    "billing": "الفواتير",
+    "noInvoices": "لا فواتير.",
+    "payments": "المدفوعات",
+    "due": "مستحق",
+    "openMoney": "افتح سجل المال",
+    "attendance": "الحضور",
+    "last30": "{count} في آخر 30 يوماً",
+    "noAttendance": "لا حضور بعد.",
+    "beltProgress": "تقدم الأحزمة",
+    "currentRank": "الرتبة الحالية",
+    "noPromotions": "لا ترقيات مسجلة.",
+    "ptTotals": "{remaining} جلسة تدريب خاص متبقية في الباقات النشطة"
+  },
+  "money": {
+    "title": "المال",
+    "subtitle": "إصدار وتسوية ومطابقة — سجل واحد.",
+    "overview": "نظرة عامة",
+    "invoices": "الفواتير",
+    "payments": "المدفوعات",
+    "outstanding": "الرصيد المستحق",
+    "openInvoices": "{count} فاتورة مفتوحة",
+    "viewInvoices": "عرض الفواتير ←",
+    "todayTally": "تحصيلات اليوم (حسب الطريقة)",
+    "noPaymentsToday": "لا مدفوعات اليوم.",
+    "viewPayments": "عرض المدفوعات ←"
   }
 }

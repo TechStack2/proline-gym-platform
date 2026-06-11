@@ -7,17 +7,48 @@ import { cn } from '@/lib/utils'
 import { StudentList } from './components/student-list'
 import { StudentFilters } from './components/student-filters'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
+import { LeadsPipeline } from '../leads/leads-pipeline'
 
 export default async function StudentsPage({
   params: { locale },
   searchParams,
 }: {
   params: { locale: string }
-  searchParams: { search?: string; discipline?: string; belt?: string; status?: string }
+  searchParams: { search?: string; discipline?: string; belt?: string; status?: string; tab?: string }
 }) {
   const supabase = await createClient()
   const t = await getTranslations('students')
   const isRTL = locale === 'ar'
+  const activeTab = searchParams.tab === 'prospects' ? 'prospects' : 'active'
+
+  // ── IA-2: Members workspace tabs — Active (roster) | Prospects (lead pipeline,
+  //    re-homed from /leads; conversion moves a person across, same flow) ──
+  const Tabs = (
+    <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="members-tabs">
+      <Link href={`/${locale}/students`} data-testid="tab-active"
+        className={cn('rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+          activeTab === 'active' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+        {t('tabs_active')}
+      </Link>
+      <Link href={`/${locale}/students?tab=prospects`} data-testid="tab-prospects"
+        className={cn('rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+          activeTab === 'prospects' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+        {t('tabs_prospects')}
+      </Link>
+    </div>
+  )
+
+  if (activeTab === 'prospects') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className={cn('text-3xl font-bold', isRTL && 'text-right')}>{t('title')}</h1>
+          {Tabs}
+        </div>
+        <LeadsPipeline locale={locale} searchParams={searchParams} />
+      </div>
+    )
+  }
 
   // ── Auth + gym_id for multi-tenant isolation ──────────
   const { data: { user } } = await supabase.auth.getUser()
@@ -86,21 +117,18 @@ export default async function StudentsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className={cn("text-3xl font-bold", isRTL && "text-right")}>
           {t('title')}
         </h1>
         <div className="flex items-center gap-3">
-        <Link href={`/${locale}/leads`} data-testid="prospects-link"
-          className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline">
-          {locale === 'ar' ? 'العملاء المحتملون ←' : locale === 'fr' ? 'Prospects →' : 'Prospects →'}
-        </Link>
-        <Link href={`/${locale}/students/add`}>
-          <Button>
-            <Plus className="w-4 h-4 ml-2" />
-            {t('add_student')}
-          </Button>
-        </Link>
+          {Tabs}
+          <Link href={`/${locale}/students/add`}>
+            <Button>
+              <Plus className="w-4 h-4 ml-2" />
+              {t('add_student')}
+            </Button>
+          </Link>
         </div>
       </div>
 

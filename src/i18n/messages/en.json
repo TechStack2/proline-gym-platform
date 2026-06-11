@@ -225,7 +225,9 @@
       "active": "Active",
       "inactive": "Inactive",
       "suspended": "Suspended"
-    }
+    },
+    "tabs_active": "Active",
+    "tabs_prospects": "Prospects"
   },
   "coaches": {
     "title": "Coaches",
@@ -424,6 +426,10 @@
       "absent": "Absent",
       "late": "Late",
       "excused": "Excused"
+    },
+    "toast": {
+      "saved": "Saved",
+      "error": "Error"
     }
   },
   "payments": {
@@ -1257,5 +1263,50 @@
     "sessions": "sessions",
     "mo": "mo",
     "promotedLine": "{student} was auto-promoted off the waitlist into {class}"
+  },
+  "member360": {
+    "age": "{age} yrs",
+    "active": "Active",
+    "inactive": "Inactive",
+    "recordPayment": "Record payment",
+    "newRegistration": "New registration",
+    "ptFlows": "PT",
+    "membership": "Membership",
+    "noMembership": "No membership on file — class registrations are standalone.",
+    "registrations": "Class registrations",
+    "noRegistrations": "No class registrations.",
+    "pendingInbox": "Pending — open Inbox",
+    "mo": "mo",
+    "pt": "Personal training",
+    "noPt": "No PT packages.",
+    "validUntil": "Valid until",
+    "noExpiry": "No expiry",
+    "left": "left",
+    "recentSessions": "Recent sessions",
+    "billing": "Billing",
+    "noInvoices": "No invoices.",
+    "payments": "Payments",
+    "due": "due",
+    "openMoney": "Open Money ledger",
+    "attendance": "Attendance",
+    "last30": "{count} in last 30 days",
+    "noAttendance": "No attendance yet.",
+    "beltProgress": "Belt progress",
+    "currentRank": "Current rank",
+    "noPromotions": "No promotions recorded.",
+    "ptTotals": "{remaining} PT session(s) remaining across active packages"
+  },
+  "money": {
+    "title": "Money",
+    "subtitle": "Issue, settle, and reconcile — one ledger.",
+    "overview": "Overview",
+    "invoices": "Invoices",
+    "payments": "Payments",
+    "outstanding": "Outstanding balance",
+    "openInvoices": "{count} open invoice(s)",
+    "viewInvoices": "View invoices →",
+    "todayTally": "Today's collections (by method)",
+    "noPaymentsToday": "No payments today.",
+    "viewPayments": "View payments →"
   }
 }

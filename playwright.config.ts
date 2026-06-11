@@ -157,6 +157,15 @@ export default defineConfig({
       testMatch: /ia-nav\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // IA-2 (Member-360 + Money): drives B2/22R/D1 flows then asserts the
+      // member file + Money ledger + Prospects re-home + portal self-view.
+      // Switches roles internally; runs LAST (emits to the student).
+      name: 'member360',
+      dependencies: ['setup'],
+      testMatch: /member360\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

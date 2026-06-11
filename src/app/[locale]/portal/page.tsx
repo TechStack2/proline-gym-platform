@@ -62,6 +62,53 @@ export default async function PortalHomePage({ params: { locale } }: Props) {
     .in('status', ['pending', 'overdue'])
 
   const balanceDue = pendingInvoices?.reduce((sum, inv) => sum + (inv.total_usd || 0), 0) || 0
+
+  // ── IA-2 self-view: PT remaining + next class / next PT (own rows via RLS) ──
+  const { data: ptActive } = await supabase
+    .from('pt_assignments')
+    .select('sessions_remaining, sessions_total, status, is_active')
+    .eq('student_id', student?.id)
+    .eq('status', 'active')
+    .eq('is_active', true)
+  const ptRemaining = (ptActive ?? []).reduce((s, a: any) => s + (a.sessions_remaining ?? 0), 0)
+  const ptTotal = (ptActive ?? []).reduce((s, a: any) => s + (a.sessions_total ?? 0), 0)
+
+  const { data: nextPt } = await supabase
+    .from('pt_sessions')
+    .select('scheduled_at, status')
+    .eq('student_id', student?.id)
+    .eq('status', 'scheduled')
+    .gte('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  const { data: myEnrollments } = await supabase
+    .from('class_enrollments')
+    .select('classes:class_id (name_ar, name_en, name_fr, is_active, class_schedules (day_of_week, start_time, is_active))')
+    .eq('student_id', student?.id)
+    .eq('is_active', true)
+
+  // Next class occurrence: smallest (dayDiff, start_time) across active schedules.
+  const todayDow = new Date().getDay()
+  let nextClass: { name: string; dayDiff: number; start: string } | null = null
+  for (const e of (myEnrollments ?? []) as any[]) {
+    const cls = Array.isArray(e.classes) ? e.classes[0] : e.classes
+    if (!cls || cls.is_active === false) continue
+    const cname = isRTL ? cls.name_ar || cls.name_en : (locale === 'fr' ? cls.name_fr || cls.name_en : cls.name_en)
+    for (const sch of cls.class_schedules ?? []) {
+      if (sch.is_active === false) continue
+      const diff = (sch.day_of_week - todayDow + 7) % 7
+      if (!nextClass || diff < nextClass.dayDiff || (diff === nextClass.dayDiff && sch.start_time < nextClass.start)) {
+        nextClass = { name: cname, dayDiff: diff, start: sch.start_time }
+      }
+    }
+  }
+  const dayNamesEn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+  const dayNamesAr = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']
+  const nextClassLabel = nextClass
+    ? `${nextClass.dayDiff === 0 ? (isRTL ? 'اليوم' : 'Today') : (isRTL ? dayNamesAr : dayNamesEn)[(todayDow + nextClass.dayDiff) % 7]} ${nextClass.start.slice(0, 5)} · ${nextClass.name}`
+    : null
   const mplans: any = (membership as any)?.membership_plans
   const mplan = Array.isArray(mplans) ? mplans[0] : mplans
   const membershipNameVal = mplan ? (isRTL ? mplan.name_ar : (locale === 'fr' ? mplan.name_fr : mplan.name_en)) : null
@@ -110,6 +157,33 @@ export default async function PortalHomePage({ params: { locale } }: Props) {
           )
         })}
       </div>
+      {/* IA-2 self-view: the member answers their own top questions */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="self-view">
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">{isRTL ? 'حالتي' : 'My Status'}</h3>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500">{isRTL ? 'العضوية' : 'Membership'}</span>
+            <span data-testid="self-membership" className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', membership?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+              {membership?.status === 'active' ? (membershipNameVal || (isRTL ? 'نشطة' : 'Active')) : (isRTL ? 'لا توجد عضوية' : 'No membership')}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500">{isRTL ? 'جلسات التدريب الخاص المتبقية' : 'PT sessions remaining'}</span>
+            <span data-testid="self-pt-remaining" className="font-bold text-gray-900">{ptTotal > 0 ? `${ptRemaining}/${ptTotal}` : '—'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500">{isRTL ? 'الحصة القادمة' : 'Next class'}</span>
+            <span data-testid="self-next-class" className="text-xs font-medium text-gray-700" dir="ltr">{nextClassLabel || '—'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500">{isRTL ? 'جلسة التدريب القادمة' : 'Next PT session'}</span>
+            <span data-testid="self-next-pt" className="text-xs font-medium text-gray-700" dir="ltr">
+              {nextPt ? new Date(nextPt.scheduled_at).toLocaleString(isRTL ? 'ar-LB' : 'en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: isRTL ? 'الجدول' : 'Schedule', href: `/${locale}/portal/schedule`, icon: CalendarDays },

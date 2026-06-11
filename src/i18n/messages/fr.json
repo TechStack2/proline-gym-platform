@@ -225,7 +225,9 @@
       "active": "Actif",
       "inactive": "Inactif",
       "suspended": "Suspendu"
-    }
+    },
+    "tabs_active": "Actifs",
+    "tabs_prospects": "Prospects"
   },
   "coaches": {
     "title": "Entraîneurs",
@@ -424,6 +426,10 @@
       "absent": "Absent",
       "late": "En retard",
       "excused": "Excusé"
+    },
+    "toast": {
+      "saved": "Enregistré",
+      "error": "Erreur"
     }
   },
   "payments": {
@@ -1257,5 +1263,50 @@
     "sessions": "séances",
     "mo": "mois",
     "promotedLine": "{student} a été promu(e) de la liste d'attente vers {class}"
+  },
+  "member360": {
+    "age": "{age} ans",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "recordPayment": "Enregistrer paiement",
+    "newRegistration": "Nouvelle inscription",
+    "ptFlows": "PT",
+    "membership": "Adhésion",
+    "noMembership": "Aucune adhésion — les inscriptions aux cours sont indépendantes.",
+    "registrations": "Inscriptions aux cours",
+    "noRegistrations": "Aucune inscription.",
+    "pendingInbox": "En attente — ouvrir la boîte",
+    "mo": "mois",
+    "pt": "Coaching privé",
+    "noPt": "Aucun forfait PT.",
+    "validUntil": "Valide jusqu'au",
+    "noExpiry": "Sans expiration",
+    "left": "restantes",
+    "recentSessions": "Séances récentes",
+    "billing": "Facturation",
+    "noInvoices": "Aucune facture.",
+    "payments": "Paiements",
+    "due": "dû",
+    "openMoney": "Ouvrir le registre",
+    "attendance": "Présences",
+    "last30": "{count} sur 30 jours",
+    "noAttendance": "Aucune présence.",
+    "beltProgress": "Progression ceintures",
+    "currentRank": "Rang actuel",
+    "noPromotions": "Aucune promotion.",
+    "ptTotals": "{remaining} séance(s) PT restante(s)"
+  },
+  "money": {
+    "title": "Finances",
+    "subtitle": "Émettre, encaisser, rapprocher — un seul registre.",
+    "overview": "Aperçu",
+    "invoices": "Factures",
+    "payments": "Paiements",
+    "outstanding": "Solde impayé",
+    "openInvoices": "{count} facture(s) ouverte(s)",
+    "viewInvoices": "Voir les factures →",
+    "todayTally": "Encaissements du jour (par méthode)",
+    "noPaymentsToday": "Aucun paiement aujourd'hui.",
+    "viewPayments": "Voir les paiements →"
   }
 }

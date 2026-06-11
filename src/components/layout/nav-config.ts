@@ -53,7 +53,7 @@ export const WORKSPACES: Workspace[] = [
   { key: 'inbox', icon: Inbox, path: '/inbox' },
   { key: 'members', icon: Users, path: '/students' },
   { key: 'schedule', icon: Calendar, path: '/schedule' },
-  { key: 'money', icon: DollarSign, path: '/payments' },
+  { key: 'money', icon: DollarSign, path: '/money' },
   { key: 'team', icon: UserCog, path: '/coaches' },
   { key: 'settings', icon: Settings, path: '/settings' },
   { key: 'profile', icon: User, path: '/profile' },

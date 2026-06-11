@@ -88,10 +88,10 @@ export function AttendanceDashboardClient({
       }
 
       setRecords(prev => ({ ...prev, [studentId]: status }))
-      toast({ title: locale === 'ar' ? 'تم الحفظ' : 'Saved', variant: 'success' })
+      toast({ title: t('toast.saved'), variant: 'success' })
     } catch (error) {
       console.error('Error updating attendance:', error)
-      toast({ title: locale === 'ar' ? 'حدث خطأ' : 'Error', variant: 'destructive' })
+      toast({ title: t('toast.error'), variant: 'destructive' })
     } finally {
       setLoading(null)
     }
@@ -119,10 +119,10 @@ export function AttendanceDashboardClient({
         newRecords[enrollment.student_id] = 'present'
       })
       setRecords(prev => ({ ...prev, ...newRecords }))
-      toast({ title: locale === 'ar' ? 'تم الحفظ' : 'Saved', variant: 'success' })
+      toast({ title: t('toast.saved'), variant: 'success' })
     } catch (error) {
       console.error('Error marking all present:', error)
-      toast({ title: locale === 'ar' ? 'حدث خطأ' : 'Error', variant: 'destructive' })
+      toast({ title: t('toast.error'), variant: 'destructive' })
     } finally {
       setLoading(null)
     }
