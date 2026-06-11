@@ -6,7 +6,7 @@
  * path <gym_id>/<profile_id>.jpg (Storage RLS: owner-or-staff, path-scoped),
  * then set profiles.avatar_url to the public URL with a cache-busting version.
  */
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
@@ -62,6 +62,14 @@ export function AvatarUpload({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [url, setUrl] = useState(currentUrl ?? null)
+
+  // The (dashboard) double-shell mounts this component twice; only the instance
+  // whose <input> received the file updates its local state. After
+  // router.refresh() the server delivers the new currentUrl — re-sync so every
+  // mounted instance (incl. the visible one) shows the uploaded photo.
+  useEffect(() => {
+    if (currentUrl) setUrl(currentUrl)
+  }, [currentUrl])
 
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

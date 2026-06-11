@@ -1,6 +1,6 @@
 import { test, expect, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis } from './helpers';
+import { vis, visibleShell } from './helpers';
 
 /**
  * ADM-2 — belt-promotion repair + archived-picker sweep + avatars (Cycle 5/V1).
@@ -104,9 +104,10 @@ test('ADM-2 · avatar upload renders on coach detail + wizard chip + diary; memb
     const coachDetailUrl = owner.page.url();
     await vis(owner.page, '[data-testid="coach-edit-btn"]').first().click();
     await expect(owner.page).toHaveURL(/\/edit/, { timeout: 15_000 });
-    // The form is a PAGE (double-shell renders two copies; the hidden one's
-    // input works for setInputFiles, but visibility asserts must be :visible).
-    await owner.page.locator('[data-testid="avatar-upload"] [data-testid="avatar-file-input"]').first()
+    // The form is a PAGE (double-shell renders two copies). The file inputs are
+    // CSS-hidden by design, so scope to the VISIBLE shell to drive the instance
+    // the user actually sees.
+    await visibleShell(owner.page).locator('[data-testid="avatar-file-input"]').first()
       .setInputFiles(FIXTURE);
     await expect(vis(owner.page, '[data-testid="avatar-upload"] [data-testid="avatar-img"]').first())
       .toBeVisible({ timeout: 20_000 });
@@ -134,7 +135,7 @@ test('ADM-2 · avatar upload renders on coach detail + wizard chip + diary; memb
     await owner.page.goto('/en/students?search=Omar');
     await vis(owner.page, '[data-testid="student-card"]').filter({ hasText: 'Omar' }).first().click();
     await expect(owner.page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
-    await owner.page.locator('[data-testid="avatar-upload"] [data-testid="avatar-file-input"]').first()
+    await visibleShell(owner.page).locator('[data-testid="avatar-file-input"]').first()
       .setInputFiles(FIXTURE);
     await expect(vis(owner.page, '[data-testid="avatar-upload"] [data-testid="avatar-img"]').first())
       .toBeVisible({ timeout: 20_000 });
