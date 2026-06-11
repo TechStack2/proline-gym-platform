@@ -1,18 +1,31 @@
 'use client'
 
+/**
+ * Add-Class WIZARD (UX-1) — touch-first rebuild of the dense modal.
+ *
+ * Why a rebuild: the old form still carried two Radix <Select>s (Day + Status)
+ * — the component class B2 root-caused as non-opening under the (dashboard)
+ * double-shell (the operator's "empty dropdowns") — plus a dead `room` field
+ * (collected, never saved) and a status default whose own options
+ * (active/inactive/archived) AREN'T VALUES of class_status_enum
+ * (scheduled|in_progress|completed|cancelled): picking any of them 22P02-failed
+ * the insert. Visibility in the timetable/landing is driven by is_active
+ * (default true), so 'scheduled' is the correct live default.
+ *
+ * Steps (no dropdowns anywhere — chips, pills, native inputs only):
+ *   1 Basics: names ar/en/fr + discipline CHIPS + coach CHIPS
+ *   2 Weekly schedule: day PILLS (multi-select) + one start/end time row with
+ *     tappable presets applied to all selected days + optional per-day override
+ *   3 Capacity stepper + monthly fee (B2 product) + status pills
+ *   4 Review → Create via the SAME insert path (classes + class_schedules,
+ *     gym_id resolution kept). Zero schema changes.
+ */
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { X, Loader2, Plus, Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { X, Loader2, Minus, Plus, Check, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { localizedName } from '@/lib/names'
@@ -25,340 +38,406 @@ interface AddClassModalProps {
   onSuccess: () => void
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+type Status = 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+const STATUSES: Status[] = ['scheduled', 'in_progress', 'completed', 'cancelled']
+const DOWS = [1, 2, 3, 4, 5, 6, 0] as const // Mon-first
+const TIME_PRESETS = ['17:00', '18:00', '19:00', '20:00'] as const
 
-interface ScheduleEntry {
-  day_of_week: number
-  start_time: string
-  end_time: string
-  room: string
+type DayTime = { start: string; end: string }
+
+function plusOneHour(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  return `${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
 export default function AddClassModal({ disciplines, coaches, locale, onClose, onSuccess }: AddClassModalProps) {
-  const t = useTranslations('classes')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [schedules, setSchedules] = useState<ScheduleEntry[]>([
-    { day_of_week: 1, start_time: '09:00', end_time: '10:00', room: '' }
-  ])
+  const t = useTranslations('classes.wizard')
+  const router = useRouter()
   const isRTL = locale === 'ar'
 
-  const [formData, setFormData] = useState({
-    name_ar: '',
-    name_en: '',
-    name_fr: '',
-    discipline_id: '',
-    coach_id: '',
-    description: '',
-    capacity: 20,
-    monthly_fee_usd: '',
-    status: 'scheduled' as const,
-  })
+  const [step, setStep] = useState(1)
+  const [creating, setCreating] = useState(false)
+  const [created, setCreated] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+  // Step 1
+  const [nameEn, setNameEn] = useState('')
+  const [nameAr, setNameAr] = useState('')
+  const [nameFr, setNameFr] = useState('')
+  const [disciplineId, setDisciplineId] = useState('')
+  const [coachId, setCoachId] = useState('')
+  // Step 2 — Monday preselected with a sane evening default.
+  const [days, setDays] = useState<number[]>([1])
+  const [shared, setShared] = useState<DayTime>({ start: '18:00', end: '19:00' })
+  const [overrides, setOverrides] = useState<Record<number, DayTime>>({})
+  const [editingDay, setEditingDay] = useState<number | null>(null)
+  // Step 3
+  const [capacity, setCapacity] = useState(20)
+  const [fee, setFee] = useState('')
+  const [status, setStatus] = useState<Status>('scheduled')
+
+  const dayLabel = (d: number) => t(`days.${d}` as any)
+  const timeFor = (d: number): DayTime => overrides[d] ?? shared
+
+  const toggleDay = (d: number) => {
+    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]))
+    setOverrides((prev) => {
+      const next = { ...prev }
+      delete next[d]
+      return next
+    })
+    if (editingDay === d) setEditingDay(null)
+  }
+
+  const applyPreset = (start: string) => {
+    setShared({ start, end: plusOneHour(start) })
+    setOverrides({}) // a preset re-applies one time to every selected day
+    setEditingDay(null)
+  }
+
+  const validateStep = (s: number): string => {
+    if (s === 1) {
+      if (!nameEn.trim()) return t('errNameRequired')
+      if (!disciplineId) return t('errDisciplineRequired')
+      if (!coachId) return t('errCoachRequired')
+    }
+    if (s === 2) {
+      if (days.length === 0) return t('errDaysRequired')
+      for (const d of days) {
+        const dt = timeFor(d)
+        if (!dt.start || !dt.end || dt.start >= dt.end) return t('errTimeInvalid')
+      }
+    }
+    if (s === 3) {
+      if (!capacity || capacity < 1) return t('errCapacityInvalid')
+    }
+    return ''
+  }
+
+  const next = () => {
+    const err = validateStep(step)
+    if (err) {
+      setError(err)
+      return
+    }
     setError('')
+    setStep((s) => Math.min(4, s + 1))
+  }
+  const back = () => {
+    setError('')
+    setStep((s) => Math.max(1, s - 1))
+  }
 
+  // The EXISTING insert path (B2/AR-corrected): classes + class_schedules,
+  // staff gym_id resolution. Presentation changed; the write did not.
+  const create = async () => {
+    setCreating(true)
+    setError('')
     try {
       const supabase = createClient()
-      
-      // Validate required fields
-      if (!formData.name_en || !formData.discipline_id || !formData.coach_id) {
-        throw new Error('Please fill in all required fields')
-      }
-
-      // Resolve the staff member's gym (classes.gym_id is NOT NULL + RLS-scoped).
       const { data: { user } } = await supabase.auth.getUser()
       const { data: prof } = await supabase.from('profiles').select('gym_id').eq('id', user?.id ?? '').single()
-      if (!prof?.gym_id) throw new Error('No gym context')
+      if (!prof?.gym_id) throw new Error(t('errNoGym'))
 
-      // Insert class
       const { data: classData, error: classError } = await supabase
         .from('classes')
         .insert({
           gym_id: prof.gym_id,
-          name_ar: formData.name_ar,
-          name_en: formData.name_en,
-          name_fr: formData.name_fr,
-          discipline_id: formData.discipline_id,
-          coach_id: formData.coach_id,
-          // Real schema: localized description_* + max_capacity (not description/capacity).
-          description_ar: formData.description,
-          description_en: formData.description,
-          description_fr: formData.description,
-          max_capacity: formData.capacity,
-          monthly_fee_usd: formData.monthly_fee_usd ? parseFloat(formData.monthly_fee_usd) : null,
-          status: formData.status,
+          name_en: nameEn.trim(),
+          name_ar: nameAr.trim() || nameEn.trim(),
+          name_fr: nameFr.trim() || nameEn.trim(),
+          discipline_id: disciplineId,
+          coach_id: coachId,
+          max_capacity: capacity,
+          monthly_fee_usd: fee ? parseFloat(fee) : null,
+          status,
         })
         .select()
         .single()
-
       if (classError) throw classError
 
-      // Insert schedules
-      const validSchedules = schedules.filter(s => s.start_time && s.end_time)
-      if (validSchedules.length > 0) {
-        const { error: scheduleError } = await supabase
-          .from('class_schedules')
-          .insert(
-            validSchedules.map(s => ({
-              class_id: classData.id,
-              day_of_week: s.day_of_week,
-              start_time: s.start_time,
-              end_time: s.end_time,
-              // NB: room lives on `classes`, not `class_schedules` — don't insert it here.
-            }))
-          )
+      const { error: scheduleError } = await supabase.from('class_schedules').insert(
+        days.map((d) => ({
+          class_id: classData.id,
+          day_of_week: d,
+          start_time: timeFor(d).start,
+          end_time: timeFor(d).end,
+        })),
+      )
+      if (scheduleError) throw scheduleError
 
-        if (scheduleError) throw scheduleError
-      }
-
-      onSuccess()
+      setCreated(true)
+      router.refresh()
+      setTimeout(() => onSuccess(), 900)
     } catch (err: any) {
-      setError(err.message || 'An error occurred while creating the class')
-    } finally {
-      setLoading(false)
+      setError(err?.message || t('errCreateFailed'))
+      setCreating(false)
     }
   }
 
-  const addSchedule = () => {
-    setSchedules([...schedules, { day_of_week: 1, start_time: '09:00', end_time: '10:00', room: '' }])
+  const disciplineName = (id: string) => {
+    const d = disciplines.find((x) => x.id === id)
+    return d ? (d[`name_${locale}`] || d.name_en) : ''
+  }
+  const coachLabel = (id: string) => {
+    const c = coaches.find((x) => x.id === id)
+    return c ? localizedName(c.profiles, locale) : ''
   }
 
-  const removeSchedule = (index: number) => {
-    setSchedules(schedules.filter((_, i) => i !== index))
-  }
-
-  const updateSchedule = (index: number, field: keyof ScheduleEntry, value: any) => {
-    const newSchedules = [...schedules]
-    newSchedules[index] = { ...newSchedules[index], [field]: value }
-    setSchedules(newSchedules)
-  }
+  const steps = [t('stepBasics'), t('stepSchedule'), t('stepPricing'), t('stepReview')]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className={cn(
-        "bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto",
-        isRTL && "rtl"
-      )}>
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">{t('addClass')}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
+      {/* Full-screen sheet on mobile, modal on desktop */}
+      <div
+        data-testid="class-wizard"
+        className={cn(
+          'flex h-[100dvh] w-full flex-col bg-white sm:h-auto sm:max-h-[90vh] sm:max-w-xl sm:rounded-2xl sm:shadow-xl',
+          isRTL && 'rtl text-right',
+        )}
+      >
+        {/* Header + stepper */}
+        <div className="border-b px-5 pb-3 pt-4">
+          <div className="flex items-center justify-between">
+            <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h2>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('close')}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            {steps.map((label, i) => (
+              <div key={label} className="flex flex-1 flex-col gap-1">
+                <div className={cn('h-1.5 rounded-full', i + 1 <= step ? 'bg-[#cd1419]' : 'bg-gray-200')} />
+                <span className={cn('text-[10px] font-medium', i + 1 === step ? 'text-gray-900' : 'text-gray-400')}>{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
-              {error}
-            </div>
+            <div data-testid="wizard-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('nameEn')} *
-              </label>
-              <Input
-                data-testid="class-name-en"
-                value={formData.name_en}
-                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-                required
-              />
+          {created ? (
+            <div className="flex flex-col items-center gap-3 py-10" data-testid="wizard-success">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+                <Check className="h-7 w-7 text-green-600" />
+              </span>
+              <p className="text-sm font-semibold text-gray-900">{t('success')}</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('nameAr')}
-              </label>
-              <Input
-                value={formData.name_ar}
-                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-                dir="rtl"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('nameFr')}
-              </label>
-              <Input
-                value={formData.name_fr}
-                onChange={(e) => setFormData({ ...formData, name_fr: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('discipline')} *
-              </label>
-              {/* Native select (e2e-deterministic; Radix triggers are flaky under
-                  the (dashboard) double-shell — they intercept the open click). */}
-              <select
-                data-testid="class-discipline"
-                value={formData.discipline_id}
-                onChange={(e) => setFormData({ ...formData, discipline_id: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">{t('selectDiscipline')}</option>
-                {disciplines.map((d) => (
-                  <option key={d.id} value={d.id}>{d[`name_${locale}`] || d.name_en}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('coach')} *
-              </label>
-              <select
-                data-testid="class-coach-select"
-                value={formData.coach_id}
-                onChange={(e) => setFormData({ ...formData, coach_id: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">{t('selectCoach')}</option>
-                {coaches.map((c) => (
-                  <option key={c.id} value={c.id}>{localizedName(c.profiles, locale)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('capacity')}
-              </label>
-              <Input
-                type="number"
-                min="1"
-                max="100"
-                data-testid="class-capacity"
-                value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 20 })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {locale === 'ar' ? 'الرسوم الشهرية (دولار)' : locale === 'fr' ? 'Frais mensuels (USD)' : 'Monthly fee (USD)'}
-              </label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                data-testid="class-monthly-fee"
-                placeholder="0.00"
-                value={formData.monthly_fee_usd}
-                onChange={(e) => setFormData({ ...formData, monthly_fee_usd: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('status')}
-              </label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t('description')}
-            </label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-            />
-          </div>
-
-          {/* Schedules */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium">{t('schedules')}</label>
-              <Button type="button" variant="outline" size="sm" onClick={addSchedule}>
-                <Plus className="h-4 w-4 mr-1" />
-                {t('addSchedule')}
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {schedules.map((schedule, index) => (
-                <div key={index} className="flex items-end gap-2 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <label className="block text-xs text-muted-foreground mb-1">{t('day')}</label>
-                    <Select
-                      value={schedule.day_of_week.toString()}
-                      onValueChange={(value) => updateSchedule(index, 'day_of_week', parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DAYS.map((day, i) => (
-                          <SelectItem key={i} value={i.toString()}>
-                            {day}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">{t('startTime')}</label>
-                    <Input
-                      type="time"
-                      value={schedule.start_time}
-                      onChange={(e) => updateSchedule(index, 'start_time', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">{t('endTime')}</label>
-                    <Input
-                      type="time"
-                      value={schedule.end_time}
-                      onChange={(e) => updateSchedule(index, 'end_time', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs text-muted-foreground mb-1">{t('room')}</label>
-                    <Input
-                      value={schedule.room}
-                      onChange={(e) => updateSchedule(index, 'room', e.target.value)}
-                      placeholder={t('roomPlaceholder')}
-                    />
-                  </div>
-                  {schedules.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeSchedule(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+          ) : step === 1 ? (
+            <>
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium">{t('nameEn')} *</label>
+                  <Input data-testid="class-name-en" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">{t('nameAr')}</label>
+                    <Input data-testid="class-name-ar" dir="rtl" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">{t('nameFr')}</label>
+                    <Input data-testid="class-name-fr" value={nameFr} onChange={(e) => setNameFr(e.target.value)} />
+                  </div>
+                </div>
+              </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit" data-testid="class-submit" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {t('create')}
-            </Button>
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('discipline')} *</p>
+                <div className="flex flex-wrap gap-2">
+                  {disciplines.map((d) => (
+                    <button key={d.id} type="button" data-testid="wizard-discipline-chip" data-id={d.id}
+                      onClick={() => setDisciplineId(d.id)}
+                      className={cn('rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                        disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                      {d[`name_${locale}`] || d.name_en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('coach')} *</p>
+                <div className="flex flex-wrap gap-2">
+                  {coaches.map((c) => {
+                    const name = localizedName(c.profiles, locale)
+                    return (
+                      <button key={c.id} type="button" data-testid="wizard-coach-chip" data-id={c.id}
+                        onClick={() => setCoachId(c.id)}
+                        className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
+                          coachId === c.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                        <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold',
+                          coachId === c.id ? 'bg-white/20 text-white' : 'bg-primary-50 text-primary-700')}>
+                          {(name || '?').slice(0, 1)}
+                        </span>
+                        {name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          ) : step === 2 ? (
+            <>
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('pickDays')} *</p>
+                <div className="flex flex-wrap gap-2">
+                  {DOWS.map((d) => (
+                    <button key={d} type="button" data-testid="wizard-day-pill" data-dow={d}
+                      onClick={() => toggleDay(d)}
+                      className={cn('min-w-[3.25rem] rounded-full border px-3 py-2 text-sm font-medium transition-colors',
+                        days.includes(d) ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                      {dayLabel(d)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('sharedTime')}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input type="time" data-testid="wizard-start-time" value={shared.start}
+                    onChange={(e) => setShared((p) => ({ ...p, start: e.target.value }))} className="w-32" />
+                  <span className="text-gray-400">–</span>
+                  <Input type="time" data-testid="wizard-end-time" value={shared.end}
+                    onChange={(e) => setShared((p) => ({ ...p, end: e.target.value }))} className="w-32" />
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {TIME_PRESETS.map((p) => (
+                    <button key={p} type="button" data-testid="wizard-preset" data-time={p}
+                      onClick={() => applyPreset(p)}
+                      className={cn('rounded-full border px-3 py-1.5 text-xs font-medium', shared.start === p && Object.keys(overrides).length === 0
+                        ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 text-gray-600 hover:border-gray-300')}
+                      dir="ltr">
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-gray-400">{t('presetHint')}</p>
+              </div>
+
+              {days.length > 0 && (
+                <div className="space-y-1.5">
+                  {[...days].sort((a, b) => DOWS.indexOf(a as any) - DOWS.indexOf(b as any)).map((d) => {
+                    const dt = timeFor(d)
+                    const isEditing = editingDay === d
+                    return (
+                      <div key={d} className="rounded-xl border bg-gray-50 px-3 py-2" data-testid="wizard-day-row" data-dow={d}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-800">{dayLabel(d)}</span>
+                          <span className="text-xs text-gray-500" dir="ltr">{dt.start}–{dt.end}</span>
+                          <button type="button" data-testid="wizard-day-override" onClick={() => setEditingDay(isEditing ? null : d)}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline">
+                            <Pencil className="h-3 w-3" /> {t('customize')}
+                          </button>
+                        </div>
+                        {isEditing && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Input type="time" value={dt.start} className="w-28 bg-white"
+                              onChange={(e) => setOverrides((p) => ({ ...p, [d]: { ...timeFor(d), start: e.target.value } }))} />
+                            <span className="text-gray-400">–</span>
+                            <Input type="time" value={dt.end} className="w-28 bg-white"
+                              onChange={(e) => setOverrides((p) => ({ ...p, [d]: { ...timeFor(d), end: e.target.value } }))} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          ) : step === 3 ? (
+            <>
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('capacity')} *</p>
+                <div className="inline-flex items-center gap-1 rounded-xl border p-1">
+                  <button type="button" data-testid="wizard-cap-minus" onClick={() => setCapacity((c) => Math.max(1, c - 1))}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100" aria-label="-">
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <Input type="number" min={1} max={500} data-testid="class-capacity" value={capacity}
+                    onChange={(e) => setCapacity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="h-10 w-20 border-0 text-center text-base font-semibold shadow-none focus-visible:ring-0" />
+                  <button type="button" data-testid="wizard-cap-plus" onClick={() => setCapacity((c) => Math.min(500, c + 1))}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100" aria-label="+">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('monthlyFee')}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">$</span>
+                  <Input type="number" min="0" step="0.01" data-testid="class-monthly-fee" placeholder="0.00"
+                    value={fee} onChange={(e) => setFee(e.target.value)} className="w-36" dir="ltr" />
+                  <span className="text-xs text-gray-400">/{t('mo')}</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">{t('feeHint')}</p>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('status')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {STATUSES.map((s) => (
+                    <button key={s} type="button" data-testid="wizard-status-pill" data-value={s}
+                      onClick={() => setStatus(s)}
+                      className={cn('rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                        status === s ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                      {t(`statusValues.${s}` as any)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Step 4 · Review */
+            <div className="space-y-3" data-testid="wizard-review">
+              <div className="rounded-2xl border bg-gray-50 p-4">
+                <p className={cn('text-base font-bold text-gray-900', isRTL && 'font-arabic')}>{nameEn}</p>
+                <dl className="mt-3 space-y-1.5 text-sm">
+                  <div className="flex justify-between"><dt className="text-gray-500">{t('discipline')}</dt><dd className="font-medium">{disciplineName(disciplineId)}</dd></div>
+                  <div className="flex justify-between"><dt className="text-gray-500">{t('coach')}</dt><dd className="font-medium">{coachLabel(coachId)}</dd></div>
+                  <div className="flex justify-between"><dt className="text-gray-500">{t('pickDays')}</dt>
+                    <dd className="font-medium" dir="ltr">
+                      {[...days].sort((a, b) => DOWS.indexOf(a as any) - DOWS.indexOf(b as any)).map((d) => `${dayLabel(d)} ${timeFor(d).start}`).join(' · ')}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between"><dt className="text-gray-500">{t('capacity')}</dt><dd className="font-medium">{capacity}</dd></div>
+                  <div className="flex justify-between"><dt className="text-gray-500">{t('monthlyFee')}</dt><dd className="font-medium">{fee ? `$${fee}` : '—'}</dd></div>
+                  <div className="flex justify-between"><dt className="text-gray-500">{t('status')}</dt><dd className="font-medium">{t(`statusValues.${status}` as any)}</dd></div>
+                </dl>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer nav */}
+        {!created && (
+          <div className="flex items-center justify-between gap-3 border-t px-5 py-3">
+            {step > 1 ? (
+              <Button type="button" variant="outline" data-testid="wizard-back" onClick={back} disabled={creating}>
+                {isRTL ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />} {t('back')}
+              </Button>
+            ) : (
+              <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+            )}
+            {step < 4 ? (
+              <Button type="button" data-testid="wizard-next" onClick={next} className="bg-[#cd1419] hover:bg-[#a81014]">
+                {t('next')} {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            ) : (
+              <Button type="button" data-testid="class-submit" onClick={create} disabled={creating}
+                className="bg-[#cd1419] hover:bg-[#a81014]">
+                {creating ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                {creating ? t('creating') : t('create')}
+              </Button>
+            )}
           </div>
-        </form>
+        )}
       </div>
     </div>
   )

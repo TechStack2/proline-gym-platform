@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, visibleShell, expectNotification } from './helpers';
+import { vis, visibleShell, expectNotification, createClassViaWizard } from './helpers';
 
 /**
  * IA-1 — journey-centric nav + Inbox + Today (Cycle 5 / V1).
@@ -95,15 +95,9 @@ test('IA-1 · cross-role: portal request → staff inbox badge + inline approve 
   const owner = await ctxFor(browser, 'owner');
   const student = await ctxFor(browser, 'student'); // Karim
   try {
-    // ── Owner creates a class with a monthly fee (existing B2 modal flow) ──
+    // ── Owner creates a class with a monthly fee (UX-1 wizard) ──
     await owner.page.goto('/en/classes');
-    await vis(owner.page, '[data-testid="add-class-btn"]').click();
-    await owner.page.getByTestId('class-name-en').fill(CLASS_NAME);
-    await owner.page.getByTestId('class-discipline').selectOption({ index: 1 });
-    await owner.page.getByTestId('class-coach-select').selectOption({ index: 1 });
-    await owner.page.getByTestId('class-capacity').fill('5');
-    await owner.page.getByTestId('class-monthly-fee').fill('30');
-    await owner.page.getByTestId('class-submit').click();
+    await createClassViaWizard(owner.page, { nameEn: CLASS_NAME, capacity: '5', fee: '30' });
     await expect(vis(owner.page, '[data-testid="class-card"]').filter({ hasText: CLASS_NAME }).first())
       .toBeVisible({ timeout: 15_000 });
     await vis(owner.page, '[data-testid="class-card"]').filter({ hasText: CLASS_NAME }).first().click();

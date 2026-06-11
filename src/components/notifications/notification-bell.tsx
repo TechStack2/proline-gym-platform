@@ -47,16 +47,26 @@ export function NotificationBell({ locale }: NotificationBellProps) {
 
   // Realtime: increment the badge the moment a notification is inserted for
   // this user — no refresh, no waiting for the 30s poll (state visibility).
+  //
+  // NB: the channel TOPIC must be unique PER MOUNT. supabase-js returns the
+  // existing channel instance for a reused topic, so when the bell mounts more
+  // than once (the (dashboard) double-shell renders both the mobile and desktop
+  // headers; React strict-mode also re-mounts), a topic like
+  // `notifications:${user.id}` makes the second mount call `.on()` on an
+  // ALREADY-SUBSCRIBED channel → "cannot add postgres_changes callbacks after
+  // subscribe()". Recipient scoping lives in the `filter`, not the topic, so a
+  // random per-mount suffix changes nothing about what is received.
   useEffect(() => {
     let mounted = true;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      // getUser resolves async — the component may already be unmounted.
       if (!user || !mounted) return;
 
-      channel = supabase
-        .channel(`notifications:${user.id}`)
+      const ch = supabase
+        .channel(`notifications:${user.id}:${Math.random().toString(36).slice(2)}`)
         .on(
           'postgres_changes',
           {
@@ -68,6 +78,13 @@ export function NotificationBell({ locale }: NotificationBellProps) {
           () => setUnreadCount(prev => prev + 1)
         )
         .subscribe();
+
+      if (!mounted) {
+        // Unmounted between creation and here — drop the channel immediately.
+        supabase.removeChannel(ch);
+        return;
+      }
+      channel = ch;
     })();
 
     return () => {

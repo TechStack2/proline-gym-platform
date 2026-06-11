@@ -175,6 +175,15 @@ export default defineConfig({
       testMatch: /schedule-cal\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // UX-1 (bell crash fix + add-class wizard): wizard→timetable proof + a
+      // zero-pageerror navigation sweep (catches the realtime double-mount
+      // crash class). Owner-only.
+      name: 'ux1',
+      dependencies: ['setup'],
+      testMatch: /ux1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

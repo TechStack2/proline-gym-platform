@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, visibleShell, expectNotification } from './helpers';
+import { vis, visibleShell, expectNotification, createClassViaWizard } from './helpers';
 
 /**
  * IA-2 — Member-360 + unified Money (Cycle 5 / V1).
@@ -29,15 +29,9 @@ test('IA-2 · member file answers paid?/PT-left?/registered-where? from live dat
   const owner = await ctxFor(browser, 'owner');
   const student = await ctxFor(browser, 'student'); // Karim
   try {
-    // ── Drive state 1: class w/ fee → walk-in Karim → approve → active+invoice (B2) ──
+    // ── Drive state 1: class w/ fee (UX-1 wizard) → walk-in Karim → approve → active+invoice (B2) ──
     await owner.page.goto('/en/classes');
-    await vis(owner.page, '[data-testid="add-class-btn"]').click();
-    await owner.page.getByTestId('class-name-en').fill(CLASS_NAME);
-    await owner.page.getByTestId('class-discipline').selectOption({ index: 1 });
-    await owner.page.getByTestId('class-coach-select').selectOption({ index: 1 });
-    await owner.page.getByTestId('class-capacity').fill('5');
-    await owner.page.getByTestId('class-monthly-fee').fill('25');
-    await owner.page.getByTestId('class-submit').click();
+    await createClassViaWizard(owner.page, { nameEn: CLASS_NAME, capacity: '5', fee: '25' });
     await vis(owner.page, '[data-testid="class-card"]').filter({ hasText: CLASS_NAME }).first().click();
     await expect(owner.page).toHaveURL(/\/classes\/[0-9a-f-]{36}/, { timeout: 15_000 });
     const karimVal = await owner.page.locator('[data-testid="walkin-student"] option', { hasText: 'Karim' }).first().getAttribute('value');

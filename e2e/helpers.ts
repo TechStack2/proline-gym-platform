@@ -59,3 +59,38 @@ export async function countNotifications(
   await page.waitForLoadState('networkidle').catch(() => {});
   return vis(page, `[data-testid="notification-item"][data-notification-type="${type}"]`).count();
 }
+
+/**
+ * Drive the UX-1 Add-Class wizard end-to-end (chips/pills, no dropdowns).
+ * Starts from /<locale>/classes with the wizard CLOSED. Monday is preselected;
+ * `extraDays` adds day pills (0=Sun…6=Sat). Returns after the wizard reports
+ * success (the class is inserted + the list refreshed).
+ */
+export async function createClassViaWizard(
+  page: Page,
+  opts: { nameEn: string; capacity: string; fee: string; extraDays?: number[]; presetTime?: string },
+): Promise<void> {
+  await vis(page, '[data-testid="add-class-btn"]').click();
+  // Step 1 — basics
+  await page.getByTestId('class-name-en').fill(opts.nameEn);
+  await page.locator('[data-testid="wizard-discipline-chip"]').first().click();
+  await page.locator('[data-testid="wizard-coach-chip"]').first().click();
+  await page.getByTestId('wizard-next').click();
+  // Step 2 — days + time
+  for (const d of opts.extraDays ?? []) {
+    await page.locator(`[data-testid="wizard-day-pill"][data-dow="${d}"]`).click();
+  }
+  if (opts.presetTime) {
+    await page.locator(`[data-testid="wizard-preset"][data-time="${opts.presetTime}"]`).click();
+  }
+  await page.getByTestId('wizard-next').click();
+  // Step 3 — capacity / fee
+  await page.getByTestId('class-capacity').fill(opts.capacity);
+  await page.getByTestId('class-monthly-fee').fill(opts.fee);
+  await page.getByTestId('wizard-next').click();
+  // Step 4 — review → create
+  await page.getByTestId('class-submit').click();
+  await expect(page.getByTestId('wizard-success')).toBeVisible({ timeout: 15_000 });
+  // The wizard auto-closes shortly after success.
+  await expect(page.locator('[data-testid="class-wizard"]')).toHaveCount(0, { timeout: 10_000 });
+}

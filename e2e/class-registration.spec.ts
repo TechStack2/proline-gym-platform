@@ -1,6 +1,6 @@
 import { test, expect, type Page, type BrowserContext, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, expectNotification } from './helpers';
+import { vis, expectNotification, createClassViaWizard } from './helpers';
 
 /**
  * Recurring-Class Registration vertical slice (Cycle 5 / V1 / B2).
@@ -38,16 +38,9 @@ test('B2 · request → approve(free)→active+invoice+roster → full→waitlis
   const owner = await ctxFor(browser, 'owner');
   const student = await ctxFor(browser, 'student'); // Karim (has a login)
   try {
-    // ── Owner creates a capacity-1, $40/mo class ──────────────────────────────
+    // ── Owner creates a capacity-1, $40/mo class (UX-1 wizard) ─────────────────
     await owner.page.goto('/en/classes');
-    await vis(owner.page, '[data-testid="add-class-btn"]').click();
-    await owner.page.getByTestId('class-name-en').fill(CLASS_NAME);
-    // Native selects (index 1 = first real option; index 0 is the placeholder).
-    await owner.page.getByTestId('class-discipline').selectOption({ index: 1 });
-    await owner.page.getByTestId('class-coach-select').selectOption({ index: 1 });
-    await owner.page.getByTestId('class-capacity').fill('1');
-    await owner.page.getByTestId('class-monthly-fee').fill('40');
-    await owner.page.getByTestId('class-submit').click();
+    await createClassViaWizard(owner.page, { nameEn: CLASS_NAME, capacity: '1', fee: '40' });
 
     // Open the new class → capture its detail URL.
     await expect(vis(owner.page, '[data-testid="class-card"]').filter({ hasText: CLASS_NAME }).first())
