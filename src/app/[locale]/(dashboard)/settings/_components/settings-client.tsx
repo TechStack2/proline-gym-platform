@@ -24,9 +24,11 @@ type Props = {
   disciplines: Discipline[];
 };
 
-export function SettingsClient({ locale, gym, rates, plans, disciplines }: Props) {
+export function SettingsClient({ locale, gym, rates, plans, disciplines, initialTab }: Props & { initialTab?: string }) {
   const t = useTranslations('settings');
-  const [activeTab, setActiveTab] = useState<TabId>('gym');
+  const [activeTab, setActiveTab] = useState<TabId>(
+    (['gym', 'rates', 'plans', 'disciplines'] as TabId[]).includes(initialTab as TabId) ? (initialTab as TabId) : 'gym'
+  );
   const isRTL = locale === 'ar';
 
   const TAB_LABELS: Record<TabId, string> = {

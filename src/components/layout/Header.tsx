@@ -4,10 +4,11 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { cn } from '@/lib/utils';
-import { Menu, Bell, Search, LogOut } from 'lucide-react';
+import { Menu, Search, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from '@/i18n/routing';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 
 type HeaderProps = {
   locale: string;
@@ -70,10 +71,8 @@ export function Header({ locale, role }: HeaderProps) {
       <div className="flex items-center gap-2">
         <LanguageSwitcher locale={locale} />
         
-        <button className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
-        </button>
+        {/* Real recipient-scoped bell (IA-1) — was a decorative stub. */}
+        <NotificationBell locale={locale} />
 
         <button
           onClick={handleLogout}

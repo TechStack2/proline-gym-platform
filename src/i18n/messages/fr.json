@@ -50,7 +50,12 @@
     "belts": "Ceintures",
     "disciplines": "Disciplines",
     "trials": "Essais",
-    "progress": "Progression"
+    "progress": "Progression",
+    "today": "Aujourd'hui",
+    "inbox": "Boîte",
+    "members": "Membres",
+    "money": "Finances",
+    "team": "Équipe"
   },
   "common": {
     "save": "Enregistrer",
@@ -1211,5 +1216,37 @@
     "promotion_history": "Historique des promotions",
     "no_history": "Aucune promotion",
     "no_student": "Aucun profil membre trouvé"
+  },
+  "today": {
+    "title": "Aujourd'hui",
+    "classes": "Cours du jour",
+    "noClasses": "Aucun cours prévu aujourd'hui.",
+    "markAttendance": "Marquer présence",
+    "ptSessions": "Séances PT du jour",
+    "noPt": "Aucune séance PT aujourd'hui.",
+    "collections": "Encaissements du jour",
+    "noPayments": "Aucun paiement enregistré aujourd'hui.",
+    "quick": {
+      "newLead": "Nouveau prospect",
+      "newMember": "Nouveau membre",
+      "recordPayment": "Enregistrer paiement"
+    }
+  },
+  "inbox": {
+    "title": "Boîte de réception",
+    "pendingCount": "{count} demande(s) en attente",
+    "inboxZero": "Rien en attente.",
+    "registrations": "Demandes d'inscription aux cours",
+    "ptRequests": "Demandes de PT",
+    "promotions": "Promotions récentes de liste d'attente",
+    "noPromotions": "Aucune promotion récente.",
+    "emptyQueue": "Aucune demande en attente.",
+    "approve": "Approuver",
+    "decline": "Refuser",
+    "discountPct": "% remise",
+    "discountAmt": "$ remise",
+    "sessions": "séances",
+    "mo": "mois",
+    "promotedLine": "{student} a été promu(e) de la liste d'attente vers {class}"
   }
 }

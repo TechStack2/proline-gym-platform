@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { cn } from '@/lib/utils'
 import { Banknote } from 'lucide-react'
 import Link from 'next/link'
@@ -54,9 +55,19 @@ export default async function PaymentsHistoryPage({ params: { locale }, searchPa
 
   return (
     <div className={cn('space-y-6 p-6', isRTL && 'rtl text-right')}>
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('Payments', 'المدفوعات')}</h1>
-        <p className="text-muted-foreground">{t('Recorded payments across the gym — the settlement audit trail.', 'المدفوعات المسجّلة في النادي — سجل تدقيق التسويات.')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('Payments', 'المدفوعات')}</h1>
+          <p className="text-muted-foreground">{t('Recorded payments across the gym — the settlement audit trail.', 'المدفوعات المسجّلة في النادي — سجل تدقيق التسويات.')}</p>
+        </div>
+        <WorkspaceSegments
+          locale={locale}
+          active="payments"
+          segments={[
+            { key: 'payments', label: t('Payments', 'المدفوعات'), path: '/payments' },
+            { key: 'invoices', label: t('Invoices', 'الفواتير'), path: '/invoices' },
+          ]}
+        />
       </div>
 
       {/* Filters */}

@@ -4,10 +4,11 @@ import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { SettingsClient } from './_components/settings-client';
 import { PtPolicySettings } from './_components/pt-policy-settings';
+import Link from 'next/link';
 
-type Props = { params: { locale: string } };
+type Props = { params: { locale: string }; searchParams?: { tab?: string } };
 
-export default async function SettingsPage({ params }: Props) {
+export default async function SettingsPage({ params, searchParams }: Props) {
   const { locale } = params;
   const t = await getTranslations('settings');
   const isRTL = locale === 'ar';
@@ -51,6 +52,19 @@ export default async function SettingsPage({ params }: Props) {
         </div>
       </div>
 
+      {/* IA-1: Configuration row — the config destinations re-homed out of the nav. */}
+      <div className="flex flex-wrap gap-2" data-testid="settings-config-row">
+        <Link href={`/${locale}/disciplines`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          {locale === 'ar' ? 'التخصصات' : locale === 'fr' ? 'Disciplines' : 'Disciplines'}
+        </Link>
+        <Link href={`/${locale}/belts`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          {locale === 'ar' ? 'الأحزمة' : locale === 'fr' ? 'Ceintures' : 'Belts'}
+        </Link>
+        <Link href={`/${locale}/settings?tab=plans`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          {locale === 'ar' ? 'خطط العضوية' : locale === 'fr' ? "Plans d'adhésion" : 'Membership plans'}
+        </Link>
+      </div>
+
       <Suspense
         fallback={
           <div className="space-y-4 animate-pulse">
@@ -60,6 +74,7 @@ export default async function SettingsPage({ params }: Props) {
         }
       >
         <SettingsClient
+          initialTab={searchParams?.tab}
           locale={locale}
           gym={gymData}
           rates={rates || []}

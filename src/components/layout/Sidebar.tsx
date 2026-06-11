@@ -5,69 +5,65 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  ClipboardList,
-  DollarSign,
-  Receipt,
-  Dumbbell,
-  Building,
-  Tent,
-  UserPlus,
-  BarChart3,
-  Settings,
-  User,
-} from 'lucide-react';
-
-type Role = 'owner' | 'head_coach' | 'coach' | 'receptionist' | 'student' | 'parent' | 'external_coach';
+import { workspacesForRole, type DashboardRole } from './nav-config';
+import { useInboxCount } from '@/hooks/use-inbox-count';
 
 type SidebarProps = {
   locale: string;
-  role: Role;
+  role: DashboardRole;
 };
 
-type NavItem = { key: string; icon: typeof LayoutDashboard; path: string };
-
-const ALL_NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { key: 'students', icon: Users, path: '/students' },
-  { key: 'classes', icon: Dumbbell, path: '/classes' },
-  { key: 'schedule', icon: Calendar, path: '/schedule' },
-  { key: 'attendance', icon: ClipboardList, path: '/attendance' },
-  { key: 'payments', icon: DollarSign, path: '/payments' },
-  { key: 'invoices', icon: Receipt, path: '/invoices' },
-  { key: 'ptSessions', icon: Dumbbell, path: '/pt' },
-  { key: 'rentals', icon: Building, path: '/rentals' },
-  { key: 'camps', icon: Tent, path: '/camps' },
-  { key: 'leads', icon: UserPlus, path: '/leads' },
-  { key: 'reports', icon: BarChart3, path: '/reports' },
-  { key: 'settings', icon: Settings, path: '/settings' },
-  { key: 'profile', icon: User, path: '/profile' },
-];
-
-// Which nav items each role can see
-const ROLE_NAV: Record<Role, string[]> = {
-  owner: ['dashboard','students','classes','schedule','attendance','payments','invoices','coaches','ptSessions','rentals','camps','leads','reports','settings','profile'],
-  head_coach: ['dashboard','students','classes','schedule','attendance','coaches','ptSessions','reports','profile'],
-  coach: [], // coach sees (coach) layout not (dashboard)
-  receptionist: ['dashboard','students','payments','invoices','leads','camps','profile'],
-  student: [], // student sees (portal) layout not (dashboard)
-  parent: [],  // parent sees (portal) layout
-  external_coach: [],
-};
-
+/**
+ * Desktop staff sidebar (IA-1): renders the 7 journey-centric workspaces from
+ * the SHARED nav-config (same source as the mobile tabs — no more divergence;
+ * the silently-dead Coaches entry is gone with the dead config). Profile sits
+ * at the bottom; the Inbox entry carries the live actionable-count badge.
+ */
 export function Sidebar({ locale, role }: SidebarProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const isRTL = locale === 'ar';
+  const inboxCount = useInboxCount();
 
-  const visibleKeys = ROLE_NAV[role] || [];
-  const navItems = ALL_NAV_ITEMS.filter(item => visibleKeys.includes(item.key));
+  const all = workspacesForRole(role);
+  const navItems = all.filter((w) => w.key !== 'profile');
+  const profileItem = all.find((w) => w.key === 'profile');
+
+  const renderItem = (item: (typeof all)[number]) => {
+    const Icon = item.icon;
+    const fullPath = `/${locale}${item.path}`;
+    const isActive = pathname.startsWith(fullPath);
+
+    return (
+      <li key={item.key}>
+        <Link
+          href={fullPath}
+          data-testid={`nav-${item.key}`}
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+            isActive
+              ? 'bg-primary-50 text-primary-700'
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          )}
+        >
+          <Icon className="h-5 w-5 flex-shrink-0" />
+          <span className="flex-1">{t(item.key)}</span>
+          {item.key === 'inbox' && inboxCount > 0 && (
+            <span
+              data-testid="inbox-badge"
+              className="min-w-[20px] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white"
+            >
+              {inboxCount > 99 ? '99+' : inboxCount}
+            </span>
+          )}
+        </Link>
+      </li>
+    );
+  };
 
   return (
     <aside
+      data-testid="desktop-sidebar"
       className={cn(
         'fixed inset-y-0 z-50 hidden w-64 flex-col border-r bg-white lg:flex',
         isRTL ? 'right-0 border-l' : 'left-0 border-r'
@@ -78,7 +74,7 @@ export function Sidebar({ locale, role }: SidebarProps) {
         <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg">
           <Image
             src="/logo.jpg"
-            alt="Proline Gym"
+            alt=""
             width={36}
             height={36}
             className="h-full w-full object-cover"
@@ -90,42 +86,17 @@ export function Sidebar({ locale, role }: SidebarProps) {
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation — the 7 workspaces */}
       <nav className="flex-1 overflow-y-auto p-3">
-        <ul className="space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const fullPath = `/${locale}${item.path}`;
-            const isActive = pathname.startsWith(fullPath);
-
-            return (
-              <li key={item.key}>
-                <Link
-                  href={fullPath}
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  )}
-                >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  <span>{t(item.key as keyof typeof t extends infer T ? T : never)}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <ul className="space-y-1">{navItems.map(renderItem)}</ul>
       </nav>
 
-      {/* Footer */}
+      {/* Footer — profile + role */}
       <div className="border-t p-3">
-        <div className="flex items-center gap-2 px-1">
+        {profileItem && <ul>{renderItem(profileItem)}</ul>}
+        <div className="mt-2 flex items-center gap-2 px-1">
           <div className="h-2 w-2 rounded-full bg-green-500" />
           <span className="text-xs text-gray-400 capitalize">{role.replace('_', ' ')}</span>
-        </div>
-        <div className="mt-1 text-[10px] text-gray-300 text-center">
-          PRO LINE Gym v0.1.0
         </div>
       </div>
     </aside>

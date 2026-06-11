@@ -50,7 +50,12 @@
     "belts": "الأحزمة",
     "disciplines": "التخصصات",
     "trials": "التجارب",
-    "progress": "تقدمي"
+    "progress": "تقدمي",
+    "today": "اليوم",
+    "inbox": "الوارد",
+    "members": "الأعضاء",
+    "money": "المال",
+    "team": "الفريق"
   },
   "common": {
     "save": "حفظ",
@@ -1211,5 +1216,37 @@
     "promotion_history": "سجل الترقيات",
     "no_history": "لا توجد ترقيات بعد",
     "no_student": "لم يتم العثور على ملف عضو"
+  },
+  "today": {
+    "title": "اليوم",
+    "classes": "حصص اليوم",
+    "noClasses": "لا حصص مجدولة اليوم.",
+    "markAttendance": "تسجيل الحضور",
+    "ptSessions": "جلسات التدريب الخاص اليوم",
+    "noPt": "لا جلسات تدريب خاص اليوم.",
+    "collections": "تحصيلات اليوم",
+    "noPayments": "لا مدفوعات مسجلة اليوم.",
+    "quick": {
+      "newLead": "عميل محتمل",
+      "newMember": "عضو جديد",
+      "recordPayment": "تسجيل دفعة"
+    }
+  },
+  "inbox": {
+    "title": "الوارد",
+    "pendingCount": "{count} طلب(ات) قيد الانتظار",
+    "inboxZero": "لا شيء بانتظارك.",
+    "registrations": "طلبات تسجيل الحصص",
+    "ptRequests": "طلبات التدريب الخاص",
+    "promotions": "ترقيات قائمة الانتظار الأخيرة",
+    "noPromotions": "لا ترقيات حديثة من قائمة الانتظار.",
+    "emptyQueue": "لا طلبات قيد الانتظار.",
+    "approve": "موافقة",
+    "decline": "رفض",
+    "discountPct": "خصم %",
+    "discountAmt": "خصم $",
+    "sessions": "جلسات",
+    "mo": "شهر",
+    "promotedLine": "تمت ترقية {student} تلقائياً من قائمة الانتظار إلى {class}"
   }
 }

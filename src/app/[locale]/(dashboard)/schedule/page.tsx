@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import WeeklySchedule from './WeeklySchedule'
+import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const dynamic = 'force-dynamic'
@@ -69,6 +70,14 @@ export default async function SchedulePage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Weekly Schedule</h1>
+        <WorkspaceSegments
+          locale={locale}
+          active="schedule"
+          segments={[
+            { key: 'schedule', label: locale === 'ar' ? 'الجدول' : locale === 'fr' ? 'Horaire' : 'Schedule', path: '/schedule' },
+            { key: 'classes', label: locale === 'ar' ? 'الحصص' : locale === 'fr' ? 'Cours' : 'Classes', path: '/classes' },
+          ]}
+        />
       </div>
       <Suspense fallback={<Skeleton className="h-96" />}>
         <WeeklySchedule

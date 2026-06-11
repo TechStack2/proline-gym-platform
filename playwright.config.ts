@@ -146,6 +146,17 @@ export default defineConfig({
       testMatch: /landing\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
+      // cross-role inbox approve round-trip. Switches roles internally (owner
+      // staff + Karim member) and opens its own mobile-viewport context, so it
+      // must NOT pin a single session. Runs after class-registration (both
+      // create classes; unique RUN names prevent collisions).
+      name: 'ia-nav',
+      dependencies: ['setup'],
+      testMatch: /ia-nav\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

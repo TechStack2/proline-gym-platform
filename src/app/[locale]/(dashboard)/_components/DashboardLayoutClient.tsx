@@ -9,6 +9,7 @@ import { MoreMenuSheet } from './MoreMenuSheet';
 import type { DashboardRole } from './DashboardTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { useInboxCount } from '@/hooks/use-inbox-count';
 import { LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,8 +26,13 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
   const supabase = createClient();
   const [moreOpen, setMoreOpen] = useState(false);
   const isRTL = locale === 'ar';
+  const inboxCount = useInboxCount();
 
-  const { primaryTabs } = getDashboardTabs(role);
+  const { primaryTabs: baseTabs } = getDashboardTabs(role);
+  // The Inbox tab carries the live actionable-count badge (IA-1).
+  const primaryTabs = baseTabs.map((tab) =>
+    tab.key === 'inbox' && inboxCount > 0 ? { ...tab, badge: inboxCount } : tab
+  );
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -49,7 +55,7 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
 
   const headerTitle = activeTab
     ? (t(activeTab.key as any) || activeTab.label || activeTab.key)
-    : (t('dashboard') || 'Dashboard');
+    : (t('today') || 'Today');
 
   return (
     <div className={cn('flex flex-col h-screen bg-gray-50', isRTL && 'rtl')}>

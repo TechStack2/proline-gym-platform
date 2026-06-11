@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Plus, FileText } from 'lucide-react'
+import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { balanceUsd, localizedName, STATUS_BADGE, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
 
 export const dynamic = 'force-dynamic'
@@ -82,6 +83,14 @@ export default async function InvoicesPage({ params: { locale }, searchParams }:
           <h1 className="text-3xl font-bold tracking-tight">{t('Invoices', 'الفواتير')}</h1>
           <p className="text-muted-foreground">{t('Issue, settle, and reconcile dual-currency invoices.', 'إصدار وتسوية ومطابقة الفواتير بعملتين.')}</p>
         </div>
+        <WorkspaceSegments
+          locale={locale}
+          active="invoices"
+          segments={[
+            { key: 'payments', label: t('Payments', 'المدفوعات'), path: '/payments' },
+            { key: 'invoices', label: t('Invoices', 'الفواتير'), path: '/invoices' },
+          ]}
+        />
         <Link href={`/${locale}/invoices/new`} data-testid="new-invoice-btn"
           className="inline-flex items-center rounded-md bg-[#cd1419] px-4 py-2 text-sm font-medium text-white hover:bg-[#a81014]">
           <Plus className="mr-2 h-4 w-4" /> {t('New invoice', 'فاتورة جديدة')}

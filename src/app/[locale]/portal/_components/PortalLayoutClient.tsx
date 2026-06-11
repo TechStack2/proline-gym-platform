@@ -6,6 +6,7 @@ import { NativeHeader, NativeTabBar, PageTransition } from '@/components/native'
 import { PORTAL_TABS, PORTAL_BASE_PATH } from './PortalTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { LogOut } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 
 type Props = {
   children: React.ReactNode;
@@ -42,13 +43,16 @@ export function PortalLayoutClient({ children, locale }: Props) {
         locale={locale}
         variant="large"
         rightActions={
-          <button
-            onClick={handleLogout}
+          <div className="flex items-center gap-2">
+            <NotificationBell locale={locale} />
+            <button
+              onClick={handleLogout}
             className="rounded-full h-10 w-10 inline-flex items-center justify-center hover:bg-red-50 transition-colors"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-5 w-5 text-red-500" />
-          </button>
+              aria-label="Sign out"
+            >
+              <LogOut className="h-5 w-5 text-red-500" />
+            </button>
+          </div>
         }
       />
       <main className="flex-1 overflow-y-auto">

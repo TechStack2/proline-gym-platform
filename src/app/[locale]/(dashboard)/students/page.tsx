@@ -90,12 +90,18 @@ export default async function StudentsPage({
         <h1 className={cn("text-3xl font-bold", isRTL && "text-right")}>
           {t('title')}
         </h1>
+        <div className="flex items-center gap-3">
+        <Link href={`/${locale}/leads`} data-testid="prospects-link"
+          className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline">
+          {locale === 'ar' ? 'العملاء المحتملون ←' : locale === 'fr' ? 'Prospects →' : 'Prospects →'}
+        </Link>
         <Link href={`/${locale}/students/add`}>
           <Button>
             <Plus className="w-4 h-4 ml-2" />
             {t('add_student')}
           </Button>
         </Link>
+        </div>
       </div>
 
       <StudentFilters

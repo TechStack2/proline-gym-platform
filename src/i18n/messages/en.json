@@ -50,7 +50,12 @@
     "belts": "Belts",
     "disciplines": "Disciplines",
     "trials": "Trials",
-    "progress": "Progress"
+    "progress": "Progress",
+    "today": "Today",
+    "inbox": "Inbox",
+    "members": "Members",
+    "money": "Money",
+    "team": "Team"
   },
   "common": {
     "save": "Save",
@@ -1211,5 +1216,37 @@
     "promotion_history": "Promotion history",
     "no_history": "No promotions yet",
     "no_student": "No member profile found"
+  },
+  "today": {
+    "title": "Today",
+    "classes": "Today's classes",
+    "noClasses": "No classes scheduled today.",
+    "markAttendance": "Mark attendance",
+    "ptSessions": "Today's PT sessions",
+    "noPt": "No PT sessions today.",
+    "collections": "Today's collections",
+    "noPayments": "No payments recorded today.",
+    "quick": {
+      "newLead": "New lead",
+      "newMember": "New member",
+      "recordPayment": "Record payment"
+    }
+  },
+  "inbox": {
+    "title": "Inbox",
+    "pendingCount": "{count} pending request(s)",
+    "inboxZero": "Inbox zero — nothing waiting on you.",
+    "registrations": "Class-registration requests",
+    "ptRequests": "PT requests",
+    "promotions": "Recent waitlist promotions",
+    "noPromotions": "No recent waitlist promotions.",
+    "emptyQueue": "No pending requests.",
+    "approve": "Approve",
+    "decline": "Decline",
+    "discountPct": "% off",
+    "discountAmt": "$ off",
+    "sessions": "sessions",
+    "mo": "mo",
+    "promotedLine": "{student} was auto-promoted off the waitlist into {class}"
   }
 }
