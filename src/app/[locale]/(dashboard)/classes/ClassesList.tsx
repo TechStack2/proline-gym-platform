@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Calendar, Users, Clock, MapPin } from 'lucide-react'
+import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Calendar, Users, Clock, MapPin, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,6 +43,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
   const [dayFilter, setDayFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<any | null>(null)
   const isRTL = locale === 'ar'
 
   const filteredClasses = classes.filter(c => {
@@ -183,7 +184,18 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
                           </Badge>
                         )}
                       </div>
-                      {getStatusBadge(classItem.status)}
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        {classItem.show_on_landing && (
+                          <Badge variant="secondary" data-testid="class-published-badge" className="bg-green-100 text-green-700">
+                            {t('wizard.published')}
+                          </Badge>
+                        )}
+                        {getStatusBadge(classItem.status)}
+                        <Button variant="ghost" size="icon" data-testid="class-edit-row-btn"
+                          className="h-7 w-7" onClick={() => setEditTarget(classItem)}>
+                          <Pencil className="h-3.5 w-3.5 text-gray-400" />
+                        </Button>
+                      </div>
                     </div>
                     
                     {classItem.coach && (
@@ -241,6 +253,34 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
           onSuccess={() => {
             setShowAddModal(false)
             router.refresh()
+          }}
+        />
+      )}
+
+      {editTarget && (
+        <AddClassModal
+          disciplines={disciplines}
+          coaches={coaches}
+          locale={locale}
+          onClose={() => setEditTarget(null)}
+          onSuccess={() => {
+            setEditTarget(null)
+            router.refresh()
+          }}
+          editClass={{
+            id: editTarget.id,
+            name_en: editTarget.name_en,
+            name_ar: editTarget.name_ar,
+            name_fr: editTarget.name_fr,
+            discipline_id: editTarget.discipline_id,
+            coach_id: editTarget.coach_id,
+            max_capacity: editTarget.max_capacity,
+            monthly_fee_usd: editTarget.monthly_fee_usd,
+            status: editTarget.status,
+            show_on_landing: editTarget.show_on_landing,
+            schedules: (editTarget.schedules ?? []).map((x: any) => ({
+              day_of_week: x.day_of_week, start_time: x.start_time, end_time: x.end_time,
+            })),
           }}
         />
       )}

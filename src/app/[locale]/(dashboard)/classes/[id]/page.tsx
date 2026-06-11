@@ -81,5 +81,27 @@ export default async function ClassDetailPage({
     .filter((s) => s.name)
     .sort((a, b) => a.name.localeCompare(b.name))
 
-  return <ClassDetail classData={classData} locale={locale} registrations={registrations} students={students} />
+  // ADM-1 admin bar: the edit wizard needs the gym's disciplines + active
+  // coaches; archive shows the active-registrations count warning.
+  const [{ data: disciplines }, { data: coaches }, { count: activeRegCount }] = await Promise.all([
+    supabase.from('disciplines').select('*').eq('gym_id', (classData as any).gym_id).eq('is_active', true).order('sort_order'),
+    supabase.from('coaches')
+      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .eq('gym_id', (classData as any).gym_id)
+      .eq('is_active', true),
+    supabase.from('class_registrations').select('id', { count: 'exact', head: true })
+      .eq('class_id', id).eq('status', 'active'),
+  ])
+
+  return (
+    <ClassDetail
+      classData={classData}
+      locale={locale}
+      registrations={registrations}
+      students={students}
+      disciplines={disciplines ?? []}
+      coaches={coaches ?? []}
+      activeRegCount={activeRegCount ?? 0}
+    />
+  )
 }

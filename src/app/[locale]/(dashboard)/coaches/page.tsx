@@ -42,6 +42,7 @@ export default async function CoachesPage({
       )
     `)
     .eq('gym_id', gymId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
   if (searchParams.search) {

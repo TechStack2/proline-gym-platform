@@ -6,10 +6,13 @@ type AffiliationsSectionProps = {
   locale: string;
 };
 
+// ADM-1: the four REAL logo files the operator dropped (graceful text fallback
+// stays via LandingImage). The arab-muaythai slot had no asset — removed.
 const AFFILIATIONS = [
-  { slot: 'lmf', key: 'lmf' },
-  { slot: 'ifma', key: 'ifma' },
-  { slot: 'arab-muaythai', key: 'arab' },
+  { file: 'lmf.jpg', key: 'lmf' },
+  { file: 'ifma.png', key: 'ifma' },
+  { file: 'lmmaf.png', key: 'lmmaf' },
+  { file: 'mma-lebanon.jpg', key: 'mmaLebanon' },
 ] as const;
 
 export async function AffiliationsSection({ locale }: AffiliationsSectionProps) {
@@ -26,11 +29,11 @@ export async function AffiliationsSection({ locale }: AffiliationsSectionProps) 
           <p className="mt-2 text-sm text-gray-400 max-w-xl mx-auto">{t('subtitle')}</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 sm:gap-10 items-center justify-items-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 items-center justify-items-center">
           {AFFILIATIONS.map((a) => (
-            <div key={a.slot} className="flex flex-col items-center gap-3">
+            <div key={a.file} className="flex flex-col items-center gap-3" data-testid="affiliation-slot">
               <LandingImage
-                src={`/landing/affiliations/${a.slot}.png`}
+                src={`/landing/affiliations/${a.file}`}
                 alt={t(a.key)}
                 fallbackLabel={t(a.key)}
                 className="h-20 w-20 sm:h-24 sm:w-24 rounded-xl object-contain bg-white/5 p-2 ring-1 ring-white/10"

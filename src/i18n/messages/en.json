@@ -265,7 +265,36 @@
     "profile_info": "Profile Info",
     "save": "Save",
     "time": "Time",
-    "status_label": "Status"
+    "status_label": "Status",
+    "form": {
+      "firstEn": "First name (English)",
+      "lastEn": "Last name (English)",
+      "firstAr": "First name (Arabic)",
+      "lastAr": "Last name (Arabic)",
+      "firstFr": "First name (French)",
+      "lastFr": "Last name (French)",
+      "phone": "Phone",
+      "specialty": "Specialty (disciplines)",
+      "noDisciplines": "No disciplines yet — add them in Settings → Disciplines.",
+      "bioEn": "Bio (English)",
+      "bioAr": "Bio (Arabic)",
+      "bioFr": "Bio (French)",
+      "save": "Save coach",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "errNameRequired": "The English first name is required.",
+      "errSpecialtyRequired": "Pick at least one discipline.",
+      "errNoGym": "No gym context.",
+      "errSaveFailed": "Could not save the coach."
+    },
+    "admin": {
+      "edit": "Edit coach",
+      "deactivate": "Deactivate",
+      "deactivateConfirm": "Deactivate this coach? They leave active lists, wizard chips and the diary; history stays.",
+      "deactivateWarn": "This coach has {classes} active class(es) and {pt} active PT assignment(s) — reassign them via the class wizard / PT flows. Deactivate anyway?",
+      "deactivateYes": "Deactivate",
+      "cancel": "Cancel"
+    }
   },
   "disciplines": {
     "title": "Disciplines",
@@ -381,7 +410,23 @@
         "4": "Thu",
         "5": "Fri",
         "6": "Sat"
-      }
+      },
+      "titleEdit": "Edit class",
+      "save": "Save changes",
+      "successEdit": "Class updated!",
+      "showOnLanding": "Show on public landing",
+      "showOnLandingHint": "Staged until you flip this — only published classes appear on the public site.",
+      "published": "Published",
+      "staged": "Staged"
+    },
+    "admin": {
+      "edit": "Edit",
+      "archive": "Archive",
+      "archived": "Archived",
+      "archiveConfirm": "Archive this class? It leaves the timetable and the public landing; history stays.",
+      "archiveWarnRegs": "{count} active registration(s) on this class — members keep their registrations; handle them from the class panel. Archive anyway?",
+      "archiveYes": "Archive",
+      "cancel": "Cancel"
     }
   },
   "schedule": {
@@ -625,7 +670,9 @@
       "subtitle": "Recognized by the sport's governing bodies",
       "lmf": "Lebanese Muaythai Federation",
       "ifma": "International Federation of Muaythai Associations",
-      "arab": "Arab Muaythai Federation"
+      "arab": "Arab Muaythai Federation",
+      "lmmaf": "Lebanese MMA Federation",
+      "mmaLebanon": "MMA Lebanon"
     },
     "champions": {
       "title": "Our Champions",
@@ -1026,7 +1073,13 @@
       "noBeltSystem": "No belt system defined",
       "stripe": "stripe(s)",
       "mo": "mo",
-      "classes": "classes"
+      "classes": "classes",
+      "manageTitle": "Manage disciplines",
+      "nameEn": "Name (EN)",
+      "nameAr": "Name (AR)",
+      "nameFr": "Name (FR)",
+      "add": "Add",
+      "errNameRequired": "The English name is required."
     },
     "pt_policy_title": "PT Session Policy",
     "pt_policy_subtitle": "How no-shows and late cancellations affect PT credits.",

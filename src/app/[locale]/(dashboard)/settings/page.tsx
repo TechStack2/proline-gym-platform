@@ -27,16 +27,18 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     .select('*')
     .order('rate_date', { ascending: false });
 
-  // Fetch membership plans
+  // Fetch membership plans (gym-scoped: the *_read RLS is all-authenticated)
   const { data: plans } = await supabase
     .from('membership_plans')
     .select('*')
+    .eq('gym_id', gymData?.id ?? '')
     .order('duration_days', { ascending: true });
 
-  // Fetch disciplines with their belt hierarchies
+  // Fetch disciplines with their belt hierarchies (incl. archived, for the manager)
   const { data: disciplines } = await supabase
     .from('disciplines')
     .select('*, belt_hierarchies(*)')
+    .eq('gym_id', gymData?.id ?? '')
     .order('sort_order', { ascending: true });
 
   return (

@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { Phone, Award, User, Calendar, ArrowLeft } from 'lucide-react'
+import { Phone, Award, User, Calendar, ArrowLeft, Pencil, UserX, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,12 +22,32 @@ interface CoachDetailProps {
   coach: any
   classes: any[]
   locale: string
+  activeClassCount?: number
+  activePtCount?: number
 }
 
-export function CoachDetail({ coach, classes, locale }: CoachDetailProps) {
+export function CoachDetail({ coach, classes, locale, activeClassCount = 0, activePtCount = 0 }: CoachDetailProps) {
   const t = useTranslations('coaches')
+  const ta = useTranslations('coaches.admin')
+  const router = useRouter()
   const isRTL = locale === 'ar'
   const profile = one(coach.profiles)
+  const [confirmDeact, setConfirmDeact] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  // ADM-1: deactivate-never-delete — the coach leaves active lists, wizard
+  // chips and the diary; history (classes/PT/attendance) stays intact.
+  const deactivate = async () => {
+    setBusy(true)
+    const supabase = createClient()
+    const { error } = await supabase.from('coaches')
+      .update({ is_active: false, deleted_at: new Date().toISOString() })
+      .eq('id', coach.id)
+    setBusy(false)
+    if (!error) { router.push(`/${locale}/coaches`); router.refresh() }
+  }
+
+  const hasObligations = activeClassCount > 0 || activePtCount > 0
 
   const loc = (base: string) =>
     (locale === 'ar' ? coach[`${base}_ar`] : locale === 'fr' ? coach[`${base}_fr`] : coach[`${base}_en`]) || coach[`${base}_en`] || ''
@@ -40,6 +63,36 @@ export function CoachDetail({ coach, classes, locale }: CoachDetailProps) {
         <Badge className={coach.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
           {coach.is_active ? t('status.active') : t('status.inactive')}
         </Badge>
+      </div>
+
+      {/* ── ADM-1 admin bar: edit · deactivate (archive pattern) ── */}
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm" data-testid="coach-admin-bar">
+        <Link href={`/${locale}/coaches/${coach.id}/edit`}>
+          <Button variant="outline" size="sm" data-testid="coach-edit-btn">
+            <Pencil className="mr-1 h-4 w-4" /> {ta('edit')}
+          </Button>
+        </Link>
+        {coach.is_active && (
+          confirmDeact ? (
+            <span className="flex flex-wrap items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" data-testid="coach-deactivate-warning">
+              {hasObligations
+                ? ta('deactivateWarn', { classes: activeClassCount, pt: activePtCount })
+                : ta('deactivateConfirm')}
+              <Button size="sm" variant="outline" data-testid="coach-deactivate-confirm" disabled={busy}
+                className="border-red-300 text-red-700 hover:bg-red-100" onClick={deactivate}>
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : ta('deactivateYes')}
+              </Button>
+              <Button size="sm" variant="ghost" data-testid="coach-deactivate-cancel" onClick={() => setConfirmDeact(false)}>
+                {ta('cancel')}
+              </Button>
+            </span>
+          ) : (
+            <Button variant="outline" size="sm" data-testid="coach-deactivate-btn"
+              className="text-red-600 hover:bg-red-50" onClick={() => setConfirmDeact(true)}>
+              <UserX className="mr-1 h-4 w-4" /> {ta('deactivate')}
+            </Button>
+          )
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

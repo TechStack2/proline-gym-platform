@@ -70,11 +70,16 @@ async function getClasses(searchParams: { [key: string]: string | undefined }) {
 
 async function getDisciplines() {
   const supabase = await createClient()
+  // SSOT + tenant isolation: disciplines_read RLS allows ALL authenticated
+  // users to read every gym's rows — scope explicitly to the staff gym.
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user?.id ?? '').single()
   const { data } = await supabase
     .from('disciplines')
     .select('*')
+    .eq('gym_id', me?.gym_id ?? '')
     .eq('is_active', true)
-    .order('name_en')
+    .order('sort_order')
   return data || []
 }
 

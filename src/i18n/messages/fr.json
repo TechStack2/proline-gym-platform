@@ -265,7 +265,36 @@
     "profile_info": "Informations du profil",
     "save": "Enregistrer",
     "time": "Heure",
-    "status_label": "Statut"
+    "status_label": "Statut",
+    "form": {
+      "firstEn": "Prénom (anglais)",
+      "lastEn": "Nom (anglais)",
+      "firstAr": "Prénom (arabe)",
+      "lastAr": "Nom (arabe)",
+      "firstFr": "Prénom (français)",
+      "lastFr": "Nom (français)",
+      "phone": "Téléphone",
+      "specialty": "Spécialité (disciplines)",
+      "noDisciplines": "Aucune discipline — ajoutez-les dans Réglages → Disciplines.",
+      "bioEn": "Bio (anglais)",
+      "bioAr": "Bio (arabe)",
+      "bioFr": "Bio (français)",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "cancel": "Annuler",
+      "errNameRequired": "Le prénom anglais est requis.",
+      "errSpecialtyRequired": "Choisissez au moins une discipline.",
+      "errNoGym": "Aucune salle associée.",
+      "errSaveFailed": "Impossible d'enregistrer le coach."
+    },
+    "admin": {
+      "edit": "Modifier le coach",
+      "deactivate": "Désactiver",
+      "deactivateConfirm": "Désactiver ce coach ? Il quitte les listes actives et l'agenda ; l'historique reste.",
+      "deactivateWarn": "Ce coach a {classes} cours actif(s) et {pt} affectation(s) PT — à réaffecter d'abord. Désactiver quand même ?",
+      "deactivateYes": "Désactiver",
+      "cancel": "Annuler"
+    }
   },
   "disciplines": {
     "title": "Disciplines",
@@ -381,7 +410,23 @@
         "4": "Jeu",
         "5": "Ven",
         "6": "Sam"
-      }
+      },
+      "titleEdit": "Modifier le cours",
+      "save": "Enregistrer",
+      "successEdit": "Cours mis à jour !",
+      "showOnLanding": "Afficher sur le site public",
+      "showOnLandingHint": "Masqué jusqu'à activation — seuls les cours publiés apparaissent sur le site public.",
+      "published": "Publié",
+      "staged": "Non publié"
+    },
+    "admin": {
+      "edit": "Modifier",
+      "archive": "Archiver",
+      "archived": "Archivé",
+      "archiveConfirm": "Archiver ce cours ? Il quitte l'horaire et le site public ; l'historique reste.",
+      "archiveWarnRegs": "{count} inscription(s) active(s) — les membres gardent leurs inscriptions, à gérer depuis le panneau du cours. Archiver quand même ?",
+      "archiveYes": "Archiver",
+      "cancel": "Annuler"
     }
   },
   "schedule": {
@@ -625,7 +670,9 @@
       "subtitle": "Reconnu par les instances du sport",
       "lmf": "Fédération Libanaise de Muaythaï",
       "ifma": "Fédération Internationale de Muaythaï",
-      "arab": "Fédération Arabe de Muaythaï"
+      "arab": "Fédération Arabe de Muaythaï",
+      "lmmaf": "Fédération Libanaise de MMA",
+      "mmaLebanon": "MMA Liban"
     },
     "champions": {
       "title": "Nos Champions",
@@ -1026,7 +1073,13 @@
       "noBeltSystem": "Aucun système de ceinture",
       "stripe": "bande(s)",
       "mo": "mois",
-      "classes": "cours"
+      "classes": "cours",
+      "manageTitle": "Gérer les disciplines",
+      "nameEn": "Nom (EN)",
+      "nameAr": "Nom (AR)",
+      "nameFr": "Nom (FR)",
+      "add": "Ajouter",
+      "errNameRequired": "Le nom anglais est requis."
     },
     "pt_policy_title": "Politique des séances PT",
     "pt_policy_subtitle": "Comment les absences et annulations tardives affectent les crédits PT.",

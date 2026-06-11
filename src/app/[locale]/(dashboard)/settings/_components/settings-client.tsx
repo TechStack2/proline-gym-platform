@@ -8,6 +8,7 @@ import { GymSettings } from './gym-settings';
 import { ExchangeRates } from './exchange-rates';
 import { MembershipPlans } from './membership-plans';
 import { DisciplineSettings } from './discipline-settings';
+import { DisciplineManager } from './discipline-manager';
 
 type GymData = Parameters<typeof GymSettings>[0]['gym'];
 type ExchangeRate = Parameters<typeof ExchangeRates>[0]['rates'][number];
@@ -74,7 +75,12 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, initial
         {activeTab === 'gym' && <GymSettings gym={gym} locale={locale} />}
         {activeTab === 'rates' && <ExchangeRates rates={rates} locale={locale} />}
         {activeTab === 'plans' && <MembershipPlans plans={plans} locale={locale} />}
-        {activeTab === 'disciplines' && <DisciplineSettings disciplines={disciplines} locale={locale} />}
+        {activeTab === 'disciplines' && (
+          <>
+            {gym?.id && <DisciplineManager disciplines={disciplines as any} gymId={gym.id} locale={locale} />}
+            <DisciplineSettings disciplines={disciplines} locale={locale} />
+          </>
+        )}
       </div>
     </div>
   );

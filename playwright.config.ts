@@ -184,6 +184,15 @@ export default defineConfig({
       testMatch: /ux1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // ADM-1 (catalog management): class staged→publish→edit→archive proven
+      // anon-side, coach add/deactivate lifecycle, disciplines SSOT, affiliation
+      // assets. Owner + anon contexts; runs LAST.
+      name: 'adm1',
+      dependencies: ['setup'],
+      testMatch: /adm1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

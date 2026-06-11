@@ -42,11 +42,21 @@ export default async function CoachDetailPage({
     .eq('coach_id', id)
     .order('created_at', { ascending: true })
 
+  // ADM-1 deactivate warning inputs: live obligations on this coach.
+  const [{ count: activeClassCount }, { count: activePtCount }] = await Promise.all([
+    supabase.from('classes').select('id', { count: 'exact', head: true })
+      .eq('coach_id', id).eq('is_active', true),
+    supabase.from('pt_assignments').select('id', { count: 'exact', head: true })
+      .eq('coach_id', id).eq('status', 'active').eq('is_active', true),
+  ])
+
   return (
     <CoachDetail
       coach={coach}
       classes={classes || []}
       locale={locale}
+      activeClassCount={activeClassCount ?? 0}
+      activePtCount={activePtCount ?? 0}
     />
   )
 }

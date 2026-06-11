@@ -658,6 +658,7 @@ export type Database = {
           min_age: number | null
           monthly_fee_usd: number | null
           monthly_fee_lbp: number | null
+          show_on_landing: boolean
           name_ar: string
           name_en: string
           name_fr: string
@@ -685,6 +686,7 @@ export type Database = {
           min_age?: number | null
           monthly_fee_usd?: number | null
           monthly_fee_lbp?: number | null
+          show_on_landing?: boolean
           name_ar: string
           name_en: string
           name_fr: string
@@ -712,6 +714,7 @@ export type Database = {
           min_age?: number | null
           monthly_fee_usd?: number | null
           monthly_fee_lbp?: number | null
+          show_on_landing?: boolean
           name_ar?: string
           name_en?: string
           name_fr?: string
