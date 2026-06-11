@@ -115,12 +115,13 @@ test('ADM-1 · coach lifecycle: repaired add → wizard chips → warn-on-assign
   const owner = await ctxFor(browser, 'owner');
   try {
     // Add a coach through the REPAIRED form (profiles + coaches, chip specialty).
+    // /coaches/add is a PAGE (double-shell renders it twice) — scope to :visible.
     await owner.page.goto('/en/coaches/add');
-    await owner.page.getByTestId('coach-first-en').fill(COACH_NAME);
-    await owner.page.getByTestId('coach-last-en').fill('E2E');
-    await owner.page.locator('[data-testid="coach-specialty-chip"]').first().click();
-    await owner.page.getByTestId('coach-bio-en').fill('ADM-1 e2e coach');
-    await owner.page.getByTestId('coach-save').click();
+    await vis(owner.page, '[data-testid="coach-first-en"]').fill(COACH_NAME);
+    await vis(owner.page, '[data-testid="coach-last-en"]').fill('E2E');
+    await vis(owner.page, '[data-testid="coach-specialty-chip"]').first().click();
+    await vis(owner.page, '[data-testid="coach-bio-en"]').fill('ADM-1 e2e coach');
+    await vis(owner.page, '[data-testid="coach-save"]').click();
     await expect(owner.page).toHaveURL(/\/en\/coaches$/, { timeout: 15_000 });
     await expect(vis(owner.page, '[data-testid="coach-card"]').filter({ hasText: COACH_NAME }).first())
       .toBeVisible({ timeout: 15_000 });
