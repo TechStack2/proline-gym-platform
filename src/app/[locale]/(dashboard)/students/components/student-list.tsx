@@ -2,7 +2,8 @@
 
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { Phone, Calendar, Award } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Phone, Calendar, Award, DollarSign, FolderOpen } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,10 @@ interface StudentListProps {
   students: Student[]
   locale: string
   isRTL: boolean
+  /** FD-1 row badges: student_id → soonest active-membership end date (≤7d). */
+  expiringBy?: Record<string, string>
+  /** FD-1 row badges: student ids with open (pending/partial/overdue) invoices. */
+  owing?: string[]
 }
 
 function profileOf(s: Student): ProfileShape {
@@ -49,8 +54,10 @@ function localized(p: ProfileShape, base: 'first_name' | 'last_name', locale: st
   return ''
 }
 
-export function StudentList({ students, locale, isRTL }: StudentListProps) {
+export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = [] }: StudentListProps) {
   const t = useTranslations('students')
+  const router = useRouter()
+  const owingSet = new Set(owing)
 
   if (students.length === 0) {
     return (
@@ -85,16 +92,35 @@ export function StudentList({ students, locale, isRTL }: StudentListProps) {
         const name = [localized(p, 'first_name', locale), localized(p, 'last_name', locale)].filter(Boolean).join(' ').trim()
         const status = student.is_active ? 'active' : 'inactive'
         return (
-          <Link key={student.id} href={`/${locale}/students/${student.id}`} data-testid="student-card">
+          <div
+            key={student.id}
+            data-testid="student-card"
+            role="link"
+            tabIndex={0}
+            onClick={() => router.push(`/${locale}/students/${student.id}`)}
+            onKeyDown={(e) => e.key === 'Enter' && router.push(`/${locale}/students/${student.id}`)}
+          >
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-3 gap-2">
                   <h3 className={cn('font-semibold text-lg', isRTL && 'text-right')}>
                     {name || '—'}
                   </h3>
-                  <Badge className={status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                    {t(`status.${status}`)}
-                  </Badge>
+                  <div className="flex flex-wrap justify-end gap-1">
+                    <Badge className={status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                      {t(`status.${status}`)}
+                    </Badge>
+                    {expiringBy[student.id] && (
+                      <Badge data-testid="badge-expiring" className="bg-amber-100 text-amber-800">
+                        {t('badges.expiring')}
+                      </Badge>
+                    )}
+                    {owingSet.has(student.id) && (
+                      <Badge data-testid="badge-owing" className="bg-red-100 text-red-700">
+                        {t('badges.owing')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -121,9 +147,27 @@ export function StudentList({ students, locale, isRTL }: StudentListProps) {
                     <span>{new Date(student.join_date).toLocaleDateString()}</span>
                   </div>
                 </div>
+
+                {/* FD-1 row quick-actions: call · open file · record payment */}
+                <div className="mt-3 flex gap-2 border-t pt-3" onClick={(e) => e.stopPropagation()}>
+                  {p.phone && (
+                    <a href={`tel:${p.phone}`} data-testid="row-call" dir="ltr"
+                      className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
+                      <Phone className="h-3 w-3" /> {t('actions.call')}
+                    </a>
+                  )}
+                  <Link href={`/${locale}/students/${student.id}`} data-testid="row-file"
+                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
+                    <FolderOpen className="h-3 w-3" /> {t('actions.file')}
+                  </Link>
+                  <Link href={`/${locale}/students/${student.id}?pay=1`} data-testid="row-pay"
+                    className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-[#cd1419] hover:bg-red-100">
+                    <DollarSign className="h-3 w-3" /> {t('actions.pay')}
+                  </Link>
+                </div>
               </CardContent>
             </Card>
-          </Link>
+          </div>
         )
       })}
     </div>

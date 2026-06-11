@@ -227,7 +227,22 @@
       "suspended": "موقوف"
     },
     "tabs_active": "النشطون",
-    "tabs_prospects": "العملاء المحتملون"
+    "tabs_prospects": "العملاء المحتملون",
+    "chips": {
+      "owing": "عليهم مستحقات",
+      "expiring": "تنتهي قريباً",
+      "noguardian": "بدون وليّ أمر (قاصرون)",
+      "recent": "انضمّ ≤30 يوماً"
+    },
+    "badges": {
+      "expiring": "ينتهي ≤7 أيام",
+      "owing": "مستحقات"
+    },
+    "actions": {
+      "call": "اتصال",
+      "file": "الملف",
+      "pay": "دفعة"
+    }
   },
   "coaches": {
     "title": "المدربين",
@@ -819,7 +834,14 @@
       "no_discipline": "— بدون —"
     },
     "guardian_optional": "ولي الأمر (اختياري، للقاصرين)",
-    "guardian_name_placeholder": "اسم ولي الأمر (إن كان جديداً)"
+    "guardian_name_placeholder": "اسم ولي الأمر (إن كان جديداً)",
+    "nextAction": {
+      "trial": "حصة تجريبية",
+      "firstContact": "موعد التواصل الأول",
+      "followUp": "موعد المتابعة",
+      "decide": "قرار (تحويل/خسارة)",
+      "overdue": "متأخر"
+    }
   },
   "camps": {
     "title": "المخيمات والفعاليات",
@@ -1357,7 +1379,27 @@
       "newMember": "عضو جديد",
       "recordPayment": "تسجيل دفعة"
     },
-    "openDiary": "افتح المفكرة ←"
+    "openDiary": "افتح المفكرة ←",
+    "cards": {
+      "noneToday": "لا حصص اليوم",
+      "now": "الآن",
+      "next": "التالي",
+      "inbox": "صندوق الوارد",
+      "inboxZero": "لا طلبات بانتظار الموافقة",
+      "regRequests": "{count} طلبات تسجيل في الحصص",
+      "ptRequests": "{count} طلبات باقات تدريب خاص",
+      "expiring": "اشتراكات تنتهي قريباً",
+      "noneExpiring": "لا اشتراكات تنتهي هذا الأسبوع",
+      "endsToday": "ينتهي اليوم",
+      "endsOn": "ينتهي {date}",
+      "call": "اتصال",
+      "money": "مال اليوم",
+      "noneDue": "لا مستحقات اليوم",
+      "dueToday": "تستحق اليوم",
+      "recordPayment": "تسجيل دفعة",
+      "overdue": "{count} متأخرة",
+      "nonePt": "لا حصص تدريب خاص اليوم"
+    }
   },
   "inbox": {
     "title": "الوارد",
@@ -1409,7 +1451,40 @@
     "ptTotals": "{remaining} جلسة تدريب خاص متبقية في الباقات النشطة",
     "payer": "الدافع",
     "household": "العائلة",
-    "noHouseholdInvoices": "لا فواتير كدافع بعد."
+    "noHouseholdInvoices": "لا فواتير كدافع بعد.",
+    "actions": {
+      "recordPayment": "تسجيل دفعة",
+      "newRegistration": "تسجيل في حصة",
+      "ptPanel": "لوحة التدريب الخاص",
+      "registerTitle": "تسجيل {name} في حصة",
+      "pickClass": "اختر حصة أولاً",
+      "discountPct": "نسبة الخصم % (اختياري)",
+      "registerConfirm": "تسجيل وموافقة",
+      "registered": "تم التسجيل — فعّال في الملف",
+      "registeredWaitlisted": "الحصة ممتلئة — أُضيف إلى لائحة الانتظار",
+      "registerFailed": "فشل التسجيل",
+      "noClasses": "لا حصص فعّالة",
+      "mo": "شهر",
+      "payTitle": "تسجيل دفعة لـ {name}",
+      "invoice": "الفاتورة",
+      "amountUsd": "المبلغ (دولار)",
+      "method": "طريقة الدفع",
+      "reference": "المرجع (رقم OMT/Whish/تحويل)",
+      "optional": "اختياري",
+      "payConfirm": "تسجيل الدفعة",
+      "paymentRecorded": "تم تسجيل الدفعة",
+      "paymentFailed": "فشل تسجيل الدفعة",
+      "enterAmount": "أدخل مبلغاً موجباً",
+      "noOpenInvoices": "لا فواتير مفتوحة — لا شيء للتسوية",
+      "methods": {
+        "cash_usd": "نقداً (دولار)",
+        "cash_lbp": "نقداً (ليرة)",
+        "omt": "OMT",
+        "whish": "Whish",
+        "bank_transfer": "تحويل مصرفي",
+        "bob_finance": "BOB Finance"
+      }
+    }
   },
   "money": {
     "title": "المال",
