@@ -1940,3 +1940,59 @@ Kid-switcher chips ("Me" first when also a member; guardian-only users redirect 
 ### DRAG READ
 **The payer model was the cheap part; the real lesson of this slice is that "additive RLS for a new actor" is a COVERAGE problem, and the e2e caught exactly the row I missed.** Run 1 failed with kid chips rendering EMPTY names: I'd granted the guardian every operational table but not `profiles` — where names live. It's the most instructive failure type: not a crash, not a denial, but a silently degraded render (RLS embeds return null, UI shows blank), invisible to tsc and to any staff-session test, caught only because the spec asserted the actual kid names in the switcher. The 000038 fix is one definer helper + one SELECT policy scoped to linked kids' profile rows — and the general rule worth writing down for D2/D3/G1: **when you introduce a new reader role, enumerate the EMBEDS in every query the new surfaces make, not just the top-level tables; names usually live one join away.**
 **What composed cleanly:** the payer auto-resolve inside `_system_issue_invoice` meant B2's approve path issued guardian-payer invoices with zero caller changes — the D1→B2→B3 layering paid off exactly as designed; the request-for-kid capability was a one-line guard widening in an RPC that already had the eligibility/duplicate machinery; and the dual-hat case fell out of choosing link-based (`is_guardian_of`) over role-based policies, which also future-proofs dunning (D3 targets `payer_profile_id`, which now exists on every minor's invoice). **Honest residue:** the signature-change DROP of `issue_invoice` would break any unknown external caller of the 12-arg form (none exist in-repo; noted), the streak metric is a simple consecutive-week count (good enough until a product definition exists), the guardian panel's create-if-new writes EN-only names into all three locale columns (same accepted pattern as lead-convert), and Lina exists only as seed data so multi-kid grouping is proven but her journey (trial→convert with guardian step) isn't e2e-driven — origination C is wired but exercised manually, not in CI. **Next: D2 freeze/upgrade (lands on the Member-360 membership card + actions area B3 left clean).**
+
+## Cycle 5 / V1 / ADM-2 — Belts + avatars + sweep (2026-06-12)
+
+**Agent:** main coding agent · **Branch:** `prompt-adm2-belts-avatars` · Demo-critical repair: belt promotion "doesn't save" + archived disciplines resurfacing + no coach photos.
+
+### BELT — root cause NAMED (compound, 3 parts)
+1. **Empty ladders (the actual "doesn't save"):** ADM-1's Settings discipline CRUD created disciplines with **NO `belt_hierarchies` rows** — only the two legacy-seeded demo disciplines had ladders. Picking any operator-created discipline left the target-rank picker EMPTY, so the wizard could never reach a submittable state. The save path itself (`promoteStudent` action → `promote_student` RPC, atomic + staff-gated + forward-only) was **always sound** — the activity-loop e2e drives that exact UI green every run. None of the original suspects (UI bypassing the RPC / phantom columns / enum-arg mismatch) were the failure; the wizard starved upstream of the write.
+2. **Archived leakage:** the belts pickers were gym-scoped but missing `is_active` (archived disciplines resurfaced) and the coach picker missing `is_active`/`deleted_at`.
+3. **Silent failure UX:** until B3 mounted the `use-toast` renderer, every error/success toast on this surface rendered NOTHING — the operator saw a wizard that just "did nothing."
+
+**Fixes:** DisciplineManager now seeds a standard 20-rank DEFAULT ladder on create (per-gym editable data — the real product fix); belts pickers filter active; **NEW Member-360 promote panel** (`students/[id]/promote-panel.tsx`: student pre-selected, ACTIVE discipline chips, target rank defaulting to the NEXT rank in `belt_hierarchies` order, coach chips, optional note/date) ending on the same `promoteStudent` action — guards intact, nothing re-implemented; the 24R `belt_promoted` notification fires from inside the RPC (verified untouched, not duplicated).
+
+### SWEEP — full table (every picker/chips/filter/embed on catalog/people tables, all three shells)
+
+| Surface | Table(s) | Leak? | Fix |
+|---|---|---|---|
+| /belts wizard — discipline picker | disciplines | **YES** — archived listed | `+.eq('is_active', true)` |
+| /belts wizard — coach picker | profiles (coaches) | **YES** — deactivated/deleted listed | `+is_active +deleted_at IS NULL` |
+| /classes admin LIST | classes | **YES (biggest catch)** — NO gym scope at all (all-authenticated `classes_read` RLS ⇒ cross-gym rows) + archived lingered | `+gym_id +is_active` |
+| /students list — belt filter | belt_hierarchies | **YES** — queried PHANTOM `belt_hierarchies.gym_id` (42703 ⇒ silently empty) | scope via gym's ACTIVE disciplines' ids |
+| /students/add — belt picker | belt_hierarchies | **YES** — same phantom column | same discipline-chain scoping |
+| /students + /students/add — discipline pickers | disciplines | **YES** — archived listed | `+is_active` |
+| /leads pipeline — interest picker | disciplines | **YES** — archived listed | `+is_active` |
+| /disciplines standalone page + form | disciplines | **YES** — cross-gym read; upsert MISSING `gym_id` (form DOA) | page → redirect to canonical `/settings?tab=disciplines`; dead components deleted |
+| /schedule diary (coaches+classes) | profiles, classes | clean (IA-3) | — |
+| /classes/[id] admin bar fetches | disciplines, profiles | clean (ADM-1) | — |
+| /coaches/add + /coaches/[id]/edit — specialty chips | disciplines | clean (ADM-1) | — |
+| /coaches list | profiles | clean (`deleted_at` filtered) | — |
+| /pt — student + coach pickers | students, profiles | clean | — |
+| /invoices/new — student picker | students | clean | — |
+| EnrollStudentModal | students | clean (RLS gym-scoped) | — |
+| eligibility.ts | belt_hierarchies | clean (discipline-scoped) | — |
+| Settings discipline manager | disciplines | clean — shows archived INTENTIONALLY (management surface) | — |
+| Landing/marketing sections | classes, gym_affiliations | clean (anon policies 000035/000036 gate `is_active`+`show_on_landing`) | — |
+| `get_gym_coaches` RPC | profiles | clean (`is_active` + gym in SQL) | — |
+| attendance/history + reports | (cluster) | KNOWN-DEFERRED — DOA, out of nav (V1.1) | — |
+
+**Class of bug confirmed:** catalog `_read` RLS is all-authenticated BY DESIGN (portals must read it), so every staff list/picker MUST explicitly gym-scope — ADM-1's drag-read prediction held; the /classes admin list was live proof.
+
+### AVATARS — first Storage infra (000039, database-reviewer notes)
+- **Bucket `avatars`, public READ** (display photos the gym already posts on physical boards; no tokens needed for `<img>`), + explicit SELECT policy for API list/read.
+- **Write (INSERT/UPDATE/DELETE) authorization is encoded in the PATH** `<gym_id>/<profile_id>.<ext>`: **owner** = filename stem equals `auth.uid()` (a user can only ever write their own file); **staff** = `is_staff()` AND folder equals `get_user_gym_id()` (any profile photo within their gym, never another gym's folder). No other bucket; nothing existing touched; no RLS weakened.
+- **Client chain:** downscale ≤512px JPEG (~≤200KB) → storage upsert → `profiles.avatar_url` = public URL + cache-buster. Upload mounts: coach edit (immediate), coach add (pending file post-insert), Member-360 header, own portal profile. Renders with initials fallback: wizard coach chips, diary headers, coach detail, Member-360 header, kid-switcher chips, portal header.
+
+### CI evidence (behavior, not tsc)
+- 000039 applied via Verify-Foundation `27379925850`.
+- **E2E gate `27381460446` — SUCCESS, 45 passed (10.3m)** (was 43; +2 ADM-2), run gym torn down HTTP 201 — https://github.com/TechStack2/proline-gym-platform/actions/runs/27381460446
+  - `✓ 42 [adm2]` (20.4s): Settings-created discipline → archived → absent from belt picker AND wizard chips AND coach specialty chips AND the promote panel's chips → Karim promoted from Member-360 (NEXT rank preselected) → history row renders → **persists across hard reload** → portal progress shows the new current rank.
+  - `✓ 43 [adm2]` (19.8s): fixture upload on coach edit → renders in-place → coach detail (`naturalWidth > 0`, no 404) → wizard coach chip → diary column header; Omar's photo set from Member-360 → renders on guardian Rana's kid-switcher chip.
+  - **No regression:** all 43 pre-existing tests green; FK login-less step PASS.
+
+### **Belt promotion saves + archived items absent from all pickers + avatar renders: PASS.**
+
+### DRAG READ
+**The headline defect was never a broken write — it was a wizard starved of data, failing silently three ways at once** (no ladder rows, no toast renderer, archived noise). The cheapest fix in the slice (seed a default ladder on discipline create) is the one that actually un-breaks the operator; everything else was hygiene the prompt correctly forced into a systematic sweep. The sweep's biggest catch was NOT a picker at all: the admin **/classes list had no gym scope whatsoever** and has been silently rendering cross-gym rows in every two-gym DB (CI included) since it was written — exactly the bug-class ADM-1's drag read predicted, now swept across all three shells with the table above as the record. The phantom `belt_hierarchies.gym_id` filter is the same genus (query written against an imagined schema, 42703 swallowed, UI quietly empty) — fourth instance found; "phantom column" should be a standing review check.
+**What fought:** the double-shell, for the third slice running — but this time it surfaced a REAL product bug, not just spec hygiene. Run 1: my un-scoped visibility assert matched the hidden duplicate (the upload itself was already proven — the locator log showed the resolved public storage URL on the first attempt; policies, downscale, profiles write all worked first try). Run 2 went deeper: `setInputFiles` drives the HIDDEN shell's input, and the visible instance never re-synced because `useState(currentUrl)` ignores prop changes after `router.refresh()` — a real user uploading on mobile-width would see the photo only after navigating away. Fix is in the component (prop re-sync effect), not the test. Standing rule, now thrice-paid: `vis()`/`visibleShell()` on PAGES, plain testids only on single-mount modals — and client components mounted twice must treat server props as authoritative after refresh. **Honest residue:** the default ladder is one fixed 20-rank template applied to every new discipline (right for MT/BJJ-style gyms; a discipline with a different ladder needs manual per-gym editing, which exists in Settings); avatar UPDATE/DELETE policies are written but only upsert (INSERT path) is CI-driven; coach-add's pending-photo upload is best-effort post-insert (failure leaves a coach without a photo, not a broken coach). **Next: PT-1 (package catalog + desk sale + package-centric presentation + refill/expiry — from journey-pt-360).**

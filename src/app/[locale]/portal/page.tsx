@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { Avatar as KidAvatar } from '@/components/shared/avatar'
 
 type Props = { params: { locale: string }; searchParams?: { kid?: string } }
 
@@ -37,15 +38,15 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
   if (guardianRow) {
     const { data: kidLinks } = await supabase
       .from('guardian_students')
-      .select('students:student_id (id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))')
+      .select('students:student_id (id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url))')
       .eq('guardian_id', guardianRow.id)
     const { localizedName: ln, one: o } = await import('@/lib/names')
     kids = (kidLinks ?? [])
       .map((l: any) => {
         const st = o(l.students)
-        return st ? { id: st.id as string, name: ln(o(st.profiles), locale) } : null
+        return st ? { id: st.id as string, name: ln(o(st.profiles), locale), avatarUrl: o(st.profiles)?.avatar_url ?? null } : null
       })
-      .filter(Boolean) as { id: string; name: string }[]
+      .filter(Boolean) as { id: string; name: string; avatarUrl?: string | null }[]
   }
   const selectedKid = kids.find((k) => k.id === searchParams?.kid) ?? null
 
@@ -187,9 +188,10 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
             className="rounded-full bg-[#cd1419] px-4 py-1.5 text-sm font-semibold text-white">
             {isRTL ? 'أنا' : 'Me'}
           </span>
-          {kids.map((k) => (
+          {kids.map((k: any) => (
             <Link key={k.id} href={`/${locale}/portal?kid=${k.id}`} data-testid="kid-chip" data-kid-id={k.id}
-              className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
+              <KidAvatar url={k.avatarUrl} name={k.name} />
               {k.name}
             </Link>
           ))}

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { one } from '@/lib/names'
 import { Award, CalendarDays, ClipboardList, CreditCard, Flame, ChevronRight } from 'lucide-react'
+import { Avatar } from '@/components/shared/avatar'
 
 /**
  * Guardian's per-kid dashboard (B3). Rendered on /portal?kid=<studentId> for a
@@ -18,7 +19,7 @@ export async function KidDashboard({
 }: {
   locale: string
   kid: { id: string; name: string }
-  kids: { id: string; name: string }[]
+  kids: { id: string; name: string; avatarUrl?: string | null }[]
   hasOwn: boolean
 }) {
   const isRTL = locale === 'ar'
@@ -109,12 +110,14 @@ export async function KidDashboard({
         {kids.map((k) => (
           k.id === kid.id ? (
             <span key={k.id} data-testid="kid-chip" data-kid-id={k.id} data-active="true"
-              className="rounded-full bg-[#cd1419] px-4 py-1.5 text-sm font-semibold text-white">
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#cd1419] px-3 py-1.5 text-sm font-semibold text-white">
+              <Avatar url={k.avatarUrl} name={k.name} size="xs" />
               {k.name}
             </span>
           ) : (
             <Link key={k.id} href={`/${locale}/portal?kid=${k.id}`} data-testid="kid-chip" data-kid-id={k.id}
-              className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
+              <Avatar url={k.avatarUrl} name={k.name} size="xs" />
               {k.name}
             </Link>
           )

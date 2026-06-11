@@ -18,7 +18,7 @@ export default async function EditCoachPage({
   const { data: coach } = await supabase
     .from('coaches')
     .select(`id, gym_id, specialization_ar, specialization_en, specialization_fr, bio_ar, bio_en, bio_fr,
-      profiles!inner (id, first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)`)
+      profiles!inner (id, first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone, avatar_url)`)
     .eq('id', id)
     .maybeSingle()
   if (!coach) notFound()
@@ -41,6 +41,8 @@ export default async function EditCoachPage({
         initialData={{
           coachId: coach.id,
           profileId: profile.id,
+          gymId: coach.gym_id,
+          avatarUrl: profile.avatar_url,
           first_name_ar: profile.first_name_ar,
           first_name_en: profile.first_name_en,
           first_name_fr: profile.first_name_fr,

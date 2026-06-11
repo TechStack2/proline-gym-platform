@@ -1,17 +1,8 @@
-import { getTranslations } from 'next-intl/server'
-import { DisciplineForm } from '../components/discipline-form'
+import { redirect } from 'next/navigation'
 
-export default async function AddDisciplinePage({
-  params: { locale },
-}: {
-  params: { locale: string }
-}) {
-  const t = await getTranslations('disciplines')
+type Props = { params: { locale: string } }
 
-  return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">{t('add_discipline')}</h1>
-      <DisciplineForm locale={locale} />
-    </div>
-  )
+/** ADM-2: discipline creation lives in Settings → Disciplines (canonical CRUD). */
+export default function DisciplineAddRedirect({ params: { locale } }: Props) {
+  redirect(`/${locale}/settings?tab=disciplines`)
 }

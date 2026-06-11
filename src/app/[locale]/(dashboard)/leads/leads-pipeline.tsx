@@ -89,7 +89,8 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
   const { data: disciplines } = await supabase
     .from('disciplines')
     .select('id, name_ar, name_en, name_fr')
-    .eq('gym_id', gymId);
+    .eq('gym_id', gymId)
+    .eq('is_active', true);
 
   // ── Journey data: coaches (trial assignment), active plans (convert picker),
   //    scheduled trials (lead card), simulated invites (converted members) ──

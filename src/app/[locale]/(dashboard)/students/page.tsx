@@ -101,14 +101,20 @@ export default async function StudentsPage({
     .from('disciplines')
     .select(`id, name_${locale}`)
     .eq('gym_id', gymId)
+    .eq('is_active', true)
     .order(`name_${locale}`)
 
-  // Fetch belt ranks for filter
-  const { data: beltRanks } = await supabase
-    .from('belt_hierarchies')
-    .select('id, name_ar, name_en, sort_order')
-    .eq('gym_id', gymId)
-    .order('sort_order')
+  // Fetch belt ranks for filter. ADM-2: belt_hierarchies has NO gym_id column —
+  // the old .eq('gym_id', …) was a phantom-column 42703 that silently emptied
+  // this filter; scope through the gym's active disciplines instead.
+  const disciplineIdsForBelts = (disciplines || []).map((d: any) => d.id)
+  const { data: beltRanks } = disciplineIdsForBelts.length
+    ? await supabase
+        .from('belt_hierarchies')
+        .select('id, name_ar, name_en, sort_order')
+        .in('discipline_id', disciplineIdsForBelts)
+        .order('sort_order')
+    : { data: [] as any[] }
 
   if (error) {
     console.error('Error fetching students:', error)

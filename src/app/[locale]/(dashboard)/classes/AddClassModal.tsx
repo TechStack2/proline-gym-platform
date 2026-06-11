@@ -28,7 +28,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import { localizedName } from '@/lib/names'
+import { localizedName, one } from '@/lib/names'
+import { Avatar } from '@/components/shared/avatar'
 
 export type EditClass = {
   id: string
@@ -310,10 +311,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                         onClick={() => setCoachId(c.id)}
                         className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
                           coachId === c.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
-                        <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold',
-                          coachId === c.id ? 'bg-white/20 text-white' : 'bg-primary-50 text-primary-700')}>
-                          {(name || '?').slice(0, 1)}
-                        </span>
+                        <Avatar url={one(c.profiles)?.avatar_url} name={name} size="sm" />
                         {name}
                       </button>
                     )

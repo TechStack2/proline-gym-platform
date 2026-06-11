@@ -28,6 +28,7 @@ export default async function AddStudentPage({
     .from('disciplines')
     .select('id, name_ar, name_en, name_fr')
     .eq('gym_id', gymId)
+    .eq('is_active', true)
     .order('sort_order')
 
   const mappedDisciplines = (disciplines || []).map((d: any) => ({
@@ -36,11 +37,16 @@ export default async function AddStudentPage({
   }))
 
   // Fetch belt ranks
-  const { data: beltRanks } = await supabase
-    .from('belt_hierarchies')
-    .select('id, name_ar, name_en, sort_order')
-    .eq('gym_id', gymId)
-    .order('sort_order')
+  // ADM-2: belt_hierarchies has no gym_id (phantom-column 42703 silently
+  // emptied this picker) — scope via the gym's active disciplines.
+  const beltDisciplineIds = (disciplines || []).map((d: any) => d.id)
+  const { data: beltRanks } = beltDisciplineIds.length
+    ? await supabase
+        .from('belt_hierarchies')
+        .select('id, name_ar, name_en, sort_order')
+        .in('discipline_id', beltDisciplineIds)
+        .order('sort_order')
+    : { data: [] as any[] }
 
   const { data: guardians } = await supabase
     .from('guardians')

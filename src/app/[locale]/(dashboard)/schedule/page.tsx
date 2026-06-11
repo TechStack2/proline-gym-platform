@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
+import { Avatar } from '@/components/shared/avatar'
 import { CalendarRange, CalendarClock, Dumbbell } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -55,7 +56,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
     supabase.from('disciplines').select('id, name_ar, name_en, name_fr, sort_order')
       .eq('gym_id', gymId).eq('is_active', true).order('sort_order'),
     supabase.from('coaches')
-      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url)')
       .eq('gym_id', gymId).eq('is_active', true),
     supabase.from('classes')
       .select(`id, name_ar, name_en, name_fr, discipline_id, coach_id, max_capacity,
@@ -264,7 +265,12 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3" data-testid="coach-diary">
               {diary.map((col) => (
                 <div key={col.coachId} className="rounded-2xl border bg-white p-3 shadow-sm" data-testid="diary-coach-column" data-coach-id={col.coachId}>
-                  <p className={cn('mb-2 border-b pb-2 text-sm font-bold text-gray-900', isRTL && 'font-arabic')}>
+                  <p className={cn('mb-2 flex items-center gap-2 border-b pb-2 text-sm font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="diary-coach-header">
+                    <Avatar
+                      url={one((coaches ?? []).find((c: any) => c.id === col.coachId)?.profiles)?.avatar_url}
+                      name={coachName(col.coachId) || '—'}
+                      size="sm"
+                    />
                     {coachName(col.coachId) || '—'}
                   </p>
                   {col.classes.length === 0 && col.pts.length === 0 ? (
