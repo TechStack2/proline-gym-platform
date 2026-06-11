@@ -166,6 +166,15 @@ export default defineConfig({
       testMatch: /member360\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // IA-3 (Schedule unification): week timetable + day coach-diary (both
+      // calendar species) + the read-side PT conflict warning. Switches roles
+      // internally (owner/student/coach); runs LAST.
+      name: 'schedule-cal',
+      dependencies: ['setup'],
+      testMatch: /schedule-cal\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

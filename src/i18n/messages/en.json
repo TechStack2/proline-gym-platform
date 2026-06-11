@@ -883,7 +883,9 @@
     "restore_panel_title": "Restore PT credits",
     "restore_credit": "Restore credit",
     "credit_restored": "Credit restored",
-    "restore_error": "Could not restore credit"
+    "restore_error": "Could not restore credit",
+    "conflict_warning": "Heads up: {coach} already has {event} at {time} — booked anyway.",
+    "conflict_pt_event": "a PT session"
   },
   "rentals": {
     "title": "Coach Rentals",
@@ -1245,7 +1247,8 @@
       "newLead": "New lead",
       "newMember": "New member",
       "recordPayment": "Record payment"
-    }
+    },
+    "openDiary": "Open diary →"
   },
   "inbox": {
     "title": "Inbox",
@@ -1308,5 +1311,29 @@
     "todayTally": "Today's collections (by method)",
     "noPaymentsToday": "No payments today.",
     "viewPayments": "View payments →"
+  },
+  "scheduleView": {
+    "title": "Schedule",
+    "segSchedule": "Schedule",
+    "segClasses": "Classes",
+    "weekView": "Week · Timetable",
+    "dayView": "Day · Coach diary",
+    "time": "Time",
+    "apply": "Apply",
+    "allDisciplines": "All disciplines",
+    "allCoaches": "All coaches",
+    "noEvents": "No scheduled events.",
+    "noEventsCoach": "No events this day.",
+    "ptSession": "PT",
+    "min": "min",
+    "days": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    }
   }
 }

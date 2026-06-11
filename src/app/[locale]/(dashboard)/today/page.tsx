@@ -85,11 +85,17 @@ export default async function TodayPage({ params: { locale } }: Props) {
 
   return (
     <div className={cn('space-y-6 p-4 md:p-0', isRTL && 'rtl text-right')}>
-      <div>
-        <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
-        <p className="mt-0.5 text-sm text-gray-500">
-          {now.toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          <p className="mt-0.5 text-sm text-gray-500">
+            {now.toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <Link href={`/${locale}/schedule?view=day`} data-testid="open-diary-link"
+          className="text-sm font-medium text-primary-600 hover:underline">
+          {t('openDiary')}
+        </Link>
       </div>
 
       {/* Quick actions */}

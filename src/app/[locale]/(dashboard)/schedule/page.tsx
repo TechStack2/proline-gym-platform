@@ -1,92 +1,304 @@
-import { Suspense } from 'react'
+import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
-import WeeklySchedule from './WeeklySchedule'
 import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
-import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
+import { localizedName, one } from '@/lib/names'
+import { CalendarRange, CalendarClock, Dumbbell } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-async function getScheduleData() {
-  const supabase = await createClient()
-  
-  const [classesResult, disciplinesResult, coachesResult] = await Promise.all([
-    supabase
-      .from('classes')
-      .select(`
-        *,
-        discipline:disciplines(id, name_ar, name_en, name_fr),
-        coach:coaches(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
-        schedules:class_schedules(*)
-      `)
-      .eq('is_active', true),
-    supabase
-      .from('disciplines')
-      .select('*')
-      .eq('is_active', true)
-      .order('name_en'),
-    supabase
-      .from('coaches')
-      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
-      .eq('is_active', true),
-  ])
-
-  const classes = classesResult.data || []
-  const disciplines = disciplinesResult.data || []
-  const coaches = coachesResult.data || []
-
-  // Get enrollment counts
-  const classIds = classes.map(c => c.id)
-  const { data: enrollments } = await supabase
-    .from('class_enrollments')
-    .select('class_id')
-    .in('class_id', classIds)
-    .eq('is_active', true)
-
-  const enrollmentCounts: { [key: string]: number } = {}
-  if (enrollments) {
-    enrollments.forEach(e => {
-      enrollmentCounts[e.class_id] = (enrollmentCounts[e.class_id] || 0) + 1
-    })
-  }
-
-  return {
-    classes: classes.map(c => ({
-      ...c,
-      enrollments_count: enrollmentCounts[c.id] || 0
-    })),
-    disciplines,
-    coaches,
-  }
+type Props = {
+  params: { locale: string }
+  searchParams: { view?: string; date?: string; discipline?: string; coach?: string }
 }
 
-export default async function SchedulePage({
-  params: { locale },
-}: {
-  params: { locale: string }
-}) {
-  const { classes, disciplines, coaches } = await getScheduleData()
+/**
+ * /schedule — one calendar, two views (IA-3, read-side only).
+ *
+ * The two calendar species (cohesion-audit Addendum): recurring group classes
+ * are a weekly TEMPLATE (classes + class_schedules.day_of_week); PT appointments
+ * are individual BOOKINGS (pt_sessions at a concrete date/time). Industry shape:
+ * separate editing models, ONE viewing surface —
+ *  - Week · Timetable (default): the recurring grid, discipline-colored,
+ *    discipline/coach filters, chip → class detail. Class CRUD stays at /classes.
+ *  - Day · Coach diary: resource columns per coach stacking that day's class
+ *    slots AND non-cancelled PT sessions → multi-coach PT legibility. PT block →
+ *    the C1 lifecycle surface (/pt); class block → the class roster.
+ * Zero schema, zero write paths — every event is an existing verified read.
+ */
+
+// Mon-first day order (column order flips visually under RTL via dir).
+const WEEK_DOWS = [1, 2, 3, 4, 5, 6, 0] as const
+
+// Tenant-clean discipline palette: stable hue per discipline by sort position.
+const DISCIPLINE_PALETTE = [
+  '#cd1419', '#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#65a30d',
+]
+
+const hhmm = (v: string | null) => (v || '').slice(0, 5)
+
+export default async function SchedulePage({ params: { locale }, searchParams }: Props) {
+  const isRTL = locale === 'ar'
+  const t = await getTranslations('scheduleView')
+  const supabase = await createClient()
+
+  const view = searchParams.view === 'day' ? 'day' : 'week'
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+  const gymId = me?.gym_id
+  if (!gymId) return null
+
+  const [{ data: disciplines }, { data: coaches }, { data: classesRaw }] = await Promise.all([
+    supabase.from('disciplines').select('id, name_ar, name_en, name_fr, sort_order')
+      .eq('gym_id', gymId).eq('is_active', true).order('sort_order'),
+    supabase.from('coaches')
+      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .eq('gym_id', gymId).eq('is_active', true),
+    supabase.from('classes')
+      .select(`id, name_ar, name_en, name_fr, discipline_id, coach_id, max_capacity,
+        schedules:class_schedules(id, day_of_week, start_time, end_time, is_active)`)
+      .eq('gym_id', gymId).eq('is_active', true),
+  ])
+
+  const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
+  const coachName = (id: string | null) => localizedName(one((coaches ?? []).find((c: any) => c.id === id)?.profiles), locale)
+  const disciplineColor = new Map<string, string>(
+    (disciplines ?? []).map((d: any, i: number) => [d.id, DISCIPLINE_PALETTE[i % DISCIPLINE_PALETTE.length]]),
+  )
+
+  // Filters apply to both views.
+  const fDiscipline = searchParams.discipline || ''
+  const fCoach = searchParams.coach || ''
+  const classes = (classesRaw ?? []).filter((c: any) =>
+    (!fDiscipline || c.discipline_id === fDiscipline) && (!fCoach || c.coach_id === fCoach))
+
+  const dayNames = [
+    t('days.sun'), t('days.mon'), t('days.tue'), t('days.wed'), t('days.thu'), t('days.fri'), t('days.sat'),
+  ]
+
+  // ── Day view data ──
+  const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.date ?? '') ? searchParams.date! : new Date().toISOString().slice(0, 10)
+  let diary: { coachId: string; classes: any[]; pts: any[] }[] = []
+  if (view === 'day') {
+    const dow = new Date(`${dateStr}T12:00:00`).getDay()
+    const { data: ptsRaw } = await supabase
+      .from('pt_sessions')
+      .select(`id, coach_id, scheduled_at, duration_minutes, status,
+        students:student_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
+        coaches:coach_id (gym_id)`)
+      .gte('scheduled_at', `${dateStr}T00:00:00`)
+      .lt('scheduled_at', `${dateStr}T23:59:59`)
+      .neq('status', 'cancelled')
+      .order('scheduled_at')
+    const pts = (ptsRaw ?? []).filter((s: any) => one(s.coaches)?.gym_id === gymId)
+      .filter((s: any) => !fCoach || s.coach_id === fCoach)
+
+    const slotsByCoach = new Map<string, any[]>()
+    for (const c of classes) {
+      for (const s of (c as any).schedules ?? []) {
+        if (s.is_active === false || s.day_of_week !== dow) continue
+        const list = slotsByCoach.get((c as any).coach_id) ?? []
+        list.push({ cls: c, slot: s })
+        slotsByCoach.set((c as any).coach_id, list)
+      }
+    }
+    const ptsByCoach = new Map<string, any[]>()
+    for (const s of pts) {
+      const list = ptsByCoach.get(s.coach_id) ?? []
+      list.push(s)
+      ptsByCoach.set(s.coach_id, list)
+    }
+    // Columns: coaches with any event that day; fallback all active coaches.
+    let coachIds = [...new Set([...slotsByCoach.keys(), ...ptsByCoach.keys()])]
+    if (coachIds.length === 0) coachIds = (coaches ?? []).map((c: any) => c.id)
+    if (fCoach) coachIds = coachIds.filter((id) => id === fCoach)
+    diary = coachIds.map((coachId) => ({
+      coachId,
+      classes: (slotsByCoach.get(coachId) ?? []).sort((a, b) => a.slot.start_time.localeCompare(b.slot.start_time)),
+      pts: ptsByCoach.get(coachId) ?? [],
+    }))
+  }
+
+  // ── Week view rows: distinct (start,end) slots ──
+  const slotMap = new Map<string, { start: string; end: string; cells: Map<number, any[]> }>()
+  if (view === 'week') {
+    for (const c of classes) {
+      for (const s of (c as any).schedules ?? []) {
+        if (s.is_active === false) continue
+        const key = `${s.start_time}-${s.end_time}`
+        let row = slotMap.get(key)
+        if (!row) {
+          row = { start: s.start_time, end: s.end_time, cells: new Map() }
+          slotMap.set(key, row)
+        }
+        const cell = row.cells.get(s.day_of_week) ?? []
+        cell.push(c)
+        row.cells.set(s.day_of_week, cell)
+      }
+    }
+  }
+  const weekRows = [...slotMap.values()].sort((a, b) => a.start.localeCompare(b.start))
+
+  const qs = (overrides: Record<string, string | undefined>) => {
+    const p = new URLSearchParams()
+    const merged: Record<string, string | undefined> = { view, date: view === 'day' ? dateStr : undefined, discipline: fDiscipline || undefined, coach: fCoach || undefined, ...overrides }
+    for (const [k, v] of Object.entries(merged)) if (v && v !== 'week') p.set(k, v)
+    const s = p.toString()
+    return s ? `?${s}` : ''
+  }
+
+  const fmtDay = new Date(`${dateStr}T12:00:00`)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Weekly Schedule</h1>
+    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className={cn('text-2xl font-bold', isRTL && 'font-arabic')}>{t('title')}</h1>
         <WorkspaceSegments
           locale={locale}
           active="schedule"
           segments={[
-            { key: 'schedule', label: locale === 'ar' ? 'الجدول' : locale === 'fr' ? 'Horaire' : 'Schedule', path: '/schedule' },
-            { key: 'classes', label: locale === 'ar' ? 'الحصص' : locale === 'fr' ? 'Cours' : 'Classes', path: '/classes' },
+            { key: 'schedule', label: t('segSchedule'), path: '/schedule' },
+            { key: 'classes', label: t('segClasses'), path: '/classes' },
           ]}
         />
       </div>
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <WeeklySchedule
-          classes={classes}
-          disciplines={disciplines}
-          coaches={coaches}
-          locale={locale}
-        />
-      </Suspense>
+
+      {/* View switcher + filters (GET — server-rendered, RTL-safe) */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="schedule-views">
+          <Link href={`/${locale}/schedule${qs({ view: undefined, date: undefined })}`} data-testid="view-week"
+            className={cn('inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium',
+              view === 'week' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+            <CalendarRange className="h-4 w-4" /> {t('weekView')}
+          </Link>
+          <Link href={`/${locale}/schedule${qs({ view: 'day', date: dateStr })}`} data-testid="view-day"
+            className={cn('inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium',
+              view === 'day' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+            <CalendarClock className="h-4 w-4" /> {t('dayView')}
+          </Link>
+        </div>
+
+        <form method="get" action={`/${locale}/schedule`} className="flex flex-wrap items-center gap-2">
+          {view === 'day' && <input type="hidden" name="view" value="day" />}
+          {view === 'day' && (
+            <input type="date" name="date" defaultValue={dateStr} data-testid="diary-date"
+              className="h-9 rounded-md border px-3 text-sm" />
+          )}
+          <select name="discipline" defaultValue={fDiscipline} data-testid="filter-discipline"
+            className="h-9 rounded-md border bg-white px-3 text-sm">
+            <option value="">{t('allDisciplines')}</option>
+            {(disciplines ?? []).map((d: any) => <option key={d.id} value={d.id}>{lname(d)}</option>)}
+          </select>
+          <select name="coach" defaultValue={fCoach} data-testid="filter-coach"
+            className="h-9 rounded-md border bg-white px-3 text-sm">
+            <option value="">{t('allCoaches')}</option>
+            {(coaches ?? []).map((c: any) => <option key={c.id} value={c.id}>{localizedName(one(c.profiles), locale)}</option>)}
+          </select>
+          <button className="h-9 rounded-md bg-[#cd1419] px-4 text-sm font-medium text-white hover:bg-[#a81014]">{t('apply')}</button>
+        </form>
+      </div>
+
+      {view === 'week' ? (
+        /* ── Week · Timetable ── */
+        weekRows.length === 0 ? (
+          <p className="rounded-2xl border bg-white p-10 text-center text-sm text-gray-400 shadow-sm">{t('noEvents')}</p>
+        ) : (
+          <div className="overflow-x-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+            <table className="w-full min-w-[760px] border-separate border-spacing-1.5" data-testid="week-grid">
+              <thead>
+                <tr>
+                  <th className="w-28 rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">{t('time')}</th>
+                  {WEEK_DOWS.map((d) => (
+                    <th key={d} className={cn('rounded-lg bg-gray-900 px-3 py-2 text-center text-xs font-bold text-white', isRTL && 'font-arabic')}>
+                      {dayNames[d]}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {weekRows.map((row) => (
+                  <tr key={`${row.start}-${row.end}`}>
+                    <td className="rounded-lg bg-gray-100 px-3 py-2 align-top text-xs font-medium text-gray-600 whitespace-nowrap" dir="ltr">
+                      {hhmm(row.start)}–{hhmm(row.end)}
+                    </td>
+                    {WEEK_DOWS.map((d) => {
+                      const cell = row.cells.get(d) ?? []
+                      return (
+                        <td key={d} className="align-top">
+                          {cell.length === 0 ? (
+                            <div className="min-h-[2.5rem] rounded-lg bg-gray-50" />
+                          ) : (
+                            <div className="space-y-1.5">
+                              {cell.map((c: any) => (
+                                <Link key={c.id} href={`/${locale}/classes/${c.id}`}
+                                  data-testid="week-chip" data-class-en={c.name_en}
+                                  className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white ring-1 ring-black/5 transition-transform hover:scale-[1.02]"
+                                  style={{ backgroundColor: disciplineColor.get(c.discipline_id) || '#cd1419' }}>
+                                  <span className="block truncate font-semibold">{lname(c)}</span>
+                                  <span className="block truncate opacity-80" dir="ltr">{hhmm(row.start)} · {coachName(c.coach_id)}</span>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : (
+        /* ── Day · Coach diary ── */
+        <div>
+          <p className="mb-3 text-sm text-gray-500">
+            {fmtDay.toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+          {diary.length === 0 ? (
+            <p className="rounded-2xl border bg-white p-10 text-center text-sm text-gray-400 shadow-sm">{t('noEvents')}</p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3" data-testid="coach-diary">
+              {diary.map((col) => (
+                <div key={col.coachId} className="rounded-2xl border bg-white p-3 shadow-sm" data-testid="diary-coach-column" data-coach-id={col.coachId}>
+                  <p className={cn('mb-2 border-b pb-2 text-sm font-bold text-gray-900', isRTL && 'font-arabic')}>
+                    {coachName(col.coachId) || '—'}
+                  </p>
+                  {col.classes.length === 0 && col.pts.length === 0 ? (
+                    <p className="py-4 text-center text-xs text-gray-400">{t('noEventsCoach')}</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {col.classes.map(({ cls, slot }: any) => (
+                        <Link key={slot.id} href={`/${locale}/classes/${cls.id}`}
+                          data-testid="diary-class-block"
+                          className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white"
+                          style={{ backgroundColor: disciplineColor.get(cls.discipline_id) || '#cd1419' }}>
+                          <span className="block truncate font-semibold">{lname(cls)}</span>
+                          <span className="block opacity-80" dir="ltr">{hhmm(slot.start_time)}–{hhmm(slot.end_time)}</span>
+                        </Link>
+                      ))}
+                      {col.pts.map((s: any) => (
+                        <Link key={s.id} href={`/${locale}/pt`}
+                          data-testid="diary-pt-block" data-status={s.status}
+                          className="block rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-2.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100">
+                          <span className="flex items-center gap-1 font-semibold"><Dumbbell className="h-3 w-3" /> {t('ptSession')} · {localizedName(one(one(s.students)?.profiles), locale)}</span>
+                          <span className="block opacity-70" dir="ltr">
+                            {new Date(s.scheduled_at).toLocaleTimeString(isRTL ? 'ar-LB' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                            {` · ${s.duration_minutes ?? 60}${t('min')}`}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

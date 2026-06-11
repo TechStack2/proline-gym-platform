@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Dumbbell, PlayCircle, CalendarPlus, CheckCircle2, XCircle, Ban } from 'lucide-react';
 import {
   schedulePtSession, logPtDelivery, completePtSession, cancelOrNoShowPtSession,
+  checkPtScheduleConflicts, type PtConflict,
 } from './actions';
 
 type RosterRow = {
@@ -47,6 +48,27 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
   const router = useRouter();
   const isRTL = locale === 'ar';
   const [busy, setBusy] = useState<string | null>(null);
+  // IA-3 read-side conflict guard: warnings per assignment (non-blocking — the
+  // booking below proceeds regardless; C1's RPC stays the only write authority).
+  const [conflicts, setConflicts] = useState<Record<string, { coachName: string; items: PtConflict[] }>>({});
+
+  const scheduleWithGuard = async (assignmentId: string) => {
+    try {
+      const check = await checkPtScheduleConflicts({ assignmentId });
+      if (check.ok && check.conflicts.length > 0) {
+        setConflicts((prev) => ({ ...prev, [assignmentId]: { coachName: check.coachName, items: check.conflicts } }));
+      } else if (check.ok) {
+        setConflicts((prev) => {
+          const next = { ...prev };
+          delete next[assignmentId];
+          return next;
+        });
+      }
+    } catch {
+      // best-effort warning — never blocks scheduling
+    }
+    return schedulePtSession({ assignmentId });
+  };
 
   const pkg = (r: { package_name_ar: string; package_name_en: string; package_name_fr: string }) =>
     locale === 'ar' ? r.package_name_ar || r.package_name_en
@@ -77,7 +99,8 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
       ) : (
         <div className="space-y-2">
           {roster.map((r) => (
-            <div key={r.assignment_id} data-testid="pt-roster-row" data-assignment-id={r.assignment_id} data-package-en={r.package_name_en} data-remaining={r.sessions_remaining} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
+            <div key={r.assignment_id} data-testid="pt-roster-row" data-assignment-id={r.assignment_id} data-package-en={r.package_name_en} data-remaining={r.sessions_remaining} className="rounded-xl bg-white p-3 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>{r.student_name}</p>
                 <p className="text-xs text-gray-500 truncate">
@@ -89,7 +112,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
                   type="button"
                   data-testid="pt-schedule"
                   disabled={busy !== null || r.sessions_remaining <= 0}
-                  onClick={() => run(`sch-${r.assignment_id}`, () => schedulePtSession({ assignmentId: r.assignment_id }), t('session_scheduled'))}
+                  onClick={() => run(`sch-${r.assignment_id}`, () => scheduleWithGuard(r.assignment_id), t('session_scheduled'))}
                   className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-40"
                 >
                   <CalendarPlus className="h-3.5 w-3.5" />{t('schedule')}
@@ -104,6 +127,18 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
                   <PlayCircle className="h-3.5 w-3.5" />{t('log_session')}
                 </button>
               </div>
+              </div>
+              {conflicts[r.assignment_id] && conflicts[r.assignment_id].items.length > 0 && (
+                <div data-testid="pt-conflict-warning" className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+                  {t('conflict_warning', {
+                    coach: conflicts[r.assignment_id].coachName,
+                    event: conflicts[r.assignment_id].items[0].kind === 'class'
+                      ? conflicts[r.assignment_id].items[0].label
+                      : t('conflict_pt_event'),
+                    time: conflicts[r.assignment_id].items[0].time,
+                  })}
+                </div>
+              )}
             </div>
           ))}
         </div>

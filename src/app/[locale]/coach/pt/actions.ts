@@ -215,3 +215,88 @@ export async function reschedulePtSession(input: {
   revalidatePath('/[locale]/coach/pt', 'page');
   return { ok: true };
 }
+
+// ── IA-3 — PT conflict guard (READ-SIDE ONLY, non-blocking) ──────────────────
+// Called by the scheduling UI before booking to surface "this coach already has
+// X at HH:MM" overlaps (other PT sessions + the coach's recurring class slots).
+// It changes NOTHING about the write path — schedule_pt_session (C1) remains
+// the single write authority and staff may intentionally double-book.
+export type PtConflict = { kind: 'pt' | 'class'; label: string; time: string };
+
+export async function checkPtScheduleConflicts(input: {
+  assignmentId: string;
+  coachId?: string | null;
+  scheduledAt?: string | null;
+  durationMinutes?: number;
+}): Promise<{ ok: true; coachName: string; conflicts: PtConflict[] } | { ok: false; error: string }> {
+  const c = await ctx();
+  if ('error' in c) return { ok: false, error: c.error };
+
+  const { data: assignment } = await c.supabase
+    .from('pt_assignments')
+    .select('coach_id, student_id')
+    .eq('id', input.assignmentId)
+    .maybeSingle();
+  const coachId = input.coachId || assignment?.coach_id;
+  if (!coachId) return { ok: true, coachName: '', conflicts: [] };
+
+  // Mirror schedule_pt_session's defaults: scheduled_at = now(), 60 minutes.
+  const start = input.scheduledAt ? new Date(input.scheduledAt) : new Date();
+  const durMs = (input.durationMinutes ?? 60) * 60_000;
+  const end = new Date(start.getTime() + durMs);
+  const dayStart = `${start.toISOString().slice(0, 10)}T00:00:00`;
+  const dayEnd = `${start.toISOString().slice(0, 10)}T23:59:59`;
+  const dow = start.getDay();
+
+  const [{ data: coach }, { data: sessions }, { data: classes }] = await Promise.all([
+    c.supabase
+      .from('coaches')
+      .select('profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .eq('id', coachId)
+      .maybeSingle(),
+    c.supabase
+      .from('pt_sessions')
+      .select('id, scheduled_at, duration_minutes, status')
+      .eq('coach_id', coachId)
+      .neq('status', 'cancelled')
+      .gte('scheduled_at', dayStart)
+      .lt('scheduled_at', dayEnd),
+    c.supabase
+      .from('classes')
+      .select('id, name_ar, name_en, name_fr, schedules:class_schedules(day_of_week, start_time, end_time, is_active)')
+      .eq('coach_id', coachId)
+      .eq('is_active', true),
+  ]);
+
+  const conflicts: PtConflict[] = [];
+
+  for (const s of (sessions ?? []) as any[]) {
+    const sStart = new Date(s.scheduled_at);
+    const sEnd = new Date(sStart.getTime() + (s.duration_minutes ?? 60) * 60_000);
+    if (sStart < end && sEnd > start) {
+      conflicts.push({
+        kind: 'pt',
+        label: 'PT',
+        time: sStart.toTimeString().slice(0, 5),
+      });
+    }
+  }
+
+  const startHm = start.toTimeString().slice(0, 5);
+  const endHm = end.toTimeString().slice(0, 5);
+  for (const cls of (classes ?? []) as any[]) {
+    for (const slot of cls.schedules ?? []) {
+      if (slot.is_active === false || slot.day_of_week !== dow) continue;
+      const slotStart = String(slot.start_time).slice(0, 5);
+      const slotEnd = String(slot.end_time).slice(0, 5);
+      if (slotStart < endHm && slotEnd > startHm) {
+        conflicts.push({ kind: 'class', label: cls.name_en || cls.name_ar || '', time: slotStart });
+      }
+    }
+  }
+
+  const prof = coach ? (Array.isArray((coach as any).profiles) ? (coach as any).profiles[0] : (coach as any).profiles) : null;
+  const coachName = prof ? [prof.first_name_en || prof.first_name_ar, prof.last_name_en || prof.last_name_ar].filter(Boolean).join(' ') : '';
+
+  return { ok: true, coachName, conflicts };
+}

@@ -883,7 +883,9 @@
     "restore_panel_title": "Restaurer des crédits PT",
     "restore_credit": "Restaurer le crédit",
     "credit_restored": "Crédit restauré",
-    "restore_error": "Impossible de restaurer le crédit"
+    "restore_error": "Impossible de restaurer le crédit",
+    "conflict_warning": "Attention : {coach} a déjà {event} à {time} — réservé quand même.",
+    "conflict_pt_event": "une séance PT"
   },
   "rentals": {
     "title": "Location Espaces",
@@ -1245,7 +1247,8 @@
       "newLead": "Nouveau prospect",
       "newMember": "Nouveau membre",
       "recordPayment": "Enregistrer paiement"
-    }
+    },
+    "openDiary": "Ouvrir l'agenda →"
   },
   "inbox": {
     "title": "Boîte de réception",
@@ -1308,5 +1311,29 @@
     "todayTally": "Encaissements du jour (par méthode)",
     "noPaymentsToday": "Aucun paiement aujourd'hui.",
     "viewPayments": "Voir les paiements →"
+  },
+  "scheduleView": {
+    "title": "Horaire",
+    "segSchedule": "Horaire",
+    "segClasses": "Cours",
+    "weekView": "Semaine · Grille",
+    "dayView": "Jour · Agenda coachs",
+    "time": "Heure",
+    "apply": "Appliquer",
+    "allDisciplines": "Toutes disciplines",
+    "allCoaches": "Tous les coachs",
+    "noEvents": "Aucun événement.",
+    "noEventsCoach": "Aucun événement ce jour.",
+    "ptSession": "PT",
+    "min": "min",
+    "days": {
+      "sun": "Dimanche",
+      "mon": "Lundi",
+      "tue": "Mardi",
+      "wed": "Mercredi",
+      "thu": "Jeudi",
+      "fri": "Vendredi",
+      "sat": "Samedi"
+    }
   }
 }

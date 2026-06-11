@@ -883,7 +883,9 @@
     "restore_panel_title": "استرجاع رصيد التدريب",
     "restore_credit": "استرجاع رصيد",
     "credit_restored": "تم استرجاع الرصيد",
-    "restore_error": "تعذّر استرجاع الرصيد"
+    "restore_error": "تعذّر استرجاع الرصيد",
+    "conflict_warning": "تنبيه: لدى {coach} بالفعل {event} الساعة {time} — تم الحجز على أي حال.",
+    "conflict_pt_event": "جلسة تدريب خاص"
   },
   "rentals": {
     "title": "تأجير المساحات",
@@ -1245,7 +1247,8 @@
       "newLead": "عميل محتمل",
       "newMember": "عضو جديد",
       "recordPayment": "تسجيل دفعة"
-    }
+    },
+    "openDiary": "افتح المفكرة ←"
   },
   "inbox": {
     "title": "الوارد",
@@ -1308,5 +1311,29 @@
     "todayTally": "تحصيلات اليوم (حسب الطريقة)",
     "noPaymentsToday": "لا مدفوعات اليوم.",
     "viewPayments": "عرض المدفوعات ←"
+  },
+  "scheduleView": {
+    "title": "الجدول",
+    "segSchedule": "الجدول",
+    "segClasses": "الحصص",
+    "weekView": "أسبوع · الجدول",
+    "dayView": "يوم · مفكرة المدربين",
+    "time": "الوقت",
+    "apply": "تطبيق",
+    "allDisciplines": "كل التخصصات",
+    "allCoaches": "كل المدربين",
+    "noEvents": "لا فعاليات مجدولة.",
+    "noEventsCoach": "لا فعاليات هذا اليوم.",
+    "ptSession": "تدريب خاص",
+    "min": "د",
+    "days": {
+      "sun": "الأحد",
+      "mon": "الاثنين",
+      "tue": "الثلاثاء",
+      "wed": "الأربعاء",
+      "thu": "الخميس",
+      "fri": "الجمعة",
+      "sat": "السبت"
+    }
   }
 }
