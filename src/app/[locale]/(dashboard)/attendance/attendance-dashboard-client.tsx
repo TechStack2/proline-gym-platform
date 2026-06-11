@@ -69,7 +69,7 @@ export function AttendanceDashboardClient({
       if (existingRecord) {
         const { error } = await supabase
           .from('attendance_records')
-          .update({ status, updated_at: new Date().toISOString() })
+          .update({ status })
           .eq('id', existingRecord.id)
         
         if (error) throw error
@@ -78,22 +78,20 @@ export function AttendanceDashboardClient({
           .from('attendance_records')
           .insert({
             student_id: studentId,
-            class_schedule_id: classScheduleId,
+            schedule_id: classScheduleId,
             class_id: classId,
-            date,
+            attendance_date: date,
             status,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
           })
         
         if (error) throw error
       }
 
       setRecords(prev => ({ ...prev, [studentId]: status }))
-      toast({ title: t('common.success'), variant: 'success' })
+      toast({ title: locale === 'ar' ? 'تم الحفظ' : 'Saved', variant: 'success' })
     } catch (error) {
       console.error('Error updating attendance:', error)
-      toast({ title: t('common.error'), variant: 'destructive' })
+      toast({ title: locale === 'ar' ? 'حدث خطأ' : 'Error', variant: 'destructive' })
     } finally {
       setLoading(null)
     }
@@ -104,17 +102,15 @@ export function AttendanceDashboardClient({
     try {
       const updates = enrollments.map(enrollment => ({
         student_id: enrollment.student_id,
-        class_schedule_id: classScheduleId,
+        schedule_id: classScheduleId,
         class_id: classId,
-        date,
+        attendance_date: date,
         status: 'present' as AttendanceStatus,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       }))
 
       const { error } = await supabase
         .from('attendance_records')
-        .upsert(updates, { onConflict: 'student_id,class_schedule_id,date' })
+        .upsert(updates, { onConflict: 'class_id,student_id,attendance_date' })
 
       if (error) throw error
 
@@ -123,10 +119,10 @@ export function AttendanceDashboardClient({
         newRecords[enrollment.student_id] = 'present'
       })
       setRecords(prev => ({ ...prev, ...newRecords }))
-      toast({ title: t('common.success'), variant: 'success' })
+      toast({ title: locale === 'ar' ? 'تم الحفظ' : 'Saved', variant: 'success' })
     } catch (error) {
       console.error('Error marking all present:', error)
-      toast({ title: t('common.error'), variant: 'destructive' })
+      toast({ title: locale === 'ar' ? 'حدث خطأ' : 'Error', variant: 'destructive' })
     } finally {
       setLoading(null)
     }

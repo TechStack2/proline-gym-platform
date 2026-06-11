@@ -57,6 +57,17 @@ test('IA-1 · 7-workspace nav (desktop = mobile), /dashboard→/today, /today li
     await noMissing(owner.page);
     await classRow.click();
     await expect(owner.page).toHaveURL(/\/en\/attendance/, { timeout: 15_000 });
+
+    // The marking flow is REAL end-to-end (IA-1 repaired the admin attendance
+    // reads/writes against the actual schema): the seeded roster renders with
+    // names, and a one-tap mark persists (badge renders from the saved record).
+    const seededCard = vis(owner.page, 'text=Muay Thai Beginner').first();
+    await expect(seededCard).toBeVisible({ timeout: 15_000 });
+    const omarRow = vis(owner.page, 'div.rounded-lg.border').filter({ hasText: 'Omar' }).first();
+    await expect(omarRow, 'roster names render (profiles join)').toBeVisible();
+    await omarRow.locator('button').first().click(); // first status button = present
+    await expect(omarRow.getByText(/^Present$/), 'mark persisted → status badge').toBeVisible({ timeout: 15_000 });
+    await noMissing(owner.page);
   } finally {
     await owner.ctx.close();
   }

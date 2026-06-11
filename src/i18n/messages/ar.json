@@ -414,7 +414,16 @@
       "last7Days": "معدل آخر 7 أيام",
       "mostMissedClasses": "أكثر الحصص غياباً",
       "noMissedClasses": "لا توجد حصص غائبة هذا الأسبوع",
-      "missed": "غائب"
+      "missed": "غائب",
+      "students": "الطلاب",
+      "markAllPresent": "تحديد الكل حاضر",
+      "noEnrollments": "لا طلاب مسجلين."
+    },
+    "status": {
+      "present": "حاضر",
+      "absent": "غائب",
+      "late": "متأخر",
+      "excused": "معذور"
     }
   },
   "payments": {

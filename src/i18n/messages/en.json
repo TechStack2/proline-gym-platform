@@ -414,7 +414,16 @@
       "last7Days": "Last 7 days average",
       "mostMissedClasses": "Most Missed Classes",
       "noMissedClasses": "No missed classes this week",
-      "missed": "missed"
+      "missed": "missed",
+      "students": "Students",
+      "markAllPresent": "Mark all present",
+      "noEnrollments": "No enrolled students."
+    },
+    "status": {
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late",
+      "excused": "Excused"
     }
   },
   "payments": {

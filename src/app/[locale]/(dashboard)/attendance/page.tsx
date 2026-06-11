@@ -21,23 +21,28 @@ export default async function AttendancePage({ params: { locale }, searchParams 
   const selectedDate = searchParams.date || new Date().toISOString().split('T')[0]
   const dayOfWeek = new Date(selectedDate).getDay()
 
-  // Fetch today's classes via class_schedules.day_of_week (correct schema)
-  const { data: todayClasses, error: classErr } = await supabase
+  // Fetch today's classes via class_schedules.day_of_week (correct schema).
+  // NB: there is NO FK between class_schedules and class_enrollments — the
+  // roster must be embedded THROUGH classes (the old top-level
+  // `class_enrollments!class_id` hint errored PGRST200, leaving the marking
+  // list permanently empty). Flatten back to the shape the client expects.
+  const { data: rawSchedules, error: classErr } = await supabase
     .from('class_schedules')
     .select(`
       id, class_id, day_of_week, start_time, end_time,
       classes:class_id (
         id, name_en, name_ar, name_fr,
         discipline_id,
-        disciplines:discipline_id (name_en, name_ar, name_fr)
-      ),
-      class_enrollments:class_enrollments!class_id (
-        id,
-        student_id,
-        students:student_id (
+        disciplines:discipline_id (name_en, name_ar, name_fr),
+        class_enrollments (
           id,
-          profile_id,
-          profiles:profile_id (first_name_en, first_name_ar, last_name_en, last_name_ar)
+          student_id,
+          is_active,
+          students:student_id (
+            id,
+            profile_id,
+            profiles:profile_id (first_name_en, first_name_ar, last_name_en, last_name_ar)
+          )
         )
       )
     `)
@@ -46,6 +51,15 @@ export default async function AttendancePage({ params: { locale }, searchParams 
     .order('start_time', { ascending: true })
 
   if (classErr) console.error('Error fetching classes:', classErr)
+
+  const todayClasses = (rawSchedules ?? []).map((s: any) => {
+    const cls = Array.isArray(s.classes) ? s.classes[0] : s.classes
+    return {
+      ...s,
+      classes: cls,
+      class_enrollments: (cls?.class_enrollments ?? []).filter((e: any) => e.is_active !== false),
+    }
+  })
 
   // Fetch attendance records for today
   const { data: todayAttendance } = await supabase
@@ -166,11 +180,19 @@ export default async function AttendancePage({ params: { locale }, searchParams 
                 <AttendanceDashboardClient
                   classScheduleId={classSchedule.id}
                   classId={classSchedule.class_id}
-                  enrollments={(classSchedule.class_enrollments || []).map((e: any) => ({
-                    id: e.id,
-                    student_id: e.student_id,
-                    students: Array.isArray(e.students) ? e.students[0] : e.students,
-                  })) as any}
+                  enrollments={(classSchedule.class_enrollments || []).map((e: any) => {
+                    // Names live on profiles (normalized) — flatten to the
+                    // first/last shape the marking client renders.
+                    const stu = Array.isArray(e.students) ? e.students[0] : e.students
+                    const prof = stu && (Array.isArray(stu.profiles) ? stu.profiles[0] : stu.profiles)
+                    const first = (isRTL ? prof?.first_name_ar : prof?.first_name_en) || prof?.first_name_en || '?'
+                    const last = (isRTL ? prof?.last_name_ar : prof?.last_name_en) || prof?.last_name_en || ''
+                    return {
+                      id: e.id,
+                      student_id: e.student_id,
+                      students: { id: stu?.id, first_name: first, last_name: last },
+                    }
+                  }) as any}
                   attendanceRecords={todayAttendance?.filter(a => a.class_id === classSchedule.class_id) || []}
                   date={selectedDate}
                   locale={locale}

@@ -5,15 +5,19 @@ import { shot } from './roles';
 // NOTE: the dashboard layout renders content twice (responsive desktop+mobile
 // shells), so we scope to `:visible` / use `.first()` to avoid strict-mode hits.
 
-test('dashboard shows live, non-zero student count', async ({ page }, testInfo) => {
+test('staff landing (/dashboard → /today) shows live gym data', async ({ page }, testInfo) => {
+  // IA-1: the schema-shaped dashboard is retired; /dashboard redirects to the
+  // /today front-desk view, which must render the seeded class with a live
+  // enrolled count (the old stat-card assertion's equivalent).
   const resp = await page.goto('/en/dashboard');
   expect(resp?.status() ?? 0, '/dashboard should load').toBeLessThan(400);
-  await shot(page, testInfo, 'owner-dashboard');
+  await expect(page, '/dashboard redirects to /today').toHaveURL(/\/en\/today/);
+  await shot(page, testInfo, 'owner-today');
 
-  const students = page.locator('[data-testid="stat-totalStudents"]:visible').first();
-  await expect(students).toBeVisible();
-  const text = (await students.textContent())?.trim() || '0';
-  expect(Number(text), `dashboard student count should be > 0 (was "${text}")`).toBeGreaterThan(0);
+  const classRow = page.locator('[data-testid="today-class-row"]:visible').first();
+  await expect(classRow, "today's seeded class renders").toBeVisible();
+  // Enrolled/capacity reflects the live roster (seed enrolls 2 students).
+  await expect(classRow, 'live enrolled count renders').toContainText(/[1-9]\d*\/\d+/);
 });
 
 test('students list is populated (cards render)', async ({ page }, testInfo) => {

@@ -414,7 +414,16 @@
       "last7Days": "Moyenne 7 derniers jours",
       "mostMissedClasses": "Cours les plus manqués",
       "noMissedClasses": "Aucun cours manqué cette semaine",
-      "missed": "manqué"
+      "missed": "manqué",
+      "students": "Élèves",
+      "markAllPresent": "Tout marquer présent",
+      "noEnrollments": "Aucun élève inscrit."
+    },
+    "status": {
+      "present": "Présent",
+      "absent": "Absent",
+      "late": "En retard",
+      "excused": "Excusé"
     }
   },
   "payments": {
