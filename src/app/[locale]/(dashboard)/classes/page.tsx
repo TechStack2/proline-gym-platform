@@ -8,7 +8,13 @@ export const dynamic = 'force-dynamic'
 
 async function getClasses(searchParams: { [key: string]: string | undefined }) {
   const supabase = await createClient()
-  
+
+  // ADM-2 sweep: classes_read RLS is all-authenticated → without an explicit
+  // gym filter this list showed OTHER gyms' classes in a multi-gym DB; archived
+  // classes also lingered (ADM-1 archive = is_active=false).
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user?.id ?? '').single()
+
   let query = supabase
     .from('classes')
     .select(`
@@ -17,6 +23,8 @@ async function getClasses(searchParams: { [key: string]: string | undefined }) {
       coach:coaches(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
       schedules:class_schedules(*)
     `)
+    .eq('gym_id', me?.gym_id ?? '')
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
 
   if (searchParams.search) {
@@ -88,7 +96,7 @@ async function getCoaches() {
   // Names live on profiles; coaches has no name column. Active = is_active.
   const { data } = await supabase
     .from('coaches')
-    .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+    .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url)')
     .eq('is_active', true)
   return data || []
 }

@@ -86,7 +86,7 @@ export default async function ClassDetailPage({
   const [{ data: disciplines }, { data: coaches }, { count: activeRegCount }] = await Promise.all([
     supabase.from('disciplines').select('*').eq('gym_id', (classData as any).gym_id).eq('is_active', true).order('sort_order'),
     supabase.from('coaches')
-      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url)')
       .eq('gym_id', (classData as any).gym_id)
       .eq('is_active', true),
     supabase.from('class_registrations').select('id', { count: 'exact', head: true })

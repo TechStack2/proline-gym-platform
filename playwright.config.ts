@@ -202,6 +202,15 @@ export default defineConfig({
       testMatch: /b3\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // ADM-2 (belts + sweep + avatars): archived-discipline absence across
+      // pickers, Member-360 promotion round-trip → portal progress, and the
+      // avatar upload rendering chain. Owner + student + parent contexts.
+      name: 'adm2',
+      dependencies: ['setup'],
+      testMatch: /adm2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

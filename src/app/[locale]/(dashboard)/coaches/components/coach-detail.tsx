@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
+import { Avatar } from '@/components/shared/avatar'
 
 // Real schema: coaches has NO name/email/status/coach_disciplines. Name + phone
 // come from the embedded `profiles`; specialization/bio are `*_{ar,en,fr}`;
@@ -59,6 +60,7 @@ export function CoachDetail({ coach, classes, locale, activeClassCount = 0, acti
         <Link href={`/${locale}/coaches`}>
           <Button variant="outline" size="sm"><ArrowLeft className="w-4 h-4" /></Button>
         </Link>
+        <Avatar url={profile?.avatar_url} name={localizedName(coach.profiles, locale)} size="lg" />
         <h1 className="text-3xl font-bold" data-testid="coach-name">{localizedName(coach.profiles, locale)}</h1>
         <Badge className={coach.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
           {coach.is_active ? t('status.active') : t('status.inactive')}

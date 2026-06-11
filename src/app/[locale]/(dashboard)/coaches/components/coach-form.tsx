@@ -24,7 +24,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { Loader2, Save, ArrowLeft } from 'lucide-react'
+import { Loader2, Save, ArrowLeft, Camera } from 'lucide-react'
+import { AvatarUpload, uploadAvatar } from '@/components/shared/avatar-upload'
 import Link from 'next/link'
 
 type DisciplineRow = { id: string; name_ar: string; name_en: string; name_fr: string }
@@ -32,6 +33,8 @@ type DisciplineRow = { id: string; name_ar: string; name_en: string; name_fr: st
 export type CoachInitialData = {
   coachId: string
   profileId: string
+  gymId: string
+  avatarUrl?: string | null
   first_name_ar: string | null
   first_name_en: string | null
   first_name_fr: string | null
@@ -62,6 +65,9 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // ADM-2: on ADD there's no profile id yet — stash the picked photo and upload
+  // it right after the profiles insert (edit mode uploads immediately).
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null)
 
   const [firstEn, setFirstEn] = useState(initialData?.first_name_en ?? '')
   const [lastEn, setLastEn] = useState(initialData?.last_name_en ?? '')
@@ -134,6 +140,10 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
           .from('coaches')
           .insert({ profile_id: newProfile.id, gym_id: prof.gym_id, is_active: true, ...coachPayload })
         if (cErr) throw cErr
+        if (pendingPhoto) {
+          // Best-effort: a failed photo upload must not lose the saved coach.
+          try { await uploadAvatar(prof.gym_id, newProfile.id, pendingPhoto) } catch { /* noop */ }
+        }
       }
 
       router.push(`/${locale}/coaches`)
@@ -151,6 +161,27 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
           {error && (
             <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
+
+          {/* Photo */}
+          <div className="flex items-center gap-3">
+            {initialData ? (
+              <AvatarUpload
+                gymId={initialData.gymId}
+                profileId={initialData.profileId}
+                name={`${firstEn} ${lastEn}`.trim() || '?'}
+                currentUrl={initialData.avatarUrl}
+                size="lg"
+                locale={locale}
+              />
+            ) : (
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
+                <Camera className="h-4 w-4" />
+                {pendingPhoto ? pendingPhoto.name : t('photoOptional')}
+                <input type="file" accept="image/*" className="hidden" data-testid="coach-photo-input"
+                  onChange={(e) => setPendingPhoto(e.target.files?.[0] ?? null)} />
+              </label>
+            )}
+          </div>
 
           {/* Identity (profiles) */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

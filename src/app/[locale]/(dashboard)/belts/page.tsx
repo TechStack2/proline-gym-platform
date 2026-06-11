@@ -40,11 +40,14 @@ export default async function BeltsPage({ params }: Props) {
       .from('disciplines')
       .select('id, name_ar, name_en, name_fr')
       .eq('gym_id', gymId)
+      .eq('is_active', true) // ADM-2: archived disciplines were leaking into the promotion picker
       .order('sort_order'),
     supabase
       .from('coaches')
       .select('id, profile:profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
-      .eq('gym_id', gymId),
+      .eq('gym_id', gymId)
+      .eq('is_active', true)
+      .is('deleted_at', null),
   ]);
 
   // ── Phase 2: Tables scoped via discipline_id FK chain ──

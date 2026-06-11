@@ -7,6 +7,7 @@ import { PORTAL_TABS, PORTAL_BASE_PATH } from './PortalTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { LogOut } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { HeaderAvatar } from '@/components/shared/header-avatar';
 
 type Props = {
   children: React.ReactNode;
@@ -44,6 +45,7 @@ export function PortalLayoutClient({ children, locale }: Props) {
         variant="large"
         rightActions={
           <div className="flex items-center gap-2">
+            <HeaderAvatar />
             <NotificationBell locale={locale} />
             <button
               onClick={handleLogout}

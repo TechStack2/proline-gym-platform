@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { User, Phone, CalendarDays, Shield, Award, CreditCard, AlertCircle } from 'lucide-react'
+import { AvatarUpload } from '@/components/shared/avatar-upload'
 
 type Props = { params: { locale: string } }
 
@@ -45,8 +46,15 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
-        <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-[#cd1419] text-white text-2xl font-bold mb-3">
-          {firstName?.charAt(0) || '?'}{lastName?.charAt(0) || ''}
+        <div className="mb-3 flex justify-center">
+          <AvatarUpload
+            gymId={profile?.gym_id}
+            profileId={user.id}
+            name={`${firstName ?? ''} ${lastName ?? ''}`.trim() || '?'}
+            currentUrl={profile?.avatar_url}
+            size="lg"
+            locale={locale}
+          />
         </div>
         <h2 className="text-lg font-bold text-gray-900">{firstName} {lastName}</h2>
         <p className="text-sm text-gray-500">{isRTL ? 'عضو' : 'Member'}</p>

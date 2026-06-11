@@ -10,6 +10,8 @@ import {
   DollarSign, ChevronRight, Users,
 } from 'lucide-react'
 import { GuardianPanel, type GuardianRow } from './guardian-panel'
+import { AvatarUpload } from '@/components/shared/avatar-upload'
+import { PromotePanel } from './promote-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -152,6 +154,25 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
     payerInvoices = pInv ?? []
   }
 
+  // ADM-2: promote-from-the-member-file inputs — active disciplines, their
+  // ladders, and active coaches (the RPC requires a coach).
+  const gymIdForPromote = (student as any).gym_id
+  const [{ data: promoDisciplines }, { data: promoCoachRows }] = await Promise.all([
+    supabase.from('disciplines').select('id, name_ar, name_en, name_fr')
+      .eq('gym_id', gymIdForPromote).eq('is_active', true).order('sort_order'),
+    supabase.from('coaches')
+      .select('id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)')
+      .eq('gym_id', gymIdForPromote).eq('is_active', true).is('deleted_at', null),
+  ])
+  const promoDiscIds = (promoDisciplines ?? []).map((d: any) => d.id)
+  const { data: promoHierarchies } = promoDiscIds.length
+    ? await supabase.from('belt_hierarchies')
+        .select('id, discipline_id, rank, name_ar, name_en, name_fr, sort_order')
+        .in('discipline_id', promoDiscIds)
+        .order('sort_order')
+    : { data: [] as any[] }
+  const promoteCoaches = (promoCoachRows ?? []).map((c: any) => ({ id: c.id, name: localizedName(one(c.profiles), locale) })).filter((c) => c.name)
+
   const prof: any = one((student as any).profiles)
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
@@ -183,9 +204,14 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50">
-              <User className="h-7 w-7 text-primary-600" />
-            </div>
+            <AvatarUpload
+              gymId={(student as any).gym_id}
+              profileId={prof?.id}
+              name={name}
+              currentUrl={prof?.avatar_url}
+              size="lg"
+              locale={locale}
+            />
             <div>
               <h1 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="member-name">{name}</h1>
               <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
@@ -380,6 +406,14 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
               ))}
             </ul>
           )}
+          <PromotePanel
+            studentId={id}
+            currentRank={student.current_belt_rank}
+            disciplines={(promoDisciplines ?? []) as any}
+            hierarchies={(promoHierarchies ?? []) as any}
+            coaches={promoteCoaches}
+            locale={locale}
+          />
         </Panel>
         {/* ── 7. Guardians (B3) ── */}
         <GuardianPanel studentId={id} gymId={(student as any).gym_id} guardians={guardianRows} locale={locale} />

@@ -285,7 +285,8 @@
       "errNameRequired": "The English first name is required.",
       "errSpecialtyRequired": "Pick at least one discipline.",
       "errNoGym": "No gym context.",
-      "errSaveFailed": "Could not save the coach."
+      "errSaveFailed": "Could not save the coach.",
+      "photoOptional": "Add photo (optional)"
     },
     "admin": {
       "edit": "Edit coach",
@@ -1476,5 +1477,23 @@
       "linkFailed": "Could not link the guardian.",
       "nameRequired": "The first name is required."
     }
+  },
+  "promote": {
+    "promote": "Promote belt",
+    "discipline": "Discipline",
+    "targetRank": "Target rank",
+    "coach": "Awarded by",
+    "notePlaceholder": "Note (optional)",
+    "confirm": "Confirm promotion",
+    "cancel": "Cancel",
+    "success": "Belt promoted!",
+    "errIncomplete": "Pick a discipline, rank and coach.",
+    "errFailed": "Promotion failed",
+    "noLadder": "This discipline has no belt ladder yet — add ranks in Settings → Disciplines.",
+    "topRank": "Already at the top rank of this ladder."
+  },
+  "avatar": {
+    "change": "Change photo",
+    "failed": "Upload failed"
   }
 }

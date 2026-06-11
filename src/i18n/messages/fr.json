@@ -285,7 +285,8 @@
       "errNameRequired": "Le prénom anglais est requis.",
       "errSpecialtyRequired": "Choisissez au moins une discipline.",
       "errNoGym": "Aucune salle associée.",
-      "errSaveFailed": "Impossible d'enregistrer le coach."
+      "errSaveFailed": "Impossible d'enregistrer le coach.",
+      "photoOptional": "Ajouter une photo (optionnel)"
     },
     "admin": {
       "edit": "Modifier le coach",
@@ -1476,5 +1477,23 @@
       "linkFailed": "Échec de la liaison.",
       "nameRequired": "Le prénom est requis."
     }
+  },
+  "promote": {
+    "promote": "Promouvoir",
+    "discipline": "Discipline",
+    "targetRank": "Rang cible",
+    "coach": "Décerné par",
+    "notePlaceholder": "Note (optionnel)",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "success": "Ceinture promue !",
+    "errIncomplete": "Choisissez discipline, rang et coach.",
+    "errFailed": "Échec de la promotion",
+    "noLadder": "Cette discipline n'a pas encore d'échelle de ceintures — ajoutez les rangs dans Réglages → Disciplines.",
+    "topRank": "Déjà au rang maximal."
+  },
+  "avatar": {
+    "change": "Changer la photo",
+    "failed": "Échec de l'envoi"
   }
 }

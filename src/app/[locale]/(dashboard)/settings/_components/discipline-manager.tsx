@@ -20,6 +20,33 @@ import { Loader2, Plus, Pencil, Archive, ArchiveRestore, Check, X } from 'lucide
 
 type Row = { id?: string; name_ar?: string; name_en?: string; name_fr?: string; sort_order?: number; is_active?: boolean }
 
+// ADM-2 (belt root-cause fix): a discipline without belt_hierarchies rows makes
+// belt promotion IMPOSSIBLE (empty target-rank picker → the wizard can never
+// reach save). New disciplines now get the standard 20-rank default ladder as
+// editable per-gym DATA (same template the seeds use).
+const DEFAULT_LADDER: [string, string, string, string, number, number, number, boolean][] = [
+  ['white', 'أبيض', 'White', 'Blanche', 1, 1, 8, false],
+  ['white_yellow', 'أبيض/أصفر', 'White/Yellow', 'Blanc/Jaune', 2, 2, 16, false],
+  ['yellow', 'أصفر', 'Yellow', 'Jaune', 3, 2, 20, false],
+  ['yellow_orange', 'أصفر/برتقالي', 'Yellow/Orange', 'Jaune/Orange', 4, 3, 24, false],
+  ['orange', 'برتقالي', 'Orange', 'Orange', 5, 3, 24, false],
+  ['orange_green', 'برتقالي/أخضر', 'Orange/Green', 'Orange/Vert', 6, 3, 28, false],
+  ['green', 'أخضر', 'Green', 'Verte', 7, 4, 32, false],
+  ['green_blue', 'أخضر/أزرق', 'Green/Blue', 'Vert/Bleu', 8, 4, 36, false],
+  ['blue', 'أزرق', 'Blue', 'Bleue', 9, 4, 40, false],
+  ['blue_purple', 'أزرق/أرجواني', 'Blue/Purple', 'Bleu/Violet', 10, 5, 44, false],
+  ['purple', 'أرجواني', 'Purple', 'Violette', 11, 5, 48, false],
+  ['purple_brown', 'أرجواني/بني', 'Purple/Brown', 'Violet/Marron', 12, 6, 52, false],
+  ['brown', 'بني', 'Brown', 'Marron', 13, 6, 56, false],
+  ['brown_black', 'بني/أسود', 'Brown/Black', 'Marron/Noir', 14, 6, 60, false],
+  ['red', 'أحمر', 'Red', 'Rouge', 15, 8, 80, false],
+  ['black_1', 'أسود °1', 'Black 1°', 'Noir 1°', 16, 12, 120, true],
+  ['black_2', 'أسود °2', 'Black 2°', 'Noir 2°', 17, 12, 120, true],
+  ['black_3', 'أسود °3', 'Black 3°', 'Noir 3°', 18, 12, 120, true],
+  ['black_4', 'أسود °4', 'Black 4°', 'Noir 4°', 19, 12, 120, true],
+  ['black_5', 'أسود °5', 'Black 5°', 'Noir 5°', 20, 12, 120, true],
+]
+
 export function DisciplineManager({ disciplines, gymId, locale }: { disciplines: Row[]; gymId: string; locale: string }) {
   const t = useTranslations('settings.discipline')
   const router = useRouter()
@@ -57,8 +84,19 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
         name_fr: addFr.trim() || addEn.trim(),
         sort_order: maxSort + 1,
         is_active: true,
-      })
-      if (!res.error) { setAddEn(''); setAddAr(''); setAddFr('') }
+      }).select('id').single()
+      if (!res.error && res.data) {
+        // Seed the default ladder so promotion works immediately (editable data).
+        const ladderRes = await supabase.from('belt_hierarchies').insert(
+          DEFAULT_LADDER.map(([rank, ar, en, fr, so, mm, mc, bb]) => ({
+            discipline_id: res.data.id,
+            rank, name_ar: ar, name_en: en, name_fr: fr,
+            sort_order: so, min_months_in_rank: mm, min_classes_attended: mc, is_black_belt: bb,
+          })),
+        )
+        if (ladderRes.error) return ladderRes
+        setAddEn(''); setAddAr(''); setAddFr('')
+      }
       return res
     })
 
