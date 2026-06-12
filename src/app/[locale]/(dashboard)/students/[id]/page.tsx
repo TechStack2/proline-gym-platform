@@ -373,7 +373,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               {(invoices ?? []).map((inv: any) => {
                 const bal = balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
                 return (
-                  <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status}>
+                  <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status} data-type={inv.invoice_type}>
                     <span className="flex flex-col">
                       <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-[#cd1419] hover:underline">
                         {inv.invoice_number}

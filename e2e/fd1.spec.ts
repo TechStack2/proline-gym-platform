@@ -21,7 +21,6 @@ import { vis, createClassViaWizard } from './helpers';
  *     file, the Money card loses the due row, and the day's tally MOVES.
  */
 const RUN = Date.now().toString().slice(-6);
-const CLASS_NAME = `FD Class ${RUN}`;
 
 async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
   const ctx = await browser.newContext({ storageState: ROLES[role].storage, locale: 'en' });
@@ -105,8 +104,10 @@ test('FD-1 · Today cards actionable (expiring/money/inbox-collapse) + lists wor
   }
 });
 
-test('FD-1 · Member-360 modals: register-to-class round-trip + pre-selected payment moves the tally', async ({ browser }) => {
+test('FD-1 · Member-360 modals: register-to-class round-trip + pre-selected payment moves the tally', async ({ browser }, testInfo) => {
   test.setTimeout(240_000);
+  // Retry-unique: a retry must not collide with attempt 1's open registration.
+  const CLASS_NAME = `FD Class ${RUN}r${testInfo.retry}`;
   const owner = await ctxFor(browser, 'owner');
   try {
     const cashBefore = await cashUsd(owner.page);
@@ -121,7 +122,6 @@ test('FD-1 · Member-360 modals: register-to-class round-trip + pre-selected pay
     await vis(owner.page, '[data-testid="student-card"]').filter({ hasText: 'Karim' }).first().click();
     await expect(owner.page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
     const fileUrl = owner.page.url();
-    const pendingBefore = await vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"]').count();
 
     // ── Register-to-class modal: pick the fresh class, 20% discount, approve ──
     await vis(owner.page, '[data-testid="m360-register-open"]').first().click();
@@ -136,14 +136,17 @@ test('FD-1 · Member-360 modals: register-to-class round-trip + pre-selected pay
       vis(owner.page, '[data-testid="member-reg-row"]').filter({ hasText: CLASS_NAME }).first(),
     ).toContainText('−20%');
     await owner.page.goto(fileUrl); // hard reload — server truth, not optimistic UI
-    expect(
-      await vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"]').count(),
-      'the approval issued a NEW open invoice on the file',
-    ).toBeGreaterThan(pendingBefore);
+    // The approval issued the discounted invoice: $50 × 0.8 × 1.11 TVA = $44.40.
+    // (The billing panel windows to the 10 newest rows, so COUNTS are
+    // non-monotonic by fd1 time — assert the artifact, not a count.)
+    await expect(
+      vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="class_registration"]')
+        .filter({ hasText: '$44.40' }).first(),
+      'the approval issued the discounted class invoice on the file',
+    ).toBeVisible({ timeout: 15_000 });
 
     // ── Record-payment modal: the seeded due-today invoice is PRE-selected
     //    (oldest due date first); amount defaults to its full balance. ──
-    const paysBefore = await vis(owner.page, '[data-testid="member-payment-row"]').count();
     await vis(owner.page, '[data-testid="m360-pay-open"]').first().click();
     const amountField = owner.page.getByTestId('m360-pay-amount');
     await expect(amountField).toBeVisible({ timeout: 15_000 });
@@ -151,11 +154,13 @@ test('FD-1 · Member-360 modals: register-to-class round-trip + pre-selected pay
     expect(prefilled, 'amount pre-filled with the selected invoice balance').toBeGreaterThan(0);
     await owner.page.getByTestId('m360-pay-submit').click();
     await expect(
-      vis(owner.page, '[data-testid="member-payment-row"]').first(),
-      'payment lands on the file',
+      vis(owner.page, '[data-testid="member-payment-row"]').filter({ hasText: `$${prefilled.toFixed(2)}` }).first(),
+      'the recorded payment lands on the file (windowed list — assert the artifact)',
     ).toBeVisible({ timeout: 20_000 });
     await owner.page.goto(fileUrl);
-    expect(await vis(owner.page, '[data-testid="member-payment-row"]').count()).toBeGreaterThan(paysBefore);
+    await expect(
+      vis(owner.page, '[data-testid="member-payment-row"]').filter({ hasText: `$${prefilled.toFixed(2)}` }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
     // ── Money card: the due-today row is settled away and the tally MOVED ──
     const cashAfter = await cashUsd(owner.page);
