@@ -15,6 +15,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths-ignore:           # auditor docs land on main constantly — don't burn
+      - 'docs/**'           # an e2e-cloud slot (and queue position) on them
+      - '**.md'
 
 # Serialize runs on the shared cloud project; the slug is unique per run/attempt
 # regardless, so overlapping runs never collide on data. Don't cancel in-progress
