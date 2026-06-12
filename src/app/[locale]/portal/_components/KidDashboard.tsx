@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { PortalCampsSection } from './portal-camps'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { one } from '@/lib/names'
@@ -224,6 +225,9 @@ export async function KidDashboard({
           </ul>
         )}
       </div>
+
+      {/* E1: published camps — guardian requests FOR this kid */}
+      <PortalCampsSection studentId={kid.id} actingFor={kid.name} locale={locale} />
 
       {/* Household billing link */}
       <Link href={`/${locale}/portal/billing`} data-testid="kid-billing-link"

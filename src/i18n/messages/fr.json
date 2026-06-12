@@ -844,8 +844,8 @@
     }
   },
   "camps": {
-    "title": "Camps et Événements",
-    "subtitle": "Gérer les camps et événements",
+    "title": "Camps",
+    "subtitle": "Programmes à dates fixes — créer, publier, inscrire, animer",
     "new_camp": "Nouveau Camp",
     "edit_camp": "Modifier le Camp",
     "details": "Détails",
@@ -870,7 +870,7 @@
     "min_age": "Âge Min",
     "max_age": "Âge Max",
     "description": "Description",
-    "ages": "Âges {min}-{max}",
+    "ages": "Âges {min}–{max}",
     "location_ar": "Lieu (AR)",
     "create": "Créer un Camp",
     "save_changes": "Enregistrer",
@@ -892,9 +892,9 @@
       "draft": "Brouillon",
       "open": "Ouvert",
       "full": "Complet",
-      "in_progress": "En Cours",
+      "in_progress": "En cours",
       "completed": "Terminé",
-      "cancelled": "Annulé"
+      "cancelled": "Archivé"
     },
     "toast": {
       "created": "Camp créé avec succès",
@@ -905,7 +905,40 @@
       "delete_error": "Échec de la suppression du camp",
       "status_updated": "Statut mis à jour",
       "status_error": "Échec de la mise à jour du statut"
-    }
+    },
+    "addCamp": "Nouveau camp",
+    "editCamp": "Modifier le camp",
+    "none": "Aucun camp",
+    "roster": "Liste",
+    "attendance": "Présences",
+    "pendingCount": "{count} en attente",
+    "onLanding": "Publié",
+    "staged": "Masqué",
+    "archiveWarn": "Archiver ce camp ?",
+    "archiveWarnRegs": "Ce camp a {count} inscriptions confirmées. Archiver quand même ? (Inscriptions et factures conservées.)",
+    "saveFailed": "Échec de l’enregistrement",
+    "created": "Camp créé (masqué — publiez quand prêt)",
+    "updated": "Camp mis à jour",
+    "nameEn": "Nom (EN)",
+    "nameAr": "Nom (AR)",
+    "nameFr": "Nom (FR)",
+    "startDate": "Début",
+    "endDate": "Fin",
+    "minAge": "Âge min",
+    "maxAge": "Âge max",
+    "priceUsd": "Prix $",
+    "priceLbp": "Prix LBP",
+    "optional": "optionnel",
+    "back": "Retour",
+    "next": "Suivant",
+    "createCamp": "Créer le camp",
+    "saveChanges": "Enregistrer",
+    "stagedNote": "Créé masqué — activez la publication quand prêt.",
+    "noRegs": "Aucune inscription",
+    "regPending": "En attente d’approbation",
+    "markFailed": "Échec du marquage",
+    "present": "Présent",
+    "absent": "Absent"
   },
   "pt": {
     "title": "Forfaits PT",
@@ -1306,6 +1339,14 @@
       "pt_refill_due": {
         "title": "Plus que quelques séances PT",
         "body": "Il ne reste que {remaining} sur {package} — renouvelez au comptoir"
+      },
+      "camp_requested": {
+        "title": "Demande de camp",
+        "body": "{studentName} a demandé une place pour {camp}"
+      },
+      "camp_confirmed": {
+        "title": "Inscription au camp confirmée",
+        "body": "Inscrit à {camp} — à bientôt !"
       }
     }
   },
@@ -1428,7 +1469,11 @@
       "ptRefill": "Recharge PT",
       "noneRefill": "aucune recharge due",
       "resell": "Revendre",
-      "daysLeft": "{days} j restants"
+      "daysLeft": "{days} j restants",
+      "campToday": "Camp aujourd’hui",
+      "noneCamp": "aucun camp aujourd’hui",
+      "campExpected": "{count} attendus",
+      "campUnpaid": "{count} impayées"
     }
   },
   "inbox": {
@@ -1450,7 +1495,8 @@
     "renewalsTitle": "Renouvellements PT dus",
     "renewalsZero": "aucun renouvellement dû",
     "renewalDays": "{days} j avant expiration",
-    "resell": "Revendre"
+    "resell": "Revendre",
+    "campRequests": "Demandes de camp"
   },
   "member360": {
     "age": "{age} ans",
@@ -1517,7 +1563,17 @@
         "whish": "Whish",
         "bank_transfer": "Virement bancaire",
         "bob_finance": "BOB Finance"
-      }
+      },
+      "registerCamp": "Inscrire à un camp",
+      "campTitle": "Inscrire {name} à un camp",
+      "pickCamp": "Choisissez d’abord un camp",
+      "noCamps": "Aucun camp ouvert",
+      "campFull": "Complet",
+      "spotsLeft": "{count} restantes",
+      "campConfirm": "Inscrire et facturer",
+      "campRegistered": "Inscrit — facture émise",
+      "campFailed": "Échec de l’inscription au camp",
+      "ageWarning": "Hors de la tranche d’âge du camp ({min}–{max}) — inscription possible (décision du comptoir)."
     }
   },
   "money": {
@@ -1710,6 +1766,19 @@
       "completed": "Terminée",
       "cancelled": "Annulée",
       "no_show": "Absence"
+    }
+  },
+  "campsPortal": {
+    "title": "Camps",
+    "ages": "Âges {min}–{max}",
+    "full": "Complet",
+    "spotsLeft": "{count} places restantes",
+    "request": "Demander une place",
+    "requestFor": "Demander pour {name}",
+    "requested": "Demande envoyée — le club confirmera",
+    "status": {
+      "pending": "Demandé",
+      "confirmed": "Inscrit"
     }
   }
 }

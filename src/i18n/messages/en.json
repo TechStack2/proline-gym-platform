@@ -844,8 +844,8 @@
     }
   },
   "camps": {
-    "title": "Camps & Events",
-    "subtitle": "Manage summer camps, events and registrations",
+    "title": "Camps",
+    "subtitle": "Date-bounded programs — create, publish, register, run",
     "new_camp": "New Camp",
     "edit_camp": "Edit Camp",
     "details": "Details",
@@ -870,7 +870,7 @@
     "min_age": "Min Age",
     "max_age": "Max Age",
     "description": "Description",
-    "ages": "Ages {min}-{max}",
+    "ages": "Ages {min}–{max}",
     "location_ar": "Location (AR)",
     "create": "Create Camp",
     "save_changes": "Save Changes",
@@ -892,9 +892,9 @@
       "draft": "Draft",
       "open": "Open",
       "full": "Full",
-      "in_progress": "In Progress",
+      "in_progress": "Running",
       "completed": "Completed",
-      "cancelled": "Cancelled"
+      "cancelled": "Archived"
     },
     "toast": {
       "created": "Camp created successfully",
@@ -905,7 +905,40 @@
       "delete_error": "Failed to delete camp",
       "status_updated": "Status updated",
       "status_error": "Failed to update status"
-    }
+    },
+    "addCamp": "New camp",
+    "editCamp": "Edit camp",
+    "none": "No camps yet",
+    "roster": "Roster",
+    "attendance": "Attendance",
+    "pendingCount": "{count} pending",
+    "onLanding": "On landing",
+    "staged": "Staged",
+    "archiveWarn": "Archive this camp?",
+    "archiveWarnRegs": "This camp has {count} confirmed registrations. Archive anyway? (Registrations and invoices are kept.)",
+    "saveFailed": "Save failed",
+    "created": "Camp created (staged — publish when ready)",
+    "updated": "Camp updated",
+    "nameEn": "Name (EN)",
+    "nameAr": "Name (AR)",
+    "nameFr": "Name (FR)",
+    "startDate": "Start",
+    "endDate": "End",
+    "minAge": "Min age",
+    "maxAge": "Max age",
+    "priceUsd": "Price $",
+    "priceLbp": "Price LBP",
+    "optional": "optional",
+    "back": "Back",
+    "next": "Next",
+    "createCamp": "Create camp",
+    "saveChanges": "Save changes",
+    "stagedNote": "Created staged — flip the landing toggle to publish.",
+    "noRegs": "No registrations yet",
+    "regPending": "Pending approval",
+    "markFailed": "Marking failed",
+    "present": "Present",
+    "absent": "Absent"
   },
   "pt": {
     "title": "Personal Training",
@@ -1306,6 +1339,14 @@
       "pt_refill_due": {
         "title": "Few PT sessions left",
         "body": "Only {remaining} left on {package} — renew at the desk"
+      },
+      "camp_requested": {
+        "title": "Camp request",
+        "body": "{studentName} requested a spot in {camp}"
+      },
+      "camp_confirmed": {
+        "title": "Camp registration confirmed",
+        "body": "Registered for {camp} — see you there!"
       }
     }
   },
@@ -1428,7 +1469,11 @@
       "ptRefill": "PT refill",
       "noneRefill": "no refills due",
       "resell": "Re-sell",
-      "daysLeft": "{days}d left"
+      "daysLeft": "{days}d left",
+      "campToday": "Camp today",
+      "noneCamp": "no camp running today",
+      "campExpected": "{count} expected",
+      "campUnpaid": "{count} unpaid"
     }
   },
   "inbox": {
@@ -1450,7 +1495,8 @@
     "renewalsTitle": "PT renewals due",
     "renewalsZero": "no renewals due",
     "renewalDays": "{days}d to expiry",
-    "resell": "Re-sell"
+    "resell": "Re-sell",
+    "campRequests": "Camp requests"
   },
   "member360": {
     "age": "{age} yrs",
@@ -1517,7 +1563,17 @@
         "whish": "Whish",
         "bank_transfer": "Bank transfer",
         "bob_finance": "BOB Finance"
-      }
+      },
+      "registerCamp": "Register to camp",
+      "campTitle": "Register {name} to a camp",
+      "pickCamp": "Pick a camp first",
+      "noCamps": "No open camps",
+      "campFull": "Full",
+      "spotsLeft": "{count} left",
+      "campConfirm": "Register & invoice",
+      "campRegistered": "Registered — invoice issued",
+      "campFailed": "Camp registration failed",
+      "ageWarning": "Outside the camp age range ({min}–{max}) — you can still register (desk override)."
     }
   },
   "money": {
@@ -1710,6 +1766,19 @@
       "completed": "Completed",
       "cancelled": "Cancelled",
       "no_show": "No-show"
+    }
+  },
+  "campsPortal": {
+    "title": "Camps",
+    "ages": "Ages {min}–{max}",
+    "full": "Full",
+    "spotsLeft": "{count} spots left",
+    "request": "Request a spot",
+    "requestFor": "Request for {name}",
+    "requested": "Request sent — the gym will confirm",
+    "status": {
+      "pending": "Requested",
+      "confirmed": "Registered"
     }
   }
 }

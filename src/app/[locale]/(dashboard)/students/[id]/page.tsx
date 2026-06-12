@@ -12,7 +12,7 @@ import {
 import { GuardianPanel, type GuardianRow } from './guardian-panel'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { PromotePanel } from './promote-panel'
-import { MemberActions, type OpenInvoice, type PickableClass } from './member-actions'
+import { MemberActions, type OpenInvoice, type PickableCamp, type PickableClass } from './member-actions'
 import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel-client'
 import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
 
@@ -251,6 +251,22 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     }))
     .filter((c) => c.name)
 
+  // E1: open camps for the register-to-camp modal (spots via the definer fn).
+  const { data: campRows } = await supabase
+    .from('camps')
+    .select('id, name_ar, name_en, name_fr, start_date, end_date, price_usd, min_age, max_age, status')
+    .eq('gym_id', gymIdForPromote)
+    .is('deleted_at', null)
+    .in('status', ['open', 'in_progress', 'full'])
+    .gte('end_date', new Date().toISOString().slice(0, 10))
+    .order('start_date')
+  const pickableCamps: PickableCamp[] = await Promise.all(
+    ((campRows ?? []) as any[]).map(async (c) => {
+      const { data: spots } = await supabase.rpc('get_camp_spots_left', { p_camp_id: c.id })
+      return { ...c, price_usd: Number(c.price_usd), spots: (spots as number | null) ?? 0 }
+    }),
+  )
+
   const prof: any = one((student as any).profiles)
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
@@ -343,6 +359,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
             memberName={name}
             classes={(pickableClasses ?? []) as PickableClass[]}
             openInvoices={openInvoices}
+            camps={pickableCamps}
+            memberAge={age}
             locale={locale}
             autoPay={searchParams?.pay === '1'}
           />

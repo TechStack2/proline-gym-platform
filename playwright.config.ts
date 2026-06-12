@@ -237,6 +237,13 @@ export default defineConfig({
       testMatch: /pt1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // E1 camps: owner + guardian + anon. Runs last (fills the seeded camp).
+      name: 'e1',
+      dependencies: ['setup'],
+      testMatch: /e1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
