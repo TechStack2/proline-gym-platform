@@ -9,7 +9,7 @@ import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { getRenewalsDue } from '@/lib/pt/refill'
 import {
   UserPlus, Users, DollarSign, ClipboardList, Dumbbell, CalendarDays,
-  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw,
+  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -129,6 +129,30 @@ export default async function TodayPage({ params: { locale } }: Props) {
   const todayPt = (ptSessions ?? []).filter((s: any) => one(s.coaches)?.gym_id === gymId)
   const tally = await getDailyTally(supabase, dayStart)
   const renewals = await getRenewalsDue(supabase, gymId, locale)
+
+  // ── E1: camps running today — N expected · M unpaid → roster ──
+  const { data: liveCamps } = await supabase
+    .from('camps')
+    .select('id, name_ar, name_en, name_fr, max_capacity')
+    .eq('gym_id', gymId)
+    .is('deleted_at', null)
+    .in('status', ['open', 'in_progress', 'full'])
+    .lte('start_date', dayStart)
+    .gte('end_date', dayStart)
+  const campCards: { id: string; name: any; expected: number; unpaid: number }[] = []
+  for (const c of (liveCamps ?? []) as any[]) {
+    const { data: cregs } = await supabase
+      .from('camp_registrations').select('invoice_id').eq('camp_id', c.id).eq('status', 'confirmed')
+    const cInvIds = (cregs ?? []).map((r: any) => r.invoice_id).filter(Boolean)
+    let unpaid = 0
+    if (cInvIds.length) {
+      const { count } = await supabase
+        .from('invoices').select('id', { count: 'exact', head: true })
+        .in('id', cInvIds).in('status', ['pending', 'partial', 'overdue'])
+      unpaid = count ?? 0
+    }
+    campCards.push({ id: c.id, name: c, expected: (cregs ?? []).length, unpaid })
+  }
   const inboxCount = (regRequests ?? 0) + (ptRequests ?? 0)
 
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
@@ -322,6 +346,26 @@ export default async function TodayPage({ params: { locale } }: Props) {
             </ActionRow>
           ))}
         </div>
+      </ActionCard>
+
+      {/* ── Card: Camp today (E1, FD-1 docking contract) ── */}
+      <ActionCard icon={Tent} title={t('cards.campToday')} count={campCards.length}
+        emptyText={t('cards.noneCamp')} testid="camp" isRTL={isRTL}>
+        {campCards.map((c) => (
+          <ActionRow key={c.id} href={`/${locale}/camps/${c.id}`} testid="camp-today-row"
+            action={
+              <Link href={`/${locale}/camps/${c.id}?tab=attendance`} data-testid="camp-today-attendance"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100">
+                <ClipboardList className="h-3.5 w-3.5" /> {t('markAttendance')}
+              </Link>
+            }>
+            <p className="truncate text-sm font-semibold text-gray-900">{lname(c.name)}</p>
+            <p className="text-xs text-gray-500">
+              {t('cards.campExpected', { count: c.expected })}
+              {c.unpaid > 0 ? ` · ${t('cards.campUnpaid', { count: c.unpaid })}` : ''}
+            </p>
+          </ActionRow>
+        ))}
       </ActionCard>
 
       {/* ── Card 6: PT refill (PT-1 — first external proof of the FD-1 docking

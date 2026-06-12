@@ -238,6 +238,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // E1 camps: owner + guardian + anon. Runs last (fills the seeded camp).
+      name: 'e1',
+      dependencies: ['setup'],
+      testMatch: /e1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    {
       // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries
       // meta/OG/JSON-LD; sitemap.xml + robots.txt respond with expected entries.
       // Anon (no storageState); read-only — order-independent.

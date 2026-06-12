@@ -18,9 +18,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
-import { DollarSign, CalendarDays, Dumbbell, X, Loader2, Users } from 'lucide-react'
+import { DollarSign, CalendarDays, Dumbbell, X, Loader2, Users, Tent, AlertTriangle } from 'lucide-react'
 import { recordPayment } from '../../invoices/actions'
 import { registerMemberToClass } from './actions'
+import { registerToCamp } from '../../camps/actions'
 
 export type PickableClass = {
   id: string; name_ar: string | null; name_en: string | null; name_fr: string | null
@@ -28,6 +29,11 @@ export type PickableClass = {
 }
 export type OpenInvoice = {
   id: string; invoice_number: string; balance_usd: number; exchange_rate: number | null
+}
+export type PickableCamp = {
+  id: string; name_ar: string | null; name_en: string | null; name_fr: string | null
+  start_date: string; end_date: string; price_usd: number
+  min_age: number | null; max_age: number | null; status: string; spots: number
 }
 
 const METHODS = ['cash_usd', 'cash_lbp', 'omt', 'whish', 'bank_transfer', 'bob_finance'] as const
@@ -53,12 +59,14 @@ function Modal({ title, onClose, testid, children }: {
 }
 
 export function MemberActions({
-  studentId, memberName, classes, openInvoices, locale, autoPay,
+  studentId, memberName, classes, openInvoices, camps = [], memberAge = null, locale, autoPay,
 }: {
   studentId: string
   memberName: string
   classes: PickableClass[]
   openInvoices: OpenInvoice[]
+  camps?: PickableCamp[]
+  memberAge?: number | null
   locale: string
   autoPay?: boolean
 }) {
@@ -69,6 +77,8 @@ export function MemberActions({
 
   const [regOpen, setRegOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
+  const [campOpen, setCampOpen] = useState(false)
+  const [campId, setCampId] = useState('')
   useEffect(() => { if (autoPay) setPayOpen(true) }, [autoPay])
 
   // ── Register-to-class state ──
@@ -126,6 +136,26 @@ export function MemberActions({
     })
   }
 
+  const selectedCamp = camps.find((c) => c.id === campId)
+  // E1: age range is a CLIENT-SIDE warning only — the desk can override.
+  const ageWarning = !!(selectedCamp && memberAge != null &&
+    ((selectedCamp.min_age != null && memberAge < selectedCamp.min_age) ||
+     (selectedCamp.max_age != null && memberAge > selectedCamp.max_age)))
+
+  const submitCamp = () => {
+    if (!campId) { toast({ title: t('pickCamp'), variant: 'destructive' }); return }
+    startTransition(async () => {
+      const res = await registerToCamp({ studentId, campId })
+      if (res.ok) {
+        toast({ title: t('campRegistered'), variant: 'success' })
+        setCampOpen(false); setCampId('')
+        router.refresh()
+      } else {
+        toast({ title: t('campFailed'), description: res.error, variant: 'destructive' })
+      }
+    })
+  }
+
   return (
     <div className="flex flex-wrap gap-2" data-testid="member-quick-actions">
       <button type="button" data-testid="m360-pay-open" onClick={() => setPayOpen(true)}
@@ -135,6 +165,10 @@ export function MemberActions({
       <button type="button" data-testid="m360-register-open" onClick={() => setRegOpen(true)}
         className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
         <CalendarDays className="h-3.5 w-3.5" /> {t('newRegistration')}
+      </button>
+      <button type="button" data-testid="m360-camp-open" onClick={() => setCampOpen(true)}
+        className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+        <Tent className="h-3.5 w-3.5" /> {t('registerCamp')}
       </button>
       <a href="#panel-pt" data-testid="m360-pt-anchor"
         className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
@@ -171,6 +205,47 @@ export function MemberActions({
               <Button data-testid="m360-register-submit" onClick={submitRegister} disabled={pending || !classId}
                 className="w-full bg-[#cd1419] hover:bg-[#a81014]">
                 {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('registerConfirm')}
+              </Button>
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {campOpen && (
+        <Modal title={t('campTitle', { name: memberName })} onClose={() => setCampOpen(false)} testid="m360-camp-modal">
+          {camps.length === 0 ? (
+            <p className="py-3 text-center text-sm text-gray-400">{t('noCamps')}</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                {camps.map((c) => {
+                  const cname = ((locale === 'ar' ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en || '')
+                  const full = c.status === 'full' || c.spots <= 0
+                  return (
+                    <button key={c.id} type="button" data-testid="m360-camp-option" data-id={c.id} data-full={full}
+                      onClick={() => setCampId(c.id)}
+                      className={cn('flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm',
+                        campId === c.id ? 'border-[#cd1419] bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                      <span className="min-w-0 truncate text-left font-medium text-gray-900">{cname}</span>
+                      <span className="shrink-0 text-xs text-gray-500" dir="ltr">
+                        ${Number(c.price_usd).toFixed(0)}
+                        {full
+                          ? <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{t('campFull')}</span>
+                          : <span className="ml-1.5">{t('spotsLeft', { count: c.spots })}</span>}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              {ageWarning && (
+                <p data-testid="m360-camp-age-warning" className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  {t('ageWarning', { min: selectedCamp?.min_age ?? '—', max: selectedCamp?.max_age ?? '—' })}
+                </p>
+              )}
+              <Button data-testid="m360-camp-submit" onClick={submitCamp} disabled={pending || !campId}
+                className="w-full bg-[#cd1419] hover:bg-[#a81014]">
+                {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('campConfirm')}
               </Button>
             </div>
           )}

@@ -7,6 +7,7 @@ import { GallerySection } from '@/components/marketing/GallerySection';
 import { WhySection } from '@/components/marketing/WhySection';
 import { PricingSection } from '@/components/marketing/PricingSection';
 import { PtSection } from '@/components/marketing/PtSection';
+import { CampsSection } from '@/components/marketing/CampsSection';
 import { FacilitySection } from '@/components/marketing/FacilitySection';
 import { TrialCTASection } from '@/components/marketing/TrialCTASection';
 
@@ -39,6 +40,7 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
       <WhySection locale={locale} />
       <PricingSection locale={locale} gymSlug={gymSlug} />
       <PtSection locale={locale} gymSlug={gymSlug} />
+      <CampsSection locale={locale} gymSlug={gymSlug} />
       <FacilitySection locale={locale} />
       <TrialCTASection locale={locale} gymSlug={gymSlug} />
     </>

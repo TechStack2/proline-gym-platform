@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { PortalCampsSection } from './_components/portal-camps'
 import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
@@ -304,6 +305,9 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           <p className="text-sm text-gray-400 text-center py-4">{isRTL ? 'لا توجد سجلات حضور بعد' : 'No attendance records yet'}</p>
         )}
       </div>
+
+      {/* E1: published camps — member-self request */}
+      {student && <PortalCampsSection studentId={student.id} actingFor={null} locale={locale} />}
     </div>
   )
 }

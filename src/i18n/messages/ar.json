@@ -844,8 +844,8 @@
     }
   },
   "camps": {
-    "title": "المخيمات والفعاليات",
-    "subtitle": "إدارة المخيمات الصيفية والفعاليات",
+    "title": "المخيمات",
+    "subtitle": "برامج محددة المدة — أنشئ، انشر، سجّل، شغّل",
     "new_camp": "مخيم جديد",
     "edit_camp": "تعديل المخيم",
     "details": "التفاصيل",
@@ -858,7 +858,7 @@
     "end_date": "تاريخ النهاية",
     "from": "من",
     "to": "إلى",
-    "capacity": "السعة القصوى",
+    "capacity": "السعة",
     "name_ar_placeholder": "الاسم (AR)",
     "name_en_placeholder": "الاسم (EN)",
     "name_fr_placeholder": "الاسم (FR)",
@@ -870,7 +870,7 @@
     "min_age": "الحد الأدنى للعمر",
     "max_age": "الحد الأقصى للعمر",
     "description": "الوصف",
-    "ages": "الأعمار {min}-{max}",
+    "ages": "الأعمار {min}–{max}",
     "location_ar": "الموقع (AR)",
     "create": "إنشاء",
     "save_changes": "حفظ التغييرات",
@@ -892,9 +892,9 @@
       "draft": "مسودة",
       "open": "مفتوح",
       "full": "مكتمل",
-      "in_progress": "قيد التنفيذ",
-      "completed": "منتهي",
-      "cancelled": "ملغي"
+      "in_progress": "جارٍ",
+      "completed": "منتهٍ",
+      "cancelled": "مؤرشف"
     },
     "toast": {
       "created": "تم إنشاء المخيم بنجاح",
@@ -905,7 +905,40 @@
       "delete_error": "فشل حذف المخيم",
       "status_updated": "تم تحديث الحالة",
       "status_error": "فشل تحديث الحالة"
-    }
+    },
+    "addCamp": "مخيم جديد",
+    "editCamp": "تعديل المخيم",
+    "none": "لا مخيمات بعد",
+    "roster": "القائمة",
+    "attendance": "الحضور",
+    "pendingCount": "{count} بانتظار الموافقة",
+    "onLanding": "على الصفحة",
+    "staged": "مخفي",
+    "archiveWarn": "أرشفة هذا المخيم؟",
+    "archiveWarnRegs": "لهذا المخيم {count} تسجيلات مؤكدة. أرشفة على أي حال؟ (تُحفظ التسجيلات والفواتير.)",
+    "saveFailed": "فشل الحفظ",
+    "created": "أُنشئ المخيم (مخفي — انشره عند الجاهزية)",
+    "updated": "حُدّث المخيم",
+    "nameEn": "الاسم (EN)",
+    "nameAr": "الاسم (AR)",
+    "nameFr": "الاسم (FR)",
+    "startDate": "البداية",
+    "endDate": "النهاية",
+    "minAge": "الحد الأدنى للعمر",
+    "maxAge": "الحد الأقصى للعمر",
+    "priceUsd": "السعر $",
+    "priceLbp": "السعر ل.ل",
+    "optional": "اختياري",
+    "back": "رجوع",
+    "next": "التالي",
+    "createCamp": "إنشاء المخيم",
+    "saveChanges": "حفظ التعديلات",
+    "stagedNote": "أُنشئ مخفياً — فعّل زر النشر عند الجاهزية.",
+    "noRegs": "لا تسجيلات بعد",
+    "regPending": "بانتظار الموافقة",
+    "markFailed": "فشل التسجيل",
+    "present": "حاضر",
+    "absent": "غائب"
   },
   "pt": {
     "title": "باقات التدريب",
@@ -1306,6 +1339,14 @@
       "pt_refill_due": {
         "title": "جلساتك الخاصة على وشك الانتهاء",
         "body": "تبقّى {remaining} فقط من {package} — جدّد في الاستقبال"
+      },
+      "camp_requested": {
+        "title": "طلب مخيم",
+        "body": "طلب {studentName} مكاناً في {camp}"
+      },
+      "camp_confirmed": {
+        "title": "تأكيد التسجيل في المخيم",
+        "body": "تم التسجيل في {camp} — نراك هناك!"
       }
     }
   },
@@ -1428,7 +1469,11 @@
       "ptRefill": "تجديد التدريب الخاص",
       "noneRefill": "لا تجديدات مستحقة",
       "resell": "إعادة بيع",
-      "daysLeft": "{days}ي متبقية"
+      "daysLeft": "{days}ي متبقية",
+      "campToday": "مخيم اليوم",
+      "noneCamp": "لا مخيم يعمل اليوم",
+      "campExpected": "{count} متوقعون",
+      "campUnpaid": "{count} غير مدفوعة"
     }
   },
   "inbox": {
@@ -1450,7 +1495,8 @@
     "renewalsTitle": "تجديدات التدريب الخاص",
     "renewalsZero": "لا تجديدات مستحقة",
     "renewalDays": "{days}ي للانتهاء",
-    "resell": "إعادة بيع"
+    "resell": "إعادة بيع",
+    "campRequests": "طلبات المخيمات"
   },
   "member360": {
     "age": "{age} سنة",
@@ -1517,7 +1563,17 @@
         "whish": "Whish",
         "bank_transfer": "تحويل مصرفي",
         "bob_finance": "BOB Finance"
-      }
+      },
+      "registerCamp": "تسجيل في مخيم",
+      "campTitle": "تسجيل {name} في مخيم",
+      "pickCamp": "اختر مخيماً أولاً",
+      "noCamps": "لا مخيمات مفتوحة",
+      "campFull": "مكتمل",
+      "spotsLeft": "{count} متبقية",
+      "campConfirm": "تسجيل وفوترة",
+      "campRegistered": "تم التسجيل — صدرت الفاتورة",
+      "campFailed": "فشل التسجيل في المخيم",
+      "ageWarning": "خارج الفئة العمرية للمخيم ({min}–{max}) — يمكنك التسجيل رغم ذلك (قرار الاستقبال)."
     }
   },
   "money": {
@@ -1718,5 +1774,18 @@
     "ogAlt": "نادي برو لاين — فنون قتالية في بعبدا، لبنان",
     "streetAddress": "سكاي بزنس سنتر، بعبدا",
     "addressLocality": "بعبدا"
+  },
+  "campsPortal": {
+    "title": "المخيمات",
+    "ages": "الأعمار {min}–{max}",
+    "full": "مكتمل",
+    "spotsLeft": "{count} أماكن متبقية",
+    "request": "اطلب مكاناً",
+    "requestFor": "اطلب لـ {name}",
+    "requested": "أُرسل الطلب — سيؤكد النادي",
+    "status": {
+      "pending": "مطلوب",
+      "confirmed": "مسجّل"
+    }
   }
 }

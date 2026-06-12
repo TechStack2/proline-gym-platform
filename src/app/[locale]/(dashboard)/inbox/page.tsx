@@ -106,6 +106,23 @@ export default async function InboxPage({ params: { locale } }: Props) {
       .filter(Boolean) as PromotionRow[]
   }
 
+  // ── E1: pending camp requests (approve → register_camp / decline) ──
+  const { data: campReqRaw } = await supabase
+    .from('camp_registrations')
+    .select(`id, camp_id, student_id, registration_date,
+      camps:camp_id (name_ar, name_en, name_fr),
+      students:student_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
+    .eq('status', 'pending')
+    .order('registration_date')
+  const campRequests = ((campReqRaw ?? []) as any[]).map((r) => ({
+    id: r.id,
+    campId: r.camp_id,
+    studentId: r.student_id,
+    campName: clsName(one(r.camps)),
+    studentName: localizedName(one(r.students)?.profiles, locale),
+    requestedAt: r.registration_date,
+  }))
+
   // ── PT-1: renewals due (read-time thresholds — see lib/pt/refill) ──
   const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   const renewals = me?.gym_id ? await getRenewalsDue(supabase, me.gym_id, locale) : []
@@ -125,6 +142,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
         locale={locale}
         regRequests={regRequests}
         ptRequests={ptRequests}
+        campRequests={campRequests}
         promotions={promotions}
       />
 

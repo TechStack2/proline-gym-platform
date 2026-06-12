@@ -13,9 +13,10 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CheckCircle2, XCircle, Dumbbell, CalendarDays, ArrowUpCircle } from 'lucide-react'
+import { CheckCircle2, XCircle, Dumbbell, CalendarDays, ArrowUpCircle, Tent } from 'lucide-react'
 import { approveRegistration, rejectRegistration } from '../classes/[id]/registration-actions'
 import { approvePtRequest, rejectPtRequest } from '../pt/actions'
+import { registerToCamp, declineCampRequest } from '../camps/actions'
 
 export type RegRequestRow = {
   id: string
@@ -34,13 +35,15 @@ export type PtRequestRow = {
   requestedAt: string
 }
 export type PromotionRow = { id: string; className: string; studentName: string; at: string }
+export type CampRequestRow = { id: string; campId: string; studentId: string; campName: string; studentName: string; requestedAt: string }
 
 export function InboxQueues({
-  locale, regRequests, ptRequests, promotions,
+  locale, regRequests, ptRequests, campRequests = [], promotions,
 }: {
   locale: string
   regRequests: RegRequestRow[]
   ptRequests: PtRequestRow[]
+  campRequests?: CampRequestRow[]
   promotions: PromotionRow[]
 }) {
   const isRTL = locale === 'ar'
@@ -66,6 +69,39 @@ export function InboxQueues({
       {error && <div data-testid="inbox-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
       {/* ── Class-registration requests (B2) ── */}
+      <section>
+        <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+          <Tent className="h-4 w-4 text-primary-600" />
+          {t('campRequests')} ({campRequests.length})
+        </h2>
+        {campRequests.length === 0 ? (
+          <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
+        ) : (
+          <div className="space-y-2">
+            {campRequests.map((r) => (
+              <div key={r.id} data-testid="inbox-camp-row" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4 shadow-sm">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{r.studentName}</p>
+                  <p className="text-xs text-gray-500">{r.campName} · {fmtDate(r.requestedAt)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" data-testid="inbox-camp-approve" disabled={pending}
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => run(async () => { const res = await registerToCamp({ studentId: r.studentId, campId: r.campId, requestId: r.id }); return res.ok ? { ok: true } : res })}>
+                    <CheckCircle2 className="mr-1 h-4 w-4" /> {t('approve')}
+                  </Button>
+                  <Button size="sm" variant="outline" data-testid="inbox-camp-decline" disabled={pending}
+                    className="text-red-600 hover:bg-red-50"
+                    onClick={() => run(async () => { const res = await declineCampRequest(r.id); return res.ok ? { ok: true } : res })}>
+                    <XCircle className="mr-1 h-4 w-4" /> {t('decline')}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section>
         <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <CalendarDays className="h-4 w-4 text-primary-600" />
