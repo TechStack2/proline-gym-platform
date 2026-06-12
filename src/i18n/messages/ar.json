@@ -1066,8 +1066,8 @@
       "saveChanges": "حفظ التغييرات",
       "saveNotActive": "وظيفة الحفظ غير مفعّلة في النسخة التجريبية",
       "enterArabicName": "أدخل الاسم بالعربية",
-      "enterEnglishName": "Enter English name",
-      "enterFrenchName": "Enter French name"
+      "enterEnglishName": "أدخل الاسم بالإنجليزية",
+      "enterFrenchName": "أدخل الاسم بالفرنسية"
     },
     "exchange": {
       "currentRate": "سعر الصرف الحالي",
