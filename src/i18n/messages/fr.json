@@ -1570,5 +1570,76 @@
   "avatar": {
     "change": "Changer la photo",
     "failed": "Échec de l'envoi"
+  },
+  "attendanceHistory": {
+    "title": "Historique de présence",
+    "subtitle": "Présence enregistrée par cours et par date",
+    "filters": "Filtres",
+    "dateFrom": "Du",
+    "dateTo": "Au",
+    "class": "Cours",
+    "discipline": "Discipline",
+    "allClasses": "Tous les cours",
+    "allDisciplines": "Toutes les disciplines",
+    "thisWeek": "Cette semaine",
+    "daySummary": "Résumé par jour",
+    "present": "Présent",
+    "absent": "Absent",
+    "late": "En retard",
+    "excused": "Excusé",
+    "records": "Enregistrements",
+    "date": "Date",
+    "student": "Élève",
+    "status": "Statut",
+    "markedBy": "Marqué par",
+    "staff": "Personnel",
+    "noRecords": "Aucune présence enregistrée pour ce filtre",
+    "showing": "Affichage de {count} enregistrements",
+    "coach": {
+      "dateLabel": "Date",
+      "hint": "Choisissez une date (aujourd'hui ou jusqu'à 7 jours en arrière) pour marquer ou corriger la présence.",
+      "pastBadge": "Correction du {date}"
+    }
+  },
+  "reports": {
+    "title": "Rapports",
+    "subtitle": "Résumé de présence pour la période sélectionnée",
+    "dateFrom": "Du",
+    "dateTo": "Au",
+    "last30Days": "30 derniers jours",
+    "tabs": {
+      "byClass": "Par cours",
+      "byDiscipline": "Par discipline",
+      "students": "Élèves"
+    },
+    "byClass": {
+      "title": "Présence par cours",
+      "class": "Cours",
+      "discipline": "Discipline",
+      "sessions": "Séances tenues",
+      "avgAttendance": "Présence moy.",
+      "fillRate": "Taux de remplissage",
+      "capacity": "Capacité",
+      "noData": "Aucune présence enregistrée sur cette période"
+    },
+    "byDiscipline": {
+      "title": "Présence par discipline",
+      "discipline": "Discipline",
+      "classes": "Cours",
+      "sessions": "Séances",
+      "avgAttendance": "Présence moy.",
+      "fillRate": "Taux de remplissage"
+    },
+    "students": {
+      "title": "Présence par élève",
+      "leaders": "Les plus actifs",
+      "atRisk": "À risque (3+ absences)",
+      "student": "Élève",
+      "present": "Présent",
+      "absent": "Absent",
+      "rate": "Taux",
+      "noLeaders": "Aucune présence enregistrée sur cette période",
+      "noAtRisk": "Aucun élève à risque sur cette période"
+    }
   }
 }

@@ -65,6 +65,10 @@ export default async function SettingsPage({ params, searchParams }: Props) {
         <Link href={`/${locale}/settings?tab=plans`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
           {locale === 'ar' ? 'خطط العضوية' : locale === 'fr' ? "Plans d'adhésion" : 'Membership plans'}
         </Link>
+        {/* REP-1: reports re-enters the nav here (out-of-nav since IA-1; repaired). */}
+        <Link href={`/${locale}/reports`} data-testid="settings-reports-link" className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          {locale === 'ar' ? 'التقارير' : locale === 'fr' ? 'Rapports' : 'Reports'}
+        </Link>
       </div>
 
       <Suspense

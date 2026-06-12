@@ -212,6 +212,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // REP-1 (attendance history/reports repair + coach date picker, parallel
+      // track): coach marks today/yesterday → history + by-class reports render
+      // real data on the real model. Switches roles internally (owner reads,
+      // coach marks).
+      name: 'rep1',
+      dependencies: ['setup'],
+      testMatch: /rep1\.spec\.ts/,
+    },
+    {
       // FD-1 (front-desk cockpit): Today 2.0 ActionCards, Member-360 modals,
       // workable lists. MUST run LAST — it drains the approval inbox to prove
       // the Inbox card's collapse line.
