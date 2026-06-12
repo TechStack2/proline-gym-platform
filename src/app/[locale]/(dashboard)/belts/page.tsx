@@ -63,6 +63,7 @@ export default async function BeltsPage({ params }: Props) {
       .from('belt_hierarchies')
       .select('id, discipline_id, rank, name_ar, name_en, name_fr, sort_order, stripe_count, is_black_belt')
       .in('discipline_id', disciplineIds)
+      .eq('is_active', true) // UX-2 ladder archive
       .order('sort_order'),
     supabase
       .from('belt_promotions')

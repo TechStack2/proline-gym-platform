@@ -9,6 +9,8 @@ import { ExchangeRates } from './exchange-rates';
 import { MembershipPlans } from './membership-plans';
 import { DisciplineSettings } from './discipline-settings';
 import { DisciplineManager } from './discipline-manager';
+import { PlanManager } from './plan-manager';
+import { BeltLadderManager } from './belt-ladder-manager';
 import { PtPackageManager, type PtTypeRow } from './pt-package-manager';
 
 type GymData = Parameters<typeof GymSettings>[0]['gym'];
@@ -78,13 +80,19 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
       <div>
         {activeTab === 'gym' && <GymSettings gym={gym} locale={locale} />}
         {activeTab === 'rates' && <ExchangeRates rates={rates} locale={locale} />}
-        {activeTab === 'plans' && <MembershipPlans plans={plans} locale={locale} />}
+        {activeTab === 'plans' && (
+          <>
+            {gym?.id && <PlanManager plans={plans as any} gymId={gym.id} locale={locale} />}
+            <MembershipPlans plans={plans} locale={locale} />
+          </>
+        )}
         {activeTab === 'ptpackages' && gym?.id && (
           <PtPackageManager types={ptTypes} disciplines={(disciplines as any[]).filter((d: any) => d.is_active !== false)} gymId={gym.id} locale={locale} />
         )}
         {activeTab === 'disciplines' && (
           <>
             {gym?.id && <DisciplineManager disciplines={disciplines as any} gymId={gym.id} locale={locale} />}
+            <BeltLadderManager disciplines={disciplines as any} locale={locale} />
             <DisciplineSettings disciplines={disciplines} locale={locale} />
           </>
         )}

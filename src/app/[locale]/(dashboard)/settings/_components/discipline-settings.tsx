@@ -112,9 +112,9 @@ export function DisciplineSettings({ disciplines, locale }: Props) {
 
           <div className="space-y-3">
             {activeDisciplines.map(disc => {
-              const belts = safeArray(disc.belt_hierarchies).sort(
-                (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
-              );
+              const belts = safeArray(disc.belt_hierarchies)
+                .filter((b: BeltHierarchy & { is_active?: boolean }) => (b as any).is_active !== false) // UX-2 ladder archive
+                .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
               return (
                 <Card key={disc.id} className="rounded-2xl shadow-sm overflow-hidden">

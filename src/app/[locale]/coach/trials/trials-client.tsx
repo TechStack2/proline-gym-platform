@@ -26,10 +26,18 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
   const router = useRouter();
   const isRTL = locale === 'ar';
   const [busyId, setBusyId] = useState<string | null>(null);
+  // UX-2: optional Showed inputs — note + "interested?" toggle, captured with
+  // the same single tap (filled-or-not when Showed is hit; No-show stays bare).
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [interested, setInterested] = useState<Record<string, boolean>>({});
 
   const record = async (trialId: string, status: 'completed' | 'no_show', showUp: boolean) => {
     setBusyId(trialId);
-    const res = await recordTrialOutcome({ trialId, status, showUp });
+    const res = await recordTrialOutcome({
+      trialId, status, showUp,
+      feedback: showUp ? notes[trialId] : undefined,
+      interested: showUp ? (interested[trialId] ?? null) : null,
+    });
     setBusyId(null);
     if (res.ok) {
       toast.success(t('toast.outcome_recorded'));
@@ -75,7 +83,29 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
               )}
 
               {tr.status === 'scheduled' ? (
-                <div className="flex gap-2 pt-1">
+                <div className="space-y-2 pt-1">
+                  <input
+                    data-testid="coach-trial-note"
+                    value={notes[tr.id] ?? ''}
+                    onChange={(e) => setNotes((p) => ({ ...p, [tr.id]: e.target.value }))}
+                    placeholder={tc('notePlaceholder')}
+                    className="w-full rounded-lg border px-2.5 py-1.5 text-xs"
+                  />
+                  <button
+                    type="button"
+                    data-testid="coach-trial-interested"
+                    data-on={!!interested[tr.id]}
+                    onClick={() => setInterested((p) => ({ ...p, [tr.id]: !p[tr.id] }))}
+                    className={cn(
+                      'rounded-full border px-3 py-1 text-xs font-medium',
+                      interested[tr.id]
+                        ? 'border-green-600 bg-green-600 text-white'
+                        : 'border-gray-200 bg-white text-gray-600',
+                    )}
+                  >
+                    {tc('interested')}
+                  </button>
+                  <div className="flex gap-2">
                   <button
                     data-testid="coach-trial-show"
                     disabled={busyId === tr.id}
@@ -94,6 +124,7 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                     <XCircle className="inline h-3.5 w-3.5 mr-1" />
                     {t('mark_no_show')}
                   </button>
+                  </div>
                 </div>
               ) : (
                 <span

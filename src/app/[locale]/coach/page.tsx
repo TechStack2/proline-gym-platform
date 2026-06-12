@@ -45,6 +45,14 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
   const today = new Date();
   const dayOfWeek = today.getDay();
 
+  // UX-2: today's TRIALS join the day surface (not just the tab) — same
+  // definer reader as /coach/trials; filtered to today + still-scheduled.
+  const todayIso = today.toISOString().split('T')[0];
+  const { data: allTrials } = await supabase.rpc('get_coach_trials');
+  const todaysTrials: any[] = (allTrials || []).filter(
+    (tr: any) => tr.scheduled_date === todayIso && tr.status === 'scheduled',
+  );
+
   // Fetch today's class schedules for this coach
   const { data: schedulesRaw } = await supabase
     .from('class_schedules')
@@ -172,6 +180,34 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
           bg="bg-amber-50"
         />
       </div>
+
+      {/* Today's trials (UX-2) — actionable on the trials tab */}
+      {todaysTrials.length > 0 && (
+        <div className="rounded-2xl bg-white p-4 shadow-sm space-y-2" data-testid="coach-home-trials">
+          <div className="flex items-center justify-between">
+            <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+              {t('coachTrials.todayTitle')}
+            </h3>
+            <Link href={`/${locale}/coach/trials`} className="text-xs font-medium text-[#cd1419]">
+              {t('coachTrials.openTab')}
+            </Link>
+          </div>
+          {todaysTrials.map((tr: any) => (
+            <Link
+              key={tr.id}
+              href={`/${locale}/coach/trials`}
+              data-testid="coach-home-trial-row"
+              data-lead-name={tr.lead_name}
+              className="flex items-center justify-between rounded-xl border px-3 py-2 hover:bg-gray-50"
+            >
+              <span className="text-sm font-medium text-gray-800">{tr.lead_name}</span>
+              <span className="text-xs text-gray-500">
+                {tr.scheduled_time ? tr.scheduled_time.slice(0, 5) : ''}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Class List */}
       {todaysSchedules.length === 0 ? (

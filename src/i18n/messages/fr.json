@@ -301,7 +301,12 @@
       "errSpecialtyRequired": "Choisissez au moins une discipline.",
       "errNoGym": "Aucune salle associée.",
       "errSaveFailed": "Impossible d'enregistrer le coach.",
-      "photoOptional": "Ajouter une photo (optionnel)"
+      "photoOptional": "Ajouter une photo (optionnel)",
+      "stepIdentity": "Identité",
+      "stepSpecialty": "Spécialité et bio",
+      "stepReview": "Révision",
+      "addTitle": "Ajouter un coach",
+      "editTitle": "Modifier le coach"
     },
     "admin": {
       "edit": "Modifier le coach",
@@ -842,6 +847,12 @@
       "followUp": "Relance due",
       "decide": "Décider (convertir/perdu)",
       "overdue": "EN RETARD"
+    },
+    "wizard": {
+      "contact": "Contact",
+      "interest": "Intérêt",
+      "review": "Révision",
+      "nextAction": "Premier contact dû le {date}"
     }
   },
   "camps": {
@@ -1171,6 +1182,44 @@
       "daysShort": "j",
       "onLanding": "Publié",
       "staged": "Masqué"
+    },
+    "planManager": {
+      "title": "Gérer les plans",
+      "add": "Ajouter un plan",
+      "addTitle": "Nouveau plan d’adhésion",
+      "editTitle": "Modifier le plan",
+      "save": "Enregistrer le plan",
+      "empty": "Aucun plan — ajoutez le premier.",
+      "stepNames": "Noms",
+      "stepPricing": "Prix et durée",
+      "stepReview": "Révision",
+      "nameEn": "Nom (anglais)",
+      "nameAr": "Nom (arabe)",
+      "nameFr": "Nom (français)",
+      "priceUsd": "Prix (USD)",
+      "priceLbp": "Prix (LBP)",
+      "duration": "Durée",
+      "preset30": "Mensuel",
+      "preset90": "Trimestriel",
+      "preset180": "6 mois",
+      "preset365": "Annuel",
+      "reviewDuration": "{days} jours"
+    },
+    "beltLadder": {
+      "title": "Échelles de ceintures",
+      "addRank": "Ajouter un rang",
+      "addTitle": "Ajouter un rang",
+      "renameTitle": "Renommer le rang",
+      "save": "Enregistrer",
+      "empty": "Aucun rang défini pour cette discipline.",
+      "stepRank": "Rang",
+      "rankHint": "Choisissez le rang — seuls les rangs absents de cette échelle sont proposés.",
+      "allRanksUsed": "Tous les rangs sont déjà sur cette échelle.",
+      "stepNames": "Noms",
+      "stepReview": "Révision",
+      "nameEn": "Nom (anglais)",
+      "nameAr": "Nom (arabe)",
+      "nameFr": "Nom (français)"
     }
   },
   "reportsDashboard": {
@@ -1385,6 +1434,10 @@
       "registration_suspended": {
         "title": "Place suspendue",
         "body": "Votre inscription au cours a été suspendue pour impayé — le comptoir peut la réactiver"
+      },
+      "trial_outcome": {
+        "title": "Résultat d'essai enregistré",
+        "body": "{leadName} — {outcome}"
       }
     }
   },
@@ -1456,7 +1509,11 @@
   "coachTrials": {
     "title": "Essais",
     "empty": "Aucun essai assigné",
-    "unnamed": "Prospect"
+    "unnamed": "Prospect",
+    "notePlaceholder": "Note (facultatif)",
+    "interested": "Intéressé ?",
+    "todayTitle": "Essais du jour",
+    "openTab": "Ouvrir les essais"
   },
   "progress": {
     "title": "Ma progression",
@@ -1922,5 +1979,36 @@
     "processNow": "Traiter les renouvellements",
     "tickDone": "Cycle de traitement terminé",
     "tickSummary": "{issued} émis · {reminded} rappels · {lapsed} échus · {suspended} suspendus · {unfrozen} dégelés"
+  },
+  "wizard": {
+    "stepOf": "Étape {n} sur {total}",
+    "back": "Retour",
+    "next": "Suivant"
+  },
+  "studentWizard": {
+    "title": "Ajouter un membre",
+    "create": "Créer le membre",
+    "created": "Membre créé",
+    "failed": "Impossible de créer le membre",
+    "identity": "Identité",
+    "nameEn": "Nom (anglais)",
+    "nameAr": "Nom (arabe)",
+    "phone": "Téléphone",
+    "dob": "Date de naissance",
+    "gender": "Genre",
+    "male": "Homme",
+    "female": "Femme",
+    "guardian": "Tuteur",
+    "guardianHint": "Ce membre est mineur — recherchez d’abord le tuteur par téléphone ; un nouveau tuteur est créé si aucun résultat.",
+    "search": "Rechercher",
+    "found": "Trouvé : {name}",
+    "guardianName": "Nom du tuteur",
+    "guardianNamePh": "Nom complet",
+    "skipGuardian": "Ignorer le tuteur pour l’instant",
+    "plan": "Plan d’adhésion",
+    "planHint": "Facultatif — une adhésion peut être ajoutée plus tard.",
+    "noPlan": "Sans plan",
+    "review": "Révision",
+    "minor": "Mineur"
   }
 }

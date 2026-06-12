@@ -11,6 +11,7 @@ import {
   Phone, Mail, Calendar, CalendarClock, Search, Plus, KeyRound, CheckCircle2, XCircle, X, UserCheck,
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { FormWizard } from '@/components/shared/form-wizard';
 import type {
   Lead, LeadStatus, Discipline, StatusFilter, GymCoach, MembershipPlan, TrialInfo, InviteInfo, LeadSource,
 } from './leads-types';
@@ -601,7 +602,7 @@ function TrialPanel({
 // Add Lead modal (T1b — staff-manual origination)
 // ─────────────────────────────────────────────────────────────────────────────
 function AddLeadModal({
-  disciplines, isRTL, onClose, onCreated,
+  disciplines, locale, isRTL, onClose, onCreated,
 }: {
   disciplines: Discipline[];
   locale: string;
@@ -620,108 +621,112 @@ function AddLeadModal({
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const disciplineName = (d: Discipline) =>
-    isRTL ? d.name_ar : d.name_en;
+  const disciplineName = (d: Discipline) => (isRTL ? d.name_ar : d.name_en);
 
   const handleSubmit = async () => {
-    if (!firstName || !lastName || !phone) {
-      toast.error(t('toast.required_fields'));
-      return;
-    }
     setBusy(true);
     const res = await addLead({
-      first_name: firstName,
-      last_name: lastName,
-      phone,
-      email,
-      source,
-      source_detail: sourceDetail,
-      discipline_id: disciplineId,
-      notes,
+      first_name: firstName, last_name: lastName, phone, email,
+      source, source_detail: sourceDetail, discipline_id: disciplineId, notes,
     });
     setBusy(false);
-    if (res.ok) {
-      toast.success(t('toast.lead_added'));
-      onCreated();
-    } else {
-      toast.error(`${t('toast.add_error')}: ${res.error}`);
-    }
+    if (res.ok) { toast.success(t('toast.lead_added')); onCreated(); }
+    else toast.error(`${t('toast.add_error')}: ${res.error}`);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div
-        data-testid="add-lead-modal"
-        dir={isRTL ? 'rtl' : 'ltr'}
-        className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className={cn('text-lg font-bold', isRTL && 'font-arabic')}>{t('add_lead')}</h2>
-          <button onClick={onClose} aria-label="close"><X className="h-5 w-5 text-gray-400" /></button>
-        </div>
+  // UX-2: the prototype modal became the FormWizard (contact → interest+source
+  // chips → review with the DERIVED next action — 23R write path unchanged).
+  const firstContactDue = new Date(Date.now() + 2 * 864e5)
+    .toLocaleDateString(isRTL ? 'ar-LB' : 'en-US');
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t('field.first_name')}>
-            <input data-testid="lead-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="modal-input" />
+  const steps = [
+    {
+      key: 'contact',
+      title: t('wizard.contact'),
+      valid: firstName.trim() !== '' && lastName.trim() !== '' && phone.trim() !== '',
+      content: (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('field.first_name')}>
+              <input data-testid="lead-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 w-full rounded-md border px-3 text-sm" />
+            </Field>
+            <Field label={t('field.last_name')}>
+              <input data-testid="lead-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 w-full rounded-md border px-3 text-sm" />
+            </Field>
+          </div>
+          <Field label={t('field.phone')}>
+            <input data-testid="lead-phone" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="h-9 w-full rounded-md border px-3 text-sm" />
           </Field>
-          <Field label={t('field.last_name')}>
-            <input data-testid="lead-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="modal-input" />
+          <Field label={t('field.email')}>
+            <input data-testid="lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className="h-9 w-full rounded-md border px-3 text-sm" />
           </Field>
         </div>
-        <Field label={t('field.phone')}>
-          <input data-testid="lead-phone" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="modal-input" />
-        </Field>
-        <Field label={t('field.email')}>
-          <input data-testid="lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className="modal-input" />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t('field.source')}>
-            <select data-testid="lead-source-select" value={source} onChange={(e) => setSource(e.target.value as LeadSource)} className="modal-input">
-              {LEAD_SOURCES.map((s) => (
-                <option key={s} value={s}>{t(`source.${s}` as Parameters<typeof t>[0])}</option>
+      ),
+    },
+    {
+      key: 'interest',
+      title: t('wizard.interest'),
+      content: (
+        <div className="space-y-3">
+          <Field label={t('field.discipline')}>
+            <div className="flex flex-wrap gap-1.5">
+              {disciplines.map((d) => (
+                <button key={d.id} type="button" data-testid="lead-discipline-chip" data-id={d.id}
+                  onClick={() => setDisciplineId(disciplineId === d.id ? '' : d.id)}
+                  className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
+                    disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700')}>
+                  {disciplineName(d)}
+                </button>
               ))}
-            </select>
+            </div>
+          </Field>
+          <Field label={t('field.source')}>
+            <div className="flex flex-wrap gap-1.5">
+              {LEAD_SOURCES.map((src) => (
+                <button key={src} type="button" data-testid="lead-source-chip" data-value={src}
+                  onClick={() => setSource(src)}
+                  className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
+                    source === src ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700')}>
+                  {t(`source.${src}` as Parameters<typeof t>[0])}
+                </button>
+              ))}
+            </div>
           </Field>
           <Field label={t('field.source_detail')}>
-            <input data-testid="lead-source-detail" value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} className="modal-input" />
+            <input data-testid="lead-source-detail" value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} className="h-9 w-full rounded-md border px-3 text-sm" />
+          </Field>
+          <Field label={t('field.notes')}>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="h-9 w-full rounded-md border px-3 text-sm" />
           </Field>
         </div>
-        <Field label={t('field.discipline')}>
-          <select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="modal-input">
-            <option value="">{t('field.no_discipline')}</option>
-            {disciplines.map((d) => (
-              <option key={d.id} value={d.id}>{disciplineName(d)}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t('field.notes')}>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="modal-input" />
-        </Field>
-
-        <div className="flex gap-2 pt-2">
-          <button onClick={onClose} className="flex-1 py-2 text-sm border rounded-lg hover:bg-gray-50">
-            {t('cancel')}
-          </button>
-          <button
-            data-testid="add-lead-submit"
-            disabled={busy}
-            onClick={handleSubmit}
-            className="flex-1 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-          >
-            {t('save_lead')}
-          </button>
+      ),
+    },
+    {
+      key: 'review',
+      title: t('wizard.review'),
+      content: (
+        <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-700" data-testid="lead-review">
+          <p className="font-semibold text-gray-900">{firstName} {lastName}</p>
+          <p dir="ltr">{phone}{email ? ` · ${email}` : ''}</p>
+          <p>{t(`source.${source}` as Parameters<typeof t>[0])}{disciplineId ? ` · ${disciplineName(disciplines.find((d) => d.id === disciplineId)!)}` : ''}</p>
+          <p className="text-xs text-amber-700">{t('wizard.nextAction', { date: firstContactDue })}</p>
         </div>
-      </div>
-      <style jsx>{`
-        .modal-input {
-          width: 100%;
-          border: 1px solid #e5e7eb;
-          border-radius: 0.5rem;
-          padding: 0.5rem 0.75rem;
-          font-size: 0.875rem;
-        }
-      `}</style>
-    </div>
+      ),
+    },
+  ];
+
+  return (
+    <FormWizard
+      open
+      onClose={onClose}
+      title={t('add_lead')}
+      steps={steps}
+      onSubmit={handleSubmit}
+      submitLabel={t('add_lead')}
+      busy={busy}
+      locale={locale}
+      testid="add-lead-modal"
+    />
   );
 }
 

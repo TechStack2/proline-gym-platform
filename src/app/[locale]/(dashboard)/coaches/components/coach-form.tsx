@@ -19,14 +19,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { Loader2, Save, ArrowLeft, Camera } from 'lucide-react'
+import { Camera } from 'lucide-react'
 import { AvatarUpload, uploadAvatar } from '@/components/shared/avatar-upload'
-import Link from 'next/link'
+import { FormWizard } from '@/components/shared/form-wizard'
 
 type DisciplineRow = { id: string; name_ar: string; name_en: string; name_fr: string }
 
@@ -89,8 +87,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     setError(null)
     if (!firstEn.trim()) { setError(t('errNameRequired')); return }
     if (selected.length === 0) { setError(t('errSpecialtyRequired')); return }
@@ -154,15 +151,25 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
     }
   }
 
-  return (
-    <form onSubmit={handleSubmit} className={cn('space-y-6', isRTL && 'rtl text-right')} data-testid="coach-form">
-      <Card>
-        <CardContent className="space-y-5 p-6">
+  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+      {children}
+    </div>
+  )
+
+  const dName = (d: DisciplineRow) => (isRTL ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en
+
+  const steps = [
+    {
+      key: 'identity',
+      title: t('stepIdentity'),
+      valid: firstEn.trim() !== '',
+      content: (
+        <div className="space-y-3">
           {error && (
             <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
-
-          {/* Photo */}
           <div className="flex items-center gap-3">
             {initialData ? (
               <AvatarUpload
@@ -182,88 +189,72 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
               </label>
             )}
           </div>
-
-          {/* Identity (profiles) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('firstEn')} *</label>
-              <Input data-testid="coach-first-en" value={firstEn} onChange={(e) => setFirstEn(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('lastEn')}</label>
-              <Input data-testid="coach-last-en" value={lastEn} onChange={(e) => setLastEn(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('firstAr')}</label>
-              <Input dir="rtl" value={firstAr} onChange={(e) => setFirstAr(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('lastAr')}</label>
-              <Input dir="rtl" value={lastAr} onChange={(e) => setLastAr(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('firstFr')}</label>
-              <Input value={firstFr} onChange={(e) => setFirstFr(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('lastFr')}</label>
-              <Input value={lastFr} onChange={(e) => setLastFr(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('phone')}</label>
-              <Input data-testid="coach-phone" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+961…" />
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label={`${t('firstEn')} *`}><Input data-testid="coach-first-en" value={firstEn} onChange={(e) => setFirstEn(e.target.value)} /></F>
+            <F label={t('lastEn')}><Input data-testid="coach-last-en" value={lastEn} onChange={(e) => setLastEn(e.target.value)} /></F>
+            <F label={t('firstAr')}><Input dir="rtl" value={firstAr} onChange={(e) => setFirstAr(e.target.value)} /></F>
+            <F label={t('lastAr')}><Input dir="rtl" value={lastAr} onChange={(e) => setLastAr(e.target.value)} /></F>
+            <F label={t('firstFr')}><Input value={firstFr} onChange={(e) => setFirstFr(e.target.value)} /></F>
+            <F label={t('lastFr')}><Input value={lastFr} onChange={(e) => setLastFr(e.target.value)} /></F>
           </div>
-
-          {/* Specialty — chips from the gym's disciplines (SSOT) */}
-          <div>
-            <p className="mb-2 text-sm font-medium">{t('specialty')} *</p>
-            <div className="flex flex-wrap gap-2">
+          <F label={t('phone')}><Input data-testid="coach-phone" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+961…" /></F>
+        </div>
+      ),
+    },
+    {
+      key: 'specialty',
+      title: t('stepSpecialty'),
+      valid: selected.length > 0,
+      content: (
+        <div className="space-y-3">
+          <F label={`${t('specialty')} *`}>
+            <div className="flex flex-wrap gap-1.5">
               {disciplines.map((d) => (
                 <button key={d.id} type="button" data-testid="coach-specialty-chip" data-id={d.id}
                   onClick={() => toggle(d.id)}
-                  className={cn('rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                  className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                     selected.includes(d.id)
                       ? 'border-[#cd1419] bg-[#cd1419] text-white'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
-                  {(isRTL ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en}
+                  {dName(d)}
                 </button>
               ))}
             </div>
-            {disciplines.length === 0 && (
-              <p className="text-xs text-gray-400">{t('noDisciplines')}</p>
-            )}
-          </div>
+            {disciplines.length === 0 && <p className="text-xs text-gray-400">{t('noDisciplines')}</p>}
+          </F>
+          <F label={t('bioEn')}><Textarea data-testid="coach-bio-en" rows={2} value={bioEn} onChange={(e) => setBioEn(e.target.value)} /></F>
+          <F label={t('bioAr')}><Textarea dir="rtl" rows={2} value={bioAr} onChange={(e) => setBioAr(e.target.value)} /></F>
+          <F label={t('bioFr')}><Textarea rows={2} value={bioFr} onChange={(e) => setBioFr(e.target.value)} /></F>
+        </div>
+      ),
+    },
+    {
+      key: 'review',
+      title: t('stepReview'),
+      content: (
+        <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-700" data-testid="coach-review">
+          {error && (
+            <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+          )}
+          <p className="font-semibold text-gray-900">{firstEn} {lastEn}</p>
+          {phone && <p dir="ltr">{phone}</p>}
+          <p>{disciplines.filter((d) => selected.includes(d.id)).map(dName).join(SEP) || '—'}</p>
+        </div>
+      ),
+    },
+  ]
 
-          {/* Localized bios */}
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('bioEn')}</label>
-              <Textarea data-testid="coach-bio-en" rows={2} value={bioEn} onChange={(e) => setBioEn(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('bioAr')}</label>
-              <Textarea dir="rtl" rows={2} value={bioAr} onChange={(e) => setBioAr(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('bioFr')}</label>
-              <Textarea rows={2} value={bioFr} onChange={(e) => setBioFr(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link href={`/${locale}/coaches`}>
-              <Button type="button" variant="outline">
-                <ArrowLeft className="mr-1 h-4 w-4" /> {t('cancel')}
-              </Button>
-            </Link>
-            <Button type="submit" data-testid="coach-save" disabled={loading} className="bg-[#cd1419] hover:bg-[#a81014]">
-              {loading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
-              {loading ? t('saving') : t('save')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </form>
+  return (
+    <FormWizard
+      open
+      onClose={() => router.push(`/${locale}/coaches`)}
+      title={initialData ? t('editTitle') : t('addTitle')}
+      steps={steps}
+      onSubmit={handleSubmit}
+      submitLabel={initialData ? t('save') : t('save')}
+      busy={loading}
+      locale={locale}
+      testid="coach-form"
+    />
   )
 }

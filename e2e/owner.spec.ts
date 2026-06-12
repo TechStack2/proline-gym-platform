@@ -56,33 +56,23 @@ test('add-student write path persists and the new student appears (F1 #3)', asyn
   const unique = `E2E ${Date.now()}`;
   await page.goto('/en/students/add');
 
-  // Scope to the VISIBLE form (layout duplicates content across breakpoints).
-  const textInputs = page.locator('form input:not([type="date"]):not([type="tel"]):visible');
-  await textInputs.nth(0).fill(`${unique} AR`);
-  await textInputs.nth(1).fill(unique);
-  await page.locator('input[type="tel"]:visible').first().fill('+96170000777');
+  // UX-2: /students/add is the FormWizard now (identity → plan → review for an
+  // adult; no DOB ⇒ no guardian step). Scope :visible — double-shell page.
+  const wiz = (tid: string) => page.locator(`[data-testid="${tid}"]:visible`).first();
+  await wiz('sw-name-en').fill(unique);
+  await wiz('sw-name-ar').fill(`${unique} AR`);
+  await wiz('sw-phone').fill('+96170000777');
+  await wiz('wizard-next').click(); // → plan (skip: no plan)
+  await wiz('wizard-next').click(); // → review
+  await expect(wiz('sw-review')).toContainText(unique);
+  await wiz('wizard-submit').click();
 
-  const discipline = page.locator('form select:visible').first();
-  const optionValues = await discipline.locator('option').evaluateAll(
-    (opts) => opts.map((o) => (o as HTMLOptionElement).value).filter((v) => v),
-  );
-  if (optionValues.length) await discipline.selectOption(optionValues[0]);
-
-  await page.locator('form button[type="submit"]:visible').first().click();
-
-  // Surface a DB/write error explicitly instead of a vague timeout.
-  await page.waitForTimeout(2000);
-  const errorBox = page.locator('.text-red-500:visible');
-  if (await errorBox.count()) {
-    const msg = (await errorBox.first().textContent())?.trim();
-    await shot(page, testInfo, 'owner-add-student-error');
-    throw new Error(`add-student write path FAILED with: "${msg}"`);
-  }
-
-  await expect(page, 'should redirect back to /students after save').toHaveURL(/\/students(\?.*)?$/, { timeout: 10_000 });
+  await expect(page, 'should land on the new member (create_student persisted)')
+    .toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
   await shot(page, testInfo, 'owner-add-student-result');
+  await page.goto('/en/students');
   await expect(
     page.locator('[data-testid="student-card"]:visible').filter({ hasText: unique }).first(),
     'newly added student should appear in the list',
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
 });

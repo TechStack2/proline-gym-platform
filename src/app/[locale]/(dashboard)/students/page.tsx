@@ -155,6 +155,7 @@ export default async function StudentsPage({
         .from('belt_hierarchies')
         .select('id, name_ar, name_en, sort_order')
         .in('discipline_id', disciplineIdsForBelts)
+        .eq('is_active', true) // UX-2 ladder archive
         .order('sort_order')
     : { data: [] as any[] }
 
