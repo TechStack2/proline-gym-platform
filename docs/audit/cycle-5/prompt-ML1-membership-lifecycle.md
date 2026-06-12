@@ -25,6 +25,13 @@ The monthly-revenue engine is still manual: nothing issues renewals, nothing cha
 5. **Check-in surface:** attendance marking shows a non-blocking warning when the member is lapsed/suspended.
 6. i18n ar/en/fr · RTL · tenant-clean. **The parallel lane is FROZEN — you own all surfaces; no fence.**
 
+## Rider — demo-gym hygiene (one-off run_sql, NOT a migration)
+The operator manually deleted ~200 rows via the Supabase table editor (pt_sessions/profiles/invoices). The auditor's integrity audit (VF run 27413743680) found the damage minor but real — repair it in a one-off:
+1. ONE active demo-gym class points at a missing/inactive coach → reassign to an active demo coach (or archive the class).
+2. ONE orphan pt_session without an assignment → archive/delete it.
+3. **921 notifications** in the demo gym (residue the operator could not see to clean) → delete all but the latest ~20 per demo user.
+4. Re-run the integrity counts after (same queries, in the one-off) and include before/after in the report.
+
 ## Out of scope
 Proration; online payment; WhatsApp sends (G1 docks into the same notifications); auto-cancel of lapsed members (human decision); per-member custom pricing beyond existing discounts.
 
