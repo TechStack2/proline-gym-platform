@@ -41,8 +41,14 @@ async function runTick(page: Page) {
   return (await toast.textContent()) ?? '';
 }
 
-const addDays = (days: number) =>
-  new Date(Date.now() + days * 864e5 + 12 * 3600_000).toLocaleDateString('en-US');
+// Date-only arithmetic: anchor at UTC noon of TODAY'S DATE — adding hours to
+// Date.now() rolled past midnight on afternoon runs (expected 7/13, got 7/12).
+const addDays = (days: number) => {
+  const t = new Date();
+  const base = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), 12));
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toLocaleDateString('en-US', { timeZone: 'UTC' });
+};
 
 test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; payment extends; plan change carries new price', async ({ browser }) => {
   test.setTimeout(300_000);
