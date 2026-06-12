@@ -68,6 +68,14 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  // REP-1: a coach can mark/correct attendance for a PAST date (today or up to 7
+  // days back, never the future). The date drives which weekday's classes show,
+  // which day's existing records prefill, and the date written by saveAttendance —
+  // it reuses the SAME upsert write path, no new writes.
+  const todayStr = new Date().toISOString().split('T')[0];
+  const minDateStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+
   // Load i18n messages
   useEffect(() => {
     import(`@/i18n/messages/${locale}.json`).then(m => setMessages(m.default));
@@ -89,8 +97,8 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
       if (!coach) return;
 
-      const today = new Date();
-      const dayOfWeek = today.getDay();
+      // Weekday is derived from the SELECTED date (recurring schedule model).
+      const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay();
 
       const { data: raw } = await supabase
         .from('class_schedules')
@@ -145,15 +153,18 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
       setClasses(options);
 
-      // Auto-select if initialClassId is present and valid
-      if (initialClassId && options.some(o => o.id === initialClassId)) {
-        setSelectedClassId(initialClassId);
-      }
+      // Keep a still-valid selection across date changes; otherwise fall back to
+      // the initialClassId (deep link) or clear it (the class isn't on this day).
+      setSelectedClassId(prev => {
+        if (prev && options.some(o => o.id === prev)) return prev;
+        if (initialClassId && options.some(o => o.id === initialClassId)) return initialClassId;
+        return '';
+      });
       setLoaded(true);
     }
 
     loadClasses();
-  }, [locale, initialClassId]);
+  }, [locale, initialClassId, selectedDate]);
 
   // Fetch students when class is selected
   useEffect(() => {
@@ -163,7 +174,8 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
       setLoading(true);
       setStudents([]);
 
-      const today = new Date().toISOString().split('T')[0];
+      // Existing records prefill for the SELECTED date (correction-aware).
+      const recordDate = selectedDate;
 
       // Get enrolled students (+ belt fields for the eligibility hint, T3)
       const { data: enrollments } = await supabase
@@ -194,7 +206,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         .from('attendance_records')
         .select('student_id, status')
         .eq('class_id', selectedClassId)
-        .eq('attendance_date', today);
+        .eq('attendance_date', recordDate);
 
       const statusMap: Record<string, AttendanceStatus> = {};
       for (const r of (existingRecords || [])) {
@@ -241,7 +253,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
     }
 
     loadStudents();
-  }, [selectedClassId, loaded, locale]);
+  }, [selectedClassId, loaded, locale, selectedDate]);
 
   const toggleStatus = (studentId: string, status: AttendanceStatus) => {
     setStudents(prev =>
@@ -256,7 +268,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const markDate = selectedDate;
       const { data: { user } } = await supabase.auth.getUser();
       const markedBy = user?.id;
 
@@ -266,7 +278,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
           class_schedule_id: s.class_id,
           student_id: s.student_id,
           status: s.status,
-          date: today,
+          date: markDate,
         })
       );
 
@@ -284,7 +296,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
       void markedBy;
       const res = await saveAttendance({
         classId: selectedClassId,
-        date: today,
+        date: markDate,
         records: students.map(s => ({ studentId: s.student_id, status: s.status })),
       });
 
@@ -324,6 +336,30 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
           {msg('coach.attendance.title')}
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">{msg('coach.attendance.subtitle')}</p>
+      </div>
+
+      {/* Date Picker (today or up to 7 days back; no future) */}
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1.5">
+          {msg('attendanceHistory.coach.dateLabel')}
+        </label>
+        <input
+          type="date"
+          data-testid="coach-attendance-date"
+          value={selectedDate}
+          min={minDateStr}
+          max={todayStr}
+          onChange={e => setSelectedDate(e.target.value || todayStr)}
+          className={cn(
+            'w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700',
+            'focus:outline-none focus:ring-2 focus:ring-[#cd1419]/30 focus:border-[#cd1419]'
+          )}
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          {selectedDate !== todayStr
+            ? msg('attendanceHistory.coach.pastBadge').replace('{date}', selectedDate)
+            : msg('attendanceHistory.coach.hint')}
+        </p>
       </div>
 
       {/* Class Selector */}

@@ -1495,5 +1495,76 @@
   "avatar": {
     "change": "تغيير الصورة",
     "failed": "فشل الرفع"
+  },
+  "attendanceHistory": {
+    "title": "سجل الحضور",
+    "subtitle": "الحضور المسجَّل عبر الحصص والتواريخ",
+    "filters": "عوامل التصفية",
+    "dateFrom": "من",
+    "dateTo": "إلى",
+    "class": "الحصة",
+    "discipline": "التخصص",
+    "allClasses": "كل الحصص",
+    "allDisciplines": "كل التخصصات",
+    "thisWeek": "هذا الأسبوع",
+    "daySummary": "ملخص يومي",
+    "present": "حاضر",
+    "absent": "غائب",
+    "late": "متأخر",
+    "excused": "معذور",
+    "records": "السجلات",
+    "date": "التاريخ",
+    "student": "الطالب",
+    "status": "الحالة",
+    "markedBy": "سجّله",
+    "staff": "الموظفون",
+    "noRecords": "لا حضور مسجَّل لهذا الفلتر",
+    "showing": "عرض {count} سجلاً",
+    "coach": {
+      "dateLabel": "التاريخ",
+      "hint": "اختر تاريخاً (اليوم أو حتى 7 أيام سابقة) لتسجيل الحضور أو تصحيحه.",
+      "pastBadge": "تصحيح {date}"
+    }
+  },
+  "reports": {
+    "title": "التقارير",
+    "subtitle": "ملخص الحضور للفترة المحددة",
+    "dateFrom": "من",
+    "dateTo": "إلى",
+    "last30Days": "آخر 30 يوماً",
+    "tabs": {
+      "byClass": "حسب الحصة",
+      "byDiscipline": "حسب التخصص",
+      "students": "الطلاب"
+    },
+    "byClass": {
+      "title": "الحضور حسب الحصة",
+      "class": "الحصة",
+      "discipline": "التخصص",
+      "sessions": "الجلسات المنعقدة",
+      "avgAttendance": "متوسط الحضور",
+      "fillRate": "نسبة الإشغال",
+      "capacity": "السعة",
+      "noData": "لا حضور مسجَّل في هذه الفترة"
+    },
+    "byDiscipline": {
+      "title": "الحضور حسب التخصص",
+      "discipline": "التخصص",
+      "classes": "الحصص",
+      "sessions": "الجلسات",
+      "avgAttendance": "متوسط الحضور",
+      "fillRate": "نسبة الإشغال"
+    },
+    "students": {
+      "title": "الحضور لكل طالب",
+      "leaders": "الأكثر نشاطاً",
+      "atRisk": "في خطر (3 غيابات أو أكثر)",
+      "student": "الطالب",
+      "present": "حضَر",
+      "absent": "غائب",
+      "rate": "النسبة",
+      "noLeaders": "لا حضور مسجَّل في هذه الفترة",
+      "noAtRisk": "لا أعضاء في خطر في هذه الفترة"
+    }
   }
 }

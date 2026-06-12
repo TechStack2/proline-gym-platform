@@ -1,371 +1,217 @@
 'use client'
 
-import { useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Calendar, ChevronLeft, ChevronRight, Filter, Download } from 'lucide-react'
+import { Filter, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface Student {
-  id: string
-  first_name: string
-  last_name: string
-}
-
-interface Class {
+interface ClassOpt {
   id: string
   name: string
-  discipline: string
+  disciplineId: string
 }
 
-interface AttendanceRecord {
+interface DisciplineOpt {
   id: string
-  student_id: string
-  class_id: string
-  date: string
-  status: 'present' | 'absent' | 'late' | 'excused'
-  students: {
-    id: string
-    first_name: string
-    last_name: string
-    email?: string
-    phone?: string
-  }
-  classes: {
-    id: string
-    name: string
-    discipline: string
-  }
-  class_schedules: {
-    id: string
-    start_time: string
-    end_time: string
-  }
+  name: string
 }
 
-interface AttendanceHistoryClientProps {
-  students: Student[]
-  classes: Class[]
-  attendanceRecords: AttendanceRecord[]
-  attendanceRate: number
-  selectedStudentId?: string
+interface Row {
+  id: string
+  date: string
+  status: string
+  className: string
+  studentName: string
+  markedBy: string | null
+}
+
+interface DaySummary {
+  date: string
+  present: number
+  absent: number
+  late: number
+  excused: number
+}
+
+interface Props {
+  classes: ClassOpt[]
+  disciplines: DisciplineOpt[]
+  rows: Row[]
+  daySummary: DaySummary[]
   selectedClassId?: string
-  startDate?: string
-  endDate?: string
+  selectedDisciplineId?: string
+  dateFrom: string
+  dateTo: string
   locale: string
 }
 
+const STATUS_STYLE: Record<string, string> = {
+  present: 'bg-green-100 text-green-700',
+  absent: 'bg-red-100 text-red-700',
+  late: 'bg-yellow-100 text-yellow-700',
+  excused: 'bg-blue-100 text-blue-700',
+}
+
 export function AttendanceHistoryClient({
-  students,
   classes,
-  attendanceRecords,
-  attendanceRate,
-  selectedStudentId,
+  disciplines,
+  rows,
+  daySummary,
   selectedClassId,
-  startDate,
-  endDate,
-  locale
-}: AttendanceHistoryClientProps) {
-  const t = useTranslations('attendance')
+  selectedDisciplineId,
+  dateFrom,
+  dateTo,
+  locale,
+}: Props) {
+  const t = useTranslations('attendanceHistory')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+  const isRTL = locale === 'ar'
 
-  const getDaysInMonth = (month: number, year: number) => {
-    return new Date(year, month + 1, 0).getDate()
-  }
-
-  const getFirstDayOfMonth = (month: number, year: number) => {
-    return new Date(year, month, 1).getDay()
-  }
-
-  const daysInMonth = getDaysInMonth(currentMonth, currentYear)
-  const firstDay = getFirstDayOfMonth(currentMonth, currentYear)
-
-  const calendarDays = useMemo(() => {
-    const days = []
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null)
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i)
-    }
-    return days
-  }, [firstDay, daysInMonth])
-
-  const getAttendanceForDate = (day: number) => {
-    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return attendanceRecords.filter(r => r.date === dateStr)
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'present':
-        return 'bg-green-500'
-      case 'absent':
-        return 'bg-red-500'
-      case 'late':
-        return 'bg-yellow-500'
-      case 'excused':
-        return 'bg-blue-500'
-      default:
-        return 'bg-gray-300'
-    }
-  }
-
-  const updateFilter = (key: string, value: string | undefined) => {
+  const updateFilter = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString())
-    if (value) {
-      params.set(key, value)
-    } else {
-      params.delete(key)
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) params.set(key, value)
+      else params.delete(key)
     }
-    router.push(`/attendance/history?${params.toString()}`)
+    router.push(`/${locale}/attendance/history?${params.toString()}`)
   }
 
-  const exportToCSV = () => {
-    const headers = ['Date', 'Student Name', 'Class', 'Status', 'Time']
-    const rows = attendanceRecords.map(record => [
-      record.date,
-      `${record.students.first_name} ${record.students.last_name}`,
-      record.classes.name,
-      record.status,
-      `${record.class_schedules.start_time} - ${record.class_schedules.end_time}`
-    ])
-
-    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `attendance-history-${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  // Class options narrow to the chosen discipline (if any) for a coherent picker.
+  const visibleClasses = selectedDisciplineId
+    ? classes.filter((c) => c.disciplineId === selectedDisciplineId)
+    : classes
 
   return (
     <div className="space-y-6">
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {t('history.filters')}
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Filter className="h-4 w-4" />
+            {t('filters')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">{t('history.student')}</label>
+              <label className="text-sm font-medium mb-1 block">{t('dateFrom')}</label>
+              <Input
+                type="date"
+                data-testid="history-date-from"
+                value={dateFrom}
+                max={dateTo}
+                onChange={(e) => updateFilter({ dateFrom: e.target.value || undefined })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">{t('dateTo')}</label>
+              <Input
+                type="date"
+                data-testid="history-date-to"
+                value={dateTo}
+                min={dateFrom}
+                onChange={(e) => updateFilter({ dateTo: e.target.value || undefined })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">{t('discipline')}</label>
               <select
+                data-testid="history-discipline"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={selectedStudentId || ''}
-                onChange={(e) => updateFilter('studentId', e.target.value || undefined)}
+                value={selectedDisciplineId || ''}
+                onChange={(e) => updateFilter({ disciplineId: e.target.value || undefined, classId: undefined })}
               >
-                <option value="">{t('history.allStudents')}</option>
-                {students.map(student => (
-                  <option key={student.id} value={student.id}>
-                    {student.first_name} {student.last_name}
-                  </option>
+                <option value="">{t('allDisciplines')}</option>
+                {disciplines.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">{t('history.class')}</label>
+              <label className="text-sm font-medium mb-1 block">{t('class')}</label>
               <select
+                data-testid="history-class"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={selectedClassId || ''}
-                onChange={(e) => updateFilter('classId', e.target.value || undefined)}
+                onChange={(e) => updateFilter({ classId: e.target.value || undefined })}
               >
-                <option value="">{t('history.allClasses')}</option>
-                {classes.map(cls => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name} - {cls.discipline}
-                  </option>
+                <option value="">{t('allClasses')}</option>
+                {visibleClasses.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">{t('history.startDate')}</label>
-              <Input
-                type="date"
-                value={startDate || ''}
-                onChange={(e) => updateFilter('startDate', e.target.value || undefined)}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">{t('history.endDate')}</label>
-              <Input
-                type="date"
-                value={endDate || ''}
-                onChange={(e) => updateFilter('endDate', e.target.value || undefined)}
-              />
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Attendance Rate */}
-      {selectedStudentId && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('history.attendanceRate')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="text-4xl font-bold">{attendanceRate}%</div>
-              <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    attendanceRate >= 80 ? "bg-green-500" : attendanceRate >= 60 ? "bg-yellow-500" : "bg-red-500"
-                  )}
-                  style={{ width: `${attendanceRate}%` }}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Calendar View */}
+      {/* Per-day summary */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              {t('history.calendar')}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (currentMonth === 0) {
-                    setCurrentMonth(11)
-                    setCurrentYear(currentYear - 1)
-                  } else {
-                    setCurrentMonth(currentMonth - 1)
-                  }
-                }}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium">
-                {new Date(currentYear, currentMonth).toLocaleDateString(locale === 'ar' ? 'ar-SA' : locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'long', year: 'numeric' })}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (currentMonth === 11) {
-                    setCurrentMonth(0)
-                    setCurrentYear(currentYear + 1)
-                  } else {
-                    setCurrentMonth(currentMonth + 1)
-                  }
-                }}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarDays className="h-4 w-4" />
+            {t('daySummary')}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-1">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-                {day}
-              </div>
-            ))}
-            {calendarDays.map((day, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "min-h-[80px] p-1 border rounded-md",
-                  day ? "bg-background" : "bg-muted/50"
-                )}
-              >
-                {day && (
-                  <>
-                    <div className="text-xs font-medium mb-1">{day}</div>
-                    <div className="space-y-0.5">
-                      {getAttendanceForDate(day).map(record => (
-                        <div
-                          key={record.id}
-                          className={cn(
-                            "w-2 h-2 rounded-full",
-                            getStatusColor(record.status)
-                          )}
-                          title={`${record.students.first_name} ${record.students.last_name} - ${record.status}`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
+          {daySummary.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">{t('noRecords')}</p>
+          ) : (
+            <div className="space-y-2" data-testid="history-day-summary">
+              {daySummary.map((d) => (
+                <div key={d.date} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3" data-testid="history-day-row" data-date={d.date}>
+                  <span className="font-medium">{d.date}</span>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-700">{t('present')}: {d.present}</span>
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">{t('absent')}: {d.absent}</span>
+                    <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-700">{t('late')}: {d.late}</span>
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700">{t('excused')}: {d.excused}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Records Table */}
+      {/* Records table */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>{t('history.records')}</CardTitle>
-            <Button variant="outline" size="sm" onClick={exportToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              {t('history.export')}
-            </Button>
+            <CardTitle className="text-base">{t('records')}</CardTitle>
+            <span className="text-xs text-muted-foreground">{t('showing', { count: rows.length })}</span>
           </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" data-testid="history-table">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium">{t('history.date')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('history.student')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('history.class')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('history.time')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('history.status')}</th>
+                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('date')}</th>
+                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('student')}</th>
+                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('class')}</th>
+                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('status')}</th>
                 </tr>
               </thead>
               <tbody>
-                {attendanceRecords.map(record => (
-                  <tr key={record.id} className="border-b hover:bg-accent/50">
-                    <td className="py-3 px-4">{record.date}</td>
+                {rows.map((r) => (
+                  <tr key={r.id} className="border-b hover:bg-accent/50" data-testid="history-row" data-status={r.status} data-student={r.studentName}>
+                    <td className="py-3 px-4">{r.date}</td>
+                    <td className="py-3 px-4">{r.studentName}</td>
+                    <td className="py-3 px-4">{r.className}</td>
                     <td className="py-3 px-4">
-                      {record.students.first_name} {record.students.last_name}
-                    </td>
-                    <td className="py-3 px-4">{record.classes.name}</td>
-                    <td className="py-3 px-4">
-                      {record.class_schedules.start_time} - {record.class_schedules.end_time}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge
-                        variant={
-                          record.status === 'present' ? 'success' :
-                          record.status === 'absent' ? 'destructive' :
-                          record.status === 'late' ? 'warning' : 'info'
-                        }
-                      >
-                        {t(`status.${record.status}`)}
-                      </Badge>
+                      <span className={cn('inline-block rounded-full px-2 py-0.5 text-xs font-medium', STATUS_STYLE[r.status] || 'bg-gray-100 text-gray-600')}>
+                        {t(r.status as any)}
+                      </span>
                     </td>
                   </tr>
                 ))}
-                {attendanceRecords.length === 0 && (
+                {rows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {t('history.noRecords')}
-                    </td>
+                    <td colSpan={4} className="text-center py-8 text-muted-foreground">{t('noRecords')}</td>
                   </tr>
                 )}
               </tbody>

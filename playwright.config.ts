@@ -211,6 +211,16 @@ export default defineConfig({
       testMatch: /adm2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // REP-1 (attendance history/reports repair + coach date picker, parallel
+      // track): coach marks today/yesterday → history + by-class reports render
+      // real data on the real model. Switches roles internally (owner reads,
+      // coach marks); runs LAST.
+      name: 'rep1',
+      dependencies: ['setup'],
+      testMatch: /rep1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

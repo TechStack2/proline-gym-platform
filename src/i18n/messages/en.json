@@ -1495,5 +1495,76 @@
   "avatar": {
     "change": "Change photo",
     "failed": "Upload failed"
+  },
+  "attendanceHistory": {
+    "title": "Attendance History",
+    "subtitle": "Marked attendance across classes and dates",
+    "filters": "Filters",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "class": "Class",
+    "discipline": "Discipline",
+    "allClasses": "All classes",
+    "allDisciplines": "All disciplines",
+    "thisWeek": "This week",
+    "daySummary": "Per-day summary",
+    "present": "Present",
+    "absent": "Absent",
+    "late": "Late",
+    "excused": "Excused",
+    "records": "Records",
+    "date": "Date",
+    "student": "Student",
+    "status": "Status",
+    "markedBy": "Marked by",
+    "staff": "Staff",
+    "noRecords": "No attendance marked for this filter",
+    "showing": "Showing {count} records",
+    "coach": {
+      "dateLabel": "Date",
+      "hint": "Pick a date (today or up to 7 days back) to mark or correct attendance.",
+      "pastBadge": "Correcting {date}"
+    }
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Attendance summary for the selected period",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "last30Days": "Last 30 days",
+    "tabs": {
+      "byClass": "By class",
+      "byDiscipline": "By discipline",
+      "students": "Students"
+    },
+    "byClass": {
+      "title": "Attendance by class",
+      "class": "Class",
+      "discipline": "Discipline",
+      "sessions": "Sessions held",
+      "avgAttendance": "Avg attendance",
+      "fillRate": "Fill rate",
+      "capacity": "Capacity",
+      "noData": "No attendance recorded in this period"
+    },
+    "byDiscipline": {
+      "title": "Attendance by discipline",
+      "discipline": "Discipline",
+      "classes": "Classes",
+      "sessions": "Sessions",
+      "avgAttendance": "Avg attendance",
+      "fillRate": "Fill rate"
+    },
+    "students": {
+      "title": "Per-student attendance",
+      "leaders": "Most active",
+      "atRisk": "At risk (3+ absences)",
+      "student": "Student",
+      "present": "Attended",
+      "absent": "Absent",
+      "rate": "Rate",
+      "noLeaders": "No attendance recorded in this period",
+      "noAtRisk": "No at-risk members in this period"
+    }
   }
 }
