@@ -21,6 +21,8 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
+    // A covered/missing element must FAIL in 30s, never eat the test timeout.
+    actionTimeout: 30_000,
     baseURL,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',

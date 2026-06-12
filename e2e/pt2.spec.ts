@@ -19,9 +19,9 @@ import { vis, expectNotification } from './helpers';
  *     → member accepts → scheduled; member cancels a future booking →
  *     credits UNTOUCHED (remaining text identical before/after).
  */
-const RUN = Date.now().toString().slice(-6);
-const PACK = `PT2 Pack ${RUN}`;
-const MINI = `PT2 Mini ${RUN}`;
+// Names are derived PER TEST (+retry) — a worker restart resets module state,
+// so cross-test name sharing silently dangles (PT-1 lesson, deeper cut).
+const uniq = () => Date.now().toString().slice(-6);
 
 async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
   const ctx = await browser.newContext({ storageState: ROLES[role].storage, locale: 'en' });
@@ -56,21 +56,33 @@ function portalCard(page: Page, name: string) {
   return page.locator('[data-testid="pt-my-request"]').filter({ hasText: name }).first();
 }
 
+/** Publish 7-day 08:00–20:00 windows once; later calls no-op (rows persist). */
+async function ensureAvailability(coachPage: Page) {
+  await coachPage.goto('/en/coach/pt');
+  await expect(
+    vis(coachPage, '[data-testid="availability-editor"]').first(),
+    'the availability editor renders for the coach',
+  ).toBeVisible({ timeout: 20_000 });
+  if ((await vis(coachPage, '[data-testid="avail-row"]').count()) >= 7) return;
+  for (let d = 0; d <= 6; d++) {
+    if ((await vis(coachPage, `[data-testid="avail-row"][data-dow="${d}"]`).count()) > 0) continue;
+    await vis(coachPage, `[data-testid="avail-day-pill"][data-dow="${d}"]`).first().click();
+    await vis(coachPage, '[data-testid="avail-start"]').first().fill('08:00');
+    await vis(coachPage, '[data-testid="avail-end"]').first().fill('20:00');
+    await vis(coachPage, '[data-testid="avail-add"]').first().click();
+    await expect(vis(coachPage, `[data-testid="avail-row"][data-dow="${d}"]`).first()).toBeVisible({ timeout: 15_000 });
+  }
+}
+
 test('PT-2 · publish → policy-bounded slots → instant book everywhere → staff override today (warning)', async ({ browser }) => {
   test.setTimeout(300_000);
+  const PACK = `PT2 Pack ${uniq()}`;
   const owner = await ctxFor(browser, 'owner');
   const coach = await ctxFor(browser, 'coach'); // Sami
   const student = await ctxFor(browser, 'student'); // Karim
   try {
-    // ── Coach publishes availability for every weekday ──
-    await coach.page.goto('/en/coach/pt');
-    for (let d = 0; d <= 6; d++) {
-      await vis(coach.page, `[data-testid="avail-day-pill"][data-dow="${d}"]`).first().click();
-      await vis(coach.page, '[data-testid="avail-start"]').first().fill('08:00');
-      await vis(coach.page, '[data-testid="avail-end"]').first().fill('20:00');
-      await vis(coach.page, '[data-testid="avail-add"]').first().click();
-      await expect(vis(coach.page, `[data-testid="avail-row"][data-dow="${d}"]`).first()).toBeVisible({ timeout: 15_000 });
-    }
+    // ── Coach publishes availability (idempotent) ──
+    await ensureAvailability(coach.page);
 
     // ── A fresh distinct package for Karim ──
     await createType(owner.page, PACK, '10', '100');
@@ -138,10 +150,17 @@ test('PT-2 · publish → policy-bounded slots → instant book everywhere → s
 
 test('PT-2 · race loser gets clean slot-taken + fresh slots; anti-overbook rejects the 3rd', async ({ browser }) => {
   test.setTimeout(300_000);
+  const PACK = `PT2 Race ${uniq()}`;
+  const MINI = `PT2 Mini ${uniq()}`;
   const owner = await ctxFor(browser, 'owner');
+  const coach = await ctxFor(browser, 'coach');
   const a = await ctxFor(browser, 'student');
   const b = await ctxFor(browser, 'student');
   try {
+    await ensureAvailability(coach.page);
+    await createType(owner.page, PACK, '10', '100');
+    await sellToKarim(owner.page, PACK);
+
     // ── Race (stale list): B opens slots, A books one, B clicks the same ──
     await a.page.goto('/en/portal/pt');
     await b.page.goto('/en/portal/pt');
@@ -188,6 +207,7 @@ test('PT-2 · race loser gets clean slot-taken + fresh slots; anti-overbook reje
     ).toBeVisible({ timeout: 15_000 });
   } finally {
     await owner.ctx.close();
+    await coach.ctx.close();
     await a.ctx.close();
     await b.ctx.close();
   }
@@ -195,9 +215,24 @@ test('PT-2 · race loser gets clean slot-taken + fresh slots; anti-overbook reje
 
 test('PT-2 · propose → counter → member accepts (same guards); member cancel leaves credits untouched', async ({ browser }) => {
   test.setTimeout(300_000);
+  const PACK = `PT2 Flow ${uniq()}`;
   const owner = await ctxFor(browser, 'owner');
+  const coach = await ctxFor(browser, 'coach');
   const student = await ctxFor(browser, 'student'); // Karim
   try {
+    await ensureAvailability(coach.page);
+    await createType(owner.page, PACK, '10', '100');
+    await sellToKarim(owner.page, PACK);
+
+    // ── Member books one slot (the cancel target), then proposes a time ──
+    await student.page.goto('/en/portal/pt');
+    await portalCard(student.page, PACK).getByTestId('pt-book-open').click();
+    const firstSlot = student.page.locator('[data-testid="pt-slot"]').first();
+    await expect(firstSlot).toBeVisible({ timeout: 20_000 });
+    await firstSlot.click();
+    await expect(student.page.locator('[data-testid="app-toast"]').filter({ hasText: /booked/i }).first())
+      .toBeVisible({ timeout: 15_000 });
+
     // ── Member proposes an out-of-window time (+3d 07:00) ──
     const plus3 = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
     await student.page.goto('/en/portal/pt');
@@ -241,6 +276,7 @@ test('PT-2 · propose → counter → member accepts (same guards); member cance
     expect(remainingAfter, 'cancel frees the slot, credits untouched').toBe(remainingBefore);
   } finally {
     await owner.ctx.close();
+    await coach.ctx.close();
     await student.ctx.close();
   }
 });

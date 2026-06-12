@@ -135,6 +135,7 @@ export async function getBookableSlots(
     if (dayWindows.length === 0) continue
 
     const daySlots: { iso: string; label: string }[] = []
+    const seen = new Set<string>()
     for (const w of dayWindows) {
       for (let m = Math.ceil(w.s / slotMin) * slotMin; m + slotMin <= w.e; m += slotMin) {
         const end = m + slotMin
@@ -145,6 +146,8 @@ export async function getBookableSlots(
         if (utc.getTime() > horizonEnd.getTime()) continue
         if (validityEnd && utc.getTime() > validityEnd.getTime()) continue
         if (busy.some((b) => overlaps(utc.getTime(), utc.getTime() + slotMin * 60000, b.start, b.end))) continue
+        if (seen.has(utc.toISOString())) continue // overlapping windows dedupe
+        seen.add(utc.toISOString())
         daySlots.push({ iso: utc.toISOString(), label: timeFmt.format(utc) })
       }
     }
