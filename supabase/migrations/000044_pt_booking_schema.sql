@@ -22,7 +22,13 @@
 ALTER TYPE pt_session_status_enum ADD VALUE IF NOT EXISTS 'proposed';
 
 ALTER TABLE pt_sessions
-  ADD COLUMN IF NOT EXISTS proposed_by UUID REFERENCES profiles(id);
+  ADD COLUMN IF NOT EXISTS proposed_by UUID;
+-- SET NULL on delete: the e2e gym teardown (and any future profile removal)
+-- must never be blocked by a stale proposal pointer (23503 caught in CI).
+ALTER TABLE pt_sessions DROP CONSTRAINT IF EXISTS pt_sessions_proposed_by_fkey;
+ALTER TABLE pt_sessions
+  ADD CONSTRAINT pt_sessions_proposed_by_fkey
+  FOREIGN KEY (proposed_by) REFERENCES profiles(id) ON DELETE SET NULL;
 
 ALTER TABLE gyms
   ADD COLUMN IF NOT EXISTS pt_slot_minutes INTEGER NOT NULL DEFAULT 60,
