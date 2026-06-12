@@ -13,10 +13,12 @@ import { GuardianPanel, type GuardianRow } from './guardian-panel'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { PromotePanel } from './promote-panel'
 import { MemberActions, type OpenInvoice, type PickableClass } from './member-actions'
+import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel-client'
+import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: { locale: string; id: string }; searchParams: { pay?: string } }
+type Props = { params: { locale: string; id: string }; searchParams: { pay?: string; sellpt?: string } }
 
 /**
  * Member-360 (IA-2) — THE member file. Replaces the husk that passed
@@ -70,16 +72,18 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       .limit(10),
     supabase
       .from('pt_assignments')
-      .select('id, status, sessions_total, sessions_used, sessions_remaining, purchased_at, expires_at, is_active, pt_packages:package_id (name_ar, name_en, name_fr, validity_days)')
+      .select(`id, status, sessions_total, sessions_used, sessions_remaining, purchased_at, expires_at, is_active, invoice_id,
+        pt_packages:package_id (name_ar, name_en, name_fr, validity_days, disciplines:discipline_id (name_ar, name_en, name_fr)),
+        coaches:coach_id (id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url))`)
       .eq('student_id', id)
-      .order('purchased_at', { ascending: false })
-      .limit(5),
+      .order('purchased_at', { ascending: false, nullsFirst: false })
+      .limit(10),
     supabase
       .from('pt_sessions')
-      .select('id, scheduled_at, status')
+      .select('id, assignment_id, scheduled_at, status')
       .eq('student_id', id)
       .order('scheduled_at', { ascending: false })
-      .limit(5),
+      .limit(40),
     supabase
       .from('invoices')
       .select(`id, invoice_number, invoice_type, total_usd, status, due_date, created_at, payer_profile_id,
@@ -207,6 +211,46 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     }))
     .filter((i) => i.balance_usd > 0)
 
+  // ── PT-1: package-first panel data — catalog types, sellable coaches, the
+  //    member's package cards (invoice state fetched DIRECTLY, never windowed),
+  //    sessions grouped under their package. ──
+  const [{ data: ptTypes }, { data: sellCoachRows }] = await Promise.all([
+    supabase.from('pt_packages')
+      .select('id, name_ar, name_en, name_fr, session_count, price_usd, validity_days, discipline_id, disciplines:discipline_id (name_en)')
+      .eq('gym_id', gymIdForPromote).eq('is_active', true).is('deleted_at', null)
+      .order('session_count'),
+    supabase.from('coaches')
+      .select('id, specialization_en, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url)')
+      .eq('gym_id', gymIdForPromote).eq('is_active', true).is('deleted_at', null),
+  ])
+  const ptInvoiceIds = (ptAssignments ?? []).map((a: any) => a.invoice_id).filter(Boolean)
+  const { data: ptInvoices } = ptInvoiceIds.length
+    ? await supabase.from('invoices').select('id, invoice_number, status').in('id', ptInvoiceIds)
+    : { data: [] as any[] }
+  const ptInvBy = new Map((ptInvoices ?? []).map((i: any) => [i.id, i]))
+  const ptSessionsByAssignment = new Map<string, any[]>()
+  let ptUnlinked = 0
+  for (const sRow of (ptSessions ?? []) as any[]) {
+    if (!sRow.assignment_id) { ptUnlinked++; continue }
+    const list = ptSessionsByAssignment.get(sRow.assignment_id) ?? []
+    list.push(sRow)
+    ptSessionsByAssignment.set(sRow.assignment_id, list)
+  }
+  const sellableTypes: SellableType[] = ((ptTypes ?? []) as any[]).map((x) => ({
+    id: x.id, name_ar: x.name_ar, name_en: x.name_en, name_fr: x.name_fr,
+    session_count: x.session_count, price_usd: Number(x.price_usd),
+    validity_days: x.validity_days, discipline_id: x.discipline_id,
+    discipline_name_en: one(x.disciplines)?.name_en ?? null,
+  }))
+  const sellableCoaches: SellableCoach[] = ((sellCoachRows ?? []) as any[])
+    .map((c) => ({
+      id: c.id,
+      name: localizedName(one(c.profiles), locale),
+      avatarUrl: one(c.profiles)?.avatar_url ?? null,
+      specializationEn: c.specialization_en ?? null,
+    }))
+    .filter((c) => c.name)
+
   const prof: any = one((student as any).profiles)
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
@@ -215,6 +259,29 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const beltLabel = (r: string | null) => (r ? r.replace(/_/g, ' ') : '—')
   const ptActive = (ptAssignments ?? []).filter((a: any) => a.is_active && a.status === 'active')
   const ptRemaining = ptActive.reduce((s: number, a: any) => s + (a.sessions_remaining ?? 0), 0)
+
+  const ptCards = ((ptAssignments ?? []) as any[]).map((a) => {
+    const pkg = one(a.pt_packages)
+    const inv: any = a.invoice_id ? ptInvBy.get(a.invoice_id) : null
+    return {
+      id: a.id,
+      status: a.status,
+      sessionsTotal: a.sessions_total ?? 0,
+      sessionsRemaining: a.sessions_remaining ?? 0,
+      expiresAt: a.expires_at,
+      packageName: lname(pkg),
+      disciplineName: pkg ? lname(one((pkg as any).disciplines)) || null : null,
+      coachName: localizedName(one(one(a.coaches)?.profiles), locale) || null,
+      coachAvatarUrl: one(one(a.coaches)?.profiles)?.avatar_url ?? null,
+      invoiceHref: inv ? `/${locale}/invoices/${inv.id}` : null,
+      invoiceNumber: inv?.invoice_number ?? null,
+      invoiceStatusLabel: inv ? statusLabel(inv.status, locale) : null,
+      invoiceStatusClass: inv ? INV_BADGE[inv.status] : null,
+      sessions: (ptSessionsByAssignment.get(a.id) ?? []).map((sRow: any) => ({
+        id: sRow.id, scheduledAt: sRow.scheduled_at, status: sRow.status,
+      })),
+    }
+  })
 
   const regBadge: Record<string, string> = {
     active: 'bg-green-100 text-green-700', requested: 'bg-yellow-100 text-yellow-700',
@@ -335,36 +402,17 @@ export default async function Member360Page({ params: { locale, id }, searchPara
             DOCKING SLOT: PT-1 “sell package” + PT-2 “book session” actions mount
             in this panel (per the approved PT-360 §3.1 package cards). */}
         <Panel icon={Dumbbell} title={t('pt')} testid="panel-pt" id="panel-pt">
-          {(ptAssignments ?? []).length === 0 ? <Empty text={t('noPt')} /> : (
-            <ul className="space-y-2">
-              {(ptAssignments ?? []).map((a: any) => (
-                <li key={a.id} className="flex items-center justify-between text-sm" data-testid="member-pt-row" data-status={a.status}>
-                  <div>
-                    <p className="font-medium text-gray-800">{lname(one(a.pt_packages))}</p>
-                    <p className="text-xs text-gray-500">
-                      {a.expires_at ? `${t('validUntil')} ${fmtDate(a.expires_at)}` : t('noExpiry')}
-                    </p>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900" data-testid="pt-remaining">
-                    {a.sessions_remaining}/{a.sessions_total} <span className="text-xs font-normal text-gray-500">{t('left')}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {(ptSessions ?? []).length > 0 && (
-            <div className="mt-3 border-t pt-2">
-              <p className="mb-1 text-xs font-medium text-gray-500">{t('recentSessions')}</p>
-              <ul className="space-y-1">
-                {(ptSessions ?? []).map((s: any) => (
-                  <li key={s.id} className="flex items-center justify-between text-xs text-gray-600">
-                    <span>{fmtDate(s.scheduled_at)}</span>
-                    <span className="capitalize">{s.status}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* PT-1 package-first: cards with sessions NESTED (the flat
+              recent-sessions list died here); sell + extend actions inside. */}
+          <MemberPtPanel
+            studentId={id}
+            cards={ptCards as any}
+            types={sellableTypes}
+            coaches={sellableCoaches}
+            unlinkedCount={ptUnlinked}
+            locale={locale}
+            autoSellPackageId={searchParams?.sellpt || null}
+          />
         </Panel>
 
         {/* ── 4. Billing ── */}

@@ -36,3 +36,47 @@ export async function registerMemberToClass(input: {
   revalidatePath(`/students/${input.studentId}`)
   return { ok: true, status: after?.status ?? 'active' }
 }
+
+/**
+ * PT-1 desk sale — thin wrapper over the atomic sell_pt_package RPC (guards,
+ * snapshot, invoice with optional discount, B3 payer, notifications all live
+ * in SQL). Also the 22R approval path when requestId is provided.
+ */
+export async function sellPtPackage(input: {
+  studentId: string
+  packageId: string
+  coachId: string
+  discountPct?: number
+  discountAmountUsd?: number
+  requestId?: string | null
+}): Promise<Result> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('sell_pt_package', {
+    p_student_id: input.studentId,
+    p_package_id: input.packageId,
+    p_coach_id: input.coachId,
+    p_discount_pct: input.discountPct ?? 0,
+    p_discount_amount_usd: input.discountAmountUsd ?? 0,
+    p_request_id: input.requestId ?? null,
+  })
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/students/${input.studentId}`)
+  revalidatePath('/inbox')
+  return { ok: true, status: 'active' }
+}
+
+/** PT-1 expiry goodwill — staff extend (audited in the RPC), un-freezes. */
+export async function extendPtPackage(input: {
+  studentId: string
+  assignmentId: string
+  days?: number
+}): Promise<Result> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('extend_pt_package', {
+    p_assignment_id: input.assignmentId,
+    p_days: input.days ?? 30,
+  })
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/students/${input.studentId}`)
+  return { ok: true, status: 'active' }
+}

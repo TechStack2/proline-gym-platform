@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
+import { localizedName, one } from '@/lib/names';
+import { STATUS_BADGE, statusLabel } from '@/lib/billing/reconcile';
+import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/shared/pt-package-card';
 import { PtRequestClient } from './pt-request-client';
 
 type Props = { params: { locale: string } };
@@ -11,8 +14,17 @@ function coachName(profile: Record<string, unknown> | null, locale: string): str
   return (profile[key] as string) || (profile.first_name_en as string) || (profile.first_name_ar as string) || '';
 }
 
+/**
+ * Portal "My PT" (PT-1, operator amendment §3.1) — PACKAGE-FIRST. The flat
+ * "session history" wall this page used to render (loose sessions with no
+ * package/coach/billing tie — the operator's complaint on Karim's account)
+ * is gone: every assignment renders as a PtPackageCard (type · coach ·
+ * discipline · remaining · validity countdown · invoice payment state) with
+ * its sessions NESTED under it. The 22R catalog request flow stays below.
+ */
 export default async function PortalPtPage({ params }: Props) {
   const { locale } = params;
+  const isRTL = locale === 'ar';
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -38,35 +50,78 @@ export default async function PortalPtPage({ params }: Props) {
       .select('id, name_ar, name_en, name_fr, session_count, price_usd, price_lbp, validity_days')
       .eq('gym_id', gymId)
       .eq('is_active', true)
+      .is('deleted_at', null)
       .order('session_count'),
-    // Students can't read `coaches`/`profiles` directly (RLS); use the gym-scoped
-    // SECURITY DEFINER reader so the "preferred coach" dropdown is populated.
     supabase.rpc('get_gym_coaches'),
   ]);
 
+  // ── Package cards: assignments + type/discipline + coach + invoice + nested sessions ──
   const { data: assignments } = student
     ? await supabase
         .from('pt_assignments')
-        .select('id, package_id, status, sessions_total, sessions_remaining, requested_at, rejected_reason')
+        .select(`id, package_id, status, sessions_total, sessions_remaining, requested_at, purchased_at, expires_at, rejected_reason, invoice_id,
+          pt_packages:package_id (name_ar, name_en, name_fr, disciplines:discipline_id (name_ar, name_en, name_fr)),
+          coaches:coach_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url))`)
         .eq('student_id', student.id)
         .order('requested_at', { ascending: false, nullsFirst: false })
     : { data: [] };
 
-  // C1: PT session history (definer reader resolves the coach name; RLS-scoped).
-  const { data: sessions } = student ? await supabase.rpc('get_student_pt_sessions') : { data: [] };
-  const sessionList = (sessions || []) as Array<{
-    session_id: string; coach_name: string; scheduled_at: string;
-    status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
-  }>;
-  const totalRemaining = (assignments || []).reduce(
-    (sum: number, a: { sessions_remaining: number | null }) => sum + (a.sessions_remaining ?? 0),
-    0,
-  );
-  const sessionStatusStyle: Record<string, string> = {
-    scheduled: 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    cancelled: 'bg-gray-100 text-gray-600',
-    no_show: 'bg-red-100 text-red-700',
+  const invoiceIds = ((assignments ?? []) as any[]).map((a) => a.invoice_id).filter(Boolean);
+  const { data: invoices } = invoiceIds.length
+    ? await supabase.from('invoices').select('id, invoice_number, status').in('id', invoiceIds)
+    : { data: [] as any[] };
+  const invBy = new Map(((invoices ?? []) as any[]).map((i) => [i.id, i]));
+
+  const { data: sessionRows } = student
+    ? await supabase
+        .from('pt_sessions')
+        .select('id, assignment_id, scheduled_at, status')
+        .eq('student_id', student.id)
+        .order('scheduled_at', { ascending: false })
+        .limit(100)
+    : { data: [] as any[] };
+  const sessionsBy = new Map<string, any[]>();
+  for (const sRow of (sessionRows ?? []) as any[]) {
+    if (!sRow.assignment_id) continue;
+    const list = sessionsBy.get(sRow.assignment_id) ?? [];
+    list.push(sRow);
+    sessionsBy.set(sRow.assignment_id, list);
+  }
+
+  const t = await getTranslations('pt');
+  const lname = (r: any) => ((isRTL ? r?.name_ar : locale === 'fr' ? r?.name_fr : r?.name_en) || r?.name_en || '');
+
+  const cards: PtCardData[] = ((assignments ?? []) as any[]).map((a) => {
+    const pkg = one(a.pt_packages);
+    const inv: any = a.invoice_id ? invBy.get(a.invoice_id) : null;
+    return {
+      id: a.id,
+      status: a.status,
+      sessionsTotal: a.sessions_total ?? 0,
+      sessionsRemaining: a.sessions_remaining ?? 0,
+      expiresAt: a.expires_at,
+      packageName: lname(pkg),
+      disciplineName: pkg ? lname(one((pkg as any).disciplines)) || null : null,
+      coachName: localizedName(one(one(a.coaches)?.profiles), locale) || null,
+      coachAvatarUrl: one(one(a.coaches)?.profiles)?.avatar_url ?? null,
+      invoiceHref: inv ? `/${locale}/portal/billing` : null,
+      invoiceNumber: inv?.invoice_number ?? null,
+      invoiceStatusLabel: inv ? statusLabel(inv.status, locale) : null,
+      invoiceStatusClass: inv ? STATUS_BADGE[inv.status] : null,
+      sessions: (sessionsBy.get(a.id) ?? []).map((sRow: any) => ({
+        id: sRow.id, scheduledAt: sRow.scheduled_at, status: sRow.status,
+      })),
+    };
+  });
+
+  const totalRemaining = cards
+    .filter((c) => computePtStatus(c) === 'active')
+    .reduce((sum, c) => sum + c.sessionsRemaining, 0);
+
+  const validityLabel = (d: PtCardData) => {
+    if (!d.expiresAt) return null;
+    const days = Math.ceil((new Date(d.expiresAt).getTime() - Date.now()) / 864e5);
+    return days >= 0 ? t('days_left', { days }) : t('expired_ago', { days: Math.abs(days) });
   };
 
   const coachOptions = (coaches || []).map((c: Record<string, unknown>) => ({
@@ -74,28 +129,20 @@ export default async function PortalPtPage({ params }: Props) {
     name: coachName(c, locale),
   }));
 
-  const t = await getTranslations('pt');
-
   return (
     <div className="p-4 space-y-4">
       <div>
-        <h1 className={cn('text-lg font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
+        <h1 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
           {t('pt_title')}
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">{t('pt_request_subtitle')}</p>
       </div>
-      <PtRequestClient
-        packages={packages || []}
-        coaches={coachOptions}
-        assignments={assignments || []}
-        locale={locale}
-      />
 
-      {/* C1 — PT session history + remaining credits (RLS-scoped, RTL) */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="portal-pt-history">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className={cn('text-sm font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
-            {t('pt_sessions_title')}
+      {/* My PT — the package cards (sessions nested; no flat list) */}
+      <div className="space-y-2" data-testid="portal-pt-history">
+        <div className="flex items-center justify-between">
+          <h2 className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>
+            {t('my_requests')}
           </h2>
           <span
             data-testid="portal-pt-remaining"
@@ -104,31 +151,35 @@ export default async function PortalPtPage({ params }: Props) {
             {t('credits_remaining', { count: totalRemaining })}
           </span>
         </div>
-        {sessionList.length === 0 ? (
+        {cards.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">{t('no_sessions')}</p>
         ) : (
-          <div className="space-y-2">
-            {sessionList.map((s) => (
-              <div
-                key={s.session_id}
-                data-testid="portal-pt-session"
-                data-status={s.status}
-                className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
-              >
-                <div>
-                  <p className="text-sm font-medium text-gray-700">{s.coach_name || '—'}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(s.scheduled_at).toLocaleDateString(locale === 'ar' ? 'ar-LB' : 'en-US')}
-                  </p>
-                </div>
-                <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', sessionStatusStyle[s.status])}>
-                  {t(`session_status.${s.status}` as Parameters<typeof t>[0])}
-                </span>
-              </div>
-            ))}
-          </div>
+          cards.map((d) => (
+            <PtPackageCard
+              key={d.id}
+              data={d}
+              locale={locale}
+              testid="pt-my-request"
+              sessionTestid="portal-pt-session"
+              labels={{
+                remainingText: t('sessions_remaining', { remaining: d.sessionsRemaining, total: d.sessionsTotal }),
+                status: t(`status_${computePtStatus(d)}` as Parameters<typeof t>[0]),
+                validity: validityLabel(d),
+                sessionsTitle: t('pt_sessions_title'),
+                sessionStatus: (s) => t(`session_status.${s}` as Parameters<typeof t>[0]),
+              }}
+            />
+          ))
         )}
       </div>
+
+      {/* 22R: request from the catalog (type cards) — approval routes through
+          sell_pt_package on the staff side. */}
+      <PtRequestClient
+        packages={packages || []}
+        coaches={coachOptions}
+        locale={locale}
+      />
     </div>
   );
 }

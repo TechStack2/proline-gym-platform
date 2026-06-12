@@ -34,6 +34,14 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     .eq('gym_id', gymData?.id ?? '')
     .order('duration_days', { ascending: true });
 
+  // PT package-type catalog (incl. archived, for the manager) — PT-1
+  const { data: ptTypes } = await supabase
+    .from('pt_packages')
+    .select('id, name_ar, name_en, name_fr, session_count, price_usd, validity_days, discipline_id, is_active, show_on_landing')
+    .eq('gym_id', gymData?.id ?? '')
+    .is('deleted_at', null)
+    .order('session_count', { ascending: true })
+
   // Fetch disciplines with their belt hierarchies (incl. archived, for the manager)
   const { data: disciplines } = await supabase
     .from('disciplines')
@@ -86,6 +94,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
           rates={rates || []}
           plans={plans || []}
           disciplines={disciplines || []}
+          ptTypes={ptTypes || []}
         />
       </Suspense>
 

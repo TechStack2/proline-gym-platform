@@ -6,9 +6,10 @@ import { localizedName, one } from '@/lib/names'
 import { getDailyTally } from '@/lib/billing/daily-tally'
 import { METHOD_LABEL, balanceUsd } from '@/lib/billing/reconcile'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
+import { getRenewalsDue } from '@/lib/pt/refill'
 import {
   UserPlus, Users, DollarSign, ClipboardList, Dumbbell, CalendarDays,
-  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight,
+  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -127,6 +128,7 @@ export default async function TodayPage({ params: { locale } }: Props) {
 
   const todayPt = (ptSessions ?? []).filter((s: any) => one(s.coaches)?.gym_id === gymId)
   const tally = await getDailyTally(supabase, dayStart)
+  const renewals = await getRenewalsDue(supabase, gymId, locale)
   const inboxCount = (regRequests ?? 0) + (ptRequests ?? 0)
 
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
@@ -308,10 +310,7 @@ export default async function TodayPage({ params: { locale } }: Props) {
         )}
       </ActionCard>
 
-      {/* ── Card 5: PT today ──
-          DOCKING SLOT (PT-1): the refill nudge card ("last-session packages →
-          sell next pack") mounts directly AFTER this card — fetch exhausted/
-          last-session assignments, render <ActionCard testid="pt-refill">. */}
+      {/* ── Card 5: PT today ── */}
       <ActionCard icon={Dumbbell} title={t('ptSessions')} count={todayPt.length}
         emptyText={t('cards.nonePt')} testid="pt" isRTL={isRTL}>
         <div data-testid="today-pt" className="space-y-2">
@@ -323,6 +322,27 @@ export default async function TodayPage({ params: { locale } }: Props) {
             </ActionRow>
           ))}
         </div>
+      </ActionCard>
+
+      {/* ── Card 6: PT refill (PT-1 — first external proof of the FD-1 docking
+          contract: this card is the fetch above + these 14 JSX lines). ── */}
+      <ActionCard icon={RefreshCw} title={t('cards.ptRefill')} count={renewals.length}
+        emptyText={t('cards.noneRefill')} testid="pt-refill" isRTL={isRTL}>
+        {renewals.map((r) => (
+          <ActionRow key={r.assignmentId} href={`/${locale}/students/${r.studentId}`} testid="refill-row"
+            action={
+              <Link href={`/${locale}/students/${r.studentId}?sellpt=${r.packageId}`} data-testid="refill-resell"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
+                <RefreshCw className="h-3.5 w-3.5" /> {t('cards.resell')}
+              </Link>
+            }>
+            <p className="truncate text-sm font-semibold text-gray-900">{r.studentName}</p>
+            <p className="text-xs text-gray-500">
+              {r.packageName} · {r.remaining}/{r.total}
+              {r.daysLeft !== null ? ` · ${t('cards.daysLeft', { days: r.daysLeft })}` : ''}
+            </p>
+          </ActionRow>
+        ))}
       </ActionCard>
     </div>
   )

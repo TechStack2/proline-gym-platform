@@ -1010,7 +1010,10 @@
     "credit_restored": "تم استرجاع الرصيد",
     "restore_error": "تعذّر استرجاع الرصيد",
     "conflict_warning": "تنبيه: لدى {coach} بالفعل {event} الساعة {time} — تم الحجز على أي حال.",
-    "conflict_pt_event": "جلسة تدريب خاص"
+    "conflict_pt_event": "جلسة تدريب خاص",
+    "days_left": "{days} يوماً متبقية",
+    "expired_ago": "انتهت منذ {days} يوماً",
+    "status_expired": "منتهية"
   },
   "rentals": {
     "title": "تأجير المساحات",
@@ -1042,7 +1045,8 @@
       "gymProfile": "ملف الصالة",
       "exchangeRates": "أسعار الصرف",
       "membershipPlans": "خطط العضوية",
-      "disciplinesBelts": "التخصصات والأحزمة"
+      "disciplinesBelts": "التخصصات والأحزمة",
+      "ptPackages": "باقات التدريب الخاص"
     },
     "gym": {
       "noData": "لم يتم العثور على بيانات الصالة",
@@ -1114,7 +1118,25 @@
     "pt_late_cancel_window": "نافذة الإلغاء المتأخر (ساعات)",
     "pt_policy_save": "حفظ السياسة",
     "pt_policy_saved": "تم حفظ السياسة",
-    "pt_policy_error": "تعذّر حفظ السياسة"
+    "pt_policy_error": "تعذّر حفظ السياسة",
+    "ptCatalog": {
+      "title": "أنواع باقات التدريب الخاص",
+      "subtitle": "الكتالوج الذي تُباع منه الباقات في الاستقبال وتُطلب من البوابة — بيانات خاصة بالنادي",
+      "nameEn": "الاسم (EN)",
+      "nameAr": "الاسم (AR)",
+      "nameFr": "الاسم (FR)",
+      "sessions": "الجلسات",
+      "priceUsd": "السعر $",
+      "validityDays": "الصلاحية (أيام)",
+      "add": "إضافة",
+      "errNameRequired": "الاسم (EN) مطلوب",
+      "errNumbers": "يجب أن تكون الجلسات والسعر أرقاماً صحيحة",
+      "disciplineOptional": "التخصص (اختياري):",
+      "sessionsShort": "جلسات",
+      "daysShort": "ي",
+      "onLanding": "على الصفحة",
+      "staged": "مخفي"
+    }
   },
   "reportsDashboard": {
     "title": "التقارير",
@@ -1280,6 +1302,10 @@
       "waitlist_promoted": {
         "title": "توفّر مكان!",
         "body": "تم نقلك من قائمة الانتظار إلى {class} — شهرياً {fee}$"
+      },
+      "pt_refill_due": {
+        "title": "جلساتك الخاصة على وشك الانتهاء",
+        "body": "تبقّى {remaining} فقط من {package} — جدّد في الاستقبال"
       }
     }
   },
@@ -1398,7 +1424,11 @@
       "dueToday": "تستحق اليوم",
       "recordPayment": "تسجيل دفعة",
       "overdue": "{count} متأخرة",
-      "nonePt": "لا حصص تدريب خاص اليوم"
+      "nonePt": "لا حصص تدريب خاص اليوم",
+      "ptRefill": "تجديد التدريب الخاص",
+      "noneRefill": "لا تجديدات مستحقة",
+      "resell": "إعادة بيع",
+      "daysLeft": "{days}ي متبقية"
     }
   },
   "inbox": {
@@ -1416,7 +1446,11 @@
     "discountAmt": "خصم $",
     "sessions": "جلسات",
     "mo": "شهر",
-    "promotedLine": "تمت ترقية {student} تلقائياً من قائمة الانتظار إلى {class}"
+    "promotedLine": "تمت ترقية {student} تلقائياً من قائمة الانتظار إلى {class}",
+    "renewalsTitle": "تجديدات التدريب الخاص",
+    "renewalsZero": "لا تجديدات مستحقة",
+    "renewalDays": "{days}ي للانتهاء",
+    "resell": "إعادة بيع"
   },
   "member360": {
     "age": "{age} سنة",
@@ -1640,6 +1674,42 @@
       "rate": "النسبة",
       "noLeaders": "لا حضور مسجَّل في هذه الفترة",
       "noAtRisk": "لا أعضاء في خطر في هذه الفترة"
+    }
+  },
+  "ptPanel": {
+    "remaining": "متبقية",
+    "sessions": "الجلسات",
+    "none": "لا باقات تدريب خاص بعد",
+    "unlinked": "{count} جلسات قديمة غير مرتبطة بأي باقة — راجعها من سجل التدريب الخاص",
+    "sell": "بيع باقة",
+    "sellTitle": "بيع باقة تدريب خاص",
+    "noTypes": "لا أنواع باقات فعّالة — أنشئها من الإعدادات",
+    "pickType": "الباقة",
+    "pickCoach": "المدرب",
+    "discountPct": "الخصم %",
+    "discountFixed": "الخصم $ (ثابت)",
+    "sellConfirm": "بيع وفوترة",
+    "sold": "تم بيع الباقة — صدرت الفاتورة",
+    "sellFailed": "فشل البيع",
+    "errPickBoth": "اختر باقة ومدرباً",
+    "extended": "مُدّدت الصلاحية +30 يوماً",
+    "extendFailed": "فشل التمديد",
+    "extend30": "تمديد +30ي",
+    "daysLeft": "{days} يوماً متبقية",
+    "expiredAgo": "انتهت منذ {days} يوماً",
+    "cardStatus": {
+      "requested": "مطلوبة",
+      "active": "فعّالة",
+      "expired": "منتهية",
+      "completed": "مكتملة",
+      "rejected": "مرفوضة",
+      "cancelled": "ملغاة"
+    },
+    "session": {
+      "scheduled": "مجدولة",
+      "completed": "مكتملة",
+      "cancelled": "ملغاة",
+      "no_show": "غياب"
     }
   }
 }

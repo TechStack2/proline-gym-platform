@@ -3,19 +3,20 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { Building2, TrendingUp, CreditCard, Swords } from 'lucide-react';
+import { Building2, TrendingUp, CreditCard, Swords, Dumbbell } from 'lucide-react';
 import { GymSettings } from './gym-settings';
 import { ExchangeRates } from './exchange-rates';
 import { MembershipPlans } from './membership-plans';
 import { DisciplineSettings } from './discipline-settings';
 import { DisciplineManager } from './discipline-manager';
+import { PtPackageManager, type PtTypeRow } from './pt-package-manager';
 
 type GymData = Parameters<typeof GymSettings>[0]['gym'];
 type ExchangeRate = Parameters<typeof ExchangeRates>[0]['rates'][number];
 type MembershipPlan = Parameters<typeof MembershipPlans>[0]['plans'][number];
 type Discipline = Parameters<typeof DisciplineSettings>[0]['disciplines'][number];
 
-type TabId = 'gym' | 'rates' | 'plans' | 'disciplines';
+type TabId = 'gym' | 'rates' | 'plans' | 'disciplines' | 'ptpackages';
 
 type Props = {
   locale: string;
@@ -23,12 +24,13 @@ type Props = {
   rates: ExchangeRate[];
   plans: MembershipPlan[];
   disciplines: Discipline[];
+  ptTypes: PtTypeRow[];
 };
 
-export function SettingsClient({ locale, gym, rates, plans, disciplines, initialTab }: Props & { initialTab?: string }) {
+export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes, initialTab }: Props & { initialTab?: string }) {
   const t = useTranslations('settings');
   const [activeTab, setActiveTab] = useState<TabId>(
-    (['gym', 'rates', 'plans', 'disciplines'] as TabId[]).includes(initialTab as TabId) ? (initialTab as TabId) : 'gym'
+    (['gym', 'rates', 'plans', 'disciplines', 'ptpackages'] as TabId[]).includes(initialTab as TabId) ? (initialTab as TabId) : 'gym'
   );
   const isRTL = locale === 'ar';
 
@@ -37,6 +39,7 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, initial
     rates: t('tabs.exchangeRates'),
     plans: t('tabs.membershipPlans'),
     disciplines: t('tabs.disciplinesBelts'),
+    ptpackages: t('tabs.ptPackages'),
   };
 
   const TAB_ICONS: Record<TabId, React.ReactNode> = {
@@ -44,9 +47,10 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, initial
     rates: <TrendingUp className="h-4 w-4" />,
     plans: <CreditCard className="h-4 w-4" />,
     disciplines: <Swords className="h-4 w-4" />,
+    ptpackages: <Dumbbell className="h-4 w-4" />,
   };
 
-  const tabIds: TabId[] = ['gym', 'rates', 'plans', 'disciplines'];
+  const tabIds: TabId[] = ['gym', 'rates', 'plans', 'disciplines', 'ptpackages'];
 
   return (
     <div className="space-y-4">
@@ -75,6 +79,9 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, initial
         {activeTab === 'gym' && <GymSettings gym={gym} locale={locale} />}
         {activeTab === 'rates' && <ExchangeRates rates={rates} locale={locale} />}
         {activeTab === 'plans' && <MembershipPlans plans={plans} locale={locale} />}
+        {activeTab === 'ptpackages' && gym?.id && (
+          <PtPackageManager types={ptTypes} disciplines={(disciplines as any[]).filter((d: any) => d.is_active !== false)} gymId={gym.id} locale={locale} />
+        )}
         {activeTab === 'disciplines' && (
           <>
             {gym?.id && <DisciplineManager disciplines={disciplines as any} gymId={gym.id} locale={locale} />}

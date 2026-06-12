@@ -1010,7 +1010,10 @@
     "credit_restored": "Crédit restauré",
     "restore_error": "Impossible de restaurer le crédit",
     "conflict_warning": "Attention : {coach} a déjà {event} à {time} — réservé quand même.",
-    "conflict_pt_event": "une séance PT"
+    "conflict_pt_event": "une séance PT",
+    "days_left": "{days} jours restants",
+    "expired_ago": "expiré il y a {days} jours",
+    "status_expired": "Expiré"
   },
   "rentals": {
     "title": "Location Espaces",
@@ -1042,7 +1045,8 @@
       "gymProfile": "Profil Gym",
       "exchangeRates": "Taux de change",
       "membershipPlans": "Abonnements",
-      "disciplinesBelts": "Disciplines & Ceintures"
+      "disciplinesBelts": "Disciplines & Ceintures",
+      "ptPackages": "Forfaits PT"
     },
     "gym": {
       "noData": "Aucune donnée de salle trouvée",
@@ -1114,7 +1118,25 @@
     "pt_late_cancel_window": "Délai d'annulation tardive (heures)",
     "pt_policy_save": "Enregistrer",
     "pt_policy_saved": "Politique enregistrée",
-    "pt_policy_error": "Échec de l'enregistrement"
+    "pt_policy_error": "Échec de l'enregistrement",
+    "ptCatalog": {
+      "title": "Types de forfaits PT",
+      "subtitle": "Le catalogue des ventes au comptoir et des demandes du portail — données du club",
+      "nameEn": "Nom (EN)",
+      "nameAr": "Nom (AR)",
+      "nameFr": "Nom (FR)",
+      "sessions": "Séances",
+      "priceUsd": "Prix $",
+      "validityDays": "Validité (jours)",
+      "add": "Ajouter",
+      "errNameRequired": "Le nom (EN) est requis",
+      "errNumbers": "Séances et prix doivent être des nombres valides",
+      "disciplineOptional": "Discipline (optionnel) :",
+      "sessionsShort": "séances",
+      "daysShort": "j",
+      "onLanding": "Publié",
+      "staged": "Masqué"
+    }
   },
   "reportsDashboard": {
     "title": "Rapports",
@@ -1280,6 +1302,10 @@
       "waitlist_promoted": {
         "title": "Une place s'est libérée !",
         "body": "Vous passez de la liste d'attente à {class} — {fee}$/mois"
+      },
+      "pt_refill_due": {
+        "title": "Plus que quelques séances PT",
+        "body": "Il ne reste que {remaining} sur {package} — renouvelez au comptoir"
       }
     }
   },
@@ -1398,7 +1424,11 @@
       "dueToday": "échéance aujourd’hui",
       "recordPayment": "Enregistrer un paiement",
       "overdue": "{count} en retard",
-      "nonePt": "aucune séance PT aujourd’hui"
+      "nonePt": "aucune séance PT aujourd’hui",
+      "ptRefill": "Recharge PT",
+      "noneRefill": "aucune recharge due",
+      "resell": "Revendre",
+      "daysLeft": "{days} j restants"
     }
   },
   "inbox": {
@@ -1416,7 +1446,11 @@
     "discountAmt": "$ remise",
     "sessions": "séances",
     "mo": "mois",
-    "promotedLine": "{student} a été promu(e) de la liste d'attente vers {class}"
+    "promotedLine": "{student} a été promu(e) de la liste d'attente vers {class}",
+    "renewalsTitle": "Renouvellements PT dus",
+    "renewalsZero": "aucun renouvellement dû",
+    "renewalDays": "{days} j avant expiration",
+    "resell": "Revendre"
   },
   "member360": {
     "age": "{age} ans",
@@ -1640,6 +1674,42 @@
       "rate": "Taux",
       "noLeaders": "Aucune présence enregistrée sur cette période",
       "noAtRisk": "Aucun élève à risque sur cette période"
+    }
+  },
+  "ptPanel": {
+    "remaining": "restantes",
+    "sessions": "Séances",
+    "none": "Aucun forfait PT",
+    "unlinked": "{count} séances héritées sans forfait — à résoudre depuis l’historique PT",
+    "sell": "Vendre un forfait",
+    "sellTitle": "Vendre un forfait PT",
+    "noTypes": "Aucun type actif — créez-les dans Réglages",
+    "pickType": "Forfait",
+    "pickCoach": "Coach",
+    "discountPct": "Remise %",
+    "discountFixed": "Remise $ (fixe)",
+    "sellConfirm": "Vendre et facturer",
+    "sold": "Forfait vendu — facture émise",
+    "sellFailed": "Échec de la vente",
+    "errPickBoth": "Choisissez un forfait et un coach",
+    "extended": "Validité prolongée de 30 jours",
+    "extendFailed": "Échec de la prolongation",
+    "extend30": "Prolonger +30 j",
+    "daysLeft": "{days} jours restants",
+    "expiredAgo": "expiré il y a {days} jours",
+    "cardStatus": {
+      "requested": "Demandé",
+      "active": "Actif",
+      "expired": "Expiré",
+      "completed": "Terminé",
+      "rejected": "Refusé",
+      "cancelled": "Annulé"
+    },
+    "session": {
+      "scheduled": "Planifiée",
+      "completed": "Terminée",
+      "cancelled": "Annulée",
+      "no_show": "Absence"
     }
   }
 }
