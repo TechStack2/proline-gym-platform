@@ -531,7 +531,8 @@
       "missed": "missed",
       "students": "Students",
       "markAllPresent": "Mark all present",
-      "noEnrollments": "No enrolled students."
+      "noEnrollments": "No enrolled students.",
+      "lapsedWarning": "Membership lapsed — renew at the desk"
     },
     "status": {
       "present": "Present",
@@ -1368,6 +1369,22 @@
       "pt_booking_cancelled": {
         "title": "PT booking cancelled",
         "body": "An upcoming session was cancelled"
+      },
+      "renewal_due": {
+        "title": "Renewal issued",
+        "body": "Your renewal of ${amount} is ready — pay at the desk"
+      },
+      "renewal_reminder": {
+        "title": "Payment reminder",
+        "body": "Your renewal of ${amount} is still unpaid — please pass by the desk"
+      },
+      "membership_lapsed": {
+        "title": "Membership lapsed",
+        "body": "Your membership has lapsed — renew at the desk to continue"
+      },
+      "registration_suspended": {
+        "title": "Class spot suspended",
+        "body": "Your class registration was suspended for non-payment — the desk can reactivate it"
       }
     }
   },
@@ -1485,7 +1502,7 @@
       "noneDue": "nothing due today",
       "dueToday": "due today",
       "recordPayment": "Record payment",
-      "overdue": "{count} overdue",
+      "overdue": "Overdue",
       "nonePt": "no PT sessions today",
       "ptRefill": "PT refill",
       "noneRefill": "no refills due",
@@ -1494,7 +1511,10 @@
       "campToday": "Camp today",
       "noneCamp": "no camp running today",
       "campExpected": "{count} expected",
-      "campUnpaid": "{count} unpaid"
+      "campUnpaid": "{count} unpaid",
+      "chase": "Chase list",
+      "noneChase": "nobody to chase",
+      "lapsed": "Lapsed"
     }
   },
   "inbox": {
@@ -1596,7 +1616,9 @@
       "campRegistered": "Registered — invoice issued",
       "campFailed": "Camp registration failed",
       "ageWarning": "Outside the camp age range ({min}–{max}) — you can still register (desk override)."
-    }
+    },
+    "regOverdue": "renewal overdue",
+    "regExpiring": "renews soon"
   },
   "money": {
     "title": "Money",
@@ -1609,7 +1631,9 @@
     "viewInvoices": "View invoices →",
     "todayTally": "Today's collections (by method)",
     "noPaymentsToday": "No payments today.",
-    "viewPayments": "View payments →"
+    "viewPayments": "View payments →",
+    "renewalsOutstanding": "Outstanding renewals",
+    "renewalsOpen": "{count} open renewal invoices"
   },
   "scheduleView": {
     "title": "Schedule",
@@ -1863,5 +1887,40 @@
       "declineBtn": "Decline",
       "sendCounter": "Send counter"
     }
+  },
+  "lifecycle": {
+    "noMembership": "No membership",
+    "actionFailed": "Action failed",
+    "state": {
+      "active": "Active",
+      "expiring": "Expiring soon",
+      "overdue": "Overdue",
+      "lapsed": "Lapsed",
+      "frozen": "Frozen",
+      "none": "—"
+    },
+    "pendingPlan": "Next cycle: {plan}",
+    "frozenUntil": "Frozen until {date}",
+    "renewalOpen": "Renewal invoice open — collect at the desk",
+    "renewNow": "Renew now",
+    "renewShort": "Renew",
+    "renewIssued": "Renewal invoice issued",
+    "freeze": "Freeze",
+    "unfreeze": "Unfreeze",
+    "frozen": "Membership frozen",
+    "unfrozen": "Membership unfrozen",
+    "freezeTitle": "Freeze membership",
+    "freezeConfirm": "Freeze",
+    "freezeBounds": "Min {min} days per freeze · {left} of {max} days left this year",
+    "changePlan": "Change plan",
+    "changePlanTitle": "Change plan (next cycle)",
+    "changePlanNote": "No proration — the new plan starts at the next renewal.",
+    "changePlanConfirm": "Schedule change",
+    "planChanged": "Plan change scheduled for the next cycle",
+    "reinstate": "Reinstate",
+    "reinstated": "Membership reinstated",
+    "processNow": "Process renewals now",
+    "tickDone": "Lifecycle tick complete",
+    "tickSummary": "{issued} issued · {reminded} reminded · {lapsed} lapsed · {suspended} suspended · {unfrozen} unfrozen"
   }
 }
