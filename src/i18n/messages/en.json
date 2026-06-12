@@ -1034,7 +1034,8 @@
       "scheduled": "Scheduled",
       "completed": "Completed",
       "cancelled": "Cancelled",
-      "no_show": "No-show"
+      "no_show": "No-show",
+      "proposed": "Proposed"
     },
     "pt_sessions_title": "My PT Sessions",
     "credits_remaining": "{count} credits left",
@@ -1347,6 +1348,26 @@
       "camp_confirmed": {
         "title": "Camp registration confirmed",
         "body": "Registered for {camp} — see you there!"
+      },
+      "pt_time_proposed": {
+        "title": "PT time proposed",
+        "body": "A session time was proposed — respond to confirm"
+      },
+      "pt_proposal_accept": {
+        "title": "PT session booked",
+        "body": "The proposed time was accepted — see you there"
+      },
+      "pt_proposal_counter": {
+        "title": "New time proposed",
+        "body": "A different time was proposed — please respond"
+      },
+      "pt_proposal_decline": {
+        "title": "Proposal declined",
+        "body": "The proposed time was declined"
+      },
+      "pt_booking_cancelled": {
+        "title": "PT booking cancelled",
+        "body": "An upcoming session was cancelled"
       }
     }
   },
@@ -1496,7 +1517,8 @@
     "renewalsZero": "no renewals due",
     "renewalDays": "{days}d to expiry",
     "resell": "Re-sell",
-    "campRequests": "Camp requests"
+    "campRequests": "Camp requests",
+    "ptProposals": "PT time proposals"
   },
   "member360": {
     "age": "{age} yrs",
@@ -1766,7 +1788,8 @@
       "completed": "Completed",
       "cancelled": "Cancelled",
       "no_show": "No-show"
-    }
+    },
+    "bookSession": "Book session"
   },
   "seo": {
     "title": "PRO LINE Gym — Muay Thai, Boxing & Fitness in Baabda",
@@ -1786,6 +1809,59 @@
     "status": {
       "pending": "Requested",
       "confirmed": "Registered"
+    }
+  },
+  "ptBooking": {
+    "book": "Book a session",
+    "title": "Book a session",
+    "loading": "Finding free slots…",
+    "booked": "Booked! See you there",
+    "bookFailed": "Booking failed",
+    "pickTime": "Pick a time first",
+    "proposed": "Proposal sent — the gym will respond",
+    "proposeFailed": "Proposal failed",
+    "proposeHint": "None of the offered slots fit? Propose a time and the gym will confirm or counter.",
+    "sendProposal": "Send proposal",
+    "backToSlots": "← Back to free slots",
+    "noneFit": "None of these work — propose a time",
+    "noSlots": "No free slots in the booking window",
+    "overrideToggle": "Override availability (desk)",
+    "bookOverride": "Book anyway",
+    "overrideConflict": "{coach} already has {time} — double-check before booking.",
+    "cancelled": "Booking cancelled — credit untouched",
+    "cancelBtn": "Cancel",
+    "acceptCounter": "Accept",
+    "declineCounter": "Decline",
+    "editor": {
+      "title": "My availability",
+      "subtitle": "Members can only book inside what you publish",
+      "days": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      },
+      "publish": "Publish",
+      "overrides": "Date overrides (block a day or add a one-off window)",
+      "block": "Block",
+      "extra": "Extra window",
+      "add": "Add",
+      "allDay": "all day",
+      "errRange": "End must be after start",
+      "errDate": "Pick a date"
+    },
+    "proposals": {
+      "accept": "Booked — both sides notified",
+      "counter": "Counter sent",
+      "decline": "Proposal declined",
+      "failed": "Action failed",
+      "acceptBtn": "Accept",
+      "counterBtn": "Counter",
+      "declineBtn": "Decline",
+      "sendCounter": "Send counter"
     }
   }
 }

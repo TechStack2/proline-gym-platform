@@ -254,6 +254,13 @@ export default defineConfig({
       testMatch: /lpx1-seo\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PT-2 signature booking: coach + member + staff + race contexts. Last.
+      name: 'pt2',
+      dependencies: ['setup'],
+      testMatch: /pt2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

@@ -22,6 +22,7 @@ import { Avatar } from '@/components/shared/avatar'
 import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/shared/pt-package-card'
 import { Loader2, Plus, X, AlarmClock, AlertTriangle } from 'lucide-react'
 import { sellPtPackage, extendPtPackage } from './actions'
+import { BookPtModal } from '@/components/shared/book-pt-modal'
 
 export type SellableType = {
   id: string; name_ar: string | null; name_en: string | null; name_fr: string | null
@@ -131,6 +132,11 @@ export function MemberPtPanel({
                   onClick={() => extend(d.id)} className="h-7 border-red-200 text-xs text-red-700 hover:bg-red-50">
                   <AlarmClock className="mr-1 h-3.5 w-3.5" /> {t('extend30')}
                 </Button>
+              </div>
+            ) : computePtStatus(d) === 'active' && d.sessionsRemaining > 0 ? (
+              <div className="mt-2">
+                {/* PT-2: staff slot picker (override toggle inside — FD-1 rule) */}
+                <BookPtModal assignmentId={d.id} locale={locale} staff triggerTestid="m360-pt-book" triggerLabel={t('bookSession')} />
               </div>
             ) : null}
           />

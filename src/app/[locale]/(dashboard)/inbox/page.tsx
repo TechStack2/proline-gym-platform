@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { getRenewalsDue } from '@/lib/pt/refill'
+import { PtProposals } from '@/components/shared/pt-proposals'
 import { RefreshCw } from 'lucide-react'
 import { localizedName, one } from '@/lib/names'
 import { InboxQueues, type RegRequestRow, type PtRequestRow, type PromotionRow } from './inbox-queues'
@@ -123,6 +124,25 @@ export default async function InboxPage({ params: { locale } }: Props) {
     requestedAt: r.registration_date,
   }))
 
+  // ── PT-2: time proposals where the ball is with the gym (member proposed last) ──
+  const { data: proposalsRaw } = await supabase
+    .from('pt_sessions')
+    .select(`id, scheduled_at, proposed_by,
+      students:student_id (profile_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
+      pt_packages:package_id (name_ar, name_en, name_fr)`)
+    .eq('status', 'proposed')
+  const gymTurnProposals = ((proposalsRaw ?? []) as any[])
+    .filter((r) => {
+      const st = one(r.students)
+      return r.proposed_by && st && r.proposed_by === st.profile_id
+    })
+    .map((r) => ({
+      id: r.id,
+      studentName: localizedName(one(one(r.students)?.profiles), locale),
+      packageName: clsName(one(r.pt_packages)),
+      scheduledAt: r.scheduled_at,
+    }))
+
   // ── PT-1: renewals due (read-time thresholds — see lib/pt/refill) ──
   const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   const renewals = me?.gym_id ? await getRenewalsDue(supabase, me.gym_id, locale) : []
@@ -145,6 +165,16 @@ export default async function InboxPage({ params: { locale } }: Props) {
         campRequests={campRequests}
         promotions={promotions}
       />
+
+      {/* ── PT-2: pending time proposals (accept books / counter / decline) ── */}
+      {gymTurnProposals.length > 0 && (
+        <section data-testid="inbox-pt-proposals">
+          <h2 className={cn('mb-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+            {t('ptProposals')} ({gymTurnProposals.length})
+          </h2>
+          <PtProposals rows={gymTurnProposals} locale={locale} />
+        </section>
+      )}
 
       {/* ── PT renewals due (PT-1): one-tap re-sell opens the Member-360 sell
           modal pre-filled with the same type (?sellpt=). Read-time, no cron. ── */}

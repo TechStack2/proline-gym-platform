@@ -5,6 +5,7 @@ import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { Avatar } from '@/components/shared/avatar'
+import { DiaryBookPt, type DiaryAssignment } from './diary-book-pt'
 import { CalendarRange, CalendarClock, Dumbbell } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -153,6 +154,23 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
 
   const fmtDay = new Date(`${dateStr}T12:00:00`)
 
+    // PT-2: active assignments per coach for the diary Book-PT picker.
+  const { data: diaryAssignRows } = await supabase
+    .from('pt_assignments')
+    .select(`id, coach_id, sessions_remaining, status, is_active, expires_at,
+      students:student_id (gym_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
+    .eq('status', 'active')
+    .eq('is_active', true)
+  const diaryAssignByCoach = new Map<string, DiaryAssignment[]>()
+  for (const a of (diaryAssignRows ?? []) as any[]) {
+    if (!a.coach_id || (a.sessions_remaining ?? 0) <= 0) continue
+    if (a.expires_at && new Date(a.expires_at) < new Date()) continue
+    if (one(a.students)?.gym_id !== gymId) continue
+    const list = diaryAssignByCoach.get(a.coach_id) ?? []
+    list.push({ id: a.id, studentName: localizedName(one(one(a.students)?.profiles), locale), remaining: a.sessions_remaining ?? 0 })
+    diaryAssignByCoach.set(a.coach_id, list)
+  }
+
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -299,6 +317,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                       ))}
                     </div>
                   )}
+                  <DiaryBookPt assignments={diaryAssignByCoach.get(col.coachId) ?? []} locale={locale} />
                 </div>
               ))}
             </div>

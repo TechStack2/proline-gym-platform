@@ -1034,7 +1034,8 @@
       "scheduled": "Planifiée",
       "completed": "Terminée",
       "cancelled": "Annulée",
-      "no_show": "Absence"
+      "no_show": "Absence",
+      "proposed": "Proposée"
     },
     "pt_sessions_title": "Mes séances PT",
     "credits_remaining": "{count} crédits restants",
@@ -1347,6 +1348,26 @@
       "camp_confirmed": {
         "title": "Inscription au camp confirmée",
         "body": "Inscrit à {camp} — à bientôt !"
+      },
+      "pt_time_proposed": {
+        "title": "Horaire PT proposé",
+        "body": "Un horaire de séance a été proposé — répondez pour confirmer"
+      },
+      "pt_proposal_accept": {
+        "title": "Séance PT réservée",
+        "body": "L’horaire proposé a été accepté — à bientôt"
+      },
+      "pt_proposal_counter": {
+        "title": "Nouvel horaire proposé",
+        "body": "Un autre horaire a été proposé — merci de répondre"
+      },
+      "pt_proposal_decline": {
+        "title": "Proposition refusée",
+        "body": "L’horaire proposé a été refusé"
+      },
+      "pt_booking_cancelled": {
+        "title": "Réservation PT annulée",
+        "body": "Une séance à venir a été annulée"
       }
     }
   },
@@ -1496,7 +1517,8 @@
     "renewalsZero": "aucun renouvellement dû",
     "renewalDays": "{days} j avant expiration",
     "resell": "Revendre",
-    "campRequests": "Demandes de camp"
+    "campRequests": "Demandes de camp",
+    "ptProposals": "Propositions d’horaires PT"
   },
   "member360": {
     "age": "{age} ans",
@@ -1766,7 +1788,8 @@
       "completed": "Terminée",
       "cancelled": "Annulée",
       "no_show": "Absence"
-    }
+    },
+    "bookSession": "Réserver une séance"
   },
   "seo": {
     "title": "PRO LINE Gym — Muay Thaï, Boxe & Fitness à Baabda",
@@ -1786,6 +1809,59 @@
     "status": {
       "pending": "Demandé",
       "confirmed": "Inscrit"
+    }
+  },
+  "ptBooking": {
+    "book": "Réserver une séance",
+    "title": "Réserver une séance",
+    "loading": "Recherche des créneaux libres…",
+    "booked": "Réservé ! À bientôt",
+    "bookFailed": "Échec de la réservation",
+    "pickTime": "Choisissez d’abord un horaire",
+    "proposed": "Proposition envoyée — le club répondra",
+    "proposeFailed": "Échec de la proposition",
+    "proposeHint": "Aucun créneau ne convient ? Proposez un horaire, le club confirmera ou contre-proposera.",
+    "sendProposal": "Envoyer la proposition",
+    "backToSlots": "← Retour aux créneaux",
+    "noneFit": "Aucun ne convient — proposer un horaire",
+    "noSlots": "Aucun créneau libre dans la fenêtre de réservation",
+    "overrideToggle": "Outrepasser la disponibilité (comptoir)",
+    "bookOverride": "Réserver quand même",
+    "overrideConflict": "{coach} a déjà {time} — vérifiez avant de réserver.",
+    "cancelled": "Réservation annulée — crédit intact",
+    "cancelBtn": "Annuler",
+    "acceptCounter": "Accepter",
+    "declineCounter": "Refuser",
+    "editor": {
+      "title": "Ma disponibilité",
+      "subtitle": "Les membres ne réservent que dans ce que vous publiez",
+      "days": {
+        "0": "Dim",
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mer",
+        "4": "Jeu",
+        "5": "Ven",
+        "6": "Sam"
+      },
+      "publish": "Publier",
+      "overrides": "Exceptions de dates (bloquer un jour ou ajouter une fenêtre unique)",
+      "block": "Bloquer",
+      "extra": "Fenêtre extra",
+      "add": "Ajouter",
+      "allDay": "toute la journée",
+      "errRange": "La fin doit suivre le début",
+      "errDate": "Choisissez une date"
+    },
+    "proposals": {
+      "accept": "Réservé — les deux parties notifiées",
+      "counter": "Contre-proposition envoyée",
+      "decline": "Proposition refusée",
+      "failed": "Échec de l’action",
+      "acceptBtn": "Accepter",
+      "counterBtn": "Contre-proposer",
+      "declineBtn": "Refuser",
+      "sendCounter": "Envoyer"
     }
   }
 }
