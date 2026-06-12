@@ -35,6 +35,7 @@ DECLARE
   v_lina  UUID;
   v_plan  UUID;
   v_cls   UUID;
+  v_disc  UUID;
 BEGIN
   v_gym := seed_e2e_gym_e1(p_slug, p_password);
 
@@ -61,8 +62,10 @@ BEGIN
   VALUES (v_omar, v_plan, CURRENT_DATE - 45, CURRENT_DATE - 15, 'active');
 
   -- Lifecycle Class: capacity 1; Omar holds the seat unpaid; Lina waits.
-  INSERT INTO classes (gym_id, name_ar, name_en, name_fr, max_capacity, monthly_fee_usd, is_active, status, show_on_landing)
-  VALUES (v_gym, 'حصة دورة الحياة', 'Lifecycle Class', 'Cours cycle de vie', 1, 40.00, true, 'scheduled', false)
+  -- (classes.discipline_id is NOT NULL — the real-columns rule bites both ways.)
+  SELECT id INTO v_disc FROM disciplines WHERE gym_id = v_gym AND is_active LIMIT 1;
+  INSERT INTO classes (gym_id, discipline_id, name_ar, name_en, name_fr, max_capacity, monthly_fee_usd, is_active, status, show_on_landing)
+  VALUES (v_gym, v_disc, 'حصة دورة الحياة', 'Lifecycle Class', 'Cours cycle de vie', 1, 40.00, true, 'scheduled', false)
   RETURNING id INTO v_cls;
 
   INSERT INTO class_registrations (class_id, student_id, gym_id, status, monthly_fee_usd, start_date, paid_until, requested_at, approved_at)
