@@ -2165,3 +2165,48 @@ All three tables verified in 000003 + the generated types before a line was writ
 ### DRAG READ
 **The mandated real-columns audit took twenty minutes and paid for the whole slice:** the imagined version of this work (new tables, a status enum, a uniqueness constraint) already existed in 000003 — what nobody had ever checked was the SECURITY of those tables, and the audit found staff RLS with no gym scope on both camp child tables, live since migration 000004. That's the fifth instance of the bug-class, but the first found by procedure instead of by symptom — the mandate works, keep it for every legacy-table slice. The one CI round lost was its mirror image: the live DB carried an undocumented same-named policy (some past hotfix never landed as a migration), so my CREATE hit 42710 — **the drift between migration files and the actual database is now a known hazard; idempotent DDL (DROP IF EXISTS both names) is cheap insurance every migration should carry.** One process note: the pipeline script dispatched e2e even after VF failed — burned nothing this time (cancelled in ~2 min) but the chain should gate on VF's exit code next slice.
 **What composed:** this slice is the house-pattern reuse thesis proven end-to-end — ADM-1's publish gate, PT-1's request/approve RPC shape and snapshot rule, B3's payer auto-resolve (zero changes — the household view just showed the camp invoice), D1's partials AS the deposit mechanism (nothing built), FD-1's docking contract (the Today camp card is one fetch + ~20 lines), UX-1's wizard conventions. The only genuinely new mechanism in E1 is the **capacity lock + status auto-flip**, and it earns its place: "Full" propagates to anon surfaces as a catalog field instead of leaking registration counts. **Honest residue:** early-bird pricing and sibling discounts exist as dormant columns (operator may want them — V2 candidate); the spots counter runs N+1 per camp list (fine at seasonal scale, batchable later); camp_attendance check-in/out times and pickup fields are stored but not surfaced; the 4th-blocked e2e proves serialized capacity, not a true concurrent race (the FOR UPDATE makes the race case correct by construction; a pgTAP-style concurrency test is V2 rigor). **Next: PT-2 — signature availability booking** (prompt pre-staged per the hand-back).
+
+## Cycle 5 / V1 / I18N-1 — fr completeness sweep (parallel)
+
+**Agent:** PARALLEL coding agent (Opus, worktree `../proline-rep1`) · **Branch:** `prompt-i18n1-fr` (off `ab07d77`) · zero schema/RLS · surface = the 3 message files + 1 smoke spec + its playwright project ONLY (en.json untouched — it's the source; the diff is the proof). Edited EXISTING values only (key-disjoint from mainline E1's new camp keys).
+
+### Mechanical audit (scripted, `flatten → diff`, run against the live files)
+| Metric | en | ar | fr |
+|---|---|---|---|
+| total keys (flattened) | **1468** | **1468** | **1468** |
+| en-keys MISSING | — | **0** | **0** |
+| orphans (key ∉ en) | — | **0** | **0** |
+| value byte-identical to en (suspects) | — | 9 → **7** | 88 → **80** |
+
+**Headline:** the key STRUCTURE was already complete — zero missing, zero orphans across all three locales. The named known gaps (`students.cancel/female/gender/male`) were **already filled** (verified: fr Annuler/Femme/Genre/Homme · ar إلغاء/أنثى/الجنس/ذكر) — closed before this slice, confirmed present in all three files. So the real debt was *untranslated values* (English copied verbatim), not missing keys.
+
+### Fill (genuine untranslated suspects fixed — judged individually)
+**fr (8):** `classes.wizard.coach`, `pt.coach`, `belts.coach_label`, `ptPanel.pickCoach` → **"Coach" → "Entraîneur"** (aligning with the dominant `common.coach`/`coaches.title`/`nav.coaches` = "Entraîneur"; the outliers read as untranslated English); `settings.gym.nameEn` "Name (EN)" → **"Nom (EN)"**, `addressEn` → **"Adresse (EN)"**, `enterArabicName`/`enterEnglishName` → **"Entrez le nom arabe/anglais"** (siblings nameAr/nameFr/enterFrenchName were already French).
+**ar (2):** `settings.gym.enterEnglishName`/`enterFrenchName` were still English → **"أدخل الاسم بالإنجليزية/بالفرنسية"** (matching the already-translated `enterArabicName`). Existing ar voice left untouched per the prompt — only untranslated slots filled.
+
+**The remaining 80 fr==en / 7 ar==en are LEGITIMATE matches** (38 distinct values), human-judged: French↔English cognates (Discipline ×11, Date ×10, Absent ×9, Disciplines, Description, Notes, Total, Source, Type, Actions, Bio, Prospects, Contact, Notifications, Dates, Camps/Camp, min/max, Email), brand/proper nouns (Proline, PT, Instagram, Facebook, WhatsApp, OMT, Whish, BOB Finance, "Sky Business Center, Baabda", Baabda), language names shown in their own script (العربية / English / Français — correct for a switcher), and format strings (`+961 ________`, `ltr`, `Description (EN/AR/FR)`). None are untranslated.
+
+### Fill counts
+| File | genuine values fixed | known gaps closed | left (legit matches) |
+|---|---|---|---|
+| en.json | 0 (source) | n/a | — |
+| fr.json | **8** | 4 (pre-existing) | 80 legit cognates/brands |
+| ar.json | **2** | 4 (pre-existing) | 7 legit brands/formats |
+
+### Hardcoded-string components (REPORT-ONLY — outside this slice's surface)
+These render copy via `isRTL ? <ar> : <en>` ternaries that **bypass i18n entirely**, so French silently falls back to ENGLISH (the `/fr` landing shows English headlines). They can't be fixed by a message-file sweep — they need a component slice that routes copy through `next-intl`:
+- **Tenant-facing landing (highest priority):** `HeroSection` (~6), `PricingSection` (~11), `TrialCTASection` (~10), `FacilitySection` (~8), `PtSection` (~5), `DisciplinesSection` (~3), `ScheduleSection`, `WhySection` — all branch ar-vs-en, never fr.
+- **Member/staff surfaces:** `app/[locale]/portal/page.tsx` (~32), `portal/profile`, `portal/billing`, `portal/schedule`, `(dashboard)/profile`, `coach/profile`, `auth/login`, `(dashboard)/today`, `leads-client`, `notifications/notification-dropdown`.
+(Counts are approximate `isRTL ? '…'` ternaries incl. some benign layout ternaries — the marketing sections are confirmed copy.) **These are the real fr gap now; the message files are complete.**
+
+### CI evidence (behavior, not tsc)
+- **E2E gate `27405317671` — SUCCESS, 52 passed (14.1m)** (base 51 → +1 I18N-1), run gym torn down HTTP 201 — https://github.com/TechStack2/proline-gym-platform/actions/runs/27405317671
+  - `✓ 50 [i18n1] (39.6s)`: fr pass over `/fr/today · inbox · students(+member file) · schedule · money · settings` + `/fr/portal` + `/fr/coach` + logged-out `/fr` — **no `MISSING_MESSAGE`, no raw-key leak** (the leak regex is built from the real en.json namespaces and pre-verified to not match any fr value, so zero false-positive risk).
+  - **No regression:** all pre-existing tests green.
+- `tsc` clean (pre-existing `leads-client` styled-jsx only); `next build` ✓ Compiled successfully.
+
+### **fr complete + known gaps closed + smoke green: PASS.**
+
+### DRAG READ
+**The audit's most useful output was a negative: the message files were already structurally complete (0 missing / 0 orphans / known gaps already closed), so the "40-slice drift" fear didn't materialize at the KEY level — the additive-key discipline across slices held.** What the byte-identical scan surfaced instead is the subtler debt: ~10 values that were English sitting in the fr/ar slots, hiding among 80+ legitimate cognates (French and English genuinely share Date/Description/Discipline/Notes/Total/Type/Actions…), which is exactly why a blind "fr==en ⇒ untranslated" auto-fixer would have been *wrong* on 80 of 88 — every suspect needed a human judgment, and the "Coach vs Entraîneur" inconsistency (4 outliers against an "Entraîneur" majority) is the kind of thing only a value-level diff catches.
+**The bigger finding is architectural and out-of-surface:** the landing and several portal/profile pages don't use the message files at all — they hardcode `isRTL ? ar : en`, so French has *never* worked on those surfaces regardless of how complete the JSON is. The message-file sweep is necessary but not sufficient for "fr is a first-class locale"; the hardcoded-string list above is the actual remaining fr work, and it's a component refactor, not a translation task. **Honest residue:** (1) "Coach" → "Entraîneur" assumes the label register prefers the native term (consistent with the existing majority, but if the gym brand voice deliberately uses the loanword "coach", revert the 4); (2) the legit-cognate set is judged, not proven — a native French reviewer might retranslate a few (e.g. "Camps" → "Stages", "Bio" → "Biographie") for register, but none are *wrong*; (3) the smoke asserts absence-of-leak, not translation *quality* — it can't catch an English string that happens to also be valid French. **Per the prompt, the parallel lane likely FREEZES here (mainline enters ON-1/G1) — awaiting the auditor's confirmation.**

@@ -254,6 +254,15 @@ export default defineConfig({
       testMatch: /lpx1-seo\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // I18N-1 (fr completeness sweep, parallel track): drives the main surfaces
+      // in `fr` (staff/portal/coach/landing) asserting no MISSING_MESSAGE + no
+      // raw-key leak. Switches roles internally (owner/student/coach + anon).
+      name: 'i18n1',
+      dependencies: ['setup'],
+      testMatch: /i18n1-fr\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
