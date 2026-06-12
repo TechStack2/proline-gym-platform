@@ -12,13 +12,16 @@ export function HeroSection({ locale }: HeroSectionProps) {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Real gym photo background (graceful: covered by gradients if missing) */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      {/* Real gym photo background — the LCP element, so it's priority-preloaded
+          and served optimized. `fill` over the relative section = zero layout shift. */}
+      <Image
         src="/landing/hero.jpg"
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
       />
 
       {/* Dark gradient background */}

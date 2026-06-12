@@ -1711,5 +1711,12 @@
       "cancelled": "Cancelled",
       "no_show": "No-show"
     }
+  },
+  "seo": {
+    "title": "PRO LINE Gym — Muay Thai, Boxing & Fitness in Baabda",
+    "description": "PRO LINE Gym in Baabda, Lebanon by the Fakih Brothers — Muay Thai, Boxing, Fitness, Ladies & Kids classes. Book your free trial today.",
+    "ogAlt": "PRO LINE Gym — martial arts in Baabda, Lebanon",
+    "streetAddress": "Sky Business Center, Baabda",
+    "addressLocality": "Baabda"
   }
 }
