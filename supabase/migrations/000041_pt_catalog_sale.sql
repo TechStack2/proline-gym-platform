@@ -94,8 +94,13 @@ BEGIN
   IF v_student.gym_id <> v_pkg.gym_id THEN RAISE EXCEPTION 'Member and package are in different gyms'; END IF;
   IF NOT v_student.is_active THEN RAISE EXCEPTION 'Member is not active'; END IF;
 
-  IF p_coach_id IS NULL THEN RAISE EXCEPTION 'A coach is required for a PT sale'; END IF;
-  IF NOT EXISTS (
+  -- Coach: MANDATORY for a desk sale (allocation binds at sale, §3); the 22R
+  -- approval path (p_request_id) may carry NULL — the legacy request semantics
+  -- where the coach binds at scheduling (schedule_pt_session requires one).
+  IF p_request_id IS NULL AND p_coach_id IS NULL THEN
+    RAISE EXCEPTION 'A coach is required for a PT sale';
+  END IF;
+  IF p_coach_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM coaches WHERE id = p_coach_id AND gym_id = v_pkg.gym_id AND is_active AND deleted_at IS NULL
   ) THEN
     RAISE EXCEPTION 'Coach is not an active coach of this gym';
@@ -120,7 +125,7 @@ BEGIN
       RAISE EXCEPTION 'Request does not match the member/package';
     END IF;
     UPDATE pt_assignments
-    SET status = 'active', is_active = true, coach_id = p_coach_id,
+    SET status = 'active', is_active = true, coach_id = COALESCE(p_coach_id, coach_id),
         sessions_total = v_pkg.session_count, sessions_used = 0,
         purchased_at = now(), expires_at = v_expires,
         approved_by = auth.uid(), approved_at = now(), updated_at = now()

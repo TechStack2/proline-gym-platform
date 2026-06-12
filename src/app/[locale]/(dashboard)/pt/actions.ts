@@ -30,8 +30,9 @@ export async function approvePtRequest(
     .single();
   if (aErr || !assignment) return { ok: false, error: 'assignment_not_found' };
 
+  // Coach may be NULL on a 22R approval (no preferred coach on the request) —
+  // the RPC permits it on the request path; binding happens at scheduling.
   const finalCoachId = opts?.coachId ?? assignment.coach_id ?? null;
-  if (!finalCoachId) return { ok: false, error: 'coach_required' };
 
   const { data: sold, error } = await supabase.rpc('sell_pt_package', {
     p_student_id: assignment.student_id,
