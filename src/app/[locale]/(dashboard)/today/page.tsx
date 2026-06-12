@@ -139,20 +139,25 @@ export default async function TodayPage({ params: { locale } }: Props) {
     .in('status', ['open', 'in_progress', 'full'])
     .lte('start_date', dayStart)
     .gte('end_date', dayStart)
-  const campCards: { id: string; name: any; expected: number; unpaid: number }[] = []
-  for (const c of (liveCamps ?? []) as any[]) {
-    const { data: cregs } = await supabase
-      .from('camp_registrations').select('invoice_id').eq('camp_id', c.id).eq('status', 'confirmed')
-    const cInvIds = (cregs ?? []).map((r: any) => r.invoice_id).filter(Boolean)
-    let unpaid = 0
-    if (cInvIds.length) {
-      const { count } = await supabase
-        .from('invoices').select('id', { count: 'exact', head: true })
-        .in('id', cInvIds).in('status', ['pending', 'partial', 'overdue'])
-      unpaid = count ?? 0
+  // Batched (not per-camp N+1 — /today renders on every desk visit).
+  const liveCampIds = ((liveCamps ?? []) as any[]).map((c) => c.id)
+  const { data: liveRegs } = liveCampIds.length
+    ? await supabase.from('camp_registrations')
+        .select('camp_id, invoice_id').in('camp_id', liveCampIds).eq('status', 'confirmed')
+    : { data: [] as any[] }
+  const liveInvIds = ((liveRegs ?? []) as any[]).map((r) => r.invoice_id).filter(Boolean)
+  const { data: openCampInvs } = liveInvIds.length
+    ? await supabase.from('invoices').select('id')
+        .in('id', liveInvIds).in('status', ['pending', 'partial', 'overdue'])
+    : { data: [] as any[] }
+  const openInvSet = new Set(((openCampInvs ?? []) as any[]).map((i) => i.id))
+  const campCards = ((liveCamps ?? []) as any[]).map((c) => {
+    const regs = ((liveRegs ?? []) as any[]).filter((r) => r.camp_id === c.id)
+    return {
+      id: c.id, name: c, expected: regs.length,
+      unpaid: regs.filter((r) => r.invoice_id && openInvSet.has(r.invoice_id)).length,
     }
-    campCards.push({ id: c.id, name: c, expected: (cregs ?? []).length, unpaid })
-  }
+  })
   const inboxCount = (regRequests ?? 0) + (ptRequests ?? 0)
 
   const hhmm = (v: string | null) => (v || '').slice(0, 5)

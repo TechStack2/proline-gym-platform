@@ -11,10 +11,13 @@ export async function getDailyTally(
   date?: string,
 ): Promise<DailyTally> {
   const day = date ?? new Date().toISOString().slice(0, 10)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('payments')
     .select('amount_usd, amount_lbp, payment_method')
     .gte('payment_date', day)
+  // A failed read must be LOUD — silently rendering an empty drawer cost a CI
+  // diagnosis round (PT-2): error ⇒ empty tally looked like "no payments".
+  if (error) console.error('[getDailyTally] read failed:', error.message)
 
   const tally: DailyTally = new Map()
   for (const p of (data ?? []) as any[]) {
