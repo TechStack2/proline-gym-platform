@@ -101,6 +101,18 @@ export default async function AttendancePage({ params: { locale }, searchParams 
            cls.classes.disciplines.name_en
   }
 
+    // ML-1 check-in warning (non-blocking): members lapsed (membership) or with
+  // a suspended registration get a chip at marking time.
+  const allStudentIds = [...new Set((todayClasses ?? []).flatMap((c: any) => (c.class_enrollments ?? []).map((e: any) => e.student_id)))]
+  let warnStudentIds: string[] = []
+  if (allStudentIds.length) {
+    const [{ data: lapsedMs }, { data: suspRegs }] = await Promise.all([
+      supabase.from('student_memberships').select('student_id').in('student_id', allStudentIds).eq('status', 'lapsed'),
+      supabase.from('class_registrations').select('student_id').in('student_id', allStudentIds).eq('status', 'suspended'),
+    ])
+    warnStudentIds = [...new Set([...(lapsedMs ?? []), ...(suspRegs ?? [])].map((r: any) => r.student_id))]
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -196,7 +208,8 @@ export default async function AttendancePage({ params: { locale }, searchParams 
                   attendanceRecords={todayAttendance?.filter(a => a.class_id === classSchedule.class_id) || []}
                   date={selectedDate}
                   locale={locale}
-                />
+                  warnStudentIds={warnStudentIds}
+      />
               </Suspense>
             </CardContent>
           </Card>

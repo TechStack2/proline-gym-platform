@@ -14,6 +14,8 @@ import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { PromotePanel } from './promote-panel'
 import { MemberActions, type OpenInvoice, type PickableCamp, type PickableClass } from './member-actions'
 import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel-client'
+import { MembershipCard, type MembershipCardData, type PlanOption } from './membership-card'
+import { registrationState } from '@/lib/lifecycle/status'
 import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
 
 export const dynamic = 'force-dynamic'
@@ -60,13 +62,15 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       .eq('student_id', id),
     supabase
       .from('student_memberships')
-      .select('id, start_date, end_date, status, membership_plans:plan_id (name_ar, name_en, name_fr, price_usd)')
+      .select(`id, start_date, end_date, status, pause_start_date, pause_end_date, pending_plan_id,
+        membership_plans:plan_id (name_ar, name_en, name_fr, price_usd),
+        pending_plan:membership_plans!student_memberships_pending_plan_id_fkey (name_ar, name_en, name_fr)`)
       .eq('student_id', id)
-      .order('start_date', { ascending: false })
+      .order('end_date', { ascending: false })
       .limit(5),
     supabase
       .from('class_registrations')
-      .select('id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, requested_at, classes:class_id (name_ar, name_en, name_fr)')
+      .select('id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, paid_until, requested_at, classes:class_id (name_ar, name_en, name_fr)')
       .eq('student_id', id)
       .order('requested_at', { ascending: false })
       .limit(10),
@@ -267,6 +271,40 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     }),
   )
 
+  // ── ML-1: membership cards (read-time states) + policy + plans + freezes ──
+  const { data: gymPolicy } = await supabase
+    .from('gyms')
+    .select('renewal_lead_days, dunning_grace_days, freeze_max_days_year, freeze_min_chunk_days')
+    .eq('id', gymIdForPromote)
+    .single()
+  const { data: planRows } = await supabase
+    .from('membership_plans')
+    .select('id, name_ar, name_en, name_fr, price_usd, duration_days')
+    .eq('gym_id', gymIdForPromote).eq('is_active', true)
+    .order('price_usd')
+  const msIds = (memberships ?? []).map((m: any) => m.id)
+  const [{ data: openRenewals }, { data: freezeRows }] = msIds.length
+    ? await Promise.all([
+        supabase.from('renewal_invoices')
+          .select('product_id, invoices:invoice_id!inner (status)')
+          .eq('product_type', 'membership').in('product_id', msIds),
+        supabase.from('membership_freezes')
+          .select('membership_id, days_frozen, start_date')
+          .in('membership_id', msIds),
+      ])
+    : [{ data: [] as any[] }, { data: [] as any[] }]
+  const renewalOpenSet = new Set(
+    ((openRenewals ?? []) as any[])
+      .filter((r) => ['pending', 'partial', 'overdue'].includes(one(r.invoices)?.status))
+      .map((r) => r.product_id),
+  )
+  const thisYear = new Date().getFullYear()
+  const freezeUsedBy = new Map<string, number>()
+  for (const f of (freezeRows ?? []) as any[]) {
+    if (new Date(f.start_date).getFullYear() !== thisYear) continue
+    freezeUsedBy.set(f.membership_id, (freezeUsedBy.get(f.membership_id) ?? 0) + (f.days_frozen ?? 0))
+  }
+
   const prof: any = one((student as any).profiles)
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
@@ -299,10 +337,33 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     }
   })
 
+  const membershipCards: MembershipCardData[] = ((memberships ?? []) as any[])
+    .filter((m) => m.status !== 'cancelled')
+    .map((m) => ({
+      id: m.id,
+      status: m.status,
+      start_date: m.start_date,
+      end_date: m.end_date,
+      pause_end_date: m.pause_end_date,
+      planName: lname(one(m.membership_plans)),
+      pendingPlanName: m.pending_plan_id ? lname(one(m.pending_plan)) || null : null,
+      renewalOpen: renewalOpenSet.has(m.id),
+    }))
+  const planOptions: PlanOption[] = ((planRows ?? []) as any[]).map((p) => ({
+    id: p.id, name: lname(p), price: Number(p.price_usd), durationDays: p.duration_days,
+  }))
+  const lcPolicy = {
+    renewal_lead_days: (gymPolicy as any)?.renewal_lead_days ?? 7,
+    dunning_grace_days: (gymPolicy as any)?.dunning_grace_days ?? 7,
+    freeze_max_days_year: (gymPolicy as any)?.freeze_max_days_year ?? 30,
+    freeze_min_chunk_days: (gymPolicy as any)?.freeze_min_chunk_days ?? 7,
+  }
+
   const regBadge: Record<string, string> = {
     active: 'bg-green-100 text-green-700', requested: 'bg-yellow-100 text-yellow-700',
     waitlisted: 'bg-orange-100 text-orange-700', cancelled: 'bg-gray-100 text-gray-500',
     rejected: 'bg-red-100 text-red-600', expired: 'bg-gray-100 text-gray-500',
+    suspended: 'bg-red-50 text-red-600',
   }
 
   const Panel = ({ icon: Icon, title, testid, id: anchorId, children }: { icon: any; title: string; testid: string; id?: string; children: React.ReactNode }) => (
@@ -370,22 +431,22 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── 1. Membership ── */}
         <Panel icon={CreditCard} title={t('membership')} testid="panel-membership">
-          {(memberships ?? []).length === 0 ? <Empty text={t('noMembership')} /> : (
-            <ul className="space-y-2">
-              {(memberships ?? []).map((m: any) => (
-                <li key={m.id} className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium text-gray-800">{lname(one(m.membership_plans))}</p>
-                    <p className="text-xs text-gray-500">{fmtDate(m.start_date)} → {fmtDate(m.end_date)}</p>
-                  </div>
-                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-                    m.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>{m.status}</span>
-                </li>
+          {/* ML-1: the D2 docking slot is live — read-time states + actions */}
+          {membershipCards.length === 0 ? <Empty text={t('noMembership')} /> : (
+            <div className="space-y-3">
+              {membershipCards.map((mc) => (
+                <MembershipCard
+                  key={mc.id}
+                  data={mc}
+                  plans={planOptions}
+                  policy={lcPolicy}
+                  freezeUsedDays={freezeUsedBy.get(mc.id) ?? 0}
+                  studentId={id}
+                  locale={locale}
+                />
               ))}
-            </ul>
+            </div>
           )}
-          {/* D2 freeze/upgrade actions land here */}
-          <div data-testid="membership-actions" className="mt-2" />
         </Panel>
 
         {/* ── 2. Class registrations ── */}
@@ -408,7 +469,15 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                       {t('pendingInbox')}
                     </Link>
                   ) : (
-                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', regBadge[r.status] || 'bg-gray-100 text-gray-500')}>{r.status}</span>
+                    <span className="flex items-center gap-1">
+                      {r.status === 'active' && ['expiring', 'overdue'].includes(registrationState(r, lcPolicy)) && (
+                        <span data-testid="reg-renewal-state" className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                          registrationState(r, lcPolicy) === 'overdue' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700')}>
+                          {registrationState(r, lcPolicy) === 'overdue' ? t('regOverdue') : t('regExpiring')}
+                        </span>
+                      )}
+                      <span data-testid="reg-status-badge" className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', regBadge[r.status] || 'bg-gray-100 text-gray-500')}>{r.status}</span>
+                    </span>
                   )}
                 </li>
               ))}

@@ -76,6 +76,19 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
     .eq('status', 'active')
     .maybeSingle()
 
+  // ML-1: the lifecycle banner reflects the most URGENT membership row.
+  const { data: lcRows } = await supabase
+    .from('student_memberships')
+    .select('status, end_date, pause_end_date')
+    .eq('student_id', student?.id)
+    .order('end_date', { ascending: false })
+    .limit(5)
+  const { data: lcGym } = await supabase
+    .from('gyms').select('renewal_lead_days, dunning_grace_days').limit(1).single()
+  const { membershipState } = await import('@/lib/lifecycle/status')
+  const lcStates = ((lcRows ?? []) as any[]).map((m) => membershipState(m, lcGym ?? {}))
+  const msState = (['lapsed', 'overdue', 'expiring', 'frozen'] as const).find((sv) => lcStates.includes(sv)) ?? 'active'
+
   const { data: belt } = await supabase
     .from('belt_promotions')
     .select('to_rank, discipline_id, disciplines:discipline_id (name_en, name_ar, name_fr)')
@@ -176,6 +189,18 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
+    {/* ML-1: lifecycle banner — renew at the desk (no self-service) */}
+    {['expiring', 'overdue', 'lapsed', 'frozen'].includes(msState) && (
+      <div data-testid="portal-lifecycle-banner" data-state={msState}
+        className={cn('rounded-2xl p-3 text-sm font-medium',
+          msState === 'frozen' ? 'bg-blue-50 text-blue-700' : msState === 'expiring' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700')}>
+        {msState === 'frozen'
+          ? (isRTL ? 'اشتراكك مجمّد حالياً' : 'Your membership is currently frozen')
+          : msState === 'expiring'
+            ? (isRTL ? 'اشتراكك يقارب الانتهاء — جدّد في الاستقبال' : 'Your membership is expiring soon — renew at the desk')
+            : (isRTL ? 'اشتراكك منتهٍ — يرجى التجديد في الاستقبال' : 'Your membership has ended — please renew at the desk')}
+      </div>
+    )}
       <div className="pt-2">
         <h1 className="text-2xl font-bold text-gray-900">
           {isRTL ? 'مرحباً' : 'Welcome'}{firstName ? `, ${firstName}` : ''} 👋

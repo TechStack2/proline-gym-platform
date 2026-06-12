@@ -7,9 +7,11 @@ import { getDailyTally } from '@/lib/billing/daily-tally'
 import { METHOD_LABEL, balanceUsd } from '@/lib/billing/reconcile'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { getRenewalsDue } from '@/lib/pt/refill'
+import { RenewRowButton } from '@/components/dashboard/lifecycle-buttons'
+import { membershipState } from '@/lib/lifecycle/status'
 import {
   UserPlus, Users, DollarSign, ClipboardList, Dumbbell, CalendarDays,
-  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent,
+  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent, Flame,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -160,6 +162,22 @@ export default async function TodayPage({ params: { locale } }: Props) {
   })
   const inboxCount = (regRequests ?? 0) + (ptRequests ?? 0)
 
+  // ── ML-1 chase list: read-time overdue (past end, inside grace) + lapsed ──
+  const { data: gymPolicyRow } = await supabase
+    .from('gyms').select('renewal_lead_days, dunning_grace_days').eq('id', gymId).single()
+  const { data: chaseRaw } = await supabase
+    .from('student_memberships')
+    .select(`id, end_date, status, pause_end_date,
+      students!inner (id, gym_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
+    .eq('students.gym_id', gymId)
+    .in('status', ['active', 'lapsed'])
+    .lt('end_date', dayStart)
+    .order('end_date')
+    .limit(30)
+  const chase = ((chaseRaw ?? []) as any[])
+    .map((m) => ({ ...m, state: membershipState(m, gymPolicyRow ?? {}) }))
+    .filter((m) => m.state === 'overdue' || m.state === 'lapsed')
+
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
   const fmtTime = (iso: string) =>
     new Date(iso).toLocaleTimeString(isRTL ? 'ar-LB' : 'en-US', { hour: '2-digit', minute: '2-digit' })
@@ -281,13 +299,47 @@ export default async function TodayPage({ params: { locale } }: Props) {
           const today = m.end_date === dayStart
           return (
             <ActionRow key={m.id} href={`/${locale}/students/${st?.id}`} testid="expiring-row"
-              action={tel(prof?.phone, 'expiring-call')}>
+              action={
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <RenewRowButton membershipId={m.id} studentId={st?.id} />
+                  {tel(prof?.phone, 'expiring-call')}
+                </span>
+              }>
               <p className="truncate text-sm font-semibold text-gray-900">{localizedName(prof, locale)}</p>
               <p className="text-xs text-gray-500">
                 {lname(one(m.membership_plans))} ·{' '}
                 <span className={cn(today && 'font-bold text-[#cd1419]')}>
                   {today ? t('cards.endsToday') : t('cards.endsOn', { date: fmtDate(m.end_date) })}
                 </span>
+              </p>
+            </ActionRow>
+          )
+        })}
+      </ActionCard>
+
+      {/* ── Card: Chase list (ML-1) — overdue + lapsed memberships ── */}
+      <ActionCard icon={Flame} title={t('cards.chase')} count={chase.length}
+        emptyText={t('cards.noneChase')} testid="chase" isRTL={isRTL}>
+        {chase.map((m: any) => {
+          const st = one(m.students)
+          const prof2 = one(st?.profiles)
+          return (
+            <ActionRow key={m.id} href={`/${locale}/students/${st?.id}`} testid="chase-row"
+              action={
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <Link href={`/${locale}/students/${st?.id}?pay=1`} data-testid="chase-pay"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
+                    <DollarSign className="h-3.5 w-3.5" /> {t('cards.recordPayment')}
+                  </Link>
+                  {tel(prof2?.phone, 'chase-call')}
+                </span>
+              }>
+              <p className="truncate text-sm font-semibold text-gray-900">{localizedName(prof2, locale)}</p>
+              <p className="text-xs text-gray-500">
+                <span className={cn('font-medium', m.state === 'lapsed' ? 'text-red-600' : 'text-orange-600')} data-state={m.state}>
+                  {t(`cards.${m.state}` as any)}
+                </span>
+                {' · '}{fmtDate(m.end_date)}
               </p>
             </ActionRow>
           )

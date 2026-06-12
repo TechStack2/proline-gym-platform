@@ -6,7 +6,8 @@ import { getDailyTally } from '@/lib/billing/daily-tally'
 import { balanceUsd, METHOD_LABEL } from '@/lib/billing/reconcile'
 import { InvoicesView } from '../invoices/invoices-view'
 import { PaymentsView } from '../payments/payments-view'
-import { DollarSign, FileText, Banknote } from 'lucide-react'
+import { DollarSign, FileText, Banknote, RefreshCw } from 'lucide-react'
+import { ProcessRenewalsButton } from '@/components/dashboard/lifecycle-buttons'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -86,8 +87,24 @@ async function MoneyOverview({ locale }: { locale: string }) {
   const outstanding = (openInvoices ?? []).reduce(
     (s, inv) => s + balanceUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }]), 0)
 
+  // ML-1: open renewal invoices (the system-issued ones) reconciled.
+  const { data: renewalRows } = await supabase
+    .from('renewal_invoices')
+    .select('invoice_id, invoices:invoice_id!inner (id, total_usd, status, gym_id)')
+  const openRenewalInvs = ((renewalRows ?? []) as any[])
+    .map((r) => (Array.isArray(r.invoices) ? r.invoices[0] : r.invoices))
+    .filter((i: any) => i && ['pending', 'partial', 'overdue'].includes(i.status))
+  const renewalOutstanding = openRenewalInvs.reduce(
+    (s2: number, i: any) => s2 + balanceUsd(i.total_usd, [{ amount_usd: paidBy.get(i.id) ?? 0 }]), 0)
+
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="money-renewals">
+        <p className="flex items-center gap-1 text-xs text-gray-500"><RefreshCw className="h-3 w-3" /> {t('renewalsOutstanding')}</p>
+        <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd">${renewalOutstanding.toFixed(2)}</p>
+        <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: openRenewalInvs.length })}</p>
+        <div className="mt-2"><ProcessRenewalsButton /></div>
+      </div>
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
         <p className="text-xs text-gray-500">{t('outstanding')}</p>
         <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding">${outstanding.toFixed(2)}</p>

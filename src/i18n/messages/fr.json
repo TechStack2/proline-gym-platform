@@ -531,7 +531,8 @@
       "missed": "manqué",
       "students": "Élèves",
       "markAllPresent": "Tout marquer présent",
-      "noEnrollments": "Aucun élève inscrit."
+      "noEnrollments": "Aucun élève inscrit.",
+      "lapsedWarning": "Abonnement échu — renouveler au comptoir"
     },
     "status": {
       "present": "Présent",
@@ -1368,6 +1369,22 @@
       "pt_booking_cancelled": {
         "title": "Réservation PT annulée",
         "body": "Une séance à venir a été annulée"
+      },
+      "renewal_due": {
+        "title": "Renouvellement émis",
+        "body": "Votre renouvellement de ${amount} est prêt — paiement au comptoir"
+      },
+      "renewal_reminder": {
+        "title": "Rappel de paiement",
+        "body": "Votre renouvellement de ${amount} est impayé — passez au comptoir"
+      },
+      "membership_lapsed": {
+        "title": "Abonnement échu",
+        "body": "Votre abonnement est échu — renouvelez au comptoir"
+      },
+      "registration_suspended": {
+        "title": "Place suspendue",
+        "body": "Votre inscription au cours a été suspendue pour impayé — le comptoir peut la réactiver"
       }
     }
   },
@@ -1485,7 +1502,7 @@
       "noneDue": "rien à encaisser aujourd’hui",
       "dueToday": "échéance aujourd’hui",
       "recordPayment": "Enregistrer un paiement",
-      "overdue": "{count} en retard",
+      "overdue": "En retard",
       "nonePt": "aucune séance PT aujourd’hui",
       "ptRefill": "Recharge PT",
       "noneRefill": "aucune recharge due",
@@ -1494,7 +1511,10 @@
       "campToday": "Camp aujourd’hui",
       "noneCamp": "aucun camp aujourd’hui",
       "campExpected": "{count} attendus",
-      "campUnpaid": "{count} impayées"
+      "campUnpaid": "{count} impayées",
+      "chase": "Liste de relance",
+      "noneChase": "personne à relancer",
+      "lapsed": "Échu"
     }
   },
   "inbox": {
@@ -1596,7 +1616,9 @@
       "campRegistered": "Inscrit — facture émise",
       "campFailed": "Échec de l’inscription au camp",
       "ageWarning": "Hors de la tranche d’âge du camp ({min}–{max}) — inscription possible (décision du comptoir)."
-    }
+    },
+    "regOverdue": "renouvellement en retard",
+    "regExpiring": "renouvelle bientôt"
   },
   "money": {
     "title": "Finances",
@@ -1609,7 +1631,9 @@
     "viewInvoices": "Voir les factures →",
     "todayTally": "Encaissements du jour (par méthode)",
     "noPaymentsToday": "Aucun paiement aujourd'hui.",
-    "viewPayments": "Voir les paiements →"
+    "viewPayments": "Voir les paiements →",
+    "renewalsOutstanding": "Renouvellements dus",
+    "renewalsOpen": "{count} factures de renouvellement ouvertes"
   },
   "scheduleView": {
     "title": "Horaire",
@@ -1863,5 +1887,40 @@
       "declineBtn": "Refuser",
       "sendCounter": "Envoyer"
     }
+  },
+  "lifecycle": {
+    "noMembership": "Aucun abonnement",
+    "actionFailed": "Échec de l’action",
+    "state": {
+      "active": "Actif",
+      "expiring": "Expire bientôt",
+      "overdue": "En retard",
+      "lapsed": "Échu",
+      "frozen": "Gelé",
+      "none": "—"
+    },
+    "pendingPlan": "Prochain cycle : {plan}",
+    "frozenUntil": "Gelé jusqu’au {date}",
+    "renewalOpen": "Facture de renouvellement ouverte — à encaisser au comptoir",
+    "renewNow": "Renouveler",
+    "renewShort": "Renouveler",
+    "renewIssued": "Facture de renouvellement émise",
+    "freeze": "Geler",
+    "unfreeze": "Dégeler",
+    "frozen": "Abonnement gelé",
+    "unfrozen": "Abonnement dégelé",
+    "freezeTitle": "Geler l’abonnement",
+    "freezeConfirm": "Geler",
+    "freezeBounds": "Min {min} jours par gel · {left} sur {max} jours restants cette année",
+    "changePlan": "Changer de plan",
+    "changePlanTitle": "Changer de plan (prochain cycle)",
+    "changePlanNote": "Sans prorata — le nouveau plan démarre au prochain renouvellement.",
+    "changePlanConfirm": "Planifier",
+    "planChanged": "Changement planifié pour le prochain cycle",
+    "reinstate": "Réactiver",
+    "reinstated": "Abonnement réactivé",
+    "processNow": "Traiter les renouvellements",
+    "tickDone": "Cycle de traitement terminé",
+    "tickSummary": "{issued} émis · {reminded} rappels · {lapsed} échus · {suspended} suspendus · {unfrozen} dégelés"
   }
 }

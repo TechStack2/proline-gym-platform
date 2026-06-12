@@ -531,7 +531,8 @@
       "missed": "غائب",
       "students": "الطلاب",
       "markAllPresent": "تحديد الكل حاضر",
-      "noEnrollments": "لا طلاب مسجلين."
+      "noEnrollments": "لا طلاب مسجلين.",
+      "lapsedWarning": "الاشتراك منتهٍ — التجديد في الاستقبال"
     },
     "status": {
       "present": "حاضر",
@@ -1368,6 +1369,22 @@
       "pt_booking_cancelled": {
         "title": "أُلغي حجز التدريب الخاص",
         "body": "أُلغيت جلسة قادمة"
+      },
+      "renewal_due": {
+        "title": "صدر التجديد",
+        "body": "تجديدك بقيمة ${amount} جاهز — الدفع في الاستقبال"
+      },
+      "renewal_reminder": {
+        "title": "تذكير بالدفع",
+        "body": "تجديدك بقيمة ${amount} لا يزال غير مدفوع — يرجى المرور بالاستقبال"
+      },
+      "membership_lapsed": {
+        "title": "انتهى الاشتراك",
+        "body": "انتهى اشتراكك — جدّد في الاستقبال للمتابعة"
+      },
+      "registration_suspended": {
+        "title": "عُلّق مقعد الحصة",
+        "body": "عُلّق تسجيلك في الحصة لعدم الدفع — يمكن للاستقبال إعادة تفعيله"
       }
     }
   },
@@ -1485,7 +1502,7 @@
       "noneDue": "لا مستحقات اليوم",
       "dueToday": "تستحق اليوم",
       "recordPayment": "تسجيل دفعة",
-      "overdue": "{count} متأخرة",
+      "overdue": "متأخر",
       "nonePt": "لا حصص تدريب خاص اليوم",
       "ptRefill": "تجديد التدريب الخاص",
       "noneRefill": "لا تجديدات مستحقة",
@@ -1494,7 +1511,10 @@
       "campToday": "مخيم اليوم",
       "noneCamp": "لا مخيم يعمل اليوم",
       "campExpected": "{count} متوقعون",
-      "campUnpaid": "{count} غير مدفوعة"
+      "campUnpaid": "{count} غير مدفوعة",
+      "chase": "قائمة المتابعة",
+      "noneChase": "لا أحد للمتابعة",
+      "lapsed": "منتهٍ"
     }
   },
   "inbox": {
@@ -1596,7 +1616,9 @@
       "campRegistered": "تم التسجيل — صدرت الفاتورة",
       "campFailed": "فشل التسجيل في المخيم",
       "ageWarning": "خارج الفئة العمرية للمخيم ({min}–{max}) — يمكنك التسجيل رغم ذلك (قرار الاستقبال)."
-    }
+    },
+    "regOverdue": "تجديد متأخر",
+    "regExpiring": "يجدَّد قريباً"
   },
   "money": {
     "title": "المال",
@@ -1609,7 +1631,9 @@
     "viewInvoices": "عرض الفواتير ←",
     "todayTally": "تحصيلات اليوم (حسب الطريقة)",
     "noPaymentsToday": "لا مدفوعات اليوم.",
-    "viewPayments": "عرض المدفوعات ←"
+    "viewPayments": "عرض المدفوعات ←",
+    "renewalsOutstanding": "تجديدات مستحقة",
+    "renewalsOpen": "{count} فواتير تجديد مفتوحة"
   },
   "scheduleView": {
     "title": "الجدول",
@@ -1863,5 +1887,40 @@
       "declineBtn": "رفض",
       "sendCounter": "إرسال البديل"
     }
+  },
+  "lifecycle": {
+    "noMembership": "لا اشتراك",
+    "actionFailed": "فشل الإجراء",
+    "state": {
+      "active": "فعّال",
+      "expiring": "يقارب الانتهاء",
+      "overdue": "متأخر",
+      "lapsed": "منتهٍ",
+      "frozen": "مجمّد",
+      "none": "—"
+    },
+    "pendingPlan": "الدورة القادمة: {plan}",
+    "frozenUntil": "مجمّد حتى {date}",
+    "renewalOpen": "فاتورة التجديد مفتوحة — حصّلها في الاستقبال",
+    "renewNow": "تجديد الآن",
+    "renewShort": "تجديد",
+    "renewIssued": "صدرت فاتورة التجديد",
+    "freeze": "تجميد",
+    "unfreeze": "إلغاء التجميد",
+    "frozen": "جُمّد الاشتراك",
+    "unfrozen": "أُلغي تجميد الاشتراك",
+    "freezeTitle": "تجميد الاشتراك",
+    "freezeConfirm": "تجميد",
+    "freezeBounds": "الحد الأدنى {min} أيام · المتبقي {left} من {max} يوماً هذه السنة",
+    "changePlan": "تغيير الخطة",
+    "changePlanTitle": "تغيير الخطة (الدورة القادمة)",
+    "changePlanNote": "دون تجزئة — تبدأ الخطة الجديدة عند التجديد القادم.",
+    "changePlanConfirm": "جدولة التغيير",
+    "planChanged": "جُدول تغيير الخطة للدورة القادمة",
+    "reinstate": "إعادة تفعيل",
+    "reinstated": "أُعيد تفعيل الاشتراك",
+    "processNow": "معالجة التجديدات الآن",
+    "tickDone": "اكتملت دورة المعالجة",
+    "tickSummary": "{issued} صدرت · {reminded} تذكير · {lapsed} انتهت · {suspended} عُلّقت · {unfrozen} أُلغي تجميدها"
   }
 }

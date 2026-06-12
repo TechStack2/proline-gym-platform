@@ -38,6 +38,8 @@ interface AttendanceDashboardClientProps {
   attendanceRecords: AttendanceRecord[]
   date: string
   locale: string
+  /** ML-1: lapsed-membership / suspended-registration members (warning chip). */
+  warnStudentIds?: string[]
 }
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused'
@@ -48,7 +50,8 @@ export function AttendanceDashboardClient({
   enrollments,
   attendanceRecords,
   date,
-  locale
+  locale,
+  warnStudentIds = [],
 }: AttendanceDashboardClientProps) {
   const t = useTranslations('attendance')
   const supabase = createClient()
@@ -208,6 +211,12 @@ export function AttendanceDashboardClient({
               </div>
 
               <div className="flex items-center gap-2">
+                {warnStudentIds.includes(enrollment.student_id) && (
+                  <span data-testid="checkin-warning"
+                    className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600 ring-1 ring-red-200">
+                    {t('dashboard.lapsedWarning')}
+                  </span>
+                )}
                 {currentStatus && getStatusBadge(currentStatus)}
                 
                 <div className="flex gap-1">

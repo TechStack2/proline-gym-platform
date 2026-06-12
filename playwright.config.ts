@@ -270,6 +270,14 @@ export default defineConfig({
       testMatch: /i18n1-fr\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // ML-1 membership lifecycle: tick-driven renewals/dunning/freeze. LAST —
+      // the tick mutates gym-wide billing state nothing later should see.
+      name: 'ml1',
+      dependencies: ['setup'],
+      testMatch: /ml1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
