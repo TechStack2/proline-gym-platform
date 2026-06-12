@@ -50,8 +50,8 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
   const student = await ctxFor(browser, 'student'); // Karim
   try {
     // ── First tick: everything fires in one pass ──
-    const first = await runTick(owner.page);
-    expect(first, 'first tick issues renewals').not.toMatch(/0 issued/);
+    await runTick(owner.page); // retry-tolerant: the issuance proof is the
+    // invoice + the open-renewal card below, not the toast count
 
     // Karim: the ending-today card shows the open renewal.
     await openFile(owner.page, 'Karim');
@@ -151,13 +151,9 @@ test('ML-1 · lapse → chase + check-in warning + reinstate; suspended seat fre
       'check-in shows the non-blocking lapsed warning',
     ).toBeVisible({ timeout: 20_000 });
 
-    // ── Reinstate ──
-    await openFile(owner.page, 'Omar');
-    await vis(owner.page, '[data-testid="ms-reinstate"]').first().click();
-    await expect(vis(owner.page, '[data-testid="membership-card"][data-state="lapsed"]'))
-      .toHaveCount(0, { timeout: 15_000 });
-
     // ── Freeze 10d on Karim's renewed card → +10, tick silent, restore on early unfreeze ──
+    // (Reinstate runs LAST: it re-opens Omar's renewal window, which makes the
+    // next tick legitimately issue again — run 2 taught the order.)
     await openFile(owner.page, 'Karim');
     const card = vis(owner.page, '[data-testid="membership-card"][data-state="active"]').first();
     const periodBefore = (await card.getByTestId('membership-period').textContent())!.trim();
@@ -191,6 +187,12 @@ test('ML-1 · lapse → chase + check-in warning + reinstate; suspended seat fre
       owner.page.locator('[data-testid="app-toast"]').filter({ hasText: /freeze limit/i }).first(),
       '80d freeze rejected with the yearly-bounds policy message',
     ).toBeVisible({ timeout: 15_000 });
+
+    // ── Reinstate (LAST — re-opens the renewal window by design) ──
+    await openFile(owner.page, 'Omar');
+    await vis(owner.page, '[data-testid="ms-reinstate"]').first().click();
+    await expect(vis(owner.page, '[data-testid="membership-card"][data-state="lapsed"]'))
+      .toHaveCount(0, { timeout: 15_000 });
   } finally {
     await owner.ctx.close();
   }
