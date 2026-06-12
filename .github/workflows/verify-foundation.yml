@@ -87,6 +87,46 @@ jobs:
             and column_name in ('gym_id','type','title_key','params');
           SQL
 
+          echo "===== ON1-SPIKE: FKs referencing public.profiles (blast radius) ====="
+          run_sql "ON1 FK map (child cols + on_update/on_delete)" <<'SQL'
+          select src.relname as child_table, att.attname as child_col,
+                 con.confupdtype as on_update, con.confdeltype as on_delete, con.conname
+          from pg_constraint con
+          join pg_class src on src.oid = con.conrelid
+          join pg_class tgt on tgt.oid = con.confrelid
+          join pg_namespace tn on tn.oid = tgt.relnamespace
+          join lateral unnest(con.conkey) with ordinality as ck(attnum, ord) on true
+          join pg_attribute att on att.attrelid = con.conrelid and att.attnum = ck.attnum
+          where con.contype='f' and tn.nspname='public' and tgt.relname='profiles'
+          order by src.relname, att.attname;
+          SQL
+
+          run_sql "ON1: profiles own FKs (expect NO profiles_id_fkey) + id default" <<'SQL'
+          select coalesce(string_agg(conname, ','), 'NONE') as profiles_fks
+          from pg_constraint where conrelid='public.profiles'::regclass and contype='f';
+          SQL
+          run_sql "ON1: profiles.id default (expect gen_random_uuid)" <<'SQL'
+          select column_default from information_schema.columns
+          where table_schema='public' and table_name='profiles' and column_name='id';
+          SQL
+
+          run_sql "ON1: policy blast radius (auth.uid / get_user_gym_id / is_staff)" <<'SQL'
+          select
+            (select count(*) from pg_policies where schemaname='public') as total_policies,
+            (select count(*) from pg_policies where schemaname='public'
+               and (coalesce(qual,'')||coalesce(with_check,'')) like '%auth.uid()%') as ref_auth_uid,
+            (select count(*) from pg_policies where schemaname='public'
+               and (coalesce(qual,'')||coalesce(with_check,'')) like '%get_user_gym_id%') as ref_gym_helper,
+            (select count(*) from pg_policies where schemaname='public'
+               and (coalesce(qual,'')||coalesce(with_check,'')) like '%is_staff%') as ref_is_staff;
+          SQL
+
+          run_sql "ON1: login-less profiles today (no auth.users row)" <<'SQL'
+          select count(*) as login_less_profiles
+          from profiles p left join auth.users u on u.id = p.id
+          where u.id is null;
+          SQL
+
           echo "===== BEFORE: reproduce identity chain ====="
           run_sql "BEFORE reproduce" <<< "$REPRODUCE"
 
