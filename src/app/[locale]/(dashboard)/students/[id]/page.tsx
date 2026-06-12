@@ -184,27 +184,28 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     .eq('is_active', true)
     .is('deleted_at', null)
     .order('name_en')
-  const openInvRows = ((invoices ?? []) as any[]).filter((i) => ['pending', 'partial', 'overdue'].includes(i.status))
-  const { data: openPays } = openInvRows.length
-    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', openInvRows.map((i) => i.id))
+  // Fetched DIRECTLY (not derived from the limit-10 display list — an older
+  // open invoice, e.g. one due today, must not fall out of the modal). Oldest
+  // due first = the pre-selection.
+  const { data: openInvRows } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_usd, status, due_date, exchange_rate')
+    .eq('student_id', id)
+    .in('status', ['pending', 'partial', 'overdue'])
+    .order('due_date', { ascending: true, nullsFirst: false })
+  const { data: openPays } = (openInvRows ?? []).length
+    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', (openInvRows ?? []).map((i: any) => i.id))
     : { data: [] as any[] }
   const openPaidBy = new Map<string, number>()
   for (const p of openPays ?? []) openPaidBy.set(p.invoice_id, (openPaidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
-  const { data: openInvMeta } = openInvRows.length
-    ? await supabase.from('invoices').select('id, exchange_rate, due_date').in('id', openInvRows.map((i) => i.id))
-    : { data: [] as any[] }
-  const rateBy = new Map((openInvMeta ?? []).map((i: any) => [i.id, i]))
-  const openInvoices: OpenInvoice[] = openInvRows
+  const openInvoices: OpenInvoice[] = ((openInvRows ?? []) as any[])
     .map((i) => ({
       id: i.id,
       invoice_number: i.invoice_number,
       balance_usd: balanceUsd(i.total_usd, [{ amount_usd: openPaidBy.get(i.id) ?? 0 }]),
-      exchange_rate: (rateBy.get(i.id) as any)?.exchange_rate ?? null,
-      due_date: (rateBy.get(i.id) as any)?.due_date ?? null,
+      exchange_rate: i.exchange_rate ?? null,
     }))
     .filter((i) => i.balance_usd > 0)
-    .sort((a: any, b: any) => (a.due_date ?? '9999') < (b.due_date ?? '9999') ? -1 : 1)
-    .map(({ id: iid, invoice_number, balance_usd, exchange_rate }) => ({ id: iid, invoice_number, balance_usd, exchange_rate }))
 
   const prof: any = one((student as any).profiles)
   const name = localizedName(prof, locale)
