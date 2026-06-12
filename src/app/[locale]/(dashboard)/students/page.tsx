@@ -14,7 +14,7 @@ export default async function StudentsPage({
   searchParams,
 }: {
   params: { locale: string }
-  searchParams: { search?: string; discipline?: string; belt?: string; status?: string; tab?: string }
+  searchParams: { search?: string; discipline?: string; belt?: string; status?: string; tab?: string; chip?: string }
 }) {
   const supabase = await createClient()
   const t = await getTranslations('students')
@@ -77,7 +77,8 @@ export default async function StudentsPage({
         last_name_en,
         last_name_fr,
         phone,
-        avatar_url
+        avatar_url,
+        date_of_birth
       )
     `)
     .eq('gym_id', gymId)
@@ -95,6 +96,47 @@ export default async function StudentsPage({
   }
 
   const { data: students, error } = await query
+
+  // ── FD-1: row badges + filter chips — bulk maps over the fetched roster ──
+  //   expiring  = active membership ending within 7 days
+  //   owing     = any open (pending/partial/overdue) invoice
+  //   noguardian= minor (<18) with no guardian link
+  //   recent    = joined within 30 days
+  const ids = (students ?? []).map((s: any) => s.id)
+  const today = new Date().toISOString().slice(0, 10)
+  const in7d = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10)
+  const ago30 = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10)
+  const [{ data: expRows }, { data: owingRows }, { data: guardRows }] = ids.length
+    ? await Promise.all([
+        supabase.from('student_memberships').select('student_id, end_date')
+          .in('student_id', ids).eq('status', 'active').gte('end_date', today).lte('end_date', in7d),
+        supabase.from('invoices').select('student_id')
+          .eq('gym_id', gymId).in('student_id', ids).in('status', ['pending', 'partial', 'overdue']),
+        supabase.from('guardian_students').select('student_id').in('student_id', ids),
+      ])
+    : [{ data: [] }, { data: [] }, { data: [] }]
+  const expiringBy = new Map<string, string>()
+  for (const r of (expRows ?? []) as any[]) {
+    const cur = expiringBy.get(r.student_id)
+    if (!cur || r.end_date < cur) expiringBy.set(r.student_id, r.end_date)
+  }
+  const owingSet = new Set(((owingRows ?? []) as any[]).map((r) => r.student_id))
+  const guardianSet = new Set(((guardRows ?? []) as any[]).map((r) => r.student_id))
+  const isMinor = (s: any) => {
+    const dob = (Array.isArray(s.profiles) ? s.profiles[0] : s.profiles)?.date_of_birth
+    return dob ? (Date.now() - new Date(dob).getTime()) / (365.25 * 864e5) < 18 : false
+  }
+  const chipPredicates: Record<string, (s: any) => boolean> = {
+    owing: (s) => owingSet.has(s.id),
+    expiring: (s) => expiringBy.has(s.id),
+    noguardian: (s) => isMinor(s) && !guardianSet.has(s.id),
+    recent: (s) => s.join_date >= ago30,
+  }
+  const chip = searchParams.chip && chipPredicates[searchParams.chip] ? searchParams.chip : ''
+  const visibleStudents = chip ? (students ?? []).filter(chipPredicates[chip]) : (students ?? [])
+  const chipCounts = Object.fromEntries(
+    Object.entries(chipPredicates).map(([k, pred]) => [k, (students ?? []).filter(pred).length]),
+  )
 
   // Fetch disciplines for filter
   const { data: disciplines } = await supabase
@@ -145,10 +187,28 @@ export default async function StudentsPage({
         isRTL={isRTL}
       />
 
+      {/* FD-1 filter chips — “who needs attention” without opening files */}
+      <div className="flex flex-wrap gap-2" data-testid="member-chips">
+        {(['owing', 'expiring', 'noguardian', 'recent'] as const).map((k) => (
+          <Link
+            key={k}
+            href={`/${locale}/students${chip === k ? '' : `?chip=${k}`}`}
+            data-testid={`chip-${k}`}
+            data-count={chipCounts[k]}
+            className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+              chip === k ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}
+          >
+            {t(`chips.${k}`)} · {chipCounts[k]}
+          </Link>
+        ))}
+      </div>
+
       <StudentList
-        students={students || []}
+        students={visibleStudents}
         locale={locale}
         isRTL={isRTL}
+        expiringBy={Object.fromEntries(expiringBy)}
+        owing={[...owingSet]}
       />
     </div>
   )

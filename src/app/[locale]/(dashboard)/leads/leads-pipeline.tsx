@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -116,27 +117,31 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
   const trials = (trialsRes.data || []) as TrialInfo[];
   const invites = (invitesRes.data || []) as InviteInfo[];
 
-  // ── Stats data prepared for render ────────────────────
+  // ── FD-1: the stats bar is the stage FILTER — chips with counts ──
+  const activeStatus = searchParams.status ?? 'all';
   const statsData = [
-    { label: t('stats.all'), count: counts.all, color: 'bg-gray-100 text-gray-700' },
-    { label: t('stats.new'), count: counts.new, color: STATUS_COLORS.new },
-    { label: t('stats.contacted'), count: counts.contacted, color: STATUS_COLORS.contacted },
-    { label: t('stats.trial_scheduled'), count: counts.trial_scheduled, color: STATUS_COLORS.trial_scheduled },
-    { label: t('stats.converted'), count: counts.converted, color: STATUS_COLORS.converted },
+    { key: 'all', label: t('stats.all'), count: counts.all, color: 'bg-gray-100 text-gray-700' },
+    { key: 'new', label: t('stats.new'), count: counts.new, color: STATUS_COLORS.new },
+    { key: 'contacted', label: t('stats.contacted'), count: counts.contacted, color: STATUS_COLORS.contacted },
+    { key: 'trial_scheduled', label: t('stats.trial_scheduled'), count: counts.trial_scheduled, color: STATUS_COLORS.trial_scheduled },
+    { key: 'converted', label: t('stats.converted'), count: counts.converted, color: STATUS_COLORS.converted },
   ];
 
   return (
     <div className="space-y-6" data-testid="leads-pipeline">
-      {/* Stats Bar */}
+      {/* Stage chips (clickable counts → server-side status filter) */}
       <div className="grid grid-cols-5 gap-3">
         {statsData.map((s) => (
-          <div
-            key={s.label}
-            className={`text-center p-3 rounded-xl border ${s.color} bg-opacity-20`}
+          <Link
+            key={s.key}
+            href={`/${locale}/students?tab=prospects${s.key === 'all' ? '' : `&status=${s.key}`}`}
+            data-testid={`prospect-chip-${s.key}`}
+            data-count={s.count}
+            className={`text-center p-3 rounded-xl border ${s.color} bg-opacity-20 transition-shadow hover:shadow-md ${activeStatus === s.key ? 'ring-2 ring-[#cd1419]/50' : ''}`}
           >
             <div className="text-2xl font-bold">{s.count}</div>
             <div className="text-xs font-medium mt-0.5">{s.label}</div>
-          </div>
+          </Link>
         ))}
       </div>
 

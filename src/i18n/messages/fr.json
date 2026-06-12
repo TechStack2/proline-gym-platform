@@ -227,7 +227,22 @@
       "suspended": "Suspendu"
     },
     "tabs_active": "Actifs",
-    "tabs_prospects": "Prospects"
+    "tabs_prospects": "Prospects",
+    "chips": {
+      "owing": "Avec impayés",
+      "expiring": "Expire bientôt",
+      "noguardian": "Sans tuteur (mineurs)",
+      "recent": "Inscrit ≤30 j"
+    },
+    "badges": {
+      "expiring": "expire ≤7 j",
+      "owing": "impayé"
+    },
+    "actions": {
+      "call": "Appeler",
+      "file": "Dossier",
+      "pay": "Paiement"
+    }
   },
   "coaches": {
     "title": "Entraîneurs",
@@ -819,7 +834,14 @@
       "no_discipline": "— Aucune —"
     },
     "guardian_optional": "Tuteur (optionnel, pour mineurs)",
-    "guardian_name_placeholder": "Nom du tuteur (si nouveau)"
+    "guardian_name_placeholder": "Nom du tuteur (si nouveau)",
+    "nextAction": {
+      "trial": "Essai",
+      "firstContact": "Premier contact dû",
+      "followUp": "Relance due",
+      "decide": "Décider (convertir/perdu)",
+      "overdue": "EN RETARD"
+    }
   },
   "camps": {
     "title": "Camps et Événements",
@@ -1357,7 +1379,27 @@
       "newMember": "Nouveau membre",
       "recordPayment": "Enregistrer paiement"
     },
-    "openDiary": "Ouvrir l'agenda →"
+    "openDiary": "Ouvrir l'agenda →",
+    "cards": {
+      "noneToday": "aucun cours aujourd’hui",
+      "now": "Maintenant",
+      "next": "Suivant",
+      "inbox": "Boîte de réception",
+      "inboxZero": "rien en attente d’approbation",
+      "regRequests": "{count} demandes d’inscription aux cours",
+      "ptRequests": "{count} demandes de forfaits PT",
+      "expiring": "Abonnements expirant",
+      "noneExpiring": "aucun n’expire cette semaine",
+      "endsToday": "expire AUJOURD’HUI",
+      "endsOn": "expire le {date}",
+      "call": "Appeler",
+      "money": "Argent du jour",
+      "noneDue": "rien à encaisser aujourd’hui",
+      "dueToday": "échéance aujourd’hui",
+      "recordPayment": "Enregistrer un paiement",
+      "overdue": "{count} en retard",
+      "nonePt": "aucune séance PT aujourd’hui"
+    }
   },
   "inbox": {
     "title": "Boîte de réception",
@@ -1409,7 +1451,40 @@
     "ptTotals": "{remaining} séance(s) PT restante(s)",
     "payer": "Payeur",
     "household": "Famille",
-    "noHouseholdInvoices": "Aucune facture en tant que payeur."
+    "noHouseholdInvoices": "Aucune facture en tant que payeur.",
+    "actions": {
+      "recordPayment": "Enregistrer un paiement",
+      "newRegistration": "Inscrire à un cours",
+      "ptPanel": "Panneau PT",
+      "registerTitle": "Inscrire {name} à un cours",
+      "pickClass": "Choisissez d’abord un cours",
+      "discountPct": "Remise % (optionnel)",
+      "registerConfirm": "Inscrire et approuver",
+      "registered": "Inscrit — actif sur le dossier",
+      "registeredWaitlisted": "Cours complet — ajouté à la liste d’attente",
+      "registerFailed": "Échec de l’inscription",
+      "noClasses": "Aucun cours actif",
+      "mo": "mois",
+      "payTitle": "Enregistrer un paiement pour {name}",
+      "invoice": "Facture",
+      "amountUsd": "Montant (USD)",
+      "method": "Méthode",
+      "reference": "Référence (n° OMT/Whish/virement)",
+      "optional": "optionnel",
+      "payConfirm": "Enregistrer le paiement",
+      "paymentRecorded": "Paiement enregistré",
+      "paymentFailed": "Échec du paiement",
+      "enterAmount": "Saisissez un montant positif",
+      "noOpenInvoices": "Aucune facture ouverte — rien à régler",
+      "methods": {
+        "cash_usd": "Espèces (USD)",
+        "cash_lbp": "Espèces (LBP)",
+        "omt": "OMT",
+        "whish": "Whish",
+        "bank_transfer": "Virement bancaire",
+        "bob_finance": "BOB Finance"
+      }
+    }
   },
   "money": {
     "title": "Finances",

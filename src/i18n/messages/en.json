@@ -227,7 +227,22 @@
       "suspended": "Suspended"
     },
     "tabs_active": "Active",
-    "tabs_prospects": "Prospects"
+    "tabs_prospects": "Prospects",
+    "chips": {
+      "owing": "Owing",
+      "expiring": "Expiring soon",
+      "noguardian": "No guardian (minors)",
+      "recent": "Joined ≤30d"
+    },
+    "badges": {
+      "expiring": "expiring ≤7d",
+      "owing": "owing"
+    },
+    "actions": {
+      "call": "Call",
+      "file": "File",
+      "pay": "Payment"
+    }
   },
   "coaches": {
     "title": "Coaches",
@@ -819,7 +834,14 @@
       "no_discipline": "— None —"
     },
     "guardian_optional": "Guardian (optional, for minors)",
-    "guardian_name_placeholder": "Guardian name (if new)"
+    "guardian_name_placeholder": "Guardian name (if new)",
+    "nextAction": {
+      "trial": "Trial",
+      "firstContact": "First contact due",
+      "followUp": "Follow-up due",
+      "decide": "Decide (convert/lost)",
+      "overdue": "OVERDUE"
+    }
   },
   "camps": {
     "title": "Camps & Events",
@@ -1357,7 +1379,27 @@
       "newMember": "New member",
       "recordPayment": "Record payment"
     },
-    "openDiary": "Open diary →"
+    "openDiary": "Open diary →",
+    "cards": {
+      "noneToday": "no classes today",
+      "now": "Now",
+      "next": "Next",
+      "inbox": "Inbox",
+      "inboxZero": "nothing waiting for approval",
+      "regRequests": "{count} class registration requests",
+      "ptRequests": "{count} PT package requests",
+      "expiring": "Expiring memberships",
+      "noneExpiring": "none expiring this week",
+      "endsToday": "ends TODAY",
+      "endsOn": "ends {date}",
+      "call": "Call",
+      "money": "Money today",
+      "noneDue": "nothing due today",
+      "dueToday": "due today",
+      "recordPayment": "Record payment",
+      "overdue": "{count} overdue",
+      "nonePt": "no PT sessions today"
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -1409,7 +1451,40 @@
     "ptTotals": "{remaining} PT session(s) remaining across active packages",
     "payer": "Payer",
     "household": "Household",
-    "noHouseholdInvoices": "No invoices as payer yet."
+    "noHouseholdInvoices": "No invoices as payer yet.",
+    "actions": {
+      "recordPayment": "Record payment",
+      "newRegistration": "Register to class",
+      "ptPanel": "PT panel",
+      "registerTitle": "Register {name} to a class",
+      "pickClass": "Pick a class first",
+      "discountPct": "Discount % (optional)",
+      "registerConfirm": "Register & approve",
+      "registered": "Registered — active on the file",
+      "registeredWaitlisted": "Class full — added to the waitlist",
+      "registerFailed": "Registration failed",
+      "noClasses": "No active classes",
+      "mo": "mo",
+      "payTitle": "Record a payment for {name}",
+      "invoice": "Invoice",
+      "amountUsd": "Amount (USD)",
+      "method": "Method",
+      "reference": "Reference (OMT/Whish/transfer #)",
+      "optional": "optional",
+      "payConfirm": "Record payment",
+      "paymentRecorded": "Payment recorded",
+      "paymentFailed": "Payment failed",
+      "enterAmount": "Enter a positive amount",
+      "noOpenInvoices": "No open invoices — nothing to settle",
+      "methods": {
+        "cash_usd": "Cash (USD)",
+        "cash_lbp": "Cash (LBP)",
+        "omt": "OMT",
+        "whish": "Whish",
+        "bank_transfer": "Bank transfer",
+        "bob_finance": "BOB Finance"
+      }
+    }
   },
   "money": {
     "title": "Money",

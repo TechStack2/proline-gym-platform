@@ -12,10 +12,11 @@ import {
 import { GuardianPanel, type GuardianRow } from './guardian-panel'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { PromotePanel } from './promote-panel'
+import { MemberActions, type OpenInvoice, type PickableClass } from './member-actions'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: { locale: string; id: string } }
+type Props = { params: { locale: string; id: string }; searchParams: { pay?: string } }
 
 /**
  * Member-360 (IA-2) — THE member file. Replaces the husk that passed
@@ -25,7 +26,7 @@ type Props = { params: { locale: string; id: string } }
  * into an existing verified flow. B3 (household), D2 (freeze/upgrade) and D3
  * (dunning) land on this surface next — panels keep a clean actions area.
  */
-export default async function Member360Page({ params: { locale, id } }: Props) {
+export default async function Member360Page({ params: { locale, id }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('member360')
   const supabase = await createClient()
@@ -173,6 +174,39 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
     : { data: [] as any[] }
   const promoteCoaches = (promoCoachRows ?? []).map((c: any) => ({ id: c.id, name: localizedName(one(c.profiles), locale) })).filter((c) => c.name)
 
+  // FD-1: member-contextual action inputs — active classes (register modal) and
+  // the member's OPEN invoices with exact balances (record-payment modal; the
+  // page-level payments fetch is limit-10, so reconcile these separately).
+  const { data: pickableClasses } = await supabase
+    .from('classes')
+    .select('id, name_ar, name_en, name_fr, monthly_fee_usd, max_capacity')
+    .eq('gym_id', gymIdForPromote)
+    .eq('is_active', true)
+    .is('deleted_at', null)
+    .order('name_en')
+  // Fetched DIRECTLY (not derived from the limit-10 display list — an older
+  // open invoice, e.g. one due today, must not fall out of the modal). Oldest
+  // due first = the pre-selection.
+  const { data: openInvRows } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_usd, status, due_date, exchange_rate')
+    .eq('student_id', id)
+    .in('status', ['pending', 'partial', 'overdue'])
+    .order('due_date', { ascending: true, nullsFirst: false })
+  const { data: openPays } = (openInvRows ?? []).length
+    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', (openInvRows ?? []).map((i: any) => i.id))
+    : { data: [] as any[] }
+  const openPaidBy = new Map<string, number>()
+  for (const p of openPays ?? []) openPaidBy.set(p.invoice_id, (openPaidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+  const openInvoices: OpenInvoice[] = ((openInvRows ?? []) as any[])
+    .map((i) => ({
+      id: i.id,
+      invoice_number: i.invoice_number,
+      balance_usd: balanceUsd(i.total_usd, [{ amount_usd: openPaidBy.get(i.id) ?? 0 }]),
+      exchange_rate: i.exchange_rate ?? null,
+    }))
+    .filter((i) => i.balance_usd > 0)
+
   const prof: any = one((student as any).profiles)
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
@@ -188,8 +222,8 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
     rejected: 'bg-red-100 text-red-600', expired: 'bg-gray-100 text-gray-500',
   }
 
-  const Panel = ({ icon: Icon, title, testid, children }: { icon: any; title: string; testid: string; children: React.ReactNode }) => (
-    <section className="rounded-2xl border bg-white p-4 shadow-sm" data-testid={testid}>
+  const Panel = ({ icon: Icon, title, testid, id: anchorId, children }: { icon: any; title: string; testid: string; id?: string; children: React.ReactNode }) => (
+    <section id={anchorId} className="scroll-mt-4 rounded-2xl border bg-white p-4 shadow-sm" data-testid={testid}>
       <h2 className={cn('mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
         <Icon className="h-4 w-4 text-primary-600" /> {title}
       </h2>
@@ -234,18 +268,17 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
               )}
             </div>
           </div>
-          {/* Quick actions — existing verified flows only */}
-          <div className="flex flex-wrap gap-2" data-testid="member-quick-actions">
-            <Link href={`/${locale}/payments/new`} className="inline-flex items-center gap-1 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#a81014]">
-              <DollarSign className="h-3.5 w-3.5" /> {t('recordPayment')}
-            </Link>
-            <Link href={`/${locale}/classes`} className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-              <CalendarDays className="h-3.5 w-3.5" /> {t('newRegistration')}
-            </Link>
-            <Link href={`/${locale}/pt`} className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-              <Dumbbell className="h-3.5 w-3.5" /> {t('ptFlows')}
-            </Link>
-          </div>
+          {/* FD-1: member-contextual quick actions — modals pre-filled with THIS
+              member; the old pills navigated to GLOBAL pages (/classes — the
+              create-a-class page! — /payments/new, /pt) and dropped the member. */}
+          <MemberActions
+            studentId={id}
+            memberName={name}
+            classes={(pickableClasses ?? []) as PickableClass[]}
+            openInvoices={openInvoices}
+            locale={locale}
+            autoPay={searchParams?.pay === '1'}
+          />
         </div>
       </div>
 
@@ -298,8 +331,10 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
           )}
         </Panel>
 
-        {/* ── 3. PT ── */}
-        <Panel icon={Dumbbell} title={t('pt')} testid="panel-pt">
+        {/* ── 3. PT ── the file's own PT cockpit (the header pill anchors here).
+            DOCKING SLOT: PT-1 “sell package” + PT-2 “book session” actions mount
+            in this panel (per the approved PT-360 §3.1 package cards). */}
+        <Panel icon={Dumbbell} title={t('pt')} testid="panel-pt" id="panel-pt">
           {(ptAssignments ?? []).length === 0 ? <Empty text={t('noPt')} /> : (
             <ul className="space-y-2">
               {(ptAssignments ?? []).map((a: any) => (
@@ -339,7 +374,7 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
               {(invoices ?? []).map((inv: any) => {
                 const bal = balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
                 return (
-                  <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status}>
+                  <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status} data-type={inv.invoice_type}>
                     <span className="flex flex-col">
                       <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-[#cd1419] hover:underline">
                         {inv.invoice_number}
@@ -371,7 +406,7 @@ export default async function Member360Page({ params: { locale, id } }: Props) {
             </div>
           )}
           <div className="mt-3">
-            <Link href={`/${locale}/money`} className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline">
+            <Link href={`/${locale}/money?tab=invoices&search=${encodeURIComponent(name)}`} className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline">
               {t('openMoney')} <ChevronRight className={cn('h-3 w-3', isRTL && 'rotate-180')} />
             </Link>
           </div>

@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import {
-  Phone, Mail, Calendar, Search, Plus, KeyRound, CheckCircle2, XCircle, X, UserCheck,
+  Phone, Mail, Calendar, CalendarClock, Search, Plus, KeyRound, CheckCircle2, XCircle, X, UserCheck,
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import type {
@@ -77,6 +77,26 @@ export function LeadsClient({
   useEffect(() => {
     setLeads(initialLeads);
   }, [initialLeads]);
+
+  // FD-1: DERIVED next-action date (leads has no such column — zero schema):
+  //   trial_scheduled → the trial's date · new → first contact due (created+2d)
+  //   contacted → follow-up due (updated+7d) · trial_completed → decision due
+  //   (updated+3d). Overdue = due date in the past → highlighted on the card.
+  const nextActionFor = (lead: Lead, trial?: TrialInfo): { label: string; due: Date } | null => {
+    const plus = (iso: string, days: number) => new Date(new Date(iso).getTime() + days * 864e5);
+    switch (lead.status) {
+      case 'trial_scheduled':
+        return trial ? { label: t('nextAction.trial'), due: new Date(`${trial.scheduled_date}T${trial.scheduled_time || '23:59'}`) } : null;
+      case 'new':
+        return { label: t('nextAction.firstContact'), due: plus(lead.created_at, 2) };
+      case 'contacted':
+        return { label: t('nextAction.followUp'), due: plus(lead.updated_at ?? lead.created_at, 7) };
+      case 'trial_completed':
+        return { label: t('nextAction.decide'), due: plus(lead.updated_at ?? lead.created_at, 3) };
+      default:
+        return null;
+    }
+  };
 
   // Index trials + invites for quick per-lead lookup.
   const trialByLead = useMemo(() => {
@@ -293,6 +313,24 @@ export function LeadsClient({
                     ))}
                   </select>
                 </div>
+
+                {(() => {
+                  const na = nextActionFor(lead, trial);
+                  if (!na) return null;
+                  const overdue = na.due.getTime() < Date.now();
+                  return (
+                    <p
+                      data-testid="lead-next-action"
+                      data-overdue={overdue}
+                      className={cn('flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium',
+                        overdue ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-500')}
+                    >
+                      <CalendarClock className="h-3.5 w-3.5" />
+                      {na.label} · {na.due.toLocaleDateString(locale === 'ar' ? 'ar-LB' : 'en-US')}
+                      {overdue && <span className="font-bold uppercase">· {t('nextAction.overdue')}</span>}
+                    </p>
+                  );
+                })()}
 
                 <div className="space-y-1 text-sm">
                   {lead.phone && (

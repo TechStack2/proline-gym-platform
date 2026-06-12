@@ -211,6 +211,15 @@ export default defineConfig({
       testMatch: /adm2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // FD-1 (front-desk cockpit): Today 2.0 ActionCards, Member-360 modals,
+      // workable lists. MUST run LAST — it drains the approval inbox to prove
+      // the Inbox card's collapse line.
+      name: 'fd1',
+      dependencies: ['setup'],
+      testMatch: /fd1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
