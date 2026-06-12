@@ -5,6 +5,8 @@ import { localizedName, one } from '@/lib/names';
 import { STATUS_BADGE, statusLabel } from '@/lib/billing/reconcile';
 import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/shared/pt-package-card';
 import { PtRequestClient } from './pt-request-client';
+import { BookPtModal } from '@/components/shared/book-pt-modal';
+import { CancelBookingButton, MemberProposalActions } from './session-actions';
 
 type Props = { params: { locale: string } };
 
@@ -75,7 +77,7 @@ export default async function PortalPtPage({ params }: Props) {
   const { data: sessionRows } = student
     ? await supabase
         .from('pt_sessions')
-        .select('id, assignment_id, scheduled_at, status')
+        .select('id, assignment_id, scheduled_at, status, proposed_by')
         .eq('student_id', student.id)
         .order('scheduled_at', { ascending: false })
         .limit(100)
@@ -110,6 +112,13 @@ export default async function PortalPtPage({ params }: Props) {
       invoiceStatusClass: inv ? STATUS_BADGE[inv.status] : null,
       sessions: (sessionsBy.get(a.id) ?? []).map((sRow: any) => ({
         id: sRow.id, scheduledAt: sRow.scheduled_at, status: sRow.status,
+        // PT-2 nested actions: cancel a future booking; answer a counter.
+        action:
+          sRow.status === 'scheduled' && new Date(sRow.scheduled_at) > new Date()
+            ? <CancelBookingButton sessionId={sRow.id} />
+            : sRow.status === 'proposed' && sRow.proposed_by && sRow.proposed_by !== user.id
+              ? <MemberProposalActions sessionId={sRow.id} />
+              : undefined,
       })),
     };
   });
@@ -168,6 +177,12 @@ export default async function PortalPtPage({ params }: Props) {
                 sessionsTitle: t('pt_sessions_title'),
                 sessionStatus: (s) => t(`session_status.${s}` as Parameters<typeof t>[0]),
               }}
+              actions={computePtStatus(d) === 'active' && d.sessionsRemaining > 0 ? (
+                <div className="mt-2">
+                  {/* PT-2: the Calendly moment — free slots only, tap = booked */}
+                  <BookPtModal assignmentId={d.id} locale={locale} />
+                </div>
+              ) : undefined}
             />
           ))
         )}

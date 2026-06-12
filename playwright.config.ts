@@ -244,6 +244,13 @@ export default defineConfig({
       testMatch: /e1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PT-2 signature booking: coach + member + staff + race contexts. Last.
+      name: 'pt2',
+      dependencies: ['setup'],
+      testMatch: /pt2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
 
     {
       // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries

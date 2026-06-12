@@ -10,7 +10,7 @@ import { Dumbbell, Clock, FileText } from 'lucide-react'
  * invoice + payment state (deep-link) · sessions NESTED under the card.
  * Expiry is COMPUTED (expires_at in the past ⇒ frozen) — no cron, no enum.
  */
-export type PtCardSession = { id: string; scheduledAt: string; status: string }
+export type PtCardSession = { id: string; scheduledAt: string; status: string; action?: React.ReactNode }
 export type PtCardData = {
   id: string
   status: string // pt_assignment_status
@@ -43,6 +43,7 @@ const STATUS_TONE: Record<string, string> = {
 }
 const SESSION_TONE: Record<string, string> = {
   scheduled: 'bg-blue-100 text-blue-700',
+  proposed: 'bg-amber-100 text-amber-700',
   completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-gray-100 text-gray-600',
   no_show: 'bg-red-100 text-red-700',
@@ -129,10 +130,13 @@ export function PtPackageCard({
           <ul className="space-y-1">
             {data.sessions.map((s) => (
               <li key={s.id} data-testid={sessionTestid} data-status={s.status}
-                className="flex items-center justify-between text-xs text-gray-600">
-                <span>{new Date(s.scheduledAt).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}</span>
-                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', SESSION_TONE[s.status] || 'bg-gray-100')}>
-                  {labels.sessionStatus(s.status)}
+                className="flex items-center justify-between gap-2 text-xs text-gray-600">
+                <span dir="ltr">{new Date(s.scheduledAt).toLocaleString(isRTL ? 'ar-LB' : 'en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="flex items-center gap-1.5">
+                  {s.action}
+                  <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', SESSION_TONE[s.status] || 'bg-gray-100')}>
+                    {labels.sessionStatus(s.status)}
+                  </span>
                 </span>
               </li>
             ))}

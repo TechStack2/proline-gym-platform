@@ -57,7 +57,7 @@ export function PortalLayoutClient({ children, locale }: Props) {
           </div>
         }
       />
-      <main className="flex-1 overflow-y-auto">
+      <main className={`flex-1 overflow-y-auto ${locale === 'ar' ? 'md:mr-20' : 'md:ml-20'}`}>
         <PageTransition
           direction="forward"
           isActive={true}
