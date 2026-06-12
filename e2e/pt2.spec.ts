@@ -131,7 +131,9 @@ test('PT-2 · publish → policy-bounded slots → instant book everywhere → s
     await expect(owner.page.getByTestId('pt-override-warning'), 'IA-3 conflict warning shows for the desk')
       .toBeVisible({ timeout: 15_000 });
     // …then book a free off-grid time (override skips availability/notice/grid).
-    const overrideAt = new Date(Date.now() + 30 * 60_000);
+    // +90min clears every C1 session the suite scheduled at now() (60min spans)
+    // — +30min sat INSIDE pt-delivery's still-scheduled session → 'Slot taken'.
+    const overrideAt = new Date(Date.now() + 90 * 60_000);
     await owner.page.getByTestId('pt-override-at').fill(overrideAt.toISOString().slice(0, 16));
     await owner.page.getByTestId('pt-override-book').click();
     await expect(owner.page.locator('[data-testid="app-toast"]').filter({ hasText: /booked/i }).first())
