@@ -48,12 +48,14 @@ ALTER TABLE camp_registrations
 
 -- 3. RLS: gym-scope the staff policies (tighten, never widen) + guardian read
 DROP POLICY IF EXISTS camp_registrations_staff ON camp_registrations;
+DROP POLICY IF EXISTS camp_registrations_staff_gym ON camp_registrations;
 CREATE POLICY camp_registrations_staff_gym ON camp_registrations FOR ALL
   USING (
     is_staff() AND
     EXISTS (SELECT 1 FROM camps c WHERE c.id = camp_id AND c.gym_id = get_user_gym_id())
   );
 DROP POLICY IF EXISTS camp_attendance_staff ON camp_attendance;
+DROP POLICY IF EXISTS camp_attendance_staff_gym ON camp_attendance;
 CREATE POLICY camp_attendance_staff_gym ON camp_attendance FOR ALL
   USING (
     is_staff() AND
