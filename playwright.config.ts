@@ -229,6 +229,15 @@ export default defineConfig({
       testMatch: /fd1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries
+      // meta/OG/JSON-LD; sitemap.xml + robots.txt respond with expected entries.
+      // Anon (no storageState); read-only — order-independent.
+      name: 'lpx1',
+      dependencies: ['setup'],
+      testMatch: /lpx1-seo\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

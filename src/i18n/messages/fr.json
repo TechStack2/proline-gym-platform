@@ -1641,5 +1641,12 @@
       "noLeaders": "Aucune présence enregistrée sur cette période",
       "noAtRisk": "Aucun élève à risque sur cette période"
     }
+  },
+  "seo": {
+    "title": "PRO LINE Gym — Muay Thaï, Boxe & Fitness à Baabda",
+    "description": "PRO LINE Gym à Baabda, Liban par les frères Fakih — Muay Thaï, Boxe, Fitness, cours Femmes & Enfants. Réservez votre essai gratuit dès aujourd'hui.",
+    "ogAlt": "PRO LINE Gym — arts martiaux à Baabda, Liban",
+    "streetAddress": "Sky Business Center, Baabda",
+    "addressLocality": "Baabda"
   }
 }
