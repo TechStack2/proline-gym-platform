@@ -22,47 +22,21 @@ type PackageRow = {
 
 type CoachOption = { id: string; name: string };
 
-type AssignmentRow = {
-  id: string;
-  package_id: string;
-  status: string;
-  sessions_total: number;
-  sessions_remaining: number;
-  requested_at: string | null;
-  rejected_reason: string | null;
-};
-
 type Props = {
   packages: PackageRow[];
   coaches: CoachOption[];
-  assignments: AssignmentRow[];
   locale: string;
 };
 
-const STATUS_TONE: Record<string, string> = {
-  requested: 'bg-amber-100 text-amber-700',
-  active: 'bg-green-100 text-green-700',
-  approved: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
-  completed: 'bg-gray-100 text-gray-600',
-  cancelled: 'bg-gray-100 text-gray-600',
-};
-
-export function PtRequestClient({ packages, coaches, assignments: initial, locale }: Props) {
+export function PtRequestClient({ packages, coaches, locale }: Props) {
   const t = useTranslations('pt');
   const router = useRouter();
   const supabase = createClient();
   const isRTL = locale === 'ar';
 
-  const [assignments] = useState(initial);
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
   const [coachId, setCoachId] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const packageName = (pkgId: string) => {
-    const pkg = packages.find((p) => p.id === pkgId);
-    return pkg ? getLocalizedName(pkg, locale) : pkgId.slice(0, 8);
-  };
 
   const handleRequest = async (pkgId: string) => {
     setSubmitting(true);
@@ -85,35 +59,6 @@ export function PtRequestClient({ packages, coaches, assignments: initial, local
 
   return (
     <div className={cn('space-y-6', isRTL && 'rtl')}>
-      {/* My requests / assignments */}
-      {assignments.length > 0 && (
-        <section className="space-y-2">
-          <h2 className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>
-            {t('my_requests')}
-          </h2>
-          <div className="space-y-2">
-            {assignments.map((a) => (
-              <div key={a.id} data-testid="pt-my-request" data-package={a.package_id} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-gray-100">
-                <div className="min-w-0">
-                  <p className={cn('text-sm font-medium text-gray-900 truncate', isRTL && 'font-arabic')}>
-                    {packageName(a.package_id)}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {t('sessions_remaining', { remaining: a.sessions_remaining, total: a.sessions_total })}
-                  </p>
-                  {a.status === 'rejected' && a.rejected_reason && (
-                    <p className="text-xs text-red-500 mt-0.5">{a.rejected_reason}</p>
-                  )}
-                </div>
-                <span className={cn('text-xs font-medium px-2 py-1 rounded-full', STATUS_TONE[a.status] || 'bg-gray-100 text-gray-600')}>
-                  {t(`status_${a.status}`)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Available packages */}
       <section className="space-y-2">
         <h2 className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>

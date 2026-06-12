@@ -1010,7 +1010,10 @@
     "credit_restored": "Credit restored",
     "restore_error": "Could not restore credit",
     "conflict_warning": "Heads up: {coach} already has {event} at {time} — booked anyway.",
-    "conflict_pt_event": "a PT session"
+    "conflict_pt_event": "a PT session",
+    "days_left": "{days} days left",
+    "expired_ago": "expired {days} days ago",
+    "status_expired": "Expired"
   },
   "rentals": {
     "title": "Coach Rentals",
@@ -1042,7 +1045,8 @@
       "gymProfile": "Gym Profile",
       "exchangeRates": "Exchange Rates",
       "membershipPlans": "Membership Plans",
-      "disciplinesBelts": "Disciplines & Belts"
+      "disciplinesBelts": "Disciplines & Belts",
+      "ptPackages": "PT Packages"
     },
     "gym": {
       "noData": "No gym data found",
@@ -1114,7 +1118,25 @@
     "pt_late_cancel_window": "Late-cancel window (hours)",
     "pt_policy_save": "Save policy",
     "pt_policy_saved": "PT policy saved",
-    "pt_policy_error": "Could not save policy"
+    "pt_policy_error": "Could not save policy",
+    "ptCatalog": {
+      "title": "PT package types",
+      "subtitle": "The catalog desk sales and portal requests pick from — per-gym data",
+      "nameEn": "Name (EN)",
+      "nameAr": "Name (AR)",
+      "nameFr": "Name (FR)",
+      "sessions": "Sessions",
+      "priceUsd": "Price $",
+      "validityDays": "Validity (days)",
+      "add": "Add",
+      "errNameRequired": "Name (EN) is required",
+      "errNumbers": "Sessions and price must be valid numbers",
+      "disciplineOptional": "Discipline (optional):",
+      "sessionsShort": "sessions",
+      "daysShort": "d",
+      "onLanding": "On landing",
+      "staged": "Staged"
+    }
   },
   "reportsDashboard": {
     "title": "Reports",
@@ -1280,6 +1302,10 @@
       "waitlist_promoted": {
         "title": "A spot opened up!",
         "body": "You've been moved off the waitlist into {class} — monthly ${fee}"
+      },
+      "pt_refill_due": {
+        "title": "Few PT sessions left",
+        "body": "Only {remaining} left on {package} — renew at the desk"
       }
     }
   },
@@ -1398,7 +1424,11 @@
       "dueToday": "due today",
       "recordPayment": "Record payment",
       "overdue": "{count} overdue",
-      "nonePt": "no PT sessions today"
+      "nonePt": "no PT sessions today",
+      "ptRefill": "PT refill",
+      "noneRefill": "no refills due",
+      "resell": "Re-sell",
+      "daysLeft": "{days}d left"
     }
   },
   "inbox": {
@@ -1416,7 +1446,11 @@
     "discountAmt": "$ off",
     "sessions": "sessions",
     "mo": "mo",
-    "promotedLine": "{student} was auto-promoted off the waitlist into {class}"
+    "promotedLine": "{student} was auto-promoted off the waitlist into {class}",
+    "renewalsTitle": "PT renewals due",
+    "renewalsZero": "no renewals due",
+    "renewalDays": "{days}d to expiry",
+    "resell": "Re-sell"
   },
   "member360": {
     "age": "{age} yrs",
@@ -1640,6 +1674,42 @@
       "rate": "Rate",
       "noLeaders": "No attendance recorded in this period",
       "noAtRisk": "No at-risk members in this period"
+    }
+  },
+  "ptPanel": {
+    "remaining": "left",
+    "sessions": "Sessions",
+    "none": "No PT packages yet",
+    "unlinked": "{count} legacy sessions are not linked to any package — resolve from the PT history",
+    "sell": "Sell package",
+    "sellTitle": "Sell a PT package",
+    "noTypes": "No active package types — create them in Settings",
+    "pickType": "Package",
+    "pickCoach": "Coach",
+    "discountPct": "Discount %",
+    "discountFixed": "Discount $ (fixed)",
+    "sellConfirm": "Sell & invoice",
+    "sold": "Package sold — invoice issued",
+    "sellFailed": "Sale failed",
+    "errPickBoth": "Pick a package and a coach",
+    "extended": "Validity extended +30 days",
+    "extendFailed": "Extend failed",
+    "extend30": "Extend +30d",
+    "daysLeft": "{days} days left",
+    "expiredAgo": "expired {days} days ago",
+    "cardStatus": {
+      "requested": "Requested",
+      "active": "Active",
+      "expired": "Expired",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "session": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
     }
   }
 }

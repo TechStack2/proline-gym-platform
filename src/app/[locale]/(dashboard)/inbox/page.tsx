@@ -1,6 +1,9 @@
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { getRenewalsDue } from '@/lib/pt/refill'
+import { RefreshCw } from 'lucide-react'
 import { localizedName, one } from '@/lib/names'
 import { InboxQueues, type RegRequestRow, type PtRequestRow, type PromotionRow } from './inbox-queues'
 
@@ -103,6 +106,10 @@ export default async function InboxPage({ params: { locale } }: Props) {
       .filter(Boolean) as PromotionRow[]
   }
 
+  // ── PT-1: renewals due (read-time thresholds — see lib/pt/refill) ──
+  const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+  const renewals = me?.gym_id ? await getRenewalsDue(supabase, me.gym_id, locale) : []
+
   const actionable = regRequests.length + ptRequests.length
 
   return (
@@ -120,6 +127,41 @@ export default async function InboxPage({ params: { locale } }: Props) {
         ptRequests={ptRequests}
         promotions={promotions}
       />
+
+      {/* ── PT renewals due (PT-1): one-tap re-sell opens the Member-360 sell
+          modal pre-filled with the same type (?sellpt=). Read-time, no cron. ── */}
+      <section data-testid="inbox-renewals">
+        <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+          <RefreshCw className="h-4 w-4 text-primary-600" /> {t('renewalsTitle')}
+          <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', renewals.length > 0 ? 'bg-[#cd1419] text-white' : 'bg-gray-100 text-gray-500')}>
+            {renewals.length}
+          </span>
+        </h2>
+        {renewals.length === 0 ? (
+          <p className="rounded-2xl border bg-white p-4 text-center text-sm text-gray-400 shadow-sm">{t('renewalsZero')}</p>
+        ) : (
+          <div className="space-y-2">
+            {renewals.map((r) => (
+              <div key={r.assignmentId} data-testid="inbox-renewal-row"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4 shadow-sm">
+                <div className="min-w-0">
+                  <Link href={`/${locale}/students/${r.studentId}`} className="text-sm font-semibold text-gray-900 hover:underline">
+                    {r.studentName}
+                  </Link>
+                  <p className="text-xs text-gray-500">
+                    {r.packageName} · {r.remaining}/{r.total}
+                    {r.daysLeft !== null ? ` · ${t('renewalDays', { days: r.daysLeft })}` : ''}
+                  </p>
+                </div>
+                <Link href={`/${locale}/students/${r.studentId}?sellpt=${r.packageId}`} data-testid="inbox-renewal-resell"
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#a81014]">
+                  <RefreshCw className="h-3.5 w-3.5" /> {t('resell')}
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

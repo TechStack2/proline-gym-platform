@@ -10,8 +10,6 @@
  * RPC, not here.
  */
 import { createClient } from '@/lib/supabase/server';
-import { createNotification } from '@/lib/notifications/create';
-import { shouldBillPtPackage } from '@/lib/pt/invoice';
 
 type ActionResult = { ok: true; invoiceId: string | null } | { ok: false; error: string };
 
@@ -21,125 +19,30 @@ export async function approvePtRequest(
 ): Promise<ActionResult> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: 'unauthenticated' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('gym_id')
-    .eq('id', user.id)
-    .single();
-  const gymId = profile?.gym_id;
-  if (!gymId) return { ok: false, error: 'no_gym' };
-
+  // PT-1: approval ROUTES THROUGH sell_pt_package — the single sale writer
+  // (guards, type snapshot, validity window from approval date, invoice with
+  // payer auto-resolve, member+coach notifications all in the RPC). This
+  // action only resolves the request row and the coach.
   const { data: assignment, error: aErr } = await supabase
     .from('pt_assignments')
-    .select('id, student_id, coach_id, package_id, sessions_total')
+    .select('id, student_id, coach_id, package_id, status')
     .eq('id', assignmentId)
     .single();
   if (aErr || !assignment) return { ok: false, error: 'assignment_not_found' };
 
-  const { data: pkg } = await supabase
-    .from('pt_packages')
-    .select('id, gym_id, name_en, name_ar, name_fr, price_usd, price_lbp')
-    .eq('id', assignment.package_id)
-    .single();
-  if (!pkg || pkg.gym_id !== gymId) return { ok: false, error: 'forbidden' };
-
   const finalCoachId = opts?.coachId ?? assignment.coach_id ?? null;
+  if (!finalCoachId) return { ok: false, error: 'coach_required' };
 
-  // 1) Auto-issue a dual-currency invoice through the canonical issuance
-  //    service (D1 retrofit; skip if free). issue_invoice runs the TVA/number
-  //    triggers and fires invoice_issued to the student (best-effort).
-  let invoiceId: string | null = null;
-  if (shouldBillPtPackage(pkg.price_usd)) {
-    const { data: rate } = await supabase
-      .from('exchange_rates')
-      .select('rate, rate_date')
-      .order('rate_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const amountLbp =
-      pkg.price_lbp != null
-        ? pkg.price_lbp
-        : rate?.rate ? Math.round(pkg.price_usd * rate.rate) : 0;
-
-    const { data: invoice, error: invErr } = await supabase.rpc('issue_invoice', {
-      p_gym_id: gymId,
-      p_student_id: assignment.student_id,
-      p_invoice_type: 'pt_package',
-      p_amount_usd: pkg.price_usd,
-      p_amount_lbp: amountLbp,
-      p_exchange_rate: rate?.rate ?? null,
-      p_rate_date: rate?.rate_date ?? null,
-      p_due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      p_notes_en: pkg.name_en ? `PT package: ${pkg.name_en}` : null,
-      p_notes_ar: pkg.name_ar ? `باقة تدريب خاص: ${pkg.name_ar}` : null,
-      p_notes_fr: pkg.name_fr ? `Forfait coaching privé : ${pkg.name_fr}` : null,
-    });
-    if (invErr) return { ok: false, error: `invoice: ${invErr.message}` };
-    invoiceId = (invoice as { id: string } | null)?.id ?? null;
-  }
-
-  // 2) Flip the assignment to active and stamp approval + link the invoice.
-  const { error: updErr } = await supabase
-    .from('pt_assignments')
-    .update({
-      status: 'active',
-      approved_by: user.id,
-      approved_at: new Date().toISOString(),
-      coach_id: finalCoachId,
-      invoice_id: invoiceId,
-    })
-    .eq('id', assignmentId);
-  if (updErr) return { ok: false, error: updErr.message };
-
-  // 3) Notify the student (approved) and the coach (assigned) via the shared
-  //    producer helper, using THIS staff session's authenticated client. The
-  //    notifications INSERT policy (000015) is the guardrail; the helper does a
-  //    RETURNING-free insert so the recipient-only SELECT policy is not tripped.
-  const { data: student } = await supabase
-    .from('students')
-    .select('profile_id')
-    .eq('id', assignment.student_id)
-    .single();
-
-  if (student?.profile_id) {
-    await createNotification({
-      recipientProfileId: student.profile_id,
-      gymId,
-      type: 'pt_approved',
-      titleKey: 'messages.pt_approved.title',
-      bodyKey: 'messages.pt_approved.body',
-      entityType: 'pt_assignment',
-      entityId: assignmentId,
-      actionUrl: '/portal/pt',
-    }, supabase);
-  }
-
-  if (finalCoachId) {
-    const { data: coach } = await supabase
-      .from('coaches')
-      .select('profile_id')
-      .eq('id', finalCoachId)
-      .single();
-    if (coach?.profile_id) {
-      await createNotification({
-        recipientProfileId: coach.profile_id,
-        gymId,
-        type: 'pt_assigned',
-        titleKey: 'messages.pt_assigned.title',
-        bodyKey: 'messages.pt_assigned.body',
-        params: { count: assignment.sessions_total },
-        entityType: 'pt_assignment',
-        entityId: assignmentId,
-        actionUrl: '/coach/pt',
-      }, supabase);
-    }
-  }
-
-  return { ok: true, invoiceId };
+  const { data: sold, error } = await supabase.rpc('sell_pt_package', {
+    p_student_id: assignment.student_id,
+    p_package_id: assignment.package_id,
+    p_coach_id: finalCoachId,
+    p_discount_pct: 0,
+    p_discount_amount_usd: 0,
+    p_request_id: assignmentId,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, invoiceId: (sold as { invoice_id: string | null } | null)?.invoice_id ?? null };
 }
 
 export async function rejectPtRequest(

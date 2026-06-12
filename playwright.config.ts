@@ -229,6 +229,14 @@ export default defineConfig({
       testMatch: /fd1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PT-1 (catalog → sale → refill → expiry): owner + coach + student + anon
+      // contexts. Runs after fd1 (consumes the run's PT state freely).
+      name: 'pt1',
+      dependencies: ['setup'],
+      testMatch: /pt1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

@@ -75,6 +75,22 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
       : locale === 'fr' ? r.package_name_fr || r.package_name_en
         : r.package_name_en;
 
+  // PT-1 §3.1: sessions NEST under their package/assignment row — the flat
+  // sibling list below the roster is gone. Unlinked legacy rows group last.
+  const sessionsByAssignment = new Map<string, SessionRow[]>();
+  const unlinkedSessions: SessionRow[] = [];
+  for (const sRow of sessions) {
+    if (!sRow.assignment_id) { unlinkedSessions.push(sRow); continue; }
+    const list = sessionsByAssignment.get(sRow.assignment_id) ?? [];
+    list.push(sRow);
+    sessionsByAssignment.set(sRow.assignment_id, list);
+  }
+  // Sessions whose assignment is no longer on the active roster (completed/
+  // expired packages) still render — grouped under a trailing block so the
+  // coach keeps their full history without a flat wall.
+  const rosterIds = new Set(roster.map((r) => r.assignment_id));
+  const offRoster = [...sessionsByAssignment.entries()].filter(([id]) => !rosterIds.has(id));
+
   const run = async (key: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
     setBusy(key);
     const res = await fn();
@@ -82,6 +98,56 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
     if (res.ok) { toast.success(okMsg); router.refresh(); }
     else toast.error(res.error || t('log_session_error'));
   };
+
+  const SessionItem = ({ s }: { s: SessionRow }) => (
+    <div data-testid="pt-session-row" data-session-id={s.session_id} data-assignment-id={s.assignment_id ?? ''} data-status={s.status} data-remaining={s.sessions_remaining ?? ''} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-600">
+          {new Date(s.scheduled_at).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}
+          {s.sessions_remaining != null ? ` · ${t('sessions_remaining', { remaining: s.sessions_remaining, total: s.sessions_total ?? 0 })}` : ''}
+        </p>
+        <span className={cn('shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium', STATUS_STYLE[s.status])}>
+          {t(`session_status.${s.status}` as Parameters<typeof t>[0])}
+        </span>
+      </div>
+      {(s.status === 'scheduled' || s.status === 'completed') && (
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            data-testid="pt-complete"
+            disabled={busy !== null}
+            onClick={() => run(`cmp-${s.session_id}`, () => completePtSession({ sessionId: s.session_id }), t('session_completed'))}
+            className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {s.status === 'completed' ? t('session_status.completed') : t('complete')}
+          </button>
+          {s.status === 'scheduled' && (
+            <>
+              <button
+                type="button"
+                data-testid="pt-noshow"
+                disabled={busy !== null}
+                onClick={() => run(`ns-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'no_show' }), t('session_no_show'))}
+                className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-red-50 text-red-700 border border-red-200 px-2 py-1.5 text-xs font-medium disabled:opacity-50"
+              >
+                <XCircle className="h-3.5 w-3.5" />{t('no_show')}
+              </button>
+              <button
+                type="button"
+                data-testid="pt-cancel"
+                disabled={busy !== null}
+                onClick={() => run(`cn-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'cancelled' }), t('session_cancelled'))}
+                className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-50"
+              >
+                <Ban className="h-3.5 w-3.5" />{t('cancel')}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className={cn('p-4 space-y-5', isRTL && 'rtl')}>
@@ -139,73 +205,45 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
                   })}
                 </div>
               )}
+              {(sessionsByAssignment.get(r.assignment_id) ?? []).length > 0 && (
+                <div className="mt-2 space-y-1.5 border-t pt-2">
+                  {(sessionsByAssignment.get(r.assignment_id) ?? []).map((sRow) => (
+                    <SessionItem key={sRow.session_id} s={sRow} />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Session lifecycle */}
-      <div>
-        <h3 className={cn('text-sm font-bold text-gray-900 mb-2', isRTL && 'font-arabic')}>{t('sessions')}</h3>
-        {sessions.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">{t('no_sessions')}</p>
-        ) : (
-          <div className="space-y-2">
-            {sessions.map((s) => (
-              <div key={s.session_id} data-testid="pt-session-row" data-session-id={s.session_id} data-assignment-id={s.assignment_id ?? ''} data-status={s.status} data-remaining={s.sessions_remaining ?? ''} className="rounded-xl bg-white p-3 shadow-sm border border-gray-100 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>{s.student_name}</p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {pkg(s)} · {new Date(s.scheduled_at).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}
-                      {s.sessions_remaining != null ? ` · ${t('sessions_remaining', { remaining: s.sessions_remaining, total: s.sessions_total ?? 0 })}` : ''}
-                    </p>
-                  </div>
-                  <span className={cn('shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium', STATUS_STYLE[s.status])}>
-                    {t(`session_status.${s.status}` as Parameters<typeof t>[0])}
-                  </span>
+      {/* Off-roster packages (completed/expired) — sessions stay grouped per
+          assignment; unlinked legacy rows surface once at the end. */}
+      {(offRoster.length > 0 || unlinkedSessions.length > 0) && (
+        <div>
+          <h3 className={cn('text-sm font-bold text-gray-900 mb-2', isRTL && 'font-arabic')}>{t('sessions')}</h3>
+          <div className="space-y-3">
+            {offRoster.map(([aid, list]) => (
+              <div key={aid} className="rounded-xl bg-white p-3 shadow-sm border border-gray-100">
+                <p className={cn('mb-1.5 text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>
+                  {list[0].student_name} <span className="text-xs font-normal text-gray-500">· {pkg(list[0])}</span>
+                </p>
+                <div className="space-y-1.5">
+                  {list.map((sRow) => <SessionItem key={sRow.session_id} s={sRow} />)}
                 </div>
-                {(s.status === 'scheduled' || s.status === 'completed') && (
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      data-testid="pt-complete"
-                      disabled={busy !== null}
-                      onClick={() => run(`cmp-${s.session_id}`, () => completePtSession({ sessionId: s.session_id }), t('session_completed'))}
-                      className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      {s.status === 'completed' ? t('session_status.completed') : t('complete')}
-                    </button>
-                    {s.status === 'scheduled' && (
-                      <>
-                        <button
-                          type="button"
-                          data-testid="pt-noshow"
-                          disabled={busy !== null}
-                          onClick={() => run(`ns-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'no_show' }), t('session_no_show'))}
-                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-red-50 text-red-700 border border-red-200 px-2 py-1.5 text-xs font-medium disabled:opacity-50"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />{t('no_show')}
-                        </button>
-                        <button
-                          type="button"
-                          data-testid="pt-cancel"
-                          disabled={busy !== null}
-                          onClick={() => run(`cn-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'cancelled' }), t('session_cancelled'))}
-                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-50"
-                        >
-                          <Ban className="h-3.5 w-3.5" />{t('cancel')}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
             ))}
+            {unlinkedSessions.length > 0 && (
+              <div className="rounded-xl bg-amber-50/60 p-3 border border-amber-100" data-testid="pt-coach-unlinked">
+                <p className="mb-1.5 text-xs font-medium text-amber-700">{t('unlinked_sessions')}</p>
+                <div className="space-y-1.5">
+                  {unlinkedSessions.map((sRow) => <SessionItem key={sRow.session_id} s={sRow} />)}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
