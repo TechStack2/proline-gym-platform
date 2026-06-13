@@ -296,12 +296,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // FIN-1 horizons + owner finances + win-back — LAST: it pays the Horizon
-      // invoice and reinstates the Dropped member (its own isolated fixtures),
-      // mutating gym money/lifecycle state nothing later should read.
+      // FIN-1 horizons + owner finances + win-back: it pays the Horizon invoice
+      // and reinstates the Dropped member (its own isolated fixtures).
       name: 'fin1',
       dependencies: ['setup'],
       testMatch: /fin1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // GRW-1 growth funnel — LAST: creates a campaign + anon captures + converts
+      // a lead (its own run-scoped rows), mutating prospect/lead state.
+      name: 'grw1',
+      dependencies: ['setup'],
+      testMatch: /grw1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

@@ -13,6 +13,9 @@ import type {
   InviteInfo,
 } from './leads-types';
 import { COUNTABLE_STATUSES, STATUS_COLORS, SOURCE_ICONS } from './leads-types';
+import { FunnelStrip } from './funnel-strip';
+import { getFunnel, monthStartISO } from '@/lib/growth/funnel';
+import { Megaphone } from 'lucide-react';
 
 type Props = {
   locale: string;
@@ -117,6 +120,9 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
   const trials = (trialsRes.data || []) as TrialInfo[];
   const invites = (invitesRes.data || []) as InviteInfo[];
 
+  // GRW-1: the growth funnel (this month) — conversion rate + by-source/campaign.
+  const funnel = await getFunnel(supabase, gymId, monthStartISO());
+
   // ── FD-1: the stats bar is the stage FILTER — chips with counts ──
   const activeStatus = searchParams.status ?? 'all';
   const statsData = [
@@ -129,6 +135,17 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
 
   return (
     <div className="space-y-6" data-testid="leads-pipeline">
+      {/* GRW-1: Campaigns surface entry (tracked links + QR + per-campaign funnel) */}
+      <div className="flex justify-end">
+        <Link href={`/${locale}/campaigns`} data-testid="campaigns-link"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <Megaphone className="h-4 w-4 text-primary-600" /> {t('campaignsLink')}
+        </Link>
+      </div>
+
+      {/* GRW-1: growth funnel strip (conversion + by-source/campaign, this month) */}
+      <FunnelStrip funnel={funnel} locale={locale} />
+
       {/* Stage chips (clickable counts → server-side status filter) */}
       <div className="grid grid-cols-5 gap-3">
         {statsData.map((s) => (

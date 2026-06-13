@@ -936,7 +936,9 @@
       "review": "مراجعة",
       "nextAction": "أول تواصل مستحق في {date}"
     },
-    "guardian_default": "ولي أمر"
+    "guardian_default": "ولي أمر",
+    "freshInquiry": "جديد",
+    "campaignsLink": "الحملات"
   },
   "camps": {
     "title": "المخيمات",
@@ -2246,5 +2248,49 @@
       "suspended": "معلّق"
     },
     "toWinback": "افتح قائمة الاسترجاع ←"
+  },
+  "growth": {
+    "leadsThisMonth": "العملاء هذا الشهر",
+    "leads": "العملاء",
+    "trials": "التجارب",
+    "converted": "تحوّلوا",
+    "conversionRate": "معدل التحويل",
+    "bySource": "حسب المصدر",
+    "byCampaign": "حسب الحملة",
+    "noData": "لا عملاء في هذه الفترة بعد."
+  },
+  "campaigns": {
+    "title": "الحملات",
+    "subtitle": "روابط متتبَّعة وأكواد QR لإعلاناتك — شاهد ما حققته كل حملة.",
+    "add": "حملة جديدة",
+    "addTitle": "حملة جديدة",
+    "create": "إنشاء",
+    "empty": "لا حملات بعد — أنشئ واحدة للحصول على رابط متتبَّع وكود QR.",
+    "archived": "مؤرشفة",
+    "archive": "أرشفة",
+    "restore": "استعادة",
+    "stepName": "الاسم والمصدر",
+    "stepReview": "مراجعة",
+    "nameLabel": "اسم الحملة",
+    "namePh": "مثال: عرض إنستغرام الصيفي",
+    "sourceLabel": "المصدر",
+    "codeHint": "يُنشأ رابط متتبَّع وكود QR عند الحفظ.",
+    "trackedLink": "الرابط المتتبَّع",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "qrAlt": "كود QR للحملة",
+    "statLeads": "العملاء",
+    "statTrials": "التجارب",
+    "statConverted": "تحوّلوا",
+    "source": {
+      "instagram": "إنستغرام",
+      "facebook": "فيسبوك",
+      "whatsapp": "واتساب",
+      "referral": "إحالة",
+      "website": "الموقع",
+      "other": "أخرى",
+      "walk_in": "حضور مباشر",
+      "phone": "هاتف"
+    }
   }
 }

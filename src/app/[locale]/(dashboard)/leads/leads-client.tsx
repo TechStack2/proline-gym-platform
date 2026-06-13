@@ -275,6 +275,10 @@ export function LeadsClient({
             ? inviteByStudent.get(lead.converted_student_id)
             : undefined;
           const result = convertResult[lead.id];
+          // GRW-1: a FRESH inquiry — captured-status 'new' within 48h (the
+          // landing form's just-arrived leads). Highlighted so the desk acts fast.
+          const isFresh = lead.status === 'new'
+            && (Date.now() - new Date(lead.created_at).getTime()) < 48 * 3600e3;
 
           return (
             <Card
@@ -282,13 +286,19 @@ export function LeadsClient({
               data-testid="lead-card"
               data-lead-name={`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim()}
               data-lead-status={lead.status}
-              className="hover:shadow-md transition-shadow"
+              data-fresh={isFresh}
+              className={cn('hover:shadow-md transition-shadow', isFresh && 'ring-2 ring-[#cd1419]/40')}
             >
               <CardContent className="pt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-gray-900">
+                    <h3 className="font-medium text-gray-900 flex items-center gap-1.5">
                       {lead.first_name} {lead.last_name}
+                      {isFresh && (
+                        <span data-testid="lead-fresh-badge" className="rounded-full bg-[#cd1419] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                          {t('freshInquiry')}
+                        </span>
+                      )}
                     </h3>
                     <div className="flex items-center gap-1 mt-0.5">
                       <span className="text-xs">{sourceIcons[lead.source] || '📋'}</span>
@@ -341,6 +351,9 @@ export function LeadsClient({
                       <a href={`tel:${lead.phone}`} className="hover:text-primary-600">
                         {lead.phone}
                       </a>
+                      {/* G1 SLOT: a wa.me quick-reply action docks here — opens the
+                          staff member's WhatsApp with a localized prefilled greeting
+                          to this lead's phone (G1-bridge, no Cloud-API approval). */}
                     </div>
                   )}
                   {lead.email && (
