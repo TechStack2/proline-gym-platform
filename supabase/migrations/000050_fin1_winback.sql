@@ -40,10 +40,13 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF NEW.status = 'lapsed' AND COALESCE(OLD.status, '') <> 'lapsed' AND NEW.lapsed_at IS NULL THEN
+  -- OLD.status is never NULL in an UPDATE trigger; comparing enum directly (a
+  -- COALESCE(OLD.status,'') would coerce '' to the enum type and raise on every
+  -- status write — '' is not a valid enum member).
+  IF NEW.status = 'lapsed' AND OLD.status <> 'lapsed' AND NEW.lapsed_at IS NULL THEN
     NEW.lapsed_at := now();
   END IF;
-  IF NEW.status = 'cancelled' AND COALESCE(OLD.status, '') <> 'cancelled' AND NEW.cancelled_at IS NULL THEN
+  IF NEW.status = 'cancelled' AND OLD.status <> 'cancelled' AND NEW.cancelled_at IS NULL THEN
     NEW.cancelled_at := now();
   END IF;
   RETURN NEW;
@@ -61,10 +64,11 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF NEW.status = 'suspended' AND COALESCE(OLD.status, '') <> 'suspended' AND NEW.suspended_at IS NULL THEN
+  -- (see _stamp_membership_churn: enum-direct compare, no COALESCE-to-text)
+  IF NEW.status = 'suspended' AND OLD.status <> 'suspended' AND NEW.suspended_at IS NULL THEN
     NEW.suspended_at := now();
   END IF;
-  IF NEW.status = 'cancelled' AND COALESCE(OLD.status, '') <> 'cancelled' AND NEW.cancelled_at IS NULL THEN
+  IF NEW.status = 'cancelled' AND OLD.status <> 'cancelled' AND NEW.cancelled_at IS NULL THEN
     NEW.cancelled_at := now();
   END IF;
   RETURN NEW;
