@@ -6,7 +6,9 @@
  * waitlisted; reject; cancel (→ auto-promote); register a walk-in member.
  */
 import { revalidatePath } from 'next/cache'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { dispatchWhatsApp } from '@/lib/whatsapp/dispatch'
 
 type Result = { ok: true } | { ok: false; error: string }
 
@@ -26,6 +28,26 @@ export async function approveRegistration(
   })
   if (error) return { ok: false, error: error.message }
   revalidate(input.classId)
+
+  // G1 (additive, best-effort): the in-app notification fired in the RPC; when
+  // the gym's WhatsApp is active, also auto-dispatch a confirmation. A send
+  // failure NEVER affects the approval (dispatchWhatsApp never throws).
+  try {
+    const { data: reg } = await supabase
+      .from('class_registrations')
+      .select('gym_id, classes:class_id(name_ar, name_en, name_fr), students!inner(profiles:profile_id(first_name_ar, first_name_en, first_name_fr, phone, locale))')
+      .eq('id', input.regId).maybeSingle()
+    const st: any = reg && (Array.isArray((reg as any).students) ? (reg as any).students[0] : (reg as any).students)
+    const prof: any = st?.profiles ? (Array.isArray(st.profiles) ? st.profiles[0] : st.profiles) : null
+    if (reg?.gym_id && prof?.phone) {
+      const loc = (prof.locale ?? 'ar') as 'ar' | 'en' | 'fr'
+      const cls: any = (reg as any).classes ? (Array.isArray((reg as any).classes) ? (reg as any).classes[0] : (reg as any).classes) : null
+      const name = (loc === 'ar' ? prof.first_name_ar : loc === 'fr' ? prof.first_name_fr : prof.first_name_en) || prof.first_name_en || ''
+      const className = cls ? ((loc === 'ar' ? cls.name_ar : loc === 'fr' ? cls.name_fr : cls.name_en) || cls.name_en) : ''
+      const tw = await getTranslations({ locale: loc, namespace: 'whatsapp' })
+      await dispatchWhatsApp(reg.gym_id, prof.phone, 'registration_approved', tw('tmpl.regApproved', { name, class: className }))
+    }
+  } catch { /* additive — never affects the approval */ }
   return { ok: true }
 }
 

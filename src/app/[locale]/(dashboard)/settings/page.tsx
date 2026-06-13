@@ -4,6 +4,8 @@ import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { SettingsClient } from './_components/settings-client';
 import { PtPolicySettings } from './_components/pt-policy-settings';
+import { WhatsAppSettings } from './_components/whatsapp-settings';
+import { getWhatsAppStatus } from './_components/whatsapp-actions';
 import Link from 'next/link';
 
 type Props = { params: { locale: string }; searchParams?: { tab?: string } };
@@ -106,6 +108,10 @@ export default async function SettingsPage({ params, searchParams }: Props) {
           lateCancelWindowHours={gymData.pt_late_cancel_window_hours ?? 0}
         />
       )}
+
+      {/* G1: per-gym WhatsApp Cloud-API config (status read via the definer; the
+          token is write-only and never fetched to the client). */}
+      <WhatsAppSettings initial={await getWhatsAppStatus()} locale={locale} />
     </div>
   );
 }

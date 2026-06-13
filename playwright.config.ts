@@ -311,11 +311,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // ON-1 portal invites — LAST: adopts login-less profiles into auth users
-      // (its own dedicated fixtures); teardown removes the created auth users.
+      // ON-1 portal invites: adopts login-less profiles into auth users.
       name: 'on1',
       dependencies: ['setup'],
       testMatch: /on1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // G1 WhatsApp channel — LAST: flips the gym's WhatsApp config to active and
+      // records outbound rows; mutates gym config nothing later should read.
+      name: 'g1',
+      dependencies: ['setup'],
+      testMatch: /g1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

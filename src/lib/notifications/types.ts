@@ -28,6 +28,7 @@ export const NOTIFICATION_TYPES = [
   'pt_session_cancelled',
   'pt_session_no_show',
   'pt_credits_exhausted',
+  'renewal_due', // ML-1 lifecycle tick / G1 renewal reminder
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

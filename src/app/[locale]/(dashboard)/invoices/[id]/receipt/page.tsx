@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { paidUsd, balanceUsd, localizedName, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { getTranslations } from 'next-intl/server'
+import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import { PrintButton } from './print-button'
 
 export const dynamic = 'force-dynamic'
@@ -18,6 +20,7 @@ type Props = { params: { locale: string; id: string } }
 export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const isRTL = locale === 'ar'
   const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const tw = await getTranslations('whatsapp')
   const supabase = await createClient()
 
   const { data: inv } = await supabase
@@ -52,7 +55,14 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
     <div className={cn('mx-auto max-w-xl p-6', isRTL && 'rtl text-right')} data-testid="receipt">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <a href={`/${locale}/invoices/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← {t('Back', 'رجوع')}</a>
-        <PrintButton label={t('Print', 'طباعة')} />
+        <span className="flex items-center gap-2">
+          <WhatsAppShare phone={profile?.phone} testid="receipt-wa" variant="button"
+            message={tw('tmpl.receipt', { name: studentName, number: inv.invoice_number,
+              usd: Number(inv.total_usd ?? 0).toFixed(2),
+              lbp: inv.total_lbp ? ` / ${Number(inv.total_lbp).toLocaleString()} LBP` : '' })}
+            label={tw('share.sendReceipt')} />
+          <PrintButton label={t('Print', 'طباعة')} />
+        </span>
       </div>
 
       <div className="rounded-2xl border bg-white p-8 shadow-sm print:border-0 print:shadow-none">

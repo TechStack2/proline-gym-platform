@@ -17,6 +17,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { Phone, RotateCcw, PhoneOff, MessageSquarePlus, Check, UserX } from 'lucide-react'
 import { logWinbackFollowup } from './winback-actions'
 import type { WinbackRow } from '@/lib/finances/winback'
+import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 
 const OUTCOMES = ['no_answer', 'not_interested', 'thinking', 'promised_visit', 'reactivated'] as const
 type Outcome = typeof OUTCOMES[number]
@@ -54,6 +55,7 @@ function WinbackCard({
   t: ReturnType<typeof useTranslations>
   fmt: (d: string | null) => string
 }) {
+  const tw = useTranslations('whatsapp')
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [outcome, setOutcome] = useState<Outcome>('no_answer')
@@ -106,7 +108,8 @@ function WinbackCard({
               <Phone className="h-3.5 w-3.5" /> {t('call')}
             </a>
           )}
-          {/* G1: wa.me share row-action docks here. */}
+          <WhatsAppShare phone={row.phone} testid="winback-wa"
+            message={tw('tmpl.winback', { name: row.name })} label={tw('share.reachOut')} />
           <Link href={`/${locale}/students/${row.studentId}`} data-testid="winback-reactivate"
             className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
             <RotateCcw className="h-3.5 w-3.5" /> {t('reactivate')}

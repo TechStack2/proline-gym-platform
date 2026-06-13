@@ -2341,5 +2341,43 @@
       "staffInbox": "Boîte de réception : les demandes en attente.",
       "staffMoney": "Argent : factures, paiements et tableau du propriétaire."
     }
+  },
+  "whatsapp": {
+    "share": {
+      "renew": "WhatsApp",
+      "reachOut": "WhatsApp",
+      "sendReceipt": "Envoyer le reçu",
+      "reply": "Répondre",
+      "test": "WhatsApp"
+    },
+    "tmpl": {
+      "renewal": "Bonjour {name}, ici PRO LINE Gym — un petit rappel que votre abonnement est à renouveler. Répondez ici pour l'organiser. Merci ! 💪",
+      "winback": "Bonjour {name}, vous nous manquez chez PRO LINE Gym ! Revenez pour une séance — répondez ici et on s'occupe de tout.",
+      "receipt": "Bonjour {name}, votre reçu PRO LINE Gym pour la facture {number} : {usd}${lbp}. Merci !",
+      "leadReply": "Bonjour {name}, ici PRO LINE Gym au sujet de votre intérêt. Envie d'un cours d'essai gratuit ? Répondez ici ! 🥊",
+      "regApproved": "Bonjour {name}, votre inscription à {class} chez PRO LINE Gym est confirmée ! À bientôt 💪"
+    },
+    "sendReminder": "Rappeler le renouvellement",
+    "reminderSent": "Rappel envoyé"
+  },
+  "whatsappSettings": {
+    "title": "WhatsApp",
+    "explainer": "Tant que WhatsApp n'est pas actif, les rappels utilisent les boutons verts de partage (ils ouvrent votre WhatsApp). Une fois les identifiants Cloud API ajoutés, les mêmes rappels s'envoient automatiquement.",
+    "status": {
+      "not_configured": "Non configuré",
+      "pending": "En attente",
+      "active": "Actif"
+    },
+    "phoneNumberId": "ID du numéro",
+    "wabaId": "ID du compte WhatsApp Business",
+    "accessToken": "Jeton d'accès",
+    "countryCode": "Indicatif pays par défaut",
+    "tokenNote": "Le jeton d'accès est chiffré et n'est jamais réaffiché.",
+    "save": "Enregistrer",
+    "savedOk": "Enregistré",
+    "sendTest": "Envoyer un test",
+    "testSent": "Test en file ✓",
+    "testInactive": "Activez d'abord",
+    "testFailed": "Échec du test"
   }
 }

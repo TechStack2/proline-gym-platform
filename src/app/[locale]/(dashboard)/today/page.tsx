@@ -12,6 +12,7 @@ import { RenewRowButton } from '@/components/dashboard/lifecycle-buttons'
 import { membershipState } from '@/lib/lifecycle/status'
 import { parseHorizon, horizonEndDate, HORIZONS, type Horizon } from '@/lib/finances/horizon'
 import { getWinbackQueue } from '@/lib/finances/winback'
+import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import {
   UserPlus, Users, DollarSign, ClipboardList, Dumbbell, CalendarDays,
   Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent, Flame, Heart, CalendarClock,
@@ -31,6 +32,7 @@ type Props = { params: { locale: string }; searchParams: { h?: string } }
 export default async function TodayPage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('today')
+  const tw = await getTranslations('whatsapp')
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -331,6 +333,8 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
               action={
                 <span className="flex shrink-0 items-center gap-1.5">
                   <RenewRowButton membershipId={m.id} studentId={st?.id} />
+                  <WhatsAppShare phone={prof?.phone} testid="expiring-wa"
+                    message={tw('tmpl.renewal', { name: localizedName(prof, locale) })} label={tw('share.renew')} />
                   {tel(prof?.phone, 'expiring-call')}
                 </span>
               }>
@@ -360,6 +364,8 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
                     className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
                     <DollarSign className="h-3.5 w-3.5" /> {t('cards.recordPayment')}
                   </Link>
+                  <WhatsAppShare phone={prof2?.phone} testid="chase-wa"
+                    message={tw('tmpl.renewal', { name: localizedName(prof2, locale) })} label={tw('share.renew')} />
                   {tel(prof2?.phone, 'chase-call')}
                 </span>
               }>

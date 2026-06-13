@@ -38,6 +38,11 @@ jobs:
       # ON-1: the invite/onboarding server actions call the GoTrue admin API from
       # the webServer (next start). Server-only; never NEXT_PUBLIC_.
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # G1: WhatsApp dispatch runs in RECORD mode under CI (no external Meta call;
+      # the outbound queue is written so routing is verifiable). The token enc key
+      # is a CI test value (record mode sends nothing); prod uses a real secret.
+      WHATSAPP_PROVIDER_MODE: record
+      WHATSAPP_TOKEN_ENC_KEY: 'ci-test-enc-key-not-a-secret'
       PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
       # Run-scoped login password (matches the seed default; a test value, not a secret).
       E2E_PASSWORD: 'E2eTestPass!23'

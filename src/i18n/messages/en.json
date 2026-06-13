@@ -2341,5 +2341,43 @@
       "staffInbox": "Inbox: requests waiting for approval.",
       "staffMoney": "Money: invoices, payments and the owner dashboard."
     }
+  },
+  "whatsapp": {
+    "share": {
+      "renew": "WhatsApp",
+      "reachOut": "WhatsApp",
+      "sendReceipt": "Send receipt",
+      "reply": "Reply",
+      "test": "WhatsApp"
+    },
+    "tmpl": {
+      "renewal": "Hi {name}, this is PRO LINE Gym — a friendly reminder that your membership is due for renewal. Reply here to arrange it. Thank you! 💪",
+      "winback": "Hi {name}, we miss you at PRO LINE Gym! Come back for a session — reply here and we will sort you out.",
+      "receipt": "Hi {name}, your PRO LINE Gym receipt for invoice {number}: ${usd}{lbp}. Thank you!",
+      "leadReply": "Hi {name}, this is PRO LINE Gym replying about your interest. Want to book a free trial? Just reply here! 🥊",
+      "regApproved": "Hi {name}, your registration for {class} at PRO LINE Gym is confirmed! See you in class 💪"
+    },
+    "sendReminder": "Remind to renew",
+    "reminderSent": "Reminder sent"
+  },
+  "whatsappSettings": {
+    "title": "WhatsApp",
+    "explainer": "Until WhatsApp is active, reminders use the green share-to-WhatsApp buttons (they open your own WhatsApp). Once you add Cloud-API credentials, the same reminders auto-send.",
+    "status": {
+      "not_configured": "Not configured",
+      "pending": "Pending",
+      "active": "Active"
+    },
+    "phoneNumberId": "Phone number ID",
+    "wabaId": "WhatsApp Business account ID",
+    "accessToken": "Access token",
+    "countryCode": "Default country code",
+    "tokenNote": "The access token is encrypted and never shown again.",
+    "save": "Save",
+    "savedOk": "Saved",
+    "sendTest": "Send test",
+    "testSent": "Test queued ✓",
+    "testInactive": "Activate first",
+    "testFailed": "Test failed"
   }
 }

@@ -21,6 +21,7 @@ import {
   renewMembershipNow, reinstateMembership,
 } from '@/lib/lifecycle/actions'
 import { RefreshCw, Snowflake, Sun, ArrowUpDown, RotateCcw, Loader2, X } from 'lucide-react'
+import { RenewalReminderButton } from '@/components/shared/renewal-reminder-button'
 
 export type MembershipCardData = {
   id: string
@@ -130,6 +131,8 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
           onClick={() => setPlanOpen(true)} className="h-7 text-xs">
           <ArrowUpDown className="mr-1 h-3 w-3" /> {t('changePlan')}
         </Button>
+        {/* G1: send the renewal reminder (in-app notif + WhatsApp when active) */}
+        <RenewalReminderButton membershipId={data.id} locale={locale} />
       </div>
 
       {freezeOpen && (

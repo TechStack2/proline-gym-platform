@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { WhatsAppShare } from '@/components/shared/whatsapp-share';
 import {
   Phone, Mail, Calendar, CalendarClock, Search, Plus, KeyRound, CheckCircle2, XCircle, X, UserCheck,
 } from 'lucide-react';
@@ -59,6 +60,7 @@ export function LeadsClient({
   sourceIcons,
 }: Props) {
   const t = useTranslations('leads');
+  const tw = useTranslations('whatsapp');
   const router = useRouter();
   const supabase = createClient();
   const isRTL = locale === 'ar';
@@ -351,9 +353,9 @@ export function LeadsClient({
                       <a href={`tel:${lead.phone}`} className="hover:text-primary-600">
                         {lead.phone}
                       </a>
-                      {/* G1 SLOT: a wa.me quick-reply action docks here — opens the
-                          staff member's WhatsApp with a localized prefilled greeting
-                          to this lead's phone (G1-bridge, no Cloud-API approval). */}
+                      <WhatsAppShare phone={lead.phone} testid="lead-wa"
+                        message={tw('tmpl.leadReply', { name: `${lead.first_name ?? ''}`.trim() || t('guardian_default') })}
+                        label={tw('share.reply')} />
                     </div>
                   )}
                   {lead.email && (
