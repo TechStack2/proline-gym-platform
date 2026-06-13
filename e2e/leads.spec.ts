@@ -58,14 +58,16 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     const resp = await anon.goto(`/en?gym=${encodeURIComponent(gymSlug())}`);
     expect(resp?.status() ?? 0, 'landing page should load').toBeLessThan(400);
 
-    const form = anon.locator('section#trial');
+    // GRW-1: the trial CTA is the new capture form — name + phone + interest
+    // CHIPS (the program <select> is gone) + honeypot + ?c= → submit_trial_inquiry.
     await anon.locator('#trial-name').fill(WEB_NAME);
     await anon.locator('#trial-phone').fill(`+96170${RUN}`);
-    await anon.locator('#trial-program').selectOption({ label: 'Muay Thai' }).catch(() => {});
-    await form.locator('button[type="submit"]').click();
+    const chip = anon.locator('[data-testid="trial-interest-chip"]').first();
+    if (await chip.count()) await chip.click(); // optional interest
+    await anon.getByTestId('trial-submit').click();
 
     await expect(
-      anon.getByText(/Got it!/i),
+      anon.getByTestId('trial-success'),
       'public submit should reach the success state',
     ).toBeVisible({ timeout: 15_000 });
     await shot(anon, testInfo, 'leads-1-web-submit');

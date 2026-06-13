@@ -23,6 +23,7 @@ export interface Lead {
   interested_discipline_id?: string;
   notes?: string;
   status: LeadStatus;
+  campaign_id?: string; // GRW-1 attribution
   assigned_to?: string;
   converted_student_id?: string;
   converted_at?: string;

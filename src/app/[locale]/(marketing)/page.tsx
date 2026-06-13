@@ -1,4 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
+import { createClient } from '@/lib/supabase/server';
+import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { AffiliationsSection } from '@/components/marketing/AffiliationsSection';
 import { DisciplinesSection } from '@/components/marketing/DisciplinesSection';
@@ -31,6 +33,19 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   setRequestLocale(locale); // pages render independently of layouts — both need it
   const gymSlug = searchParams?.gym;
 
+  // GRW-1: gym's active disciplines (anon-readable, 000035) → trial-capture
+  // interest chips. One fetch here keeps the chips id-accurate for the RPC.
+  const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
+  const supabase = await createClient();
+  const { data: discRows } = gym
+    ? await supabase.from('disciplines').select('id, name_ar, name_en, name_fr')
+        .eq('gym_id', gym.id).eq('is_active', true).order('sort_order')
+    : { data: null };
+  const captureDisciplines = (discRows ?? []).map((d: any) => ({
+    id: d.id,
+    name: (locale === 'ar' ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en,
+  }));
+
   return (
     <>
       <HeroSection locale={locale} />
@@ -44,7 +59,7 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
       <PtSection locale={locale} gymSlug={gymSlug} />
       <CampsSection locale={locale} gymSlug={gymSlug} />
       <FacilitySection locale={locale} />
-      <TrialCTASection locale={locale} gymSlug={gymSlug} />
+      <TrialCTASection locale={locale} gymSlug={gymSlug} disciplines={captureDisciplines} />
     </>
   );
 }

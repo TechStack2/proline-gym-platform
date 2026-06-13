@@ -936,7 +936,9 @@
       "review": "Révision",
       "nextAction": "Premier contact dû le {date}"
     },
-    "guardian_default": "Tuteur"
+    "guardian_default": "Tuteur",
+    "freshInquiry": "Nouveau",
+    "campaignsLink": "Campagnes"
   },
   "camps": {
     "title": "Camps",
@@ -2246,5 +2248,49 @@
       "suspended": "Suspendu"
     },
     "toWinback": "Ouvrir la file de reconquête →"
+  },
+  "growth": {
+    "leadsThisMonth": "Prospects ce mois",
+    "leads": "Prospects",
+    "trials": "Essais",
+    "converted": "Convertis",
+    "conversionRate": "Conversion",
+    "bySource": "Par source",
+    "byCampaign": "Par campagne",
+    "noData": "Aucun prospect sur cette période."
+  },
+  "campaigns": {
+    "title": "Campagnes",
+    "subtitle": "Liens suivis et QR codes pour vos pubs — voyez ce que chacune a produit.",
+    "add": "Nouvelle campagne",
+    "addTitle": "Nouvelle campagne",
+    "create": "Créer",
+    "empty": "Aucune campagne — créez-en une pour un lien suivi + QR.",
+    "archived": "Archivées",
+    "archive": "Archiver",
+    "restore": "Restaurer",
+    "stepName": "Nom et source",
+    "stepReview": "Révision",
+    "nameLabel": "Nom de la campagne",
+    "namePh": "ex. Promo IG été",
+    "sourceLabel": "Source",
+    "codeHint": "Un lien suivi + QR sont générés à l’enregistrement.",
+    "trackedLink": "Lien suivi",
+    "copy": "Copier",
+    "copied": "Copié",
+    "qrAlt": "QR code de campagne",
+    "statLeads": "Prospects",
+    "statTrials": "Essais",
+    "statConverted": "Convertis",
+    "source": {
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "whatsapp": "WhatsApp",
+      "referral": "Parrainage",
+      "website": "Site web",
+      "other": "Autre",
+      "walk_in": "Sur place",
+      "phone": "Téléphone"
+    }
   }
 }

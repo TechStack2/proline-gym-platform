@@ -936,7 +936,9 @@
       "review": "Review",
       "nextAction": "First contact due {date}"
     },
-    "guardian_default": "Guardian"
+    "guardian_default": "Guardian",
+    "freshInquiry": "New",
+    "campaignsLink": "Campaigns"
   },
   "camps": {
     "title": "Camps",
@@ -2246,5 +2248,49 @@
       "suspended": "Suspended"
     },
     "toWinback": "Open the win-back queue →"
+  },
+  "growth": {
+    "leadsThisMonth": "Leads this month",
+    "leads": "Leads",
+    "trials": "Trials",
+    "converted": "Converted",
+    "conversionRate": "Conversion",
+    "bySource": "By source",
+    "byCampaign": "By campaign",
+    "noData": "No leads in this period yet."
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "subtitle": "Tracked links & QR codes for your ads — see what each one produced.",
+    "add": "New campaign",
+    "addTitle": "New campaign",
+    "create": "Create",
+    "empty": "No campaigns yet — create one to get a tracked link + QR.",
+    "archived": "Archived",
+    "archive": "Archive",
+    "restore": "Restore",
+    "stepName": "Name & source",
+    "stepReview": "Review",
+    "nameLabel": "Campaign name",
+    "namePh": "e.g. Summer IG promo",
+    "sourceLabel": "Source",
+    "codeHint": "A tracked link + QR are generated on save.",
+    "trackedLink": "Tracked link",
+    "copy": "Copy",
+    "copied": "Copied",
+    "qrAlt": "Campaign QR code",
+    "statLeads": "Leads",
+    "statTrials": "Trials",
+    "statConverted": "Converted",
+    "source": {
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "whatsapp": "WhatsApp",
+      "referral": "Referral",
+      "website": "Website",
+      "other": "Other",
+      "walk_in": "Walk-in",
+      "phone": "Phone"
+    }
   }
 }
