@@ -24,7 +24,11 @@ async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
 const money = (s: string) => Number((s.match(/[\d.]+/)?.[0]) ?? '0')
 
 async function openFile(page: Page, name: string) {
-  await page.goto(`/en/students?search=${encodeURIComponent(name)}`)
+  // The students search matches a single field (first/last/phone), not the
+  // concatenated full name — search by the first token, filter the card by the
+  // rendered full name.
+  const q = name.split(' ')[0]
+  await page.goto(`/en/students?search=${encodeURIComponent(q)}`)
   await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click()
   await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 })
 }
