@@ -1,5 +1,6 @@
 'use client';
 
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -103,7 +104,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
     <div data-testid="pt-session-row" data-session-id={s.session_id} data-assignment-id={s.assignment_id ?? ''} data-status={s.status} data-remaining={s.sessions_remaining ?? ''} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-600">
-          {new Date(s.scheduled_at).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}
+          {new Date(s.scheduled_at).toLocaleDateString(dateLocale(locale))}
           {s.sessions_remaining != null ? ` · ${t('sessions_remaining', { remaining: s.sessions_remaining, total: s.sessions_total ?? 0 })}` : ''}
         </p>
         <span className={cn('shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium', STATUS_STYLE[s.status])}>

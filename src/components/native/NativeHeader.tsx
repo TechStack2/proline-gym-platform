@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -8,19 +9,29 @@ export type NativeHeaderProps = {
   title: string;
   locale: string;
   role?: string;
+  /** AX-1 per-shell identity — accent bar + labeled badge (per-ROLE platform tokens). */
+  shell?: 'staff' | 'coach' | 'portal';
   rightActions?: React.ReactNode;
   onBack?: () => void;
   variant?: 'large' | 'compact';
 };
 
-const roleLabels: Record<string, { en: string; ar: string }> = {
-  owner: { en: 'Owner', ar: 'مالك' },
-  head_coach: { en: 'Head Coach', ar: 'مدرب رئيسي' },
-  coach: { en: 'Coach', ar: 'مدرب' },
-  receptionist: { en: 'Reception', ar: 'استقبال' },
-  student: { en: 'Member', ar: 'عضو' },
-  parent: { en: 'Parent', ar: 'ولي أمر' },
-  external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي' },
+// design-system.md "Per-shell accents": staff=brand red, coach=gold-on-black,
+// portal=cool teal. Tenant-clean: keyed by ROLE-shell, never by gym.
+const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { bar: string; badge: string; labelKey: string }> = {
+  staff: { bar: '#cd1419', badge: 'bg-[#cd1419] text-white', labelKey: 'shellStaff' },
+  coach: { bar: '#d4af37', badge: 'bg-[#111111] text-[#d4af37]', labelKey: 'shellCoach' },
+  portal: { bar: '#0e7490', badge: 'bg-[#0e7490] text-white', labelKey: 'shellMember' },
+};
+
+const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
+  owner: { en: 'Owner', ar: 'مالك', fr: 'Propriétaire' },
+  head_coach: { en: 'Head Coach', ar: 'مدرب رئيسي', fr: 'Entraîneur en chef' },
+  coach: { en: 'Coach', ar: 'مدرب', fr: 'Entraîneur' },
+  receptionist: { en: 'Reception', ar: 'استقبال', fr: 'Réception' },
+  student: { en: 'Member', ar: 'عضو', fr: 'Membre' },
+  parent: { en: 'Parent', ar: 'ولي أمر', fr: 'Parent' },
+  external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي', fr: 'Entraîneur ext.' },
 };
 
 const roleBadgeColors: Record<string, string> = {
@@ -37,10 +48,12 @@ export function NativeHeader({
   title,
   locale,
   role,
+  shell,
   rightActions,
   onBack,
   variant = 'large',
 }: NativeHeaderProps) {
+  const tCommon = useTranslations('common');
   const isRTL = locale === 'ar';
   const [isCollapsed, setIsCollapsed] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -70,10 +83,9 @@ export function NativeHeader({
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const roleLabel = role
-    ? isRTL
-      ? roleLabels[role]?.ar ?? role
-      : roleLabels[role]?.en ?? role
+    ? (roleLabels[role]?.[locale as 'en' | 'ar' | 'fr'] ?? roleLabels[role]?.en ?? role)
     : null;
+  const shellStyle = shell ? SHELL_STYLE[shell] : null;
   const roleDotColor = role ? roleBadgeColors[role] ?? 'bg-gray-400' : null;
 
   return (
@@ -86,6 +98,8 @@ export function NativeHeader({
       )}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
+      {/* AX-1 shell accent bar */}
+      {shellStyle && <div className="h-1 w-full" style={{ backgroundColor: shellStyle.bar }} aria-hidden />}
       {/* Top row: back button + right actions + collapsed title */}
       <div className="flex items-center justify-between px-4 h-12">
         <div className="flex items-center gap-2 min-w-0">
@@ -98,7 +112,7 @@ export function NativeHeader({
                 'rounded-full text-gray-600 hover:bg-gray-100',
                 'transition-colors'
               )}
-              aria-label={isRTL ? 'رجوع' : 'Back'}
+              aria-label={tCommon('back')}
             >
               <BackIcon className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -121,26 +135,29 @@ export function NativeHeader({
         <div className="flex items-center gap-1">{rightActions}</div>
       </div>
 
-      {/* Role badge row — shown below top bar */}
-      {role && (
-        <div className="px-4 pb-2">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5',
-              'px-2.5 py-1 rounded-full',
-              'text-xs font-medium text-white',
-              'shadow-sm'
-            )}
-            style={{ backgroundColor: roleDotColor ? undefined : '#6b7280' }}
-          >
-            {roleDotColor && (
-              <span
-                className={cn('h-2 w-2 rounded-full bg-white/60')}
-                aria-hidden="true"
-              />
-            )}
-            <span className="leading-none">{roleLabel}</span>
-          </span>
+      {/* Shell + role badge row */}
+      {(shellStyle || role) && (
+        <div className="flex items-center gap-1.5 px-4 pb-2">
+          {shellStyle && (
+            <span
+              data-testid="shell-badge"
+              data-shell={shell}
+              className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-2xs font-bold uppercase tracking-wider shadow-sm', shellStyle.badge)}
+            >
+              {tCommon(shellStyle.labelKey as Parameters<typeof tCommon>[0])}
+            </span>
+          )}
+          {role && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow-sm',
+                roleDotColor ?? 'bg-gray-400', // pre-AX-1 this class was computed but never APPLIED
+              )}
+            >
+              <span className="h-2 w-2 rounded-full bg-white/60" aria-hidden="true" />
+              <span className="leading-none">{roleLabel}</span>
+            </span>
+          )}
         </div>
       )}
 

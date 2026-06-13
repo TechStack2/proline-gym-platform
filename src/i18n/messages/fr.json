@@ -25,7 +25,12 @@
     "loginError": "Une erreur s'est produite lors de la connexion",
     "backToLogin": "Retour à la connexion",
     "emailLabel": "Adresse Email",
-    "passwordLabel": "Mot de Passe"
+    "passwordLabel": "Mot de Passe",
+    "errEmailPassword": "Veuillez saisir votre email et votre mot de passe",
+    "backToSite": "Retour au site",
+    "signInPlatform": "Connexion à la plateforme",
+    "demoAccounts": "Comptes de démonstration",
+    "demoPassword": "Mot de passe pour tous les comptes :"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -129,7 +134,10 @@
     "present": "Présent",
     "absent": "Absent",
     "late": "En retard",
-    "excused": "Excusé"
+    "excused": "Excusé",
+    "shellStaff": "Personnel",
+    "shellCoach": "Coach",
+    "shellMember": "Membre"
   },
   "language": {
     "switch": "Changer de langue",
@@ -707,6 +715,80 @@
     "gallery": {
       "title": "Dans la Salle",
       "subtitle": "Là où s'écrit la saga"
+    },
+    "hero": {
+      "tagline": "Commencez votre propre saga",
+      "headline": "Entraînez-vous comme le héros",
+      "subheadline": "Muay Thai • Boxe • Fitness • Zumba • Entraînement femmes • Enfants",
+      "byline": "par les frères Fakih",
+      "ctaTrial": "Commencez votre essai gratuit",
+      "ctaWhatsapp": "WhatsApp",
+      "followers": "abonnés"
+    },
+    "disciplinesSec": {
+      "title": "Nos programmes",
+      "subtitle": "Un entraînement de classe mondiale dans 6 disciplines — pour tous les âges et niveaux",
+      "empty": "Les programmes seront publiés bientôt."
+    },
+    "pricing": {
+      "title": "Plans d'adhésion",
+      "subtitle": "Choisissez le plan qui correspond à votre parcours — commencez à tout moment",
+      "perYr": "an",
+      "per3mo": "3 mois",
+      "perMo": "mois",
+      "bestValue": "Meilleure valeur",
+      "getStarted": "Commencer",
+      "empty": "Les plans d'adhésion arrivent bientôt.",
+      "classRegTitle": "Inscription mensuelle aux cours",
+      "classRegSubtitle": "Inscrivez-vous à un programme récurrent pour un tarif mensuel — sans adhésion complète"
+    },
+    "facility": {
+      "addr": "Sky Business Center, Baabda",
+      "country": "Liban",
+      "title": "Rendez-nous visite",
+      "subtitle": "Entraînez-vous dans notre salle moderne au Sky Business Center de Baabda. Appelez-nous ou écrivez-nous sur WhatsApp pour réserver.",
+      "callUs": "Appelez-nous",
+      "email": "Email",
+      "igStats": "2 760 abonnés • 177 publications"
+    },
+    "why": {
+      "title": "Pourquoi PRO LINE ?",
+      "subtitle": "Plus qu'une salle de sport — une destination pour les combattants",
+      "coachesTitle": "Coachs experts",
+      "coachesDesc": "Entraînez-vous avec des instructeurs certifiés ayant une expérience des compétitions internationales. Les frères Fakih apportent des années d'expertise professionnelle.",
+      "facilityTitle": "Salle moderne",
+      "facilityDesc": "Entraînez-vous dans une salle entièrement équipée au Sky Business Center de Baabda. Tapis, sacs et équipements professionnels pour chaque discipline.",
+      "communityTitle": "Communauté soudée",
+      "communityDesc": "Rejoignez plus de 2 760 abonnés et une communauté florissante de combattants, de passionnés de fitness et de familles. Adultes, enfants, femmes — chacun a sa place ici."
+    },
+    "camps": {
+      "title": "Camps d'été",
+      "subtitle": "Des journées d'entraînement et de jeu — places limitées",
+      "full": "Complet",
+      "ages": "Âges {min}–{max}",
+      "spotsLeft": "{n} places restantes",
+      "cta": "Inscrivez votre intérêt"
+    },
+    "pt": {
+      "title": "Coaching privé",
+      "subtitle": "Séances privées avec nos coachs — des forfaits pour chaque niveau",
+      "sessions": "{n} séances",
+      "valid": "valable {n} j",
+      "cta": "Séances privées disponibles — réservez"
+    },
+    "trialCta": {
+      "fillAll": "Veuillez remplir tous les champs",
+      "gotIt": "Bien reçu !",
+      "whatsapp24": "Nous vous contacterons sur WhatsApp sous 24 h !",
+      "title": "Commencez votre essai gratuit",
+      "subtitle": "Essayez n'importe quel programme sans engagement. Remplissez le formulaire et nous vous contacterons sur WhatsApp pour planifier votre première séance.",
+      "nameLabel": "Votre nom",
+      "namePh": "Entrez votre nom",
+      "phoneLabel": "Numéro de téléphone",
+      "programLabel": "Programme souhaité",
+      "programPh": "Choisissez un programme",
+      "send": "Envoyer",
+      "noSpam": "Nous répondons via WhatsApp. Pas de spam."
     }
   },
   "belts": {
@@ -853,7 +935,8 @@
       "interest": "Intérêt",
       "review": "Révision",
       "nextAction": "Premier contact dû le {date}"
-    }
+    },
+    "guardian_default": "Tuteur"
   },
   "camps": {
     "title": "Camps",
@@ -1113,7 +1196,8 @@
       "saveNotActive": "La sauvegarde n'est pas activée dans la version MVP",
       "enterArabicName": "Entrez le nom arabe",
       "enterEnglishName": "Entrez le nom anglais",
-      "enterFrenchName": "Entrez le nom français"
+      "enterFrenchName": "Entrez le nom français",
+      "unnamed": "PRO LINE Gym"
     },
     "exchange": {
       "currentRate": "Taux de change actuel",
@@ -2010,5 +2094,90 @@
     "noPlan": "Sans plan",
     "review": "Révision",
     "minor": "Mineur"
+  },
+  "portalHome": {
+    "today": "Aujourd'hui",
+    "welcome": "Bienvenue",
+    "summary": "Voici le résumé de votre compte",
+    "me": "Moi",
+    "classes": "Cours",
+    "membership": "Adhésion",
+    "active": "Active",
+    "expired": "Expirée",
+    "belt": "Ceinture",
+    "balance": "Solde",
+    "none": "Aucun",
+    "myStatus": "Mon statut",
+    "noMembership": "Aucune adhésion",
+    "ptRemaining": "Séances PT restantes",
+    "nextClass": "Prochain cours",
+    "nextPt": "Prochaine séance PT",
+    "schedule": "Horaire",
+    "billing": "Factures",
+    "currentMembership": "Adhésion actuelle",
+    "expires": "Expire le",
+    "currentBelt": "Ceinture actuelle",
+    "gymName": "PRO LINE Gym",
+    "recentAttendance": "Présences récentes",
+    "noAttendance": "Aucune présence enregistrée",
+    "att": {
+      "present": "Présent",
+      "absent": "Absent",
+      "late": "En retard",
+      "excused": "Excusé"
+    },
+    "banner": {
+      "frozen": "Votre adhésion est actuellement gelée",
+      "expiring": "Votre adhésion expire bientôt — renouvelez à la réception",
+      "lapsed": "Votre adhésion est terminée — renouvelez à la réception"
+    }
+  },
+  "portalBilling": {
+    "household": "Factures du foyer",
+    "outstanding": "Total dû",
+    "payAtDesk": "Paiement à la réception : espèces (USD/LBP) · OMT · Whish",
+    "noInvoices": "Aucune facture",
+    "due": "dû",
+    "membership": "Adhésion",
+    "expires": "Expire le",
+    "active": "Active",
+    "invoices": "Factures",
+    "receipt": "Reçu",
+    "balance": "Solde",
+    "paymentHistory": "Historique des paiements",
+    "noPayments": "Aucun paiement",
+    "st": {
+      "paid": "Payée",
+      "pending": "En attente",
+      "overdue": "En retard",
+      "cancelled": "Annulée",
+      "refunded": "Remboursée",
+      "partial": "Partielle"
+    }
+  },
+  "portalProfile": {
+    "member": "Membre",
+    "currentBelt": "Ceinture actuelle",
+    "membership": "Adhésion",
+    "memberDetails": "Détails du membre",
+    "joined": "Inscrit le",
+    "emergency": "Contact d'urgence",
+    "notSet": "Non défini",
+    "medical": "Notes médicales",
+    "guardians": "Tuteurs"
+  },
+  "portalSchedule": {
+    "title": "Horaire des cours",
+    "empty": "Vous n'êtes inscrit à aucun cours",
+    "emptyHint": "Contactez la réception pour vous inscrire",
+    "coach": "Entraîneur"
+  },
+  "portalClasses": {
+    "title": "Cours",
+    "subtitle": "Inscrivez-vous à un cours récurrent pour un tarif mensuel"
+  },
+  "invoiceNew": {
+    "title": "Nouvelle facture",
+    "subtitle": "Émettez une facture bi-devise via le service canonique."
   }
 }

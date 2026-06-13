@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
@@ -14,6 +15,7 @@ type Props = { params: { locale: string }; searchParams?: { kid?: string } }
  * #n) per class. Attendance stays B1 (portal/schedule). Arabic-RTL.
  */
 export default async function PortalClassesPage({ params: { locale }, searchParams }: Props) {
+  const tt = await getTranslations('portalClasses')
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -79,10 +81,10 @@ export default async function PortalClassesPage({ params: { locale }, searchPara
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       <div>
         <h1 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic text-right')}>
-          {isRTL ? 'الحصص' : 'Classes'}
+          {tt('title')}
         </h1>
         <p className={cn('text-sm text-gray-500 mt-0.5', isRTL && 'text-right')}>
-          {isRTL ? 'سجّل في حصة متكررة برسوم شهرية' : 'Register for a recurring class for a monthly fee'}
+          {tt('subtitle')}
         </p>
       </div>
       {kid && (

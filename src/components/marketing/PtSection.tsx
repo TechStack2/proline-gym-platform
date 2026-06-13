@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Dumbbell, Clock } from 'lucide-react';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
@@ -19,6 +20,7 @@ function localized(row: any, base: string, locale: string): string {
  * form (23R entry). Renders nothing when the gym publishes no types.
  */
 export async function PtSection({ locale, gymSlug }: PtSectionProps) {
+  const t = await getTranslations({ locale, namespace: 'landing.pt' });
   const isRTL = locale === 'ar';
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
@@ -40,14 +42,10 @@ export async function PtSection({ locale, gymSlug }: PtSectionProps) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className={cn('text-3xl sm:text-4xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
-            {isRTL ? 'تدريب خاص' : locale === 'fr' ? 'Coaching privé' : 'Personal Training'}
+            {t('title')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-            {isRTL
-              ? 'جلسات خاصة مع مدربينا — باقات لكل مستوى'
-              : locale === 'fr'
-                ? 'Séances privées avec nos coachs — des forfaits pour chaque niveau'
-                : 'Private sessions with our coaches — packages for every level'}
+            {t('subtitle')}
           </p>
         </div>
 
@@ -65,12 +63,12 @@ export async function PtSection({ locale, gymSlug }: PtSectionProps) {
                 <span className="text-3xl font-bold text-secondary-900">${Number(p.price_usd).toFixed(0)}</span>
               </p>
               <p className="mt-1 text-sm text-gray-500">
-                {p.session_count} {isRTL ? 'جلسات' : locale === 'fr' ? 'séances' : 'sessions'}
+                {t('sessions', { n: p.session_count })}
               </p>
               {p.validity_days ? (
                 <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400">
                   <Clock className="h-3 w-3" />
-                  {isRTL ? `صالحة ${p.validity_days} يوماً` : locale === 'fr' ? `valable ${p.validity_days} j` : `valid ${p.validity_days} days`}
+                  {t('valid', { n: p.validity_days })}
                 </p>
               ) : null}
             </div>
@@ -81,7 +79,7 @@ export async function PtSection({ locale, gymSlug }: PtSectionProps) {
           <a href="#trial" data-testid="landing-pt-cta"
             className="inline-flex items-center gap-2 rounded-xl bg-[#cd1419] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#a81014]">
             <Dumbbell className="h-4 w-4" />
-            {isRTL ? 'جلسات خاصة متاحة — احجز موعدك' : locale === 'fr' ? 'Séances privées disponibles — réservez' : 'Private sessions available — book yours'}
+            {t('cta')}
           </a>
         </div>
       </div>

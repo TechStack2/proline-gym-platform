@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
 import { balanceUsd } from '@/lib/billing/reconcile'
@@ -7,6 +9,7 @@ import { balanceUsd } from '@/lib/billing/reconcile'
 type Props = { params: { locale: string } }
 
 export default async function PortalBillingPage({ params: { locale } }: Props) {
+  const t = await getTranslations({ locale, namespace: 'portalBilling' })
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -90,8 +93,8 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
 
   const statusIcons: Record<string,any> = { paid: CheckCircle, pending: Clock, overdue: AlertCircle, cancelled: AlertCircle, refunded: DollarSign, partial: Clock }
   const statusColors: Record<string,string> = { paid: 'bg-green-100 text-green-700', pending: 'bg-yellow-100 text-yellow-700', overdue: 'bg-red-100 text-red-700', cancelled: 'bg-gray-100 text-gray-500', refunded: 'bg-blue-100 text-blue-700', partial: 'bg-orange-100 text-orange-700' }
-  const statusLabels: Record<string,string> = { paid: isRTL?'مدفوع':'Paid', pending: isRTL?'معلق':'Pending', overdue: isRTL?'متأخر':'Overdue', cancelled: isRTL?'ملغي':'Cancelled', refunded: isRTL?'مسترجع':'Refunded', partial: isRTL?'جزئي':'Partial' }
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')
+  const statusLabels: Record<string,string> = { paid: t('st.paid'), pending: t('st.pending'), overdue: t('st.overdue'), cancelled: t('st.cancelled'), refunded: t('st.refunded'), partial: t('st.partial') }
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
 
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
@@ -99,16 +102,16 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
         <div className="space-y-3" data-testid="household-billing">
           <div className="rounded-2xl bg-white p-4 shadow-sm">
             <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-              {isRTL ? 'فواتير العائلة' : 'Household billing'}
+              {t('household')}
             </h3>
             <p className="mt-2 flex items-baseline gap-2">
-              <span className="text-xs text-gray-500">{isRTL ? 'الإجمالي المستحق' : 'Outstanding total'}</span>
+              <span className="text-xs text-gray-500">{t('outstanding')}</span>
               <span data-testid="household-outstanding" className={cn('text-2xl font-bold', household.outstanding > 0 ? 'text-red-600' : 'text-green-600')}>
                 ${household.outstanding.toFixed(2)}
               </span>
             </p>
             <p className="mt-1 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500" data-testid="pay-at-desk-note">
-              {isRTL ? 'الدفع في الاستقبال: نقداً (دولار/ليرة) · OMT · Whish' : 'Pay at the front desk: cash (USD/LBP) · OMT · Whish'}
+              {t('payAtDesk')}
             </p>
           </div>
           {household.kids.map((k) => {
@@ -117,13 +120,13 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
               <div key={k.id} className="rounded-2xl bg-white p-4 shadow-sm" data-testid="household-kid-group" data-kid-id={k.id}>
                 <h4 className={cn('mb-2 text-sm font-semibold text-gray-800', isRTL && 'font-arabic')}>{k.name}</h4>
                 {rows.length === 0 ? (
-                  <p className="py-2 text-center text-xs text-gray-400">{isRTL ? 'لا فواتير' : 'No invoices'}</p>
+                  <p className="py-2 text-center text-xs text-gray-400">{t('noInvoices')}</p>
                 ) : (
                   <ul className="space-y-1.5">
                     {rows.map((inv: any) => (
                       <li key={inv.id} className="flex items-center justify-between text-xs" data-testid="household-invoice-row" data-status={inv.status}>
                         <span className="font-mono text-gray-600">{inv.invoice_number}</span>
-                        <span className="text-gray-500">${Number(inv.total_usd).toFixed(2)}{inv.balance > 0 ? ` · ${isRTL ? 'متبقٍ' : 'due'} $${inv.balance.toFixed(2)}` : ''}</span>
+                        <span className="text-gray-500">${Number(inv.total_usd).toFixed(2)}{inv.balance > 0 ? ` · ${t('due')} $${inv.balance.toFixed(2)}` : ''}</span>
                         <span className={cn('rounded-full px-2 py-0.5 font-medium', statusColors[inv.status] || 'bg-gray-100 text-gray-500')}>{statusLabels[inv.status] || inv.status}</span>
                       </li>
                     ))}
@@ -136,13 +139,13 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
       )}
       {membership && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="font-semibold text-sm text-gray-900 mb-3">{isRTL ? 'العضوية' : 'Membership'}</h3>
+          <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('membership')}</h3>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-700">{membershipNameVal}</p>
-              <p className="text-xs text-gray-500">{isRTL?'تنتهي في':'Expires'}: {fmtDate(membership.end_date)}</p>
+              <p className="text-xs text-gray-500">{t('expires')}: {fmtDate(membership.end_date)}</p>
             </div>
-            <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">{isRTL?'نشطة':'Active'}</span>
+            <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">{t('active')}</span>
           </div>
         </div>
       )}
@@ -150,7 +153,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
       {student && (
       <>
       <div>
-        <h3 className="font-semibold text-sm text-gray-900 mb-3">{isRTL ? 'الفواتير' : 'Invoices'}</h3>
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('invoices')}</h3>
         {invoices && invoices.length > 0 ? (
           <div className="space-y-2">
             {invoices.map((inv: any) => {
@@ -168,7 +171,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                       <p className="text-xs text-gray-500">{fmtDate(inv.created_at)}</p>
                       <Link href={`/${locale}/invoices/${inv.id}/receipt`} data-testid="portal-receipt-link"
                         className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#cd1419] hover:underline">
-                        <Printer className="h-3 w-3" /> {isRTL ? 'الإيصال' : 'Receipt'}
+                        <Printer className="h-3 w-3" /> {t('receipt')}
                       </Link>
                     </div>
                   </div>
@@ -176,7 +179,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                     <p className="font-bold text-gray-900">${inv.total_usd?.toFixed(2)}</p>
                     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[inv.status])} data-testid="portal-invoice-status">{statusLabels[inv.status]}</span>
                     <p className="mt-0.5 text-xs" data-testid="portal-invoice-balance">
-                      <span className={bal > 0 ? 'text-red-600' : 'text-green-600'}>{isRTL ? 'الرصيد' : 'Balance'}: ${bal.toFixed(2)}</span>
+                      <span className={bal > 0 ? 'text-red-600' : 'text-green-600'}>{t('balance')}: ${bal.toFixed(2)}</span>
                     </p>
                   </div>
                 </div>
@@ -186,13 +189,13 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
         ) : (
           <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
             <FileText className="mx-auto h-10 w-10 text-gray-300 mb-2" />
-            <p className="text-sm text-gray-400">{isRTL?'لا توجد فواتير':'No invoices'}</p>
+            <p className="text-sm text-gray-400">{t('noInvoices')}</p>
           </div>
         )}
       </div>
 
       <div>
-        <h3 className="font-semibold text-sm text-gray-900 mb-3">{isRTL ? 'سجل المدفوعات' : 'Payment History'}</h3>
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('paymentHistory')}</h3>
         {payments && payments.length > 0 ? (
           <div className="space-y-2">
             {payments.map((pay: any) => (
@@ -208,7 +211,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
         ) : (
           <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
             <DollarSign className="mx-auto h-10 w-10 text-gray-300 mb-2" />
-            <p className="text-sm text-gray-400">{isRTL?'لا توجد مدفوعات':'No payments yet'}</p>
+            <p className="text-sm text-gray-400">{t('noPayments')}</p>
           </div>
         )}
       </div>

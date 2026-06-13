@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
@@ -310,7 +311,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US') : '—')
+  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
   const beltLabel = (r: string | null) => (r ? r.replace(/_/g, ' ') : '—')
   const ptActive = (ptAssignments ?? []).filter((a: any) => a.is_active && a.status === 'active')
   const ptRemaining = ptActive.reduce((s: number, a: any) => s + (a.sessions_remaining ?? 0), 0)
@@ -392,7 +393,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               locale={locale}
             />
             <div>
-              <h1 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="member-name">{name}</h1>
+              <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="member-name">{name}</h1>
               <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                 {prof?.phone && <span dir="ltr" className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{prof.phone}</span>}
                 {age != null && <span>{t('age', { age })}</span>}

@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { cn } from '@/lib/utils'
@@ -50,7 +51,7 @@ export async function PortalCampsSection({ studentId, actingFor, locale }: {
   }
 
   const lname = (c: any) => ((isRTL ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en)
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US', { day: 'numeric', month: 'short' })
+  const fmtD = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' })
 
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm" data-testid="portal-camps">

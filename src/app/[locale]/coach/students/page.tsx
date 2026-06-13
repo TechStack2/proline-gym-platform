@@ -1,5 +1,6 @@
 'use client';
 
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -347,7 +348,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
                     <Calendar className="h-3 w-3" />
                     {student.last_attendance
                       ? new Date(student.last_attendance).toLocaleDateString(
-                          locale === 'ar' ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US',
+                          dateLocale(locale),
                           { month: 'short', day: 'numeric' }
                         )
                       : msg('coach.students.never')}

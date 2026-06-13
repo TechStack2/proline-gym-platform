@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { localizedName } from '@/lib/billing/reconcile'
 import { IssueInvoiceForm } from './issue-invoice-form'
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic'
 type Props = { params: { locale: string } }
 
 export default async function NewInvoicePage({ params: { locale } }: Props) {
+  const tn = await getTranslations('invoiceNew')
   const isRTL = locale === 'ar'
   const supabase = await createClient()
 
@@ -34,8 +36,8 @@ export default async function NewInvoicePage({ params: { locale } }: Props) {
   return (
     <div className={`space-y-6 p-6 ${isRTL ? 'rtl text-right' : ''}`}>
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{isRTL ? 'إصدار فاتورة' : 'New invoice'}</h1>
-        <p className="text-muted-foreground">{isRTL ? 'أصدر فاتورة بعملتين عبر الخدمة الموحّدة.' : 'Issue a dual-currency invoice through the canonical service.'}</p>
+        <h1 className="text-3xl font-bold tracking-tight">{tn('title')}</h1>
+        <p className="text-muted-foreground">{tn('subtitle')}</p>
       </div>
       <IssueInvoiceForm
         locale={locale}

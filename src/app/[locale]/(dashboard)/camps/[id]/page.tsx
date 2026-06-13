@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
@@ -44,7 +45,7 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
 
   const confirmed = (regs ?? []).filter((r: any) => r.status === 'confirmed')
   const lname = (c: any) => ((isRTL ? c?.name_ar : locale === 'fr' ? c?.name_fr : c?.name_en) || c?.name_en || '')
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US', { day: 'numeric', month: 'short' })
+  const fmtD = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' })
   const tab = searchParams.tab === 'attendance' ? 'attendance' : 'roster'
 
   // Attendance data for the selected day (default: today clamped into range).

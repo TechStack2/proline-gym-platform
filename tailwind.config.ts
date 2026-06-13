@@ -159,8 +159,10 @@ const config: Config = {
       // TYPOGRAPHY — Tri-lingual font stack
       // ────────────────────────────────────────
       fontFamily: {
-        arabic: ['Noto Naskh Arabic', 'serif'],
-        latin: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        // Resolve the next/font variables (self-hosted, size-adjusted fallback)
+        // instead of raw family names, which bypassed the optimized font.
+        arabic: ['var(--font-arabic)', 'IBM Plex Sans Arabic', 'system-ui', 'sans-serif'],
+        latin: ['var(--font-latin)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
       },
       fontSize: {

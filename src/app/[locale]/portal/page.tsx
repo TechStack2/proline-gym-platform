@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { dateLocale } from '@/lib/utils/locale-format'
 import { PortalCampsSection } from './_components/portal-camps'
 import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight } from 'lucide-react'
@@ -9,6 +10,9 @@ import { Avatar as KidAvatar } from '@/components/shared/avatar'
 type Props = { params: { locale: string }; searchParams?: { kid?: string } }
 
 export default async function PortalHomePage({ params: { locale }, searchParams }: Props) {
+  // AX-1: copy through next-intl (the isRTL?ar:en bypasses dropped fr and
+  // hid this page from the locale audit); dates via the dateLocale convention.
+  const t = await getTranslations({ locale, namespace: 'portalHome' })
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -159,10 +163,10 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       }
     }
   }
-  const dayNamesEn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-  const dayNamesAr = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']
+  const weekday = (diff: number) =>
+    new Date(Date.now() + diff * 864e5).toLocaleDateString(dateLocale(locale), { weekday: 'long' })
   const nextClassLabel = nextClass
-    ? `${nextClass.dayDiff === 0 ? (isRTL ? 'اليوم' : 'Today') : (isRTL ? dayNamesAr : dayNamesEn)[(todayDow + nextClass.dayDiff) % 7]} ${nextClass.start.slice(0, 5)} · ${nextClass.name}`
+    ? `${nextClass.dayDiff === 0 ? t('today') : weekday(nextClass.dayDiff)} ${nextClass.start.slice(0, 5)} · ${nextClass.name}`
     : null
   const mplans: any = (membership as any)?.membership_plans
   const mplan = Array.isArray(mplans) ? mplans[0] : mplans
@@ -179,8 +183,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
   }
 
   const statusLabels: Record<string,string> = {
-    present: isRTL ? 'حاضر' : 'Present', absent: isRTL ? 'غائب' : 'Absent',
-    late: isRTL ? 'متأخر' : 'Late', excused: isRTL ? 'معذور' : 'Excused'
+    present: t('att.present'), absent: t('att.absent'),
+    late: t('att.late'), excused: t('att.excused'),
   }
   const statusColors: Record<string,string> = {
     present: 'bg-green-100 text-green-700', absent: 'bg-red-100 text-red-700',
@@ -194,25 +198,21 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       <div data-testid="portal-lifecycle-banner" data-state={msState}
         className={cn('rounded-2xl p-3 text-sm font-medium',
           msState === 'frozen' ? 'bg-blue-50 text-blue-700' : msState === 'expiring' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700')}>
-        {msState === 'frozen'
-          ? (isRTL ? 'اشتراكك مجمّد حالياً' : 'Your membership is currently frozen')
-          : msState === 'expiring'
-            ? (isRTL ? 'اشتراكك يقارب الانتهاء — جدّد في الاستقبال' : 'Your membership is expiring soon — renew at the desk')
-            : (isRTL ? 'اشتراكك منتهٍ — يرجى التجديد في الاستقبال' : 'Your membership has ended — please renew at the desk')}
+        {msState === 'frozen' ? t('banner.frozen') : msState === 'expiring' ? t('banner.expiring') : t('banner.lapsed')}
       </div>
     )}
       <div className="pt-2">
         <h1 className="text-2xl font-bold text-gray-900">
-          {isRTL ? 'مرحباً' : 'Welcome'}{firstName ? `, ${firstName}` : ''} 👋
+          {t('welcome')}{firstName ? `, ${firstName}` : ''} 👋
         </h1>
-        <p className="text-sm text-gray-500 mt-1">{isRTL ? 'إليك ملخص حسابك' : "Here's your account summary"}</p>
+        <p className="text-sm text-gray-500 mt-1">{t('summary')}</p>
       </div>
 
       {kids.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="kid-switcher">
           <span data-testid="kid-chip-me"
             className="rounded-full bg-[#cd1419] px-4 py-1.5 text-sm font-semibold text-white">
-            {isRTL ? 'أنا' : 'Me'}
+            {t('me')}
           </span>
           {kids.map((k: any) => (
             <Link key={k.id} href={`/${locale}/portal?kid=${k.id}`} data-testid="kid-chip" data-kid-id={k.id}
@@ -225,16 +225,16 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       )}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: isRTL ? 'الحصص' : 'Classes', value: enrolledCount || 0, icon: Users, color: 'bg-blue-50 text-blue-600' },
-          { label: isRTL ? 'العضوية' : 'Membership', value: membership?.status === 'active' ? (isRTL ? 'نشطة' : 'Active') : (isRTL ? 'منتهية' : 'Expired'), icon: CreditCard, color: membership?.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600' },
-          { label: isRTL ? 'الرتبة' : 'Belt', value: beltLabelVal || '—', icon: Award, color: 'bg-purple-50 text-purple-600' },
-          { label: isRTL ? 'الرصيد' : 'Balance', value: balanceDue > 0 ? `$${balanceDue}` : (isRTL ? 'لا يوجد' : 'None'), icon: TrendingUp, color: balanceDue > 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600' },
+          { label: t('classes'), value: enrolledCount || 0, icon: Users, color: 'bg-blue-50 text-blue-600' },
+          { label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600' },
+          { label: t('belt'), value: beltLabelVal || '—', icon: Award, color: 'bg-purple-50 text-purple-600' },
+          { label: t('balance'), value: balanceDue > 0 ? `$${balanceDue}` : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600' },
         ].map((s, i) => {
           const Icon = s.icon
           return (
             <div key={i} className={cn('rounded-2xl p-4 shadow-sm', s.color)}>
               <Icon className="h-5 w-5 mb-2 opacity-70" />
-              <p className="text-xs opacity-70">{s.label}</p>
+              <p className="text-2xs font-medium uppercase tracking-wider opacity-70">{s.label}</p>
               <p className="text-lg font-bold mt-0.5">{s.value}</p>
             </div>
           )
@@ -242,26 +242,26 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       </div>
       {/* IA-2 self-view: the member answers their own top questions */}
       <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="self-view">
-        <h3 className="font-semibold text-sm text-gray-900 mb-3">{isRTL ? 'حالتي' : 'My Status'}</h3>
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('myStatus')}</h3>
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">{isRTL ? 'العضوية' : 'Membership'}</span>
+            <span className="text-gray-500">{t('membership')}</span>
             <span data-testid="self-membership" className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', membership?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-              {membership?.status === 'active' ? (membershipNameVal || (isRTL ? 'نشطة' : 'Active')) : (isRTL ? 'لا توجد عضوية' : 'No membership')}
+              {membership?.status === 'active' ? (membershipNameVal || t('active')) : t('noMembership')}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">{isRTL ? 'جلسات التدريب الخاص المتبقية' : 'PT sessions remaining'}</span>
+            <span className="text-gray-500">{t('ptRemaining')}</span>
             <span data-testid="self-pt-remaining" className="font-bold text-gray-900">{ptTotal > 0 ? `${ptRemaining}/${ptTotal}` : '—'}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">{isRTL ? 'الحصة القادمة' : 'Next class'}</span>
+            <span className="text-gray-500">{t('nextClass')}</span>
             <span data-testid="self-next-class" className="text-xs font-medium text-gray-700" dir="ltr">{nextClassLabel || '—'}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">{isRTL ? 'جلسة التدريب القادمة' : 'Next PT session'}</span>
+            <span className="text-gray-500">{t('nextPt')}</span>
             <span data-testid="self-next-pt" className="text-xs font-medium text-gray-700" dir="ltr">
-              {nextPt ? new Date(nextPt.scheduled_at).toLocaleString(isRTL ? 'ar-LB' : 'en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+              {nextPt ? new Date(nextPt.scheduled_at).toLocaleString(dateLocale(locale), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
             </span>
           </div>
         </div>
@@ -269,8 +269,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: isRTL ? 'الجدول' : 'Schedule', href: `/${locale}/portal/schedule`, icon: CalendarDays },
-          { label: isRTL ? 'الفواتير' : 'Billing', href: `/${locale}/portal/billing`, icon: CreditCard },
+          { label: t('schedule'), href: `/${locale}/portal/schedule`, icon: CalendarDays },
+          { label: t('billing'), href: `/${locale}/portal/billing`, icon: CreditCard },
         ].map((a, i) => {
           const Icon = a.icon
           return (
@@ -286,39 +286,39 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       </div>
       {membership && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="font-semibold text-sm text-gray-900 mb-2">{isRTL ? 'العضوية الحالية' : 'Current Membership'}</h3>
+          <h3 className="font-semibold text-sm text-gray-900 mb-2">{t('currentMembership')}</h3>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-700">{membershipNameVal}</p>
-              <p className="text-xs text-gray-500">{isRTL ? 'تنتهي في' : 'Expires'}: {new Date(membership.end_date).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}</p>
+              <p className="text-xs text-gray-500">{t('expires')}: {new Date(membership.end_date).toLocaleDateString(dateLocale(locale))}</p>
             </div>
             <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold', membership.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
-              {membership.status === 'active' ? (isRTL ? 'نشطة' : 'Active') : (isRTL ? 'منتهية' : 'Expired')}
+              {membership.status === 'active' ? t('active') : t('expired')}
             </span>
           </div>
         </div>
       )}
       {belt && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="font-semibold text-sm text-gray-900 mb-2">{isRTL ? 'الرتبة الحالية' : 'Current Belt'}</h3>
+          <h3 className="font-semibold text-sm text-gray-900 mb-2">{t('currentBelt')}</h3>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center"><Award className="h-5 w-5 text-yellow-400" /></div>
             <div>
               <p className="font-medium text-gray-700">{beltLabelVal} — {disciplineNameVal}</p>
-              <p className="text-xs text-gray-500">{isRTL ? 'برو لاين جيم' : 'PRO LINE Gym'}</p>
+              <p className="text-xs text-gray-500">{t('gymName')}</p>
             </div>
           </div>
         </div>
       )}
       <div className="rounded-2xl bg-white p-4 shadow-sm">
-        <h3 className="font-semibold text-sm text-gray-900 mb-3">{isRTL ? 'آخر مرات الحضور' : 'Recent Attendance'}</h3>
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('recentAttendance')}</h3>
         {recentAttendance && recentAttendance.length > 0 ? (
           <div className="space-y-2">
             {recentAttendance.map((ra: any, i: number) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div>
                   <p className="text-sm font-medium text-gray-700">{getCName(ra)}</p>
-                  <p className="text-xs text-gray-500">{new Date(ra.attendance_date).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}</p>
+                  <p className="text-xs text-gray-500">{new Date(ra.attendance_date).toLocaleDateString(dateLocale(locale))}</p>
                 </div>
                 <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[ra.status] || 'bg-gray-100 text-gray-700')}>
                   {statusLabels[ra.status] || ra.status}
@@ -327,7 +327,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400 text-center py-4">{isRTL ? 'لا توجد سجلات حضور بعد' : 'No attendance records yet'}</p>
+          <p className="text-sm text-gray-400 text-center py-4">{t('noAttendance')}</p>
         )}
       </div>
 

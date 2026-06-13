@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
@@ -204,19 +205,19 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
           {view === 'day' && <input type="hidden" name="view" value="day" />}
           {view === 'day' && (
             <input type="date" name="date" defaultValue={dateStr} data-testid="diary-date"
-              className="h-9 rounded-md border px-3 text-sm" />
+              className="h-9 rounded-lg border px-3 text-sm" />
           )}
           <select name="discipline" defaultValue={fDiscipline} data-testid="filter-discipline"
-            className="h-9 rounded-md border bg-white px-3 text-sm">
+            className="h-9 rounded-lg border bg-white px-3 text-sm">
             <option value="">{t('allDisciplines')}</option>
             {(disciplines ?? []).map((d: any) => <option key={d.id} value={d.id}>{lname(d)}</option>)}
           </select>
           <select name="coach" defaultValue={fCoach} data-testid="filter-coach"
-            className="h-9 rounded-md border bg-white px-3 text-sm">
+            className="h-9 rounded-lg border bg-white px-3 text-sm">
             <option value="">{t('allCoaches')}</option>
             {(coaches ?? []).map((c: any) => <option key={c.id} value={c.id}>{localizedName(one(c.profiles), locale)}</option>)}
           </select>
-          <button className="h-9 rounded-md bg-[#cd1419] px-4 text-sm font-medium text-white hover:bg-[#a81014]">{t('apply')}</button>
+          <button className="h-9 rounded-lg bg-[#cd1419] px-4 text-sm font-medium text-white hover:bg-[#a81014]">{t('apply')}</button>
         </form>
       </div>
 
@@ -275,7 +276,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
         /* ── Day · Coach diary ── */
         <div>
           <p className="mb-3 text-sm text-gray-500">
-            {fmtDay.toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {fmtDay.toLocaleDateString(dateLocale(locale), { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           {diary.length === 0 ? (
             <p className="rounded-2xl border bg-white p-10 text-center text-sm text-gray-400 shadow-sm">{t('noEvents')}</p>
@@ -310,7 +311,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                           className="block rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-2.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100">
                           <span className="flex items-center gap-1 font-semibold"><Dumbbell className="h-3 w-3" /> {t('ptSession')} · {localizedName(one(one(s.students)?.profiles), locale)}</span>
                           <span className="block opacity-70" dir="ltr">
-                            {new Date(s.scheduled_at).toLocaleTimeString(isRTL ? 'ar-LB' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(s.scheduled_at).toLocaleTimeString(dateLocale(locale), { hour: '2-digit', minute: '2-digit' })}
                             {` · ${s.duration_minutes ?? 60}${t('min')}`}
                           </span>
                         </Link>

@@ -19,6 +19,13 @@ type SidebarProps = {
  * the silently-dead Coaches entry is gone with the dead config). Profile sits
  * at the bottom; the Inbox entry carries the live actionable-count badge.
  */
+const ROLE_LABELS: Record<string, { en: string; ar: string; fr: string }> = {
+  owner: { en: 'Owner', ar: 'مالك', fr: 'Propriétaire' },
+  head_coach: { en: 'Head Coach', ar: 'مدرب رئيسي', fr: 'Entraîneur en chef' },
+  coach: { en: 'Coach', ar: 'مدرب', fr: 'Entraîneur' },
+  receptionist: { en: 'Reception', ar: 'استقبال', fr: 'Réception' },
+};
+
 export function Sidebar({ locale, role }: SidebarProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
@@ -96,7 +103,7 @@ export function Sidebar({ locale, role }: SidebarProps) {
         {profileItem && <ul>{renderItem(profileItem)}</ul>}
         <div className="mt-2 flex items-center gap-2 px-1">
           <div className="h-2 w-2 rounded-full bg-green-500" />
-          <span className="text-xs text-gray-400 capitalize">{role.replace('_', ' ')}</span>
+          <span className="text-xs text-gray-400 capitalize">{ROLE_LABELS[role]?.[locale as 'en' | 'ar' | 'fr'] ?? role.replace('_', ' ')}</span>
         </div>
       </div>
     </aside>

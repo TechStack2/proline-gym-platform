@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { PortalCampsSection } from './portal-camps'
@@ -67,7 +68,7 @@ export async function KidDashboard({
   ])
 
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
 
   // Streak: consecutive calendar weeks (back from this week) with ≥1 attendance.
   const { data: streakRows } = await supabase

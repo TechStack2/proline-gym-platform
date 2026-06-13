@@ -88,7 +88,7 @@ export function NativeTabBar({
             'text-xs font-medium transition-colors duration-200',
             'touch-manipulation select-none',
             isActive
-              ? 'text-[#cd1419]'
+              ? 'text-[var(--shell-accent,#cd1419)]'
               : 'text-gray-400 hover:text-gray-600'
           );
 
@@ -178,7 +178,7 @@ export function NativeTabBar({
             'text-[10px] font-medium transition-colors duration-200',
             'touch-manipulation select-none',
             isActive
-              ? 'text-[#cd1419] bg-[#cd1419]/5'
+              ? 'text-[var(--shell-accent,#cd1419)] bg-black/5'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
           );
 

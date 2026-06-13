@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
@@ -71,7 +72,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
     return matchSearch && matchStatus
   })
 
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US') : '—')
+  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
 
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>

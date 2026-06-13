@@ -6,6 +6,7 @@ import { CalendarDays, Clock, MapPin } from 'lucide-react'
 type Props = { params: { locale: string } }
 
 export default async function PortalSchedulePage({ params: { locale } }: Props) {
+  const t = await getTranslations({ locale, namespace: 'portalSchedule' })
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -84,17 +85,17 @@ export default async function PortalSchedulePage({ params: { locale } }: Props) 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       <h2 className="text-lg font-bold text-gray-900">
-        {isRTL ? 'جدول الحصص' : 'Class Schedule'}
+        {t('title')}
       </h2>
 
       {sortedDays.length === 0 ? (
         <div className="rounded-2xl bg-white p-8 shadow-sm text-center">
           <CalendarDays className="mx-auto h-12 w-12 text-gray-300 mb-3" />
           <p className="text-gray-500 font-medium">
-            {isRTL ? 'لست مسجلاً في أي حصص' : "You're not enrolled in any classes"}
+            {t('empty')}
           </p>
           <p className="text-sm text-gray-400 mt-1">
-            {isRTL ? 'تواصل مع الاستقبال للتسجيل' : 'Contact reception to enroll'}
+            {t('emptyHint')}
           </p>
         </div>
       ) : (
@@ -126,7 +127,7 @@ export default async function PortalSchedulePage({ params: { locale } }: Props) 
                   </div>
                   {enr.classes?.coaches && (
                     <p className="text-xs text-gray-500 mt-2">
-                      {isRTL ? 'المدرب: ' : 'Coach: '}{coachName(enr.classes.coaches)}
+                      {t('coach')}: {coachName(enr.classes.coaches)}
                     </p>
                   )}
                 </div>

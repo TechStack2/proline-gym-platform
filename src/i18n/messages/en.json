@@ -25,7 +25,12 @@
     "loginError": "An error occurred during login",
     "backToLogin": "Back to Login",
     "emailLabel": "Email Address",
-    "passwordLabel": "Password"
+    "passwordLabel": "Password",
+    "errEmailPassword": "Please enter email and password",
+    "backToSite": "Back to site",
+    "signInPlatform": "Sign in to the platform",
+    "demoAccounts": "Demo Accounts",
+    "demoPassword": "Password for all accounts:"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -129,7 +134,10 @@
     "present": "Present",
     "absent": "Absent",
     "late": "Late",
-    "excused": "Excused"
+    "excused": "Excused",
+    "shellStaff": "Staff",
+    "shellCoach": "Coach",
+    "shellMember": "Member"
   },
   "language": {
     "switch": "Change Language",
@@ -707,6 +715,80 @@
     "gallery": {
       "title": "Inside the Gym",
       "subtitle": "Where the saga is written"
+    },
+    "hero": {
+      "tagline": "Start Your Own Saga",
+      "headline": "Train Like the Main Character",
+      "subheadline": "Muay Thai • Boxing • Fitness • Zumba • Ladies Training • Kids",
+      "byline": "by Fakih Brothers",
+      "ctaTrial": "Start Your Free Trial",
+      "ctaWhatsapp": "WhatsApp Us",
+      "followers": "followers"
+    },
+    "disciplinesSec": {
+      "title": "Our Programs",
+      "subtitle": "World-class training across 6 disciplines — for all ages and levels",
+      "empty": "Programs coming soon."
+    },
+    "pricing": {
+      "title": "Membership Plans",
+      "subtitle": "Choose the plan that fits your journey — start anytime",
+      "perYr": "yr",
+      "per3mo": "3mo",
+      "perMo": "mo",
+      "bestValue": "Best Value",
+      "getStarted": "Get Started",
+      "empty": "Membership plans coming soon.",
+      "classRegTitle": "Monthly Class Registration",
+      "classRegSubtitle": "Register for a recurring program for a monthly fee — no full membership required"
+    },
+    "facility": {
+      "addr": "Sky Business Center, Baabda",
+      "country": "Lebanon",
+      "title": "Visit Us",
+      "subtitle": "Train at our modern facility in Sky Business Center, Baabda. Call or WhatsApp us to book your first session.",
+      "callUs": "Call us",
+      "email": "Email",
+      "igStats": "2,760 followers • 177 posts"
+    },
+    "why": {
+      "title": "Why PRO LINE?",
+      "subtitle": "More than a gym — we're a destination for fighters",
+      "coachesTitle": "Expert Coaches",
+      "coachesDesc": "Train under certified instructors with international competition experience. The Fakih Brothers bring years of professional fighting and coaching expertise.",
+      "facilityTitle": "Modern Facility",
+      "facilityDesc": "Train in a fully equipped facility at Baabda Sky Business Center. Professional-grade mats, bags, and equipment for every discipline.",
+      "communityTitle": "Strong Community",
+      "communityDesc": "Join 2,760+ followers and a thriving community of fighters, fitness enthusiasts, and families. Adults, kids, ladies — everyone has a home here."
+    },
+    "camps": {
+      "title": "Summer Camps",
+      "subtitle": "Full days of training and play — limited spots",
+      "full": "Full",
+      "ages": "Ages {min}–{max}",
+      "spotsLeft": "{n} spots left",
+      "cta": "Register your interest"
+    },
+    "pt": {
+      "title": "Personal Training",
+      "subtitle": "Private sessions with our coaches — packages for every level",
+      "sessions": "{n} sessions",
+      "valid": "valid {n} days",
+      "cta": "Private sessions available — book yours"
+    },
+    "trialCta": {
+      "fillAll": "Please fill in all fields",
+      "gotIt": "Got it!",
+      "whatsapp24": "We'll WhatsApp you within 24 hours!",
+      "title": "Start Your Free Trial",
+      "subtitle": "Try any program with no commitment. Fill out the form and we'll WhatsApp you to schedule your first session.",
+      "nameLabel": "Your Name",
+      "namePh": "Enter your name",
+      "phoneLabel": "Phone Number",
+      "programLabel": "Interested Program",
+      "programPh": "Select a program",
+      "send": "Send",
+      "noSpam": "We'll reply via WhatsApp. No spam."
     }
   },
   "belts": {
@@ -853,7 +935,8 @@
       "interest": "Interest",
       "review": "Review",
       "nextAction": "First contact due {date}"
-    }
+    },
+    "guardian_default": "Guardian"
   },
   "camps": {
     "title": "Camps",
@@ -1113,7 +1196,8 @@
       "saveNotActive": "Save functionality is not active in MVP",
       "enterArabicName": "Enter Arabic name",
       "enterEnglishName": "Enter English name",
-      "enterFrenchName": "Enter French name"
+      "enterFrenchName": "Enter French name",
+      "unnamed": "PRO LINE Gym"
     },
     "exchange": {
       "currentRate": "Current Exchange Rate",
@@ -2010,5 +2094,90 @@
     "noPlan": "No plan",
     "review": "Review",
     "minor": "Minor"
+  },
+  "portalHome": {
+    "today": "Today",
+    "welcome": "Welcome",
+    "summary": "Here's your account summary",
+    "me": "Me",
+    "classes": "Classes",
+    "membership": "Membership",
+    "active": "Active",
+    "expired": "Expired",
+    "belt": "Belt",
+    "balance": "Balance",
+    "none": "None",
+    "myStatus": "My Status",
+    "noMembership": "No membership",
+    "ptRemaining": "PT sessions remaining",
+    "nextClass": "Next class",
+    "nextPt": "Next PT session",
+    "schedule": "Schedule",
+    "billing": "Billing",
+    "currentMembership": "Current Membership",
+    "expires": "Expires",
+    "currentBelt": "Current Belt",
+    "gymName": "PRO LINE Gym",
+    "recentAttendance": "Recent Attendance",
+    "noAttendance": "No attendance records yet",
+    "att": {
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late",
+      "excused": "Excused"
+    },
+    "banner": {
+      "frozen": "Your membership is currently frozen",
+      "expiring": "Your membership is expiring soon — renew at the desk",
+      "lapsed": "Your membership has ended — please renew at the desk"
+    }
+  },
+  "portalBilling": {
+    "household": "Household billing",
+    "outstanding": "Outstanding total",
+    "payAtDesk": "Pay at the front desk: cash (USD/LBP) · OMT · Whish",
+    "noInvoices": "No invoices",
+    "due": "due",
+    "membership": "Membership",
+    "expires": "Expires",
+    "active": "Active",
+    "invoices": "Invoices",
+    "receipt": "Receipt",
+    "balance": "Balance",
+    "paymentHistory": "Payment History",
+    "noPayments": "No payments yet",
+    "st": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "partial": "Partial"
+    }
+  },
+  "portalProfile": {
+    "member": "Member",
+    "currentBelt": "Current Belt",
+    "membership": "Membership",
+    "memberDetails": "Member Details",
+    "joined": "Joined",
+    "emergency": "Emergency Contact",
+    "notSet": "Not set",
+    "medical": "Medical Notes",
+    "guardians": "Guardians"
+  },
+  "portalSchedule": {
+    "title": "Class Schedule",
+    "empty": "You're not enrolled in any classes",
+    "emptyHint": "Contact reception to enroll",
+    "coach": "Coach"
+  },
+  "portalClasses": {
+    "title": "Classes",
+    "subtitle": "Register for a recurring class for a monthly fee"
+  },
+  "invoiceNew": {
+    "title": "New invoice",
+    "subtitle": "Issue a dual-currency invoice through the canonical service."
   }
 }

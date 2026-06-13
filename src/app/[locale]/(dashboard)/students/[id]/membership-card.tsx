@@ -7,6 +7,7 @@
  *   Renew now · Freeze (bounds shown) / Unfreeze · Change plan · Reinstate.
  * All writes are guarded RPCs; states recompute on every render.
  */
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -62,7 +63,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
   if (!data) return <p className="py-3 text-center text-sm text-gray-400">{t('noMembership')}</p>
 
   const state = membershipState(data, policy)
-  const fmtD = (d: string | null) => (d ? new Date(d + 'T12:00:00Z').toLocaleDateString(isRTL ? 'ar-LB' : 'en-US') : '—')
+  const fmtD = (d: string | null) => (d ? new Date(d + 'T12:00:00Z').toLocaleDateString(dateLocale(locale)) : '—')
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, okKey: string) =>
     startTransition(async () => {

@@ -1,13 +1,15 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { Inter, Noto_Naskh_Arabic } from 'next/font/google';
+import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import '@/app/globals.css';
 
-const latin = Inter({ subsets: ['latin'], variable: '--font-latin' });
-const arabic = Noto_Naskh_Arabic({
+const latin = Inter({ subsets: ['latin'], variable: '--font-latin', display: 'swap' });
+const arabic = IBM_Plex_Sans_Arabic({
   subsets: ['arabic'],
+  weight: ['400', '500', '700'],
   variable: '--font-arabic',
+  display: 'swap',
 });
 
 type Props = {

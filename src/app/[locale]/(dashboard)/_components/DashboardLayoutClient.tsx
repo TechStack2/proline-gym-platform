@@ -58,11 +58,13 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
     : (t('today') || 'Today');
 
   return (
-    <div className={cn('flex flex-col h-screen bg-gray-50', isRTL && 'rtl')}>
+    <div className={cn('flex flex-col h-screen bg-gray-50', isRTL && 'rtl')}
+      style={{ ['--shell-accent' as string]: '#cd1419' }}>
       <NativeHeader
         title={headerTitle}
         locale={locale}
         role={role}
+        shell="staff"
         variant="large"
         rightActions={
           <div className="flex items-center gap-2">

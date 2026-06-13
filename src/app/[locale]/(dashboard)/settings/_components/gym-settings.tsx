@@ -66,7 +66,7 @@ export function GymSettings({ gym, locale }: Props) {
             )}
             <div>
               <CardTitle className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
-                {gymName || (isRTL ? 'برو لاين جيم' : 'PRO LINE Gym')}
+                {gymName || t('gym.unnamed')}
               </CardTitle>
               <p className="text-xs text-gray-500 mt-0.5">
                 {t('gym.information')}

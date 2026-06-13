@@ -56,7 +56,7 @@ export default function LoginPage({ params }: Props) {
     setError('');
 
     if (!email || !password) {
-      setError(isRTL ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور' : 'Please enter email and password');
+      setError(t('errEmailPassword'));
       return;
     }
 
@@ -91,7 +91,7 @@ export default function LoginPage({ params }: Props) {
           className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          {isRTL ? 'العودة للموقع' : 'Back to site'}
+          {t('backToSite')}
         </Link>
 
         {/* Logo */}
@@ -110,7 +110,7 @@ export default function LoginPage({ params }: Props) {
             PRO LINE Gym
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            {isRTL ? 'تسجيل الدخول إلى المنصة' : 'Sign in to the platform'}
+            {t('signInPlatform')}
           </p>
         </div>
 
@@ -221,7 +221,7 @@ export default function LoginPage({ params }: Props) {
               <Users className="h-4 w-4 text-amber-600" />
             </div>
             <span className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>
-              {isRTL ? 'حسابات تجريبية للعرض' : 'Demo Accounts'}
+              {t('demoAccounts')}
             </span>
           </div>
 
@@ -251,7 +251,7 @@ export default function LoginPage({ params }: Props) {
             ))}
           </div>
           <p className="mt-3 text-center text-[11px] text-gray-400">
-            {isRTL ? 'كلمة المرور لجميع الحسابات: ' : 'Password for all accounts: '}
+            {t('demoPassword')} 
             <code className="rounded bg-gray-100 px-1 py-0.5 text-[10px] font-mono text-gray-600">ProlineDemo2024!</code>
           </p>
         </div>

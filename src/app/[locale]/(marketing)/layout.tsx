@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { LandingNav } from '@/components/layout/LandingNav';
 import { LandingFooter } from '@/components/layout/LandingFooter';
 import { getLandingGym } from '@/lib/marketing/gym';
@@ -60,6 +60,7 @@ export const viewport: Viewport = {
 
 export default async function MarketingLayout({ children, params }: Props) {
   const { locale } = params;
+  setRequestLocale(locale); // see [locale]/layout.tsx — required under generateStaticParams
 
   // JSON-LD: real gym name from the public RPC (tenant-clean), localized copy +
   // the prompt-supplied address from i18n. Falls back to the brand name if the

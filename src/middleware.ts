@@ -176,12 +176,29 @@ export async function middleware(request: NextRequest) {
   // Apply i18n middleware for all other routes (landing, auth, etc.)
   const intlResponse = intlMiddleware(request);
 
-  // Merge rate limit + CSP headers into i18n response
+  // Merge rate limit + CSP headers into i18n response.
+  // AX-1 ROOT-CAUSE FIX: `x-middleware-override-headers` is Next's DIRECTIVE
+  // listing which request headers the middleware forwards to the render.
+  // Blind-copying Supabase's list over intl's DROPPED `x-next-intl-locale`
+  // from the directive, so next-intl could never resolve the locale on any
+  // route where updateSession produced overrides — every useTranslations/
+  // getMessages call fell back to defaultLocale (en) under /ar and /fr
+  // ("Arabic is not fully active on multiple pages", verbatim). UNION the
+  // two lists instead so BOTH the refreshed-cookie and locale forwards live.
   supabaseResponse.headers.forEach((value, key) => {
-    // Don't override i18n's content-type or location headers
-    if (key.toLowerCase() !== 'content-type' && key.toLowerCase() !== 'location') {
-      intlResponse.headers.set(key, value);
+    const k = key.toLowerCase();
+    if (k === 'content-type' || k === 'location') return;
+    if (k === 'x-middleware-override-headers') {
+      const existing = intlResponse.headers.get(k);
+      const union = new Set(
+        [...(existing ? existing.split(',') : []), ...value.split(',')]
+          .map((h) => h.trim())
+          .filter(Boolean),
+      );
+      intlResponse.headers.set(k, [...union].join(','));
+      return;
     }
+    intlResponse.headers.set(key, value);
   });
 
   // Forward the nonce to i18n response as well

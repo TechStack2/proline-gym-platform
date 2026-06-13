@@ -20,7 +20,7 @@ const PROGRAM_OPTIONS_AR = [
 ];
 
 export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
-  const t = useTranslations('landing');
+  const t = useTranslations('landing.trialCta');
   const isRTL = locale === 'ar';
   const supabase = createClient();
 
@@ -38,7 +38,7 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
     setError('');
 
     if (!name || !phone) {
-      setError(isRTL ? 'يرجى ملء جميع الحقول' : 'Please fill in all fields');
+      setError(t('fillAll'));
       return;
     }
 
@@ -71,12 +71,10 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
         <div className="mx-auto max-w-lg px-4 text-center">
           <CheckCircle className="mx-auto h-16 w-16 text-white/80" />
           <h2 className={cn('mt-6 text-3xl font-bold text-white', isRTL && 'text-right font-arabic')}>
-            {isRTL ? 'تم الاستلام!' : 'Got it!'}
+            {t('gotIt')}
           </h2>
           <p className="mt-3 text-lg text-white/80">
-            {isRTL
-              ? 'سنتواصل معك عبر واتساب خلال 24 ساعة!'
-              : "We\'ll WhatsApp you within 24 hours!"}
+            {t('whatsapp24')}
           </p>
         </div>
       </section>
@@ -90,12 +88,10 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
           {/* Text side */}
           <div>
             <h2 className={cn('text-3xl sm:text-4xl font-bold text-white', isRTL && 'text-right font-arabic')}>
-              {isRTL ? 'ابدأ تجربتك المجانية' : 'Start Your Free Trial'}
+              {t('title')}
             </h2>
             <p className="mt-4 text-lg text-white/80 leading-relaxed">
-              {isRTL
-                ? 'جرب أي برنامج بدون التزام. املأ النموذج و سنتواصل معك عبر واتساب لتحديد موعد جلستك الأولى.'
-                : 'Try any program with no commitment. Fill out the form and we\'ll WhatsApp you to schedule your first session.'}
+              {t('subtitle')}
             </p>
           </div>
 
@@ -107,14 +103,14 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
                   htmlFor="trial-name"
                   className={cn('block text-sm font-medium text-gray-700 mb-1.5', isRTL && 'text-right font-arabic')}
                 >
-                  {isRTL ? 'الاسم' : 'Your Name'}
+                  {t('nameLabel')}
                 </label>
                 <input
                   id="trial-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={isRTL ? 'أدخل اسمك' : 'Enter your name'}
+                  placeholder={t('namePh')}
                   disabled={loading}
                   className={cn(
                     'w-full rounded-xl border border-gray-200 px-4 py-3 text-base',
@@ -131,7 +127,7 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
                   htmlFor="trial-phone"
                   className={cn('block text-sm font-medium text-gray-700 mb-1.5', isRTL && 'text-right font-arabic')}
                 >
-                  {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+                  {t('phoneLabel')}
                 </label>
                 <input
                   id="trial-phone"
@@ -155,7 +151,7 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
                   htmlFor="trial-program"
                   className={cn('block text-sm font-medium text-gray-700 mb-1.5', isRTL && 'text-right font-arabic')}
                 >
-                  {isRTL ? 'البرنامج المهتم به' : 'Interested Program'}
+                  {t('programLabel')}
                 </label>
                 <select
                   id="trial-program"
@@ -169,7 +165,7 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
                     'disabled:cursor-not-allowed disabled:opacity-50'
                   )}
                 >
-                  <option value="">{isRTL ? 'اختر برنامجاً' : 'Select a program'}</option>
+                  <option value="">{t('programPh')}</option>
                   {programOptions.map((p) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
@@ -192,15 +188,13 @@ export function TrialCTASection({ locale, gymSlug }: TrialCTASectionProps) {
                 ) : (
                   <>
                     <Send className="h-5 w-5" />
-                    {isRTL ? 'أرسل' : 'Send'}
+                    {t('send')}
                   </>
                 )}
               </button>
 
               <p className="text-center text-xs text-gray-400">
-                {isRTL
-                  ? 'سنرد عليك عبر واتساب. لا سبام.'
-                  : 'We\'ll reply via WhatsApp. No spam.'}
+                {t('noSpam')}
               </p>
             </form>
           </div>

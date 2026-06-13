@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { cn } from '@/lib/utils'
@@ -240,7 +241,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           label={isRTL ? 'تاريخ الانضمام' : locale === 'fr' ? "Date d'inscription" : 'Joined'}
           value={
             profile?.created_at
-              ? new Date(profile.created_at).toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', {
+              ? new Date(profile.created_at).toLocaleDateString(dateLocale(locale), {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',

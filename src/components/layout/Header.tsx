@@ -15,14 +15,14 @@ type HeaderProps = {
   role?: string;
 };
 
-const roleLabels: Record<string, { en: string; ar: string }> = {
-  owner: { en: 'Owner', ar: 'مالك' },
-  head_coach: { en: 'Head Coach', ar: 'مدرب رئيسي' },
-  coach: { en: 'Coach', ar: 'مدرب' },
-  receptionist: { en: 'Reception', ar: 'استقبال' },
-  student: { en: 'Member', ar: 'عضو' },
-  parent: { en: 'Parent', ar: 'ولي أمر' },
-  external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي' },
+const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
+  owner: { en: 'Owner', ar: 'مالك', fr: 'Propriétaire' },
+  head_coach: { en: 'Head Coach', ar: 'مدرب رئيسي', fr: 'Entraîneur en chef' },
+  coach: { en: 'Coach', ar: 'مدرب', fr: 'Entraîneur' },
+  receptionist: { en: 'Reception', ar: 'استقبال', fr: 'Réception' },
+  student: { en: 'Member', ar: 'عضو', fr: 'Membre' },
+  parent: { en: 'Parent', ar: 'ولي أمر', fr: 'Parent' },
+  external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي', fr: 'Entraîneur ext.' },
 };
 
 export function Header({ locale, role }: HeaderProps) {
@@ -37,10 +37,13 @@ export function Header({ locale, role }: HeaderProps) {
     router.push('/auth/login');
   };
 
-  const label = role ? (isRTL ? roleLabels[role]?.ar : roleLabels[role]?.en) : 'Admin';
+  const label = role ? (roleLabels[role]?.[locale as 'en' | 'ar' | 'fr'] ?? roleLabels[role]?.en) : 'Admin';
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-white px-4">
+    <header className="sticky top-0 z-40 border-b bg-white">
+      {/* AX-1 staff shell accent bar */}
+      <div className="h-1 w-full bg-[#cd1419]" aria-hidden />
+      <div className="flex h-16 items-center gap-4 px-4">
       <button
         onClick={() => setShowMobileSidebar(!showMobileSidebar)}
         className="lg:hidden rounded-lg p-2 text-gray-600 hover:bg-gray-100"
@@ -89,7 +92,12 @@ export function Header({ locale, role }: HeaderProps) {
           <span className="hidden sm:inline text-sm font-medium text-gray-700 capitalize">
             {label}
           </span>
+          <span data-testid="shell-badge" data-shell="staff"
+            className="inline-flex items-center rounded-full bg-[#cd1419] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-white">
+            {t('common.shellStaff')}
+          </span>
         </div>
+      </div>
       </div>
     </header>
   );

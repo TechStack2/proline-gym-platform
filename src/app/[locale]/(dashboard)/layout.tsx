@@ -6,6 +6,9 @@ import { Header } from '@/components/layout/Header';
 import { DashboardLayoutClient } from './_components/DashboardLayoutClient';
 import { cn } from '@/lib/utils';
 
+// AX-1 shell identity: per-shell PWA theme-color (staff = brand red).
+export const viewport = { themeColor: '#cd1419' }
+
 type Props = {
   children: React.ReactNode;
   params: { locale: string };

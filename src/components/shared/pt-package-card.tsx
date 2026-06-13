@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Avatar } from './avatar'
@@ -131,7 +132,7 @@ export function PtPackageCard({
             {data.sessions.map((s) => (
               <li key={s.id} data-testid={sessionTestid} data-status={s.status}
                 className="flex items-center justify-between gap-2 text-xs text-gray-600">
-                <span dir="ltr">{new Date(s.scheduledAt).toLocaleString(isRTL ? 'ar-LB' : 'en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                <span dir="ltr">{new Date(s.scheduledAt).toLocaleString(dateLocale(locale), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 <span className="flex items-center gap-1.5">
                   {s.action}
                   <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', SESSION_TONE[s.status] || 'bg-gray-100')}>

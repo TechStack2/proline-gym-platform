@@ -5,6 +5,7 @@
  * Accept books through the same RPC guards; counter flips the ball with a
  * new time; decline cancels. One round-trip by design.
  */
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -42,7 +43,7 @@ export function PtProposals({ rows, locale }: { rows: ProposalRow[]; locale: str
     })
 
   const fmt = (iso: string) =>
-    new Date(iso).toLocaleString(isRTL ? 'ar-LB' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    new Date(iso).toLocaleString(dateLocale(locale), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
   if (rows.length === 0) return null
 
