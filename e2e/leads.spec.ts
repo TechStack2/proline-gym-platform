@@ -107,8 +107,11 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await modal.getByTestId('lead-first-name').fill(STAFF_FIRST);
     await modal.getByTestId('lead-last-name').fill(STAFF_LAST);
     await modal.getByTestId('lead-phone').fill(`+96171${RUN}`);
-    await modal.getByTestId('lead-source-select').selectOption('phone');
-    await modal.getByTestId('add-lead-submit').click();
+    // UX-2: the modal is now the shared FormWizard — contact → interest (chips) → review.
+    await modal.getByTestId('wizard-next').click();
+    await modal.locator('[data-testid="lead-source-chip"][data-value="phone"]').click();
+    await modal.getByTestId('wizard-next').click();
+    await modal.getByTestId('wizard-submit').click();
     await expect(modal).toBeHidden({ timeout: 15_000 });
 
     await owner.page.goto(`/en/leads?search=${encodeURIComponent(STAFF_LAST)}`);

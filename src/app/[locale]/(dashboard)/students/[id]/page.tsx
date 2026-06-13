@@ -178,6 +178,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     ? await supabase.from('belt_hierarchies')
         .select('id, discipline_id, rank, name_ar, name_en, name_fr, sort_order')
         .in('discipline_id', promoDiscIds)
+        .eq('is_active', true) // UX-2: archived ladder ranks are not promotion targets
         .order('sort_order')
     : { data: [] as any[] }
   const promoteCoaches = (promoCoachRows ?? []).map((c: any) => ({ id: c.id, name: localizedName(one(c.profiles), locale) })).filter((c) => c.name)

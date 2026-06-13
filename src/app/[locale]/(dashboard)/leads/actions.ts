@@ -165,16 +165,20 @@ export async function recordTrialOutcome(input: {
   status: 'completed' | 'no_show' | 'cancelled';
   showUp: boolean;
   feedback?: string;
+  interested?: boolean | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const ctx = await staffContext();
   if ('error' in ctx) return { ok: false, error: ctx.error };
   const { supabase } = ctx;
 
+  // UX-2: stage flip + interested + the trial_outcome staff emit are all inside
+  // the RPC (the coach caller can't read leads app-side — see 000049).
   const { error } = await supabase.rpc('record_trial_outcome', {
     p_trial_id: input.trialId,
     p_status: input.status,
     p_show_up: input.showUp,
     p_feedback: input.feedback || null,
+    p_interested: input.interested ?? null,
   });
   if (error) return { ok: false, error: error.message };
 

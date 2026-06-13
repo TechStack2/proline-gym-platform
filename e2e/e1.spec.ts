@@ -150,12 +150,14 @@ test('E1 · capacity race-safe (3 → full, 4th blocked) → attendance → Toda
     // ── The 4th (fresh member) is BLOCKED with the clear message ──
     const unique = KID4;
     await owner.page.goto('/en/students/add');
-    const textInputs = owner.page.locator('form input:not([type="date"]):not([type="tel"]):visible');
-    await textInputs.nth(0).fill(`${unique} AR`);
-    await textInputs.nth(1).fill(unique);
-    await owner.page.locator('input[type="tel"]:visible').first().fill('+96170000888');
-    await owner.page.locator('form button[type="submit"]:visible').first().click();
-    await owner.page.waitForTimeout(2500);
+    // UX-2: /students/add is the FormWizard (adult: identity → plan → review).
+    const wiz = (tid: string) => owner.page.locator(`[data-testid="${tid}"]:visible`).first();
+    await wiz('sw-name-en').fill(unique);
+    await wiz('sw-phone').fill('+96170000888');
+    await wiz('wizard-next').click();
+    await wiz('wizard-next').click();
+    await wiz('wizard-submit').click();
+    await expect(owner.page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
 
     await deskRegister(owner.page, unique, 'Summer Camp');
     await expect(

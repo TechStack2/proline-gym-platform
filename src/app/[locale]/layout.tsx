@@ -1,3 +1,4 @@
+import { DevSwCleanup } from '@/components/dev/sw-cleanup'
 import { Inter, Noto_Naskh_Arabic } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
@@ -65,6 +66,7 @@ export default async function RootLayout({ children, params }: Props) {
           {children}
           <Toaster richColors position={isRTL ? 'bottom-left' : 'bottom-right'} />
           <UseToastRenderer />
+        <DevSwCleanup />
         </NextIntlClientProvider>
       </body>
     </html>

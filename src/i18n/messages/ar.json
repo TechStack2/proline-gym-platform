@@ -301,7 +301,12 @@
       "errSpecialtyRequired": "اختر تخصصاً واحداً على الأقل.",
       "errNoGym": "لا يوجد نادٍ مرتبط.",
       "errSaveFailed": "تعذر حفظ المدرب.",
-      "photoOptional": "إضافة صورة (اختياري)"
+      "photoOptional": "إضافة صورة (اختياري)",
+      "stepIdentity": "الهوية",
+      "stepSpecialty": "التخصص والسيرة",
+      "stepReview": "مراجعة",
+      "addTitle": "إضافة مدرب",
+      "editTitle": "تعديل المدرب"
     },
     "admin": {
       "edit": "تعديل المدرب",
@@ -842,6 +847,12 @@
       "followUp": "موعد المتابعة",
       "decide": "قرار (تحويل/خسارة)",
       "overdue": "متأخر"
+    },
+    "wizard": {
+      "contact": "جهة الاتصال",
+      "interest": "الاهتمام",
+      "review": "مراجعة",
+      "nextAction": "أول تواصل مستحق في {date}"
     }
   },
   "camps": {
@@ -1171,6 +1182,44 @@
       "daysShort": "ي",
       "onLanding": "على الصفحة",
       "staged": "مخفي"
+    },
+    "planManager": {
+      "title": "إدارة الخطط",
+      "add": "إضافة خطة",
+      "addTitle": "خطة عضوية جديدة",
+      "editTitle": "تعديل الخطة",
+      "save": "حفظ الخطة",
+      "empty": "لا توجد خطط بعد — أضف الأولى.",
+      "stepNames": "الأسماء",
+      "stepPricing": "السعر والمدة",
+      "stepReview": "مراجعة",
+      "nameEn": "الاسم (إنجليزي)",
+      "nameAr": "الاسم (عربي)",
+      "nameFr": "الاسم (فرنسي)",
+      "priceUsd": "السعر (دولار)",
+      "priceLbp": "السعر (ليرة)",
+      "duration": "المدة",
+      "preset30": "شهري",
+      "preset90": "فصلي",
+      "preset180": "6 أشهر",
+      "preset365": "سنوي",
+      "reviewDuration": "{days} يوماً"
+    },
+    "beltLadder": {
+      "title": "سلالم الأحزمة",
+      "addRank": "إضافة رتبة",
+      "addTitle": "إضافة رتبة",
+      "renameTitle": "إعادة تسمية الرتبة",
+      "save": "حفظ",
+      "empty": "لا رتب محددة لهذا التخصص بعد.",
+      "stepRank": "الرتبة",
+      "rankHint": "اختر رتبة الحزام — تُعرض فقط الرتب غير الموجودة على هذا السلّم.",
+      "allRanksUsed": "كل الرتب موجودة على هذا السلّم.",
+      "stepNames": "الأسماء",
+      "stepReview": "مراجعة",
+      "nameEn": "الاسم (إنجليزي)",
+      "nameAr": "الاسم (عربي)",
+      "nameFr": "الاسم (فرنسي)"
     }
   },
   "reportsDashboard": {
@@ -1385,6 +1434,10 @@
       "registration_suspended": {
         "title": "عُلّق مقعد الحصة",
         "body": "عُلّق تسجيلك في الحصة لعدم الدفع — يمكن للاستقبال إعادة تفعيله"
+      },
+      "trial_outcome": {
+        "title": "تم تسجيل نتيجة التجربة",
+        "body": "{leadName} — {outcome}"
       }
     }
   },
@@ -1456,7 +1509,11 @@
   "coachTrials": {
     "title": "التجارب",
     "empty": "لا توجد تجارب مسندة بعد",
-    "unnamed": "عميل"
+    "unnamed": "عميل",
+    "notePlaceholder": "ملاحظة (اختياري)",
+    "interested": "مهتم؟",
+    "todayTitle": "تجارب اليوم",
+    "openTab": "فتح التجارب"
   },
   "progress": {
     "title": "تقدمي",
@@ -1922,5 +1979,36 @@
     "processNow": "معالجة التجديدات الآن",
     "tickDone": "اكتملت دورة المعالجة",
     "tickSummary": "{issued} صدرت · {reminded} تذكير · {lapsed} انتهت · {suspended} عُلّقت · {unfrozen} أُلغي تجميدها"
+  },
+  "wizard": {
+    "stepOf": "الخطوة {n} من {total}",
+    "back": "رجوع",
+    "next": "التالي"
+  },
+  "studentWizard": {
+    "title": "إضافة عضو",
+    "create": "إنشاء العضو",
+    "created": "تم إنشاء العضو",
+    "failed": "تعذّر إنشاء العضو",
+    "identity": "الهوية",
+    "nameEn": "الاسم (إنجليزي)",
+    "nameAr": "الاسم (عربي)",
+    "phone": "الهاتف",
+    "dob": "تاريخ الميلاد",
+    "gender": "الجنس",
+    "male": "ذكر",
+    "female": "أنثى",
+    "guardian": "ولي الأمر",
+    "guardianHint": "هذا العضو قاصر — ابحث عن ولي الأمر بالهاتف أولاً؛ يُنشأ ولي أمر جديد إذا لم يوجد.",
+    "search": "بحث",
+    "found": "وُجد: {name}",
+    "guardianName": "اسم ولي الأمر",
+    "guardianNamePh": "الاسم الكامل",
+    "skipGuardian": "تخطي ولي الأمر الآن",
+    "plan": "خطة العضوية",
+    "planHint": "اختياري — يمكن إضافة عضوية لاحقاً.",
+    "noPlan": "بدون خطة",
+    "review": "مراجعة",
+    "minor": "قاصر"
   }
 }

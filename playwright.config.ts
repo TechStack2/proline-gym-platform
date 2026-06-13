@@ -271,11 +271,21 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // ML-1 membership lifecycle: tick-driven renewals/dunning/freeze. LAST —
-      // the tick mutates gym-wide billing state nothing later should see.
+      // ML-1 membership lifecycle: tick-driven renewals/dunning/freeze — the
+      // tick mutates gym-wide billing state nothing later should see…
       name: 'ml1',
       dependencies: ['setup'],
       testMatch: /ml1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // …except UX-2 (LAST): wizards + settings editors + trials loop. It
+      // creates run-scoped rows (student/lead/plan/discipline) and flips its
+      // OWN leads only, but reads Karim's ML-1-mutated membership card for the
+      // plan-change picker assert — so it must follow ml1.
+      name: 'ux2',
+      dependencies: ['setup'],
+      testMatch: /ux2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

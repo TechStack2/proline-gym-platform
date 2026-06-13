@@ -301,7 +301,12 @@
       "errSpecialtyRequired": "Pick at least one discipline.",
       "errNoGym": "No gym context.",
       "errSaveFailed": "Could not save the coach.",
-      "photoOptional": "Add photo (optional)"
+      "photoOptional": "Add photo (optional)",
+      "stepIdentity": "Identity",
+      "stepSpecialty": "Specialty & bio",
+      "stepReview": "Review",
+      "addTitle": "Add coach",
+      "editTitle": "Edit coach"
     },
     "admin": {
       "edit": "Edit coach",
@@ -842,6 +847,12 @@
       "followUp": "Follow-up due",
       "decide": "Decide (convert/lost)",
       "overdue": "OVERDUE"
+    },
+    "wizard": {
+      "contact": "Contact",
+      "interest": "Interest",
+      "review": "Review",
+      "nextAction": "First contact due {date}"
     }
   },
   "camps": {
@@ -1171,6 +1182,44 @@
       "daysShort": "d",
       "onLanding": "On landing",
       "staged": "Staged"
+    },
+    "planManager": {
+      "title": "Manage plans",
+      "add": "Add plan",
+      "addTitle": "New membership plan",
+      "editTitle": "Edit plan",
+      "save": "Save plan",
+      "empty": "No plans yet — add the first one.",
+      "stepNames": "Names",
+      "stepPricing": "Pricing & duration",
+      "stepReview": "Review",
+      "nameEn": "Name (English)",
+      "nameAr": "Name (Arabic)",
+      "nameFr": "Name (French)",
+      "priceUsd": "Price (USD)",
+      "priceLbp": "Price (LBP)",
+      "duration": "Duration",
+      "preset30": "Monthly",
+      "preset90": "Quarterly",
+      "preset180": "6 months",
+      "preset365": "Annual",
+      "reviewDuration": "{days} days"
+    },
+    "beltLadder": {
+      "title": "Belt ladders",
+      "addRank": "Add rank",
+      "addTitle": "Add rank",
+      "renameTitle": "Rename rank",
+      "save": "Save",
+      "empty": "No ranks defined for this discipline yet.",
+      "stepRank": "Rank",
+      "rankHint": "Pick the belt rank — only ranks not already on this ladder are offered.",
+      "allRanksUsed": "All ranks are already on this ladder.",
+      "stepNames": "Names",
+      "stepReview": "Review",
+      "nameEn": "Name (English)",
+      "nameAr": "Name (Arabic)",
+      "nameFr": "Name (French)"
     }
   },
   "reportsDashboard": {
@@ -1385,6 +1434,10 @@
       "registration_suspended": {
         "title": "Class spot suspended",
         "body": "Your class registration was suspended for non-payment — the desk can reactivate it"
+      },
+      "trial_outcome": {
+        "title": "Trial outcome recorded",
+        "body": "{leadName} — {outcome}"
       }
     }
   },
@@ -1456,7 +1509,11 @@
   "coachTrials": {
     "title": "Trials",
     "empty": "No trials assigned yet",
-    "unnamed": "Lead"
+    "unnamed": "Lead",
+    "notePlaceholder": "Note (optional)",
+    "interested": "Interested?",
+    "todayTitle": "Today's trials",
+    "openTab": "Open trials"
   },
   "progress": {
     "title": "My Progress",
@@ -1922,5 +1979,36 @@
     "processNow": "Process renewals now",
     "tickDone": "Lifecycle tick complete",
     "tickSummary": "{issued} issued · {reminded} reminded · {lapsed} lapsed · {suspended} suspended · {unfrozen} unfrozen"
+  },
+  "wizard": {
+    "stepOf": "Step {n} of {total}",
+    "back": "Back",
+    "next": "Next"
+  },
+  "studentWizard": {
+    "title": "Add member",
+    "create": "Create member",
+    "created": "Member created",
+    "failed": "Could not create member",
+    "identity": "Identity",
+    "nameEn": "Name (English)",
+    "nameAr": "Name (Arabic)",
+    "phone": "Phone",
+    "dob": "Date of birth",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "guardian": "Guardian",
+    "guardianHint": "This member is a minor — search the guardian by phone first; a new guardian is created if no match.",
+    "search": "Search",
+    "found": "Found: {name}",
+    "guardianName": "Guardian name",
+    "guardianNamePh": "Full name",
+    "skipGuardian": "Skip guardian for now",
+    "plan": "Membership plan",
+    "planHint": "Optional — a membership can be added later.",
+    "noPlan": "No plan",
+    "review": "Review",
+    "minor": "Minor"
   }
 }
