@@ -62,10 +62,13 @@ export default function LoginPage({ params }: Props) {
 
     setLoading(true);
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // ON-1: staff use email; invited members/coaches are PHONE-credentialed.
+    // Detect a phone shape and sign in accordingly.
+    const id = email.trim();
+    const isPhone = /^\+?[0-9][0-9\s-]{5,}$/.test(id);
+    const { error: loginError } = await supabase.auth.signInWithPassword(
+      isPhone ? { phone: id.replace(/[\s-]/g, ''), password } : { email: id, password },
+    );
 
     if (loginError) {
       setError(loginError.message);
@@ -122,7 +125,7 @@ export default function LoginPage({ params }: Props) {
               htmlFor="email"
               className={cn('mb-1.5 block text-sm font-medium text-gray-700', isRTL && 'text-right font-arabic')}
             >
-              {t('emailLabel') || 'Email'}
+              {t('emailOrPhoneLabel') || t('emailLabel') || 'Email or phone'}
             </label>
             <div className="relative">
               <Mail className={cn(
@@ -131,7 +134,8 @@ export default function LoginPage({ params }: Props) {
               )} />
               <input
                 id="email"
-                type="email"
+                type="text"
+                inputMode="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="owner@prolinegym.lb"

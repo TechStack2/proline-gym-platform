@@ -30,7 +30,8 @@
     "backToSite": "Back to site",
     "signInPlatform": "Sign in to the platform",
     "demoAccounts": "Demo Accounts",
-    "demoPassword": "Password for all accounts:"
+    "demoPassword": "Password for all accounts:",
+    "emailOrPhoneLabel": "Email or phone"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -2291,6 +2292,54 @@
       "other": "Other",
       "walk_in": "Walk-in",
       "phone": "Phone"
+    }
+  },
+  "invite": {
+    "invite": "Invite to portal",
+    "inviting": "Inviting…",
+    "created": "Account ready",
+    "shareOnce": "Show this once — share it securely. The member changes it on first login.",
+    "login": "Login",
+    "tempPassword": "Temporary password",
+    "copy": "Copy",
+    "copied": "Copied",
+    "shareWhatsapp": "Share on WhatsApp",
+    "waMessage": "Welcome to PRO LINE Gym! Log in with {login} and temporary password {temp}. Please change it on your first login.",
+    "err": {
+      "forbidden": "Only staff can invite.",
+      "target_not_found": "Member not found.",
+      "cross_gym": "Not in your gym.",
+      "no_phone": "Add a phone number first.",
+      "unauthenticated": "Please sign in."
+    }
+  },
+  "onboarding": {
+    "welcome": "Welcome, {name}!",
+    "welcomeSub": "Let's set up your account.",
+    "title": "Get started",
+    "finish": "Finish",
+    "stepPassword": "Set your password",
+    "passwordHint": "Choose a password only you know.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordTooShort": "At least 8 characters.",
+    "passwordMismatch": "Passwords don't match.",
+    "stepLanguage": "Language",
+    "languageHint": "Pick your preferred language.",
+    "stepAvatar": "Profile photo",
+    "avatarHint": "Optional — add a photo.",
+    "stepOrientation": "Quick tour",
+    "orientationHint": "Here's where to find things:",
+    "orient": {
+      "coachToday": "Today: your classes for the day and one-tap attendance.",
+      "coachAttendance": "Mark who showed up from each class.",
+      "coachPt": "Your PT roster: sessions to deliver and log.",
+      "memberSchedule": "Schedule: your classes and times.",
+      "memberPt": "PT: your remaining sessions and bookings.",
+      "memberBilling": "Billing: your invoices and payment history.",
+      "staffToday": "Today: the front-desk action queue.",
+      "staffInbox": "Inbox: requests waiting for approval.",
+      "staffMoney": "Money: invoices, payments and the owner dashboard."
     }
   }
 }

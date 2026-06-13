@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { Avatar } from '@/components/shared/avatar'
+import { InviteButton } from '@/components/shared/invite-button'
 
 // Real schema: coaches has NO name/email/status/coach_disciplines. Name + phone
 // come from the embedded `profiles`; specialization/bio are `*_{ar,en,fr}`;
@@ -74,6 +75,8 @@ export function CoachDetail({ coach, classes, locale, activeClassCount = 0, acti
             <Pencil className="mr-1 h-4 w-4" /> {ta('edit')}
           </Button>
         </Link>
+        {/* ON-1: invite this coach to the app (team invite — elevated scope) */}
+        <InviteButton kind="coach" id={coach.id} name={localizedName(coach.profiles, locale)} locale={locale} />
         {coach.is_active && (
           confirmDeact ? (
             <span className="flex flex-wrap items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" data-testid="coach-deactivate-warning">

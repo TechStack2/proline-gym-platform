@@ -304,11 +304,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // GRW-1 growth funnel — LAST: creates a campaign + anon captures + converts
-      // a lead (its own run-scoped rows), mutating prospect/lead state.
+      // GRW-1 growth funnel: creates a campaign + anon captures + converts a lead.
       name: 'grw1',
       dependencies: ['setup'],
       testMatch: /grw1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // ON-1 portal invites — LAST: adopts login-less profiles into auth users
+      // (its own dedicated fixtures); teardown removes the created auth users.
+      name: 'on1',
+      dependencies: ['setup'],
+      testMatch: /on1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

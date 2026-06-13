@@ -46,6 +46,21 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // ── ON-1 forced-change gate ──────────────────────────────────────────────
+  // A freshly-invited user (temp password) must complete /onboarding before
+  // anything else. The flag rides the JWT (app_metadata) — NO extra DB read.
+  // Exempt /onboarding itself and /auth/* to avoid a redirect loop.
+  if (user && (user.app_metadata as { must_change_password?: boolean } | null)?.must_change_password) {
+    const p = request.nextUrl.pathname;
+    if (!p.includes('/onboarding') && !p.includes('/auth/')) {
+      const seg = p.split('/')[1];
+      const locale = ['ar', 'en', 'fr'].includes(seg) ? seg : getPreferredLocale(request);
+      const url = request.nextUrl.clone();
+      url.pathname = `/${locale}/onboarding`;
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Protected routes — unauthenticated users redirected to login
   const protectedPaths = [
     '/dashboard', '/students', '/classes', '/schedule', '/attendance',

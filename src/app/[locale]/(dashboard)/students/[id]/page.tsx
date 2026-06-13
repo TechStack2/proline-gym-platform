@@ -14,6 +14,7 @@ import { GuardianPanel, type GuardianRow } from './guardian-panel'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { PromotePanel } from './promote-panel'
 import { MemberActions, type OpenInvoice, type PickableCamp, type PickableClass } from './member-actions'
+import { InviteButton } from '@/components/shared/invite-button'
 import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel-client'
 import { MembershipCard, type MembershipCardData, type PlanOption } from './membership-card'
 import { registrationState } from '@/lib/lifecycle/status'
@@ -417,16 +418,20 @@ export default async function Member360Page({ params: { locale, id }, searchPara
           {/* FD-1: member-contextual quick actions — modals pre-filled with THIS
               member; the old pills navigated to GLOBAL pages (/classes — the
               create-a-class page! — /payments/new, /pt) and dropped the member. */}
-          <MemberActions
-            studentId={id}
-            memberName={name}
-            classes={(pickableClasses ?? []) as PickableClass[]}
-            openInvoices={openInvoices}
-            camps={pickableCamps}
-            memberAge={age}
-            locale={locale}
-            autoPay={searchParams?.pay === '1'}
-          />
+          <div className="flex flex-col items-end gap-2">
+            {/* ON-1: invite this member to the portal (external credential share) */}
+            <InviteButton kind="student" id={id} name={name} locale={locale} />
+            <MemberActions
+              studentId={id}
+              memberName={name}
+              classes={(pickableClasses ?? []) as PickableClass[]}
+              openInvoices={openInvoices}
+              camps={pickableCamps}
+              memberAge={age}
+              locale={locale}
+              autoPay={searchParams?.pay === '1'}
+            />
+          </div>
         </div>
       </div>
 

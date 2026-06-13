@@ -30,7 +30,8 @@
     "backToSite": "Retour au site",
     "signInPlatform": "Connexion à la plateforme",
     "demoAccounts": "Comptes de démonstration",
-    "demoPassword": "Mot de passe pour tous les comptes :"
+    "demoPassword": "Mot de passe pour tous les comptes :",
+    "emailOrPhoneLabel": "Email ou téléphone"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -2291,6 +2292,54 @@
       "other": "Autre",
       "walk_in": "Sur place",
       "phone": "Téléphone"
+    }
+  },
+  "invite": {
+    "invite": "Inviter au portail",
+    "inviting": "Invitation…",
+    "created": "Compte prêt",
+    "shareOnce": "Affiché une seule fois — partagez-le en sécurité. Le membre le change à la première connexion.",
+    "login": "Identifiant",
+    "tempPassword": "Mot de passe temporaire",
+    "copy": "Copier",
+    "copied": "Copié",
+    "shareWhatsapp": "Partager sur WhatsApp",
+    "waMessage": "Bienvenue chez PRO LINE Gym ! Connectez-vous avec {login} et le mot de passe temporaire {temp}. Veuillez le changer à votre première connexion.",
+    "err": {
+      "forbidden": "Seul le personnel peut inviter.",
+      "target_not_found": "Membre introuvable.",
+      "cross_gym": "Pas dans votre salle.",
+      "no_phone": "Ajoutez d'abord un numéro.",
+      "unauthenticated": "Veuillez vous connecter."
+    }
+  },
+  "onboarding": {
+    "welcome": "Bienvenue, {name} !",
+    "welcomeSub": "Configurons votre compte.",
+    "title": "Commencer",
+    "finish": "Terminer",
+    "stepPassword": "Définir le mot de passe",
+    "passwordHint": "Choisissez un mot de passe connu de vous seul.",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "passwordTooShort": "Au moins 8 caractères.",
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "stepLanguage": "Langue",
+    "languageHint": "Choisissez votre langue préférée.",
+    "stepAvatar": "Photo de profil",
+    "avatarHint": "Facultatif — ajoutez une photo.",
+    "stepOrientation": "Tour rapide",
+    "orientationHint": "Voici où trouver les choses :",
+    "orient": {
+      "coachToday": "Aujourd'hui : vos cours du jour et la présence en un clic.",
+      "coachAttendance": "Marquez les présents de chaque cours.",
+      "coachPt": "Votre liste PT : les séances à assurer et à enregistrer.",
+      "memberSchedule": "Horaire : vos cours et leurs heures.",
+      "memberPt": "PT : vos séances restantes et réservations.",
+      "memberBilling": "Factures : vos factures et historique de paiement.",
+      "staffToday": "Aujourd'hui : la file d'actions de la réception.",
+      "staffInbox": "Boîte de réception : les demandes en attente.",
+      "staffMoney": "Argent : factures, paiements et tableau du propriétaire."
     }
   }
 }
