@@ -10,14 +10,16 @@ import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { getRenewalsDue } from '@/lib/pt/refill'
 import { RenewRowButton } from '@/components/dashboard/lifecycle-buttons'
 import { membershipState } from '@/lib/lifecycle/status'
+import { parseHorizon, horizonEndDate, HORIZONS, type Horizon } from '@/lib/finances/horizon'
+import { getWinbackQueue } from '@/lib/finances/winback'
 import {
   UserPlus, Users, DollarSign, ClipboardList, Dumbbell, CalendarDays,
-  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent, Flame,
+  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent, Flame, Heart, CalendarClock,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: { locale: string } }
+type Props = { params: { locale: string }; searchParams: { h?: string } }
 
 /**
  * /today — Today 2.0 (FD-1): the front-desk ACTION QUEUE. The IA-1 status page
@@ -26,7 +28,7 @@ type Props = { params: { locale: string } }
  * Money today · PT today. Every row drills into an existing verified flow;
  * cards with nothing to act on collapse to one ✓ line. Recomposition only.
  */
-export default async function TodayPage({ params: { locale } }: Props) {
+export default async function TodayPage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('today')
   const supabase = await createClient()
@@ -40,7 +42,9 @@ export default async function TodayPage({ params: { locale } }: Props) {
   const now = new Date()
   const dow = now.getDay() // 0=Sunday … 6=Saturday (class_schedules convention)
   const dayStart = now.toISOString().slice(0, 10)
-  const in7d = new Date(now.getTime() + 7 * 864e5).toISOString().slice(0, 10)
+  // FIN-1 horizon: Today (default) / Week / Month re-scope the action stack.
+  const horizon: Horizon = parseHorizon(searchParams?.h)
+  const horizonEnd = horizonEndDate(horizon, now)
   const hhmmNow = now.toTimeString().slice(0, 5)
 
   const [
@@ -76,17 +80,18 @@ export default async function TodayPage({ params: { locale } }: Props) {
       .eq('students.gym_id', gymId)
       .eq('status', 'active')
       .gte('end_date', dayStart)
-      .lte('end_date', in7d)
+      .lte('end_date', horizonEnd)
       .order('end_date'),
-    // ── 4. Money: invoices due today (open) + overdue ──
+    // ── 4. Money: invoices due within the horizon (open) + overdue ──
     supabase
       .from('invoices')
       .select(`id, invoice_number, total_usd, status, due_date,
         students (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
       .eq('gym_id', gymId)
-      .eq('due_date', dayStart)
+      .gte('due_date', dayStart)
+      .lte('due_date', horizonEnd)
       .in('status', ['pending', 'partial'])
-      .order('created_at'),
+      .order('due_date'),
     supabase
       .from('invoices')
       .select('id, total_usd')
@@ -128,6 +133,8 @@ export default async function TodayPage({ params: { locale } }: Props) {
   const bal = (inv: any) => balanceUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }])
   const overdueOpen = (overdueRaw ?? []).filter((i: any) => bal(i) > 0)
   const overdueUsd = overdueOpen.reduce((s: number, i: any) => s + bal(i), 0)
+  // FIN-1: projected collections = Σ open balances due within the horizon.
+  const projectedUsd = (dueToday ?? []).reduce((s: number, i: any) => s + bal(i), 0)
 
   const todayPt = (ptSessions ?? []).filter((s: any) => one(s.coaches)?.gym_id === gymId)
   const tally = await getDailyTally(supabase, dayStart)
@@ -140,7 +147,7 @@ export default async function TodayPage({ params: { locale } }: Props) {
     .eq('gym_id', gymId)
     .is('deleted_at', null)
     .in('status', ['open', 'in_progress', 'full'])
-    .lte('start_date', dayStart)
+    .lte('start_date', horizonEnd)
     .gte('end_date', dayStart)
   // Batched (not per-camp N+1 — /today renders on every desk visit).
   const liveCampIds = ((liveCamps ?? []) as any[]).map((c) => c.id)
@@ -178,6 +185,15 @@ export default async function TodayPage({ params: { locale } }: Props) {
   const chase = ((chaseRaw ?? []) as any[])
     .map((m) => ({ ...m, state: membershipState(m, gymPolicyRow ?? {}) }))
     .filter((m) => m.state === 'overdue' || m.state === 'lapsed')
+
+  // ── FIN-1: win-back due — queued followups landing in the horizon + fresh
+  //    lapses with no followup yet (both drill into the Money → Win-back tab). ──
+  const winbackQueue = await getWinbackQueue(supabase, gymId, locale)
+  const winbackDue = winbackQueue.filter((w) =>
+    !w.reactivated && (
+      (w.nextActionDate != null && w.nextActionDate >= dayStart && w.nextActionDate <= horizonEnd) ||
+      w.lastOutcome === null
+    ))
 
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
   const fmtTime = (iso: string) =>
@@ -218,6 +234,18 @@ export default async function TodayPage({ params: { locale } }: Props) {
           className="text-sm font-medium text-primary-600 hover:underline">
           {t('openDiary')}
         </Link>
+      </div>
+
+      {/* FIN-1 horizon switcher — Today (default) / Week / Month lenses */}
+      <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="horizon-switcher">
+        {HORIZONS.map((h) => (
+          <Link key={h} href={`/${locale}/today${h === 'today' ? '' : `?h=${h}`}`}
+            data-testid={`horizon-${h}`} data-active={horizon === h}
+            className={cn('rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+              horizon === h ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+            {t(`horizon.${h}`)}
+          </Link>
+        ))}
       </div>
 
       {/* Quick actions (kept) */}
@@ -347,12 +375,41 @@ export default async function TodayPage({ params: { locale } }: Props) {
         })}
       </ActionCard>
 
+      {/* ── Card: Win-back due (FIN-1) — followups landing in the horizon +
+          fresh lapses with no followup; drills into Money → Win-back ── */}
+      <ActionCard icon={Heart} title={t('cards.winbackDue')} count={winbackDue.length}
+        emptyText={t('cards.noneWinback')} testid="winback-due" isRTL={isRTL}>
+        {winbackDue.map((w) => (
+          <ActionRow key={w.studentId} href={`/${locale}/money?tab=winback`} testid="winback-due-row"
+            action={
+              <span className="flex shrink-0 items-center gap-1.5">
+                <Link href={`/${locale}/money?tab=winback`} data-testid="winback-due-open"
+                  className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100">
+                  <Heart className="h-3.5 w-3.5" /> {t('cards.followUp')}
+                </Link>
+                {tel(w.phone, 'winback-due-call')}
+              </span>
+            }>
+            <p className="truncate text-sm font-semibold text-gray-900">{w.name}</p>
+            <p className="text-xs text-gray-500">
+              {w.nextActionDate
+                ? <span className="inline-flex items-center gap-1"><CalendarClock className="h-3 w-3" />{t('cards.dueOn', { date: fmtDate(w.nextActionDate) })}</span>
+                : t('cards.freshLapse')}
+            </p>
+          </ActionRow>
+        ))}
+      </ActionCard>
+
       {/* ── Card 4: Money today (due now + overdue + the day's drawer) ── */}
       <ActionCard icon={DollarSign} title={t('cards.money')} count={(dueToday ?? []).length + overdueOpen.length}
         badge={`${(dueToday ?? []).length} · ${overdueOpen.length}`}
         emptyText={t('cards.noneDue')} testid="money" isRTL={isRTL}
         footer={
           <div className="mt-3 border-t pt-2">
+            <div className="mb-2 flex items-center justify-between" data-testid="projected-collections">
+              <span className="text-xs font-medium text-gray-500">{t('cards.projected')}</span>
+              <span className="text-sm font-bold text-gray-900" data-testid="projected-usd">${projectedUsd.toFixed(2)}</span>
+            </div>
             <p className="mb-1 text-xs font-medium text-gray-500">{t('collections')}</p>
             <div className="flex flex-wrap gap-2 text-sm" data-testid="today-tally">
               {tally.size === 0 ? (

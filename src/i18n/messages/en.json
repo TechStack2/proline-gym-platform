@@ -1655,7 +1655,18 @@
       "campUnpaid": "{count} unpaid",
       "chase": "Chase list",
       "noneChase": "nobody to chase",
-      "lapsed": "Lapsed"
+      "lapsed": "Lapsed",
+      "projected": "Projected collections",
+      "winbackDue": "Win-back due",
+      "noneWinback": "no follow-ups due",
+      "followUp": "Follow up",
+      "dueOn": "due {date}",
+      "freshLapse": "just lapsed — no follow-up yet"
+    },
+    "horizon": {
+      "today": "Today",
+      "week": "This Week",
+      "month": "This Month"
     }
   },
   "inbox": {
@@ -1774,7 +1785,8 @@
     "noPaymentsToday": "No payments today.",
     "viewPayments": "View payments →",
     "renewalsOutstanding": "Outstanding renewals",
-    "renewalsOpen": "{count} open renewal invoices"
+    "renewalsOpen": "{count} open renewal invoices",
+    "winback": "Win-back"
   },
   "scheduleView": {
     "title": "Schedule",
@@ -2179,5 +2191,60 @@
   "invoiceNew": {
     "title": "New invoice",
     "subtitle": "Issue a dual-currency invoice through the canonical service."
+  },
+  "winback": {
+    "empty": "No dropped members to win back — everyone is active.",
+    "intro": "Members who lapsed, cancelled or were suspended. Call, log the outcome, and reactivate.",
+    "unnamed": "Member",
+    "reactivated": "Reactivated",
+    "call": "Call",
+    "reactivate": "Reactivate",
+    "logOutcome": "Log outcome",
+    "notePlaceholder": "Note (optional)",
+    "nextActionDate": "Next action",
+    "save": "Save",
+    "churnedOn": "Dropped {date}",
+    "nextOn": "next {date}",
+    "kind": {
+      "lapsed": "Lapsed",
+      "cancelled": "Cancelled",
+      "suspended": "Suspended"
+    },
+    "outcome": {
+      "no_answer": "No answer",
+      "not_interested": "Not interested",
+      "thinking": "Thinking about it",
+      "promised_visit": "Promised a visit",
+      "reactivated": "Reactivated"
+    }
+  },
+  "ownerFinances": {
+    "revenueTitle": "Revenue by month",
+    "month": "Month",
+    "total": "Total",
+    "product": {
+      "membership": "Membership",
+      "class": "Classes",
+      "pt": "PT",
+      "camp": "Camps",
+      "other": "Other"
+    },
+    "methodTitle": "Collections this month",
+    "noCollections": "No collections this month yet.",
+    "agingTitle": "Outstanding aging",
+    "aging": {
+      "current": "Current",
+      "d1_30": "1–30 days",
+      "d31_60": "31–60 days",
+      "d60_plus": "60+ days"
+    },
+    "invoiceCount": "{count, plural, one {# invoice} other {# invoices}}",
+    "churnTitle": "Churn by month",
+    "churn": {
+      "lapsed": "Lapsed",
+      "cancelled": "Cancelled",
+      "suspended": "Suspended"
+    },
+    "toWinback": "Open the win-back queue →"
   }
 }

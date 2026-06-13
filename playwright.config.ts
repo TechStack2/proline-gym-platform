@@ -289,10 +289,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // AX-1 Arabic-active smoke — read-only across all four shells; last.
+      // AX-1 Arabic-active smoke — read-only across all four shells.
       name: 'ax1',
       dependencies: ['setup'],
       testMatch: /ax1-ar\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // FIN-1 horizons + owner finances + win-back — LAST: it pays the Horizon
+      // invoice and reinstates the Dropped member (its own isolated fixtures),
+      // mutating gym money/lifecycle state nothing later should read.
+      name: 'fin1',
+      dependencies: ['setup'],
+      testMatch: /fin1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

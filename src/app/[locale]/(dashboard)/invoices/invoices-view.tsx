@@ -5,7 +5,15 @@ import { cn } from '@/lib/utils'
 import { Plus, FileText } from 'lucide-react'
 import { balanceUsd, localizedName, STATUS_BADGE, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
 
-type Props = { locale: string; searchParams: { search?: string; status?: string } }
+type Props = { locale: string; searchParams: { search?: string; status?: string; aging?: string } }
+
+// FIN-1: days-past-due → aging bucket (matches getOutstandingAging).
+function agingBucket(dueDate: string | null, today: string): string {
+  if (!dueDate) return 'current'
+  if (dueDate >= today) return 'current'
+  const days = Math.floor((new Date(today + 'T12:00:00Z').getTime() - new Date(dueDate + 'T12:00:00Z').getTime()) / 864e5)
+  return days <= 30 ? 'd1_30' : days <= 60 ? 'd31_60' : 'd60_plus'
+}
 
 /**
  * /invoices (D1 repair). The as-is page was DOA — it queried students.first_name
@@ -63,13 +71,17 @@ export async function InvoicesView({ locale, searchParams }: Props) {
 
   const search = (searchParams.search ?? '').toLowerCase()
   const statusFilter = searchParams.status ?? ''
+  const agingFilter = searchParams.aging ?? '' // FIN-1 aging drill-down
   const filtered = invList.filter((inv: any) => {
     const profRow = inv.students?.profiles
     const profile = Array.isArray(profRow) ? profRow[0] : profRow
     const name = localizedName(profile, locale).toLowerCase()
     const matchSearch = !search || name.includes(search) || (inv.invoice_number || '').toLowerCase().includes(search)
     const matchStatus = !statusFilter || inv.status === statusFilter
-    return matchSearch && matchStatus
+    // Aging drill-down: only open invoices, in the selected days-past-due bucket.
+    const isOpen = ['pending', 'partial', 'overdue'].includes(inv.status)
+    const matchAging = !agingFilter || (isOpen && balOf(inv) > 0 && agingBucket(inv.due_date, today) === agingFilter)
+    return matchSearch && matchStatus && matchAging
   })
 
   const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')

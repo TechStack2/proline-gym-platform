@@ -1655,7 +1655,18 @@
       "campUnpaid": "{count} impayées",
       "chase": "Liste de relance",
       "noneChase": "personne à relancer",
-      "lapsed": "Échu"
+      "lapsed": "Échu",
+      "projected": "Encaissements prévus",
+      "winbackDue": "Reconquête due",
+      "noneWinback": "aucun suivi dû",
+      "followUp": "Relancer",
+      "dueOn": "dû le {date}",
+      "freshLapse": "vient d'expirer — aucun suivi"
+    },
+    "horizon": {
+      "today": "Aujourd'hui",
+      "week": "Cette semaine",
+      "month": "Ce mois"
     }
   },
   "inbox": {
@@ -1774,7 +1785,8 @@
     "noPaymentsToday": "Aucun paiement aujourd'hui.",
     "viewPayments": "Voir les paiements →",
     "renewalsOutstanding": "Renouvellements dus",
-    "renewalsOpen": "{count} factures de renouvellement ouvertes"
+    "renewalsOpen": "{count} factures de renouvellement ouvertes",
+    "winback": "Reconquête"
   },
   "scheduleView": {
     "title": "Horaire",
@@ -2179,5 +2191,60 @@
   "invoiceNew": {
     "title": "Nouvelle facture",
     "subtitle": "Émettez une facture bi-devise via le service canonique."
+  },
+  "winback": {
+    "empty": "Aucun membre perdu à reconquérir — tous sont actifs.",
+    "intro": "Membres expirés, annulés ou suspendus. Appelez, notez le résultat et réactivez.",
+    "unnamed": "Membre",
+    "reactivated": "Réactivé",
+    "call": "Appeler",
+    "reactivate": "Réactiver",
+    "logOutcome": "Noter le résultat",
+    "notePlaceholder": "Note (facultatif)",
+    "nextActionDate": "Prochaine action",
+    "save": "Enregistrer",
+    "churnedOn": "Perdu le {date}",
+    "nextOn": "prochain {date}",
+    "kind": {
+      "lapsed": "Expiré",
+      "cancelled": "Annulé",
+      "suspended": "Suspendu"
+    },
+    "outcome": {
+      "no_answer": "Pas de réponse",
+      "not_interested": "Pas intéressé",
+      "thinking": "Réfléchit",
+      "promised_visit": "Visite promise",
+      "reactivated": "Réactivé"
+    }
+  },
+  "ownerFinances": {
+    "revenueTitle": "Revenus par mois",
+    "month": "Mois",
+    "total": "Total",
+    "product": {
+      "membership": "Adhésion",
+      "class": "Cours",
+      "pt": "PT",
+      "camp": "Camps",
+      "other": "Autre"
+    },
+    "methodTitle": "Encaissements ce mois",
+    "noCollections": "Aucun encaissement ce mois.",
+    "agingTitle": "Ancienneté des impayés",
+    "aging": {
+      "current": "À jour",
+      "d1_30": "1–30 jours",
+      "d31_60": "31–60 jours",
+      "d60_plus": "60+ jours"
+    },
+    "invoiceCount": "{count, plural, one {# facture} other {# factures}}",
+    "churnTitle": "Attrition par mois",
+    "churn": {
+      "lapsed": "Expiré",
+      "cancelled": "Annulé",
+      "suspended": "Suspendu"
+    },
+    "toWinback": "Ouvrir la file de reconquête →"
   }
 }

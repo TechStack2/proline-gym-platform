@@ -1655,7 +1655,18 @@
       "campUnpaid": "{count} غير مدفوعة",
       "chase": "قائمة المتابعة",
       "noneChase": "لا أحد للمتابعة",
-      "lapsed": "منتهٍ"
+      "lapsed": "منتهٍ",
+      "projected": "التحصيلات المتوقعة",
+      "winbackDue": "استرجاع مستحق",
+      "noneWinback": "لا متابعات مستحقة",
+      "followUp": "متابعة",
+      "dueOn": "مستحق {date}",
+      "freshLapse": "انتهى للتو — لا متابعة بعد"
+    },
+    "horizon": {
+      "today": "اليوم",
+      "week": "هذا الأسبوع",
+      "month": "هذا الشهر"
     }
   },
   "inbox": {
@@ -1774,7 +1785,8 @@
     "noPaymentsToday": "لا مدفوعات اليوم.",
     "viewPayments": "عرض المدفوعات ←",
     "renewalsOutstanding": "تجديدات مستحقة",
-    "renewalsOpen": "{count} فواتير تجديد مفتوحة"
+    "renewalsOpen": "{count} فواتير تجديد مفتوحة",
+    "winback": "الاسترجاع"
   },
   "scheduleView": {
     "title": "الجدول",
@@ -2179,5 +2191,60 @@
   "invoiceNew": {
     "title": "إصدار فاتورة",
     "subtitle": "أصدر فاتورة بعملتين عبر الخدمة الموحّدة."
+  },
+  "winback": {
+    "empty": "لا أعضاء منسحبين لاسترجاعهم — الجميع نشط.",
+    "intro": "أعضاء انتهت عضويتهم أو ألغوها أو عُلّقت. اتصل، سجّل النتيجة، وأعد تفعيلهم.",
+    "unnamed": "عضو",
+    "reactivated": "أُعيد تفعيله",
+    "call": "اتصال",
+    "reactivate": "إعادة التفعيل",
+    "logOutcome": "تسجيل النتيجة",
+    "notePlaceholder": "ملاحظة (اختياري)",
+    "nextActionDate": "الإجراء التالي",
+    "save": "حفظ",
+    "churnedOn": "انسحب في {date}",
+    "nextOn": "التالي {date}",
+    "kind": {
+      "lapsed": "منتهٍ",
+      "cancelled": "ملغى",
+      "suspended": "معلّق"
+    },
+    "outcome": {
+      "no_answer": "لا رد",
+      "not_interested": "غير مهتم",
+      "thinking": "يفكّر في الأمر",
+      "promised_visit": "وعد بزيارة",
+      "reactivated": "أُعيد تفعيله"
+    }
+  },
+  "ownerFinances": {
+    "revenueTitle": "الإيرادات حسب الشهر",
+    "month": "الشهر",
+    "total": "الإجمالي",
+    "product": {
+      "membership": "العضوية",
+      "class": "الحصص",
+      "pt": "تدريب خاص",
+      "camp": "المخيمات",
+      "other": "أخرى"
+    },
+    "methodTitle": "تحصيلات هذا الشهر",
+    "noCollections": "لا تحصيلات هذا الشهر بعد.",
+    "agingTitle": "أعمار المستحقات",
+    "aging": {
+      "current": "حالي",
+      "d1_30": "1–30 يوماً",
+      "d31_60": "31–60 يوماً",
+      "d60_plus": "60+ يوماً"
+    },
+    "invoiceCount": "{count, plural, zero {# فاتورة} one {# فاتورة} two {فاتورتان} few {# فواتير} many {# فاتورة} other {# فاتورة}}",
+    "churnTitle": "الانسحاب حسب الشهر",
+    "churn": {
+      "lapsed": "منتهٍ",
+      "cancelled": "ملغى",
+      "suspended": "معلّق"
+    },
+    "toWinback": "افتح قائمة الاسترجاع ←"
   }
 }

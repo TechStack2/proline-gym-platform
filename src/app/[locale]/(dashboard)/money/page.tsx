@@ -6,15 +6,18 @@ import { getDailyTally } from '@/lib/billing/daily-tally'
 import { balanceUsd, METHOD_LABEL } from '@/lib/billing/reconcile'
 import { InvoicesView } from '../invoices/invoices-view'
 import { PaymentsView } from '../payments/payments-view'
-import { DollarSign, FileText, Banknote, RefreshCw } from 'lucide-react'
+import { DollarSign, FileText, Banknote, RefreshCw, Heart } from 'lucide-react'
 import { ProcessRenewalsButton } from '@/components/dashboard/lifecycle-buttons'
+import { OwnerFinances } from './money-owner-dashboard'
+import { WinbackView } from './winback-view'
+import { getWinbackQueue } from '@/lib/finances/winback'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 type Props = {
   params: { locale: string }
-  searchParams: { tab?: string; search?: string; status?: string; method?: string; from?: string; to?: string }
+  searchParams: { tab?: string; search?: string; status?: string; method?: string; from?: string; to?: string; aging?: string }
 }
 
 /**
@@ -27,7 +30,7 @@ type Props = {
 export default async function MoneyPage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('money')
-  const tab = ['invoices', 'payments'].includes(searchParams.tab ?? '') ? searchParams.tab! : 'overview'
+  const tab = ['invoices', 'payments', 'winback'].includes(searchParams.tab ?? '') ? searchParams.tab! : 'overview'
 
   const TabLink = ({ k, label, icon: Icon }: { k: string; label: string; icon: any }) => (
     <Link
@@ -53,20 +56,37 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
           <TabLink k="overview" label={t('overview')} icon={DollarSign} />
           <TabLink k="invoices" label={t('invoices')} icon={FileText} />
           <TabLink k="payments" label={t('payments')} icon={Banknote} />
+          <TabLink k="winback" label={t('winback')} icon={Heart} />
         </div>
       </div>
 
       {tab === 'overview' && <MoneyOverview locale={locale} />}
       {tab === 'invoices' && <InvoicesView locale={locale} searchParams={searchParams} />}
       {tab === 'payments' && <PaymentsView locale={locale} searchParams={searchParams} />}
+      {tab === 'winback' && <WinbackTab locale={locale} />}
     </div>
   )
+}
+
+async function WinbackTab({ locale }: { locale: string }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: profile } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+  if (!profile?.gym_id) return null
+  const rows = await getWinbackQueue(supabase, profile.gym_id, locale)
+  return <WinbackView rows={rows} locale={locale} />
 }
 
 async function MoneyOverview({ locale }: { locale: string }) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('money')
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+    : { data: null }
+  const gymId = profile?.gym_id as string | undefined
 
   // The cash drawer: today's per-method tally (shared D1 logic).
   const tally = await getDailyTally(supabase)
@@ -98,6 +118,7 @@ async function MoneyOverview({ locale }: { locale: string }) {
     (s2: number, i: any) => s2 + balanceUsd(i.total_usd, [{ amount_usd: paidBy.get(i.id) ?? 0 }]), 0)
 
   return (
+    <>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="money-renewals">
         <p className="flex items-center gap-1 text-xs text-gray-500"><RefreshCw className="h-3 w-3" /> {t('renewalsOutstanding')}</p>
@@ -132,5 +153,7 @@ async function MoneyOverview({ locale }: { locale: string }) {
         </Link>
       </div>
     </div>
+    {gymId && <OwnerFinances locale={locale} gymId={gymId} />}
+    </>
   )
 }
