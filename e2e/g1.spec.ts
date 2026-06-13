@@ -25,8 +25,10 @@ test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backe
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
     // Receipt share (deterministic: ON-1's Adopt Member has a PAID invoice).
+    // NB: under /ar the card shows the Arabic name, so don't filter by the
+    // English name — the 'Adopt' search already narrows to the one student.
     await page.goto('/ar/students?search=Adopt')
-    await vis(page, '[data-testid="student-card"]').filter({ hasText: 'Adopt Member' }).first().click()
+    await vis(page, '[data-testid="student-card"]').first().click()
     await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 })
     await vis(page, '[data-testid="member-invoice-row"][data-type="membership"]').first().locator('a').first().click()
     await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 15_000 })
