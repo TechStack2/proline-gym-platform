@@ -133,13 +133,20 @@ BEGIN
   RETURNING id INTO v_lead_id;
 
   -- lead_new → owner + receptionist (in-RPC; anon has no authed producer).
-  INSERT INTO notifications (user_id, gym_id, type, title_key, body_key, params, entity_type, entity_id, action_url)
-  SELECT ur.user_id, v_gym_id, 'lead_new',
-         'messages.lead_new.title', 'messages.lead_new.body',
-         jsonb_build_object('leadName', btrim(p_name)),
-         'lead', v_lead_id, '/leads'
-  FROM user_roles ur
-  WHERE ur.gym_id = v_gym_id AND ur.role IN ('owner', 'receptionist');
+  -- BEST-EFFORT: a notification failure must NEVER roll back the captured lead
+  -- (the anon visitor's submit is the product event). notifications.user_id FKs
+  -- profiles(id) (000032), so skip any orphan user_role whose user_id has no
+  -- profile — that orphan was the only thing that could violate the FK.
+  BEGIN
+    INSERT INTO notifications (user_id, gym_id, type, title_key, body_key, params, entity_type, entity_id, action_url)
+    SELECT ur.user_id, v_gym_id, 'lead_new',
+           'messages.lead_new.title', 'messages.lead_new.body',
+           jsonb_build_object('leadName', btrim(p_name)),
+           'lead', v_lead_id, '/leads'
+    FROM user_roles ur
+    WHERE ur.gym_id = v_gym_id AND ur.role IN ('owner', 'receptionist')
+      AND EXISTS (SELECT 1 FROM profiles pr WHERE pr.id = ur.user_id);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
 
   RETURN 'ok';
 END;
