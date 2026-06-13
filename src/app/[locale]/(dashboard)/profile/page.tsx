@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { User, Phone, Mail, Shield, CalendarDays, Clock, Globe, Save, Check } from 'lucide-react'
@@ -127,7 +128,7 @@ export default async function StaffProfilePage({ params }: Props) {
           label={isRTL ? 'تاريخ الانضمام' : locale === 'fr' ? "Date d'inscription" : 'Joined'}
           value={
             profile?.created_at
-              ? new Date(profile.created_at).toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', {
+              ? new Date(profile.created_at).toLocaleDateString(dateLocale(locale), {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
@@ -140,7 +141,7 @@ export default async function StaffProfilePage({ params }: Props) {
           label={isRTL ? 'آخر تسجيل دخول' : locale === 'fr' ? 'Dernière connexion' : 'Last Login'}
           value={
             profile?.last_login_at
-              ? new Date(profile.last_login_at).toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', {
+              ? new Date(profile.last_login_at).toLocaleDateString(dateLocale(locale), {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',

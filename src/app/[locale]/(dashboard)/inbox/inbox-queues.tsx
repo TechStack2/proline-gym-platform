@@ -7,6 +7,7 @@
  * approvePtRequest/rejectPtRequest. No re-implemented business logic here —
  * this component only renders rows and forwards clicks.
  */
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -62,7 +63,7 @@ export function InboxQueues({
     })
   }
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
 
   return (
     <div className="space-y-6">

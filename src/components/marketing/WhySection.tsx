@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Medal, Building2, Users2 } from 'lucide-react';
 
@@ -5,37 +6,15 @@ type WhySectionProps = {
   locale: string;
 };
 
+// AX-1: copy lives in landing.why.* (the ar/en field pair dropped fr).
 const reasons = [
-  {
-    key: 'coaches',
-    icon: Medal,
-    color: 'from-amber-400 to-yellow-600',
-    titleEn: 'Expert Coaches',
-    titleAr: 'مدربون خبراء',
-    descEn: 'Train under certified instructors with international competition experience. The Fakih Brothers bring years of professional fighting and coaching expertise.',
-    descAr: 'تدرب تحت إشراف مدربين معتمدين ذوي خبرة في المنافسات الدولية. الأخوة فقيه يجلبون سنوات من الخبرة الاحترافية في القتال والتدريب.',
-  },
-  {
-    key: 'facility',
-    icon: Building2,
-    color: 'from-blue-400 to-cyan-600',
-    titleEn: 'Modern Facility',
-    titleAr: 'منشأة حديثة',
-    descEn: 'Train in a fully equipped facility at Baabda Sky Business Center. Professional-grade mats, bags, and equipment for every discipline.',
-    descAr: 'تدرب في منشأة مجهزة بالكامل في مركز سكاي للأعمال ببدا. بساط احترافي وأكياس ومعدات لكل التخصصات.',
-  },
-  {
-    key: 'community',
-    icon: Users2,
-    color: 'from-green-400 to-emerald-600',
-    titleEn: 'Strong Community',
-    titleAr: 'مجتمع قوي',
-    descEn: 'Join 2,760+ followers and a thriving community of fighters, fitness enthusiasts, and families. Adults, kids, ladies — everyone has a home here.',
-    descAr: 'انضم إلى أكثر من 2,760 متابع ومجتمع مزدهر من المقاتلين وعشاق اللياقة والعائلات. الكبار، الأطفال، السيدات — للجميع مكان هنا.',
-  },
+  { key: 'coaches', icon: Medal, color: 'from-amber-400 to-yellow-600' },
+  { key: 'facility', icon: Building2, color: 'from-blue-400 to-cyan-600' },
+  { key: 'community', icon: Users2, color: 'from-green-400 to-emerald-600' },
 ];
 
 export function WhySection({ locale }: WhySectionProps) {
+  const t = useTranslations('landing.why');
   const isRTL = locale === 'ar';
 
   return (
@@ -48,12 +27,10 @@ export function WhySection({ locale }: WhySectionProps) {
               isRTL && 'font-arabic'
             )}
           >
-            {isRTL ? 'لماذا برو لاين؟' : 'Why PRO LINE?'}
+            {t('title')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-            {isRTL
-              ? 'لسنا مجرد نادٍ رياضي — نحن وجهة للمقاتلين'
-              : 'More than a gym — we\'re a destination for fighters'}
+            {t('subtitle')}
           </p>
         </div>
 
@@ -71,10 +48,10 @@ export function WhySection({ locale }: WhySectionProps) {
                   <Icon className="h-8 w-8 text-white" />
                 </div>
                 <h3 className={cn('text-xl font-semibold text-secondary-900 mb-3', isRTL && 'font-arabic')}>
-                  {isRTL ? reason.titleAr : reason.titleEn}
+                  {t(`${reason.key}Title` as Parameters<typeof t>[0])}
                 </h3>
                 <p className="text-gray-500 leading-relaxed">
-                  {isRTL ? reason.descAr : reason.descEn}
+                  {t(`${reason.key}Desc` as Parameters<typeof t>[0])}
                 </p>
               </div>
             );

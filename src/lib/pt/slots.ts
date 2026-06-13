@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
@@ -112,9 +113,9 @@ export async function getBookableSlots(
     return { start: start - buffer * 60000, end: start + ((s.duration_minutes ?? 60) + buffer) * 60000 }
   })
 
-  const dayFmt = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US',
+  const dayFmt = new Intl.DateTimeFormat(dateLocale(locale),
     { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' })
-  const timeFmt = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-LB' : 'en-US',
+  const timeFmt = new Intl.DateTimeFormat(dateLocale(locale),
     { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
   const todayLocal = localParts(now, tz).dateStr

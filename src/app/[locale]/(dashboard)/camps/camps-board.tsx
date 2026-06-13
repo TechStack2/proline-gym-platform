@@ -6,6 +6,7 @@
  * toggle + archive (status→cancelled, never delete) with a confirmed-
  * registrations warning. Writes go through the gym-scoped staff RLS.
  */
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -57,7 +58,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
   })
 
   const lname = (c: CampRow) => ((isRTL ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en)
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US', { day: 'numeric', month: 'short' })
+  const fmtD = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' })
 
   const openCreate = () => {
     setEditing(null)

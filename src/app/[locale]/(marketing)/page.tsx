@@ -1,3 +1,4 @@
+import { setRequestLocale } from 'next-intl/server';
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { AffiliationsSection } from '@/components/marketing/AffiliationsSection';
 import { DisciplinesSection } from '@/components/marketing/DisciplinesSection';
@@ -27,6 +28,7 @@ type Props = {
  * the validated structure. All data sections are gym-scoped + active-only.
  */
 export default async function LandingPage({ params: { locale }, searchParams }: Props) {
+  setRequestLocale(locale); // pages render independently of layouts — both need it
   const gymSlug = searchParams?.gym;
 
   return (

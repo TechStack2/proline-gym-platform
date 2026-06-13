@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Tent, Clock, Users } from 'lucide-react';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
@@ -20,6 +21,7 @@ function localized(row: any, base: string, locale: string): string {
  * collision fence allows exactly this file + the page.tsx wire.
  */
 export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
+  const t = await getTranslations({ locale, namespace: 'landing.camps' });
   const isRTL = locale === 'ar';
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
@@ -43,17 +45,17 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
     spots.set(c.id, (data as number | null) ?? 0);
   }
 
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US', { day: 'numeric', month: 'short' });
+  const fmtD = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB-u-nu-latn' : locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' });
 
   return (
     <section id="camps" className="py-20 lg:py-28 bg-gray-50" data-testid="landing-camps">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className={cn('text-3xl sm:text-4xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
-            {isRTL ? 'مخيمات الصيف' : locale === 'fr' ? 'Camps d\u2019été' : 'Summer Camps'}
+            {t('title')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-            {isRTL ? 'أيام كاملة من التدريب واللعب — أماكن محدودة' : locale === 'fr' ? 'Des journées d\u2019entraînement et de jeu — places limitées' : 'Full days of training and play — limited spots'}
+            {t('subtitle')}
           </p>
         </div>
 
@@ -66,7 +68,7 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
                 {full && (
                   <span data-testid="landing-camp-full"
                     className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-900">
-                    {isRTL ? 'مكتمل' : locale === 'fr' ? 'Complet' : 'Full'}
+                    {t('full')}
                   </span>
                 )}
                 <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#cd1419]/10">
@@ -80,7 +82,7 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
                 </p>
                 {c.min_age != null && (
                   <p className="mt-1 text-sm text-gray-500">
-                    {isRTL ? `الأعمار ${c.min_age}–${c.max_age}` : locale === 'fr' ? `Âges ${c.min_age}–${c.max_age}` : `Ages ${c.min_age}–${c.max_age}`}
+                    {t('ages', { min: c.min_age, max: c.max_age })}
                   </p>
                 )}
                 <p className="mt-3">
@@ -89,7 +91,7 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
                 {!full && (
                   <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-green-700">
                     <Users className="h-3 w-3" />
-                    {isRTL ? `${spots.get(c.id)} أماكن متبقية` : locale === 'fr' ? `${spots.get(c.id)} places restantes` : `${spots.get(c.id)} spots left`}
+                    {t('spotsLeft', { n: spots.get(c.id) ?? 0 })}
                   </p>
                 )}
               </div>
@@ -101,7 +103,7 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
           <a href="#trial" data-testid="landing-camps-cta"
             className="inline-flex items-center gap-2 rounded-xl bg-[#cd1419] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#a81014]">
             <Tent className="h-4 w-4" />
-            {isRTL ? 'سجّل اهتمامك بالمخيم' : locale === 'fr' ? 'Inscrivez votre intérêt' : 'Register your interest'}
+            {t('cta')}
           </a>
         </div>
       </div>

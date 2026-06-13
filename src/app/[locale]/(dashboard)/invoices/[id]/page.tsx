@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -38,7 +39,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   const studentName = localizedName(profile, locale)
   const paid = paidUsd(payments)
   const balance = balanceUsd(inv.total_usd, payments)
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US') : '—')
+  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
 
   return (
     <div className={cn('space-y-6 p-6', isRTL && 'rtl text-right')}>

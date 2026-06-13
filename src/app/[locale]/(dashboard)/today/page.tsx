@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
@@ -180,8 +181,8 @@ export default async function TodayPage({ params: { locale } }: Props) {
 
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
   const fmtTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString(isRTL ? 'ar-LB' : 'en-US', { hour: '2-digit', minute: '2-digit' })
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')
+    new Date(iso).toLocaleTimeString(dateLocale(locale), { hour: '2-digit', minute: '2-digit' })
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
   const clsName = (c: any) => (isRTL ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
   const localName = (rel: any) => localizedName(one(rel)?.profiles, locale)
@@ -210,7 +211,7 @@ export default async function TodayPage({ params: { locale } }: Props) {
         <div>
           <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            {now.toLocaleDateString(isRTL ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {now.toLocaleDateString(dateLocale(locale), { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <Link href={`/${locale}/schedule?view=day`} data-testid="open-diary-link"

@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -161,7 +162,7 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
                     {rankLabel(p.from_rank)} → {rankLabel(p.to_rank)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {pick(one(p.disciplines) as Named, locale)} · {new Date(p.promotion_date).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}
+                    {pick(one(p.disciplines) as Named, locale)} · {new Date(p.promotion_date).toLocaleDateString(dateLocale(locale))}
                   </p>
                 </div>
                 <Award className="h-4 w-4 text-yellow-500" />

@@ -1,5 +1,6 @@
 'use client';
 
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useCallback } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
@@ -43,7 +44,7 @@ function timeAgo(date: string, locale: string, justNowLabel: string): string {
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
-  return new Date(date).toLocaleDateString(locale === 'ar' ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US');
+  return new Date(date).toLocaleDateString(dateLocale(locale));
 }
 
 export function NotificationsClient({ notifications: initialNotifications, locale }: NotificationsClientProps) {

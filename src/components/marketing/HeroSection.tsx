@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Phone, MessageCircle } from 'lucide-react';
 
@@ -8,6 +9,8 @@ type HeroSectionProps = {
 };
 
 export function HeroSection({ locale }: HeroSectionProps) {
+  // AX-1: copy now flows through next-intl (the isRTL?ar:en bypass dropped fr).
+  const t = useTranslations('landing.hero');
   const isRTL = locale === 'ar';
 
   return (
@@ -46,27 +49,25 @@ export function HeroSection({ locale }: HeroSectionProps) {
 
         {/* Tagline */}
         <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary-400">
-          {isRTL ? 'ابدأ ملحمتك الخاصة' : 'Start Your Own Saga'}
+          {t('tagline')}
         </p>
 
         {/* Headline */}
         <h1
           className={cn(
             'text-4xl sm:text-5xl lg:text-6xl xl:text-display-lg font-bold text-white leading-tight',
-            isRTL && 'font-arabic'
+            isRTL ? 'font-arabic' : 'tracking-tight'
           )}
         >
-          {isRTL ? 'تدرّب كبطل القصة' : 'Train Like the Main Character'}
+          {t('headline')}
         </h1>
 
         {/* Subheadline */}
         <p className="mt-4 mx-auto max-w-2xl text-lg sm:text-xl text-gray-300 leading-relaxed">
-          {isRTL
-            ? 'ملاكمة تايلاندية • ملاكمة • لياقة • زومبا • تدريب السيدات • أطفال'
-            : 'Muay Thai • Boxing • Fitness • Zumba • Ladies Training • Kids'}
+          {t('subheadline')}
         </p>
         <p className="mt-2 text-sm font-semibold tracking-wide text-gray-300">
-          {isRTL ? 'من الأخوة فقيه' : 'by Fakih Brothers'}
+          {t('byline')}
         </p>
 
         {/* CTAs */}
@@ -75,7 +76,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
             href={`/${locale}/auth/login`}
             className="w-full sm:w-auto rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-white shadow-glow-primary hover:bg-primary-700 transition-all hover:scale-105 active:scale-95"
           >
-            {isRTL ? 'ابدأ تجربتك المجانية' : 'Start Your Free Trial'}
+            {t('ctaTrial')}
           </Link>
           <a
             href="https://wa.me/96170628601"
@@ -84,7 +85,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 px-8 py-4 text-base font-semibold text-white hover:bg-white/10 hover:border-white/50 transition-all"
           >
             <MessageCircle className="h-5 w-5" />
-            {isRTL ? 'واتساب' : 'WhatsApp Us'}
+            {t('ctaWhatsapp')}
           </a>
         </div>
 
@@ -100,7 +101,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
             @prolinegym.lb
           </a>
           <span className="text-gray-600">•</span>
-          <span>2,760 {isRTL ? 'متابع' : 'followers'}</span>
+          <span>2,760 {t('followers')}</span>
         </div>
       </div>
 

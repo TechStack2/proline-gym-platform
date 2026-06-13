@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { MapPin, Phone, Mail, Instagram } from 'lucide-react';
 
@@ -6,6 +7,7 @@ type FacilitySectionProps = {
 };
 
 export function FacilitySection({ locale }: FacilitySectionProps) {
+  const t = useTranslations('landing.facility');
   const isRTL = locale === 'ar';
 
   return (
@@ -40,10 +42,10 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
                 </div>
                 <div>
                   <p className={cn('text-sm font-semibold text-secondary-900', isRTL && 'font-arabic')}>
-                    {isRTL ? 'مركز سكاي للأعمال، ببدا' : 'Sky Business Center, Baabda'}
+                    {t('addr')}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {isRTL ? 'لبنان' : 'Lebanon'}
+                    {t('country')}
                   </p>
                 </div>
               </div>
@@ -53,12 +55,10 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
           {/* Contact info */}
           <div>
             <h2 className={cn('text-3xl sm:text-4xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
-              {isRTL ? 'موقعنا' : 'Visit Us'}
+              {t('title')}
             </h2>
             <p className="mt-3 text-gray-500 leading-relaxed">
-              {isRTL
-                ? 'تدرب في منشأتنا الحديثة في مركز سكاي للأعمال في ببدا. اتصل بنا أو راسلنا على واتساب للحجز.'
-                : 'Train at our modern facility in Sky Business Center, Baabda. Call or WhatsApp us to book your first session.'}
+              {t('subtitle')}
             </p>
 
             <div className="mt-8 space-y-4" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
@@ -69,7 +69,7 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
                 <Phone className="h-5 w-5 text-primary-600 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-secondary-900" dir="ltr">+961 70 628 601</p>
-                  <p className="text-xs text-gray-500">{isRTL ? 'اتصل بنا' : 'Call us'}</p>
+                  <p className="text-xs text-gray-500">{t('callUs')}</p>
                 </div>
               </a>
 
@@ -80,7 +80,7 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
                 <Mail className="h-5 w-5 text-primary-600 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-secondary-900">alifakih998@gmail.com</p>
-                  <p className="text-xs text-gray-500">{isRTL ? 'البريد الإلكتروني' : 'Email'}</p>
+                  <p className="text-xs text-gray-500">{t('email')}</p>
                 </div>
               </a>
 
@@ -94,7 +94,7 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
                 <div>
                   <p className="text-sm font-medium text-secondary-900">@prolinegym.lb</p>
                   <p className="text-xs text-gray-500">
-                    {isRTL ? '2,760 متابع • 177 منشور' : '2,760 followers • 177 posts'}
+                    {t('igStats')}
                   </p>
                 </div>
               </a>

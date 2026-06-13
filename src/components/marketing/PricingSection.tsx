@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Check, Zap, CalendarClock } from 'lucide-react';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
@@ -38,6 +39,7 @@ function localized(row: any, base: string, locale: string): string {
 }
 
 export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
+  const t = await getTranslations({ locale, namespace: 'landing.pricing' });
   const isRTL = locale === 'ar';
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
@@ -69,10 +71,10 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className={cn('text-3xl sm:text-4xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
-            {isRTL ? 'خطط العضوية' : 'Membership Plans'}
+            {t('title')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-            {isRTL ? 'اختر الخطة المناسبة لرحلتك — ابدأ في أي وقت' : 'Choose the plan that fits your journey — start anytime'}
+            {t('subtitle')}
           </p>
         </div>
 
@@ -83,12 +85,12 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
               const tier = perkTier(plan.duration_days);
               const isAnnual = tier === 'annual';
               const perks = PERKS[tier][locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'];
-              const period = plan.duration_days >= 300 ? (isRTL ? 'سنة' : 'yr') : plan.duration_days >= 80 ? (isRTL ? '3 أشهر' : '3mo') : (isRTL ? 'شهر' : 'mo');
+              const period = plan.duration_days >= 300 ? t('perYr') : plan.duration_days >= 80 ? t('per3mo') : t('perMo');
               return (
                 <div key={i} className={cn('relative rounded-2xl bg-white p-8 shadow-elevation-1 hover:shadow-elevation-3 transition-all duration-300 hover:-translate-y-1', isAnnual && 'ring-2 ring-amber-400 shadow-elevation-2')}>
                   {isAnnual && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-900">
-                      <Zap className="h-3 w-3" />{isRTL ? 'الأفضل قيمة' : 'Best Value'}
+                      <Zap className="h-3 w-3" />{t('bestValue')}
                     </div>
                   )}
                   <h3 className={cn('text-xl font-semibold text-secondary-900', isRTL && 'font-arabic')}>{localized(plan, 'name', locale)}</h3>
@@ -107,7 +109,7 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
                   </ul>
                   <div className="mt-8">
                     <a href="#trial" className={cn('block text-center rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:scale-105 active:scale-95', isAnnual ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-glow-primary' : 'bg-secondary-900 text-white hover:bg-secondary-800')}>
-                      {isRTL ? 'ابدأ الآن' : 'Get Started'}
+                      {t('getStarted')}
                     </a>
                   </div>
                 </div>
@@ -116,7 +118,7 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
           </div>
         ) : (
           <p className="text-center text-gray-400" data-testid="pricing-plans-empty">
-            {isRTL ? 'سيتم نشر خطط العضوية قريباً.' : 'Membership plans coming soon.'}
+            {t('empty')}
           </p>
         )}
 
@@ -128,17 +130,17 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
                 <CalendarClock className="h-5 w-5 text-primary-600" />
               </div>
               <h3 className={cn('text-2xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
-                {isRTL ? 'اشتراك الحصص الشهري' : 'Monthly Class Registration'}
+                {t('classRegTitle')}
               </h3>
               <p className="mt-2 text-sm text-gray-500 max-w-xl mx-auto">
-                {isRTL ? 'سجّل في برنامج متكرر برسوم شهرية — بدون عضوية كاملة' : 'Register for a recurring program for a monthly fee — no full membership required'}
+                {t('classRegSubtitle')}
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
               {feeClasses.map((c: any) => (
                 <div key={c.id} className="rounded-xl bg-white p-5 text-center shadow-elevation-1">
                   <p className={cn('text-sm font-semibold text-secondary-900', isRTL && 'font-arabic')}>{localized(c, 'name', locale)}</p>
-                  <p className="mt-2 text-2xl font-bold text-primary-600">${Number(c.monthly_fee_usd).toFixed(0)}<span className="text-xs text-gray-400 font-normal">/{isRTL ? 'شهر' : 'mo'}</span></p>
+                  <p className="mt-2 text-2xl font-bold text-primary-600">${Number(c.monthly_fee_usd).toFixed(0)}<span className="text-xs text-gray-400 font-normal">/{t('perMo')}</span></p>
                 </div>
               ))}
             </div>

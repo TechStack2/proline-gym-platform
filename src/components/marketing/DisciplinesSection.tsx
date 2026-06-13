@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Dumbbell, Heart, Music, Users, Shield, Baby } from 'lucide-react';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
@@ -21,6 +22,7 @@ const COLORS: string[] = [
 ];
 
 export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSectionProps) {
+  const t = await getTranslations({ locale, namespace: 'landing.disciplinesSec' });
   const isRTL = locale === 'ar';
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
@@ -51,12 +53,10 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
               isRTL && 'font-arabic'
             )}
           >
-            {isRTL ? 'برامجنا' : 'Our Programs'}
+            {t('title')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-            {isRTL
-              ? 'تدريب عالمي المستوى في 6 تخصصات — لجميع الأعمار والمستويات'
-              : 'World-class training across 6 disciplines — for all ages and levels'}
+            {t('subtitle')}
           </p>
         </div>
 
@@ -89,7 +89,7 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
 
         {(!disciplines || disciplines.length === 0) && (
           <p className="text-center text-gray-400" data-testid="disciplines-empty">
-            {isRTL ? 'سيتم نشر البرامج قريباً.' : locale === 'fr' ? 'Les programmes seront publiés bientôt.' : 'Programs coming soon.'}
+            {t('empty')}
           </p>
         )}
       </div>

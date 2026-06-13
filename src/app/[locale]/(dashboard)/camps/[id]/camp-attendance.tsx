@@ -5,6 +5,7 @@
  * absent per confirmed kid — UPSERT on camp_attendance's natural key
  * (camp_id, student_id, attendance_date), gym-scoped staff RLS (000043).
  */
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
@@ -41,7 +42,7 @@ export function CampAttendance({ campId, day, days, kids, locale }: {
   }
 
   const fmtPill = (d: string) =>
-    new Date(d).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US', { weekday: 'short', day: 'numeric' })
+    new Date(d).toLocaleDateString(dateLocale(locale), { weekday: 'short', day: 'numeric' })
 
   return (
     <section className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="camp-attendance">

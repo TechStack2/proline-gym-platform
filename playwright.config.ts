@@ -288,6 +288,13 @@ export default defineConfig({
       testMatch: /ux2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // AX-1 Arabic-active smoke — read-only across all four shells; last.
+      name: 'ax1',
+      dependencies: ['setup'],
+      testMatch: /ax1-ar\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

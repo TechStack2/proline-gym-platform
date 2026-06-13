@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format';
 /**
  * i18n Shared Helpers
  * 
@@ -30,7 +31,7 @@ export function getLocalizedName(
  * `Date.toLocaleDateString()` and similar Intl APIs.
  */
 export function getDateLocale(locale: string): string {
-  if (locale === 'ar') return 'ar-LB';
-  if (locale === 'fr') return 'fr-FR';
-  return 'en-US';
+  // AX-1 convention: delegate to the canonical helper (Western digits via
+  // -u-nu-latn; localized month/day names).
+  return dateLocale(locale);
 }

@@ -182,7 +182,7 @@ export function OfflineQRScanner({
 
       const now = new Date().toISOString();
       const checkInTime = new Date().toLocaleTimeString(
-        isAr ? 'ar-LB' : 'en-US',
+        isAr ? 'ar-LB-u-nu-latn' : 'en-US',
         { hour: '2-digit', minute: '2-digit' },
       );
 

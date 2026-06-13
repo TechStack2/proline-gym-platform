@@ -1,4 +1,6 @@
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { User, Phone, CalendarDays, Shield, Award, CreditCard, AlertCircle } from 'lucide-react'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
@@ -6,6 +8,7 @@ import { AvatarUpload } from '@/components/shared/avatar-upload'
 type Props = { params: { locale: string } }
 
 export default async function PortalProfilePage({ params: { locale } }: Props) {
+  const t = await getTranslations({ locale, namespace: 'portalProfile' })
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -57,18 +60,18 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
           />
         </div>
         <h2 className="text-lg font-bold text-gray-900">{firstName} {lastName}</h2>
-        <p className="text-sm text-gray-500">{isRTL ? 'عضو' : 'Member'}</p>
+        <p className="text-sm text-gray-500">{t('member')}</p>
         {profile?.phone && <div className="inline-flex items-center gap-1 mt-2 text-sm text-gray-500"><Phone className="h-3.5 w-3.5" /><span>{profile.phone}</span></div>}
       </div>
 
       {belt && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{isRTL ? 'الرتبة الحالية' : 'Current Belt'}</h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{t('currentBelt')}</h3>
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-900"><Award className="h-5 w-5 text-yellow-400" /></div>
             <div>
               <p className="font-semibold text-gray-900">{beltLabelVal}</p>
-              <p className="text-xs text-gray-500">{discObj ? (isRTL ? discObj.name_ar : discObj.name_en) : ''} · {new Date(belt.promotion_date).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}</p>
+              <p className="text-xs text-gray-500">{discObj ? (isRTL ? discObj.name_ar : locale === 'fr' ? discObj.name_fr || discObj.name_en : discObj.name_en) : ''} · {new Date(belt.promotion_date).toLocaleDateString(dateLocale(locale))}</p>
             </div>
           </div>
         </div>
@@ -76,27 +79,27 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
 
       {membership && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{isRTL ? 'العضوية' : 'Membership'}</h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{t('membership')}</h3>
           <div className="flex items-center gap-3">
             <CreditCard className="h-5 w-5 text-[#cd1419]" />
             <div>
               <p className="font-semibold text-gray-900">{membershipNameVal}</p>
-              <p className="text-xs text-gray-500">{new Date(membership.start_date).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')} — {new Date(membership.end_date).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US')}</p>
+              <p className="text-xs text-gray-500">{new Date(membership.start_date).toLocaleDateString(dateLocale(locale))} — {new Date(membership.end_date).toLocaleDateString(dateLocale(locale))}</p>
             </div>
           </div>
         </div>
       )}
 
       <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">{isRTL ? 'معلومات العضوية' : 'Member Details'}</h3>
-        <DetailRow icon={CalendarDays} label={isRTL ? 'تاريخ الانضمام' : 'Joined'} value={student?.join_date ? new Date(student.join_date).toLocaleDateString(isRTL ? 'ar-LB' : 'en-US') : '—'} />
-        <DetailRow icon={Shield} label={isRTL ? 'جهة اتصال طوارئ' : 'Emergency Contact'} value={student?.emergency_contact_name ? `${student.emergency_contact_name} (${student.emergency_contact_phone})` : (isRTL ? 'غير محدد' : 'Not set')} />
-        {student?.medical_notes && <DetailRow icon={AlertCircle} label={isRTL ? 'ملاحظات طبية' : 'Medical Notes'} value={student.medical_notes} />}
+        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">{t('memberDetails')}</h3>
+        <DetailRow icon={CalendarDays} label={t('joined')} value={student?.join_date ? new Date(student.join_date).toLocaleDateString(dateLocale(locale)) : '—'} />
+        <DetailRow icon={Shield} label={t('emergency')} value={student?.emergency_contact_name ? `${student.emergency_contact_name} (${student.emergency_contact_phone})` : t('notSet')} />
+        {student?.medical_notes && <DetailRow icon={AlertCircle} label={t('medical')} value={student.medical_notes} />}
       </div>
 
       {guardians && guardians.length > 0 && (
         <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">{isRTL ? 'أولياء الأمر' : 'Guardians'}</h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">{t('guardians')}</h3>
           {guardians.map((g: any, i: number) => {
             const gd: any = Array.isArray(g.guardians) ? g.guardians[0] : g.guardians
             return (

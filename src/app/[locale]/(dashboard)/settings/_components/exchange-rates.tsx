@@ -1,3 +1,4 @@
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,7 +79,7 @@ export function ExchangeRates({ rates, locale }: Props) {
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/20">
               <div className="flex items-center gap-1 text-xs opacity-90">
                 <Calendar className="h-3 w-3" />
-                <span>{new Date(currentRate.rate_date).toLocaleDateString(locale === 'ar' ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US')}</span>
+                <span>{new Date(currentRate.rate_date).toLocaleDateString(dateLocale(locale))}</span>
               </div>
               {currentRate.source && (
                 <Badge className="bg-white/20 text-white border-0 text-2xs">
@@ -198,7 +199,7 @@ export function ExchangeRates({ rates, locale }: Props) {
                         </td>
                         <td className="px-4 py-2.5">
                           <span className={cn('text-xs text-gray-600', isRTL && 'font-arabic')}>
-                            {new Date(r.rate_date).toLocaleDateString(locale === 'ar' ? 'ar-LB' : locale === 'fr' ? 'fr-FR' : 'en-US')}
+                            {new Date(r.rate_date).toLocaleDateString(dateLocale(locale))}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">

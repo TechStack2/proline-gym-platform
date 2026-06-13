@@ -1,5 +1,6 @@
 'use client';
 
+import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -327,7 +328,7 @@ export function LeadsClient({
                         overdue ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-500')}
                     >
                       <CalendarClock className="h-3.5 w-3.5" />
-                      {na.label} · {na.due.toLocaleDateString(locale === 'ar' ? 'ar-LB' : 'en-US')}
+                      {na.label} · {na.due.toLocaleDateString(dateLocale(locale))}
                       {overdue && <span className="font-bold uppercase">· {t('nextAction.overdue')}</span>}
                     </p>
                   );
@@ -637,7 +638,7 @@ function AddLeadModal({
   // UX-2: the prototype modal became the FormWizard (contact → interest+source
   // chips → review with the DERIVED next action — 23R write path unchanged).
   const firstContactDue = new Date(Date.now() + 2 * 864e5)
-    .toLocaleDateString(isRTL ? 'ar-LB' : 'en-US');
+    .toLocaleDateString(dateLocale(locale));
 
   const steps = [
     {
@@ -773,7 +774,7 @@ function ConvertModal({
         .from('profiles').select('id').eq('gym_id', gymId).eq('phone', phone).limit(1).maybeSingle();
       let profileId = prof?.id as string | undefined;
       if (!profileId) {
-        const nm = guardianName.trim() || (isRTL ? 'ولي أمر' : 'Guardian');
+        const nm = guardianName.trim() || t('guardian_default');
         const { data: created, error: pErr } = await supabase
           .from('profiles')
           .insert({ gym_id: gymId, phone, first_name_en: nm, first_name_ar: nm, first_name_fr: nm, last_name_en: '', last_name_ar: '', last_name_fr: '' })
