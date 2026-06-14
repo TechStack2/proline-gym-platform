@@ -127,9 +127,12 @@ test('G2 · scope guard — an online-only surface shows "needs connection" offl
   const page = await ctx.newPage()
   try {
     await page.goto('/en/money')
-    await expect(page.locator('[data-testid="money-tabs"]').first()).toBeVisible({ timeout: 15_000 })
-    // Online: no notice.
-    await expect(page.locator('[data-testid="needs-connection"]')).toHaveCount(0)
+    // NB: money is a (dashboard) page → double-shell (mobile+desktop); the tabs
+    // render twice, so scope to the VISIBLE one (a bare .first() can pick the
+    // hidden mobile copy at the desktop viewport).
+    await expect(vis(page, '[data-testid="money-tabs"]').first()).toBeVisible({ timeout: 15_000 })
+    // Online: the notice is null in BOTH shells.
+    await expect(page.locator('[data-testid="needs-connection"]:visible')).toHaveCount(0)
     // Offline: payments are online-only → a clear needs-connection state appears.
     await ctx.setOffline(true)
     await expect(vis(page, '[data-testid="needs-connection"]').first(), 'payments surface flags needs-connection offline')
