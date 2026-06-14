@@ -15,24 +15,32 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { FormWizard, ChipRow } from '@/components/shared/form-wizard'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
+import { WaiverConsentFields } from '@/components/shared/waiver-sign'
+import { signWaiver } from '@/lib/waivers/actions'
 import { CalendarDays, CreditCard, Dumbbell, ClipboardList } from 'lucide-react'
 import { completeOnboarding } from './actions'
 
 export function OnboardingClient({
-  locale, role, userId, gymId, firstName, avatarUrl,
+  locale, role, userId, gymId, firstName, avatarUrl, waiver,
 }: {
   locale: string; role: string; userId: string; gymId: string; firstName: string; avatarUrl: string | null
+  waiver?: { studentId: string; title: string; body: string } | null
 }) {
   const t = useTranslations('onboarding')
   const router = useRouter()
   const supabase = createClient()
   const isRTL = locale === 'ar'
 
+  const tw = useTranslations('waiver')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [lang, setLang] = useState(locale)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // F3: optional waiver step (only when the page passed an unsigned waiver).
+  const [wvSig, setWvSig] = useState('')
+  const [wvName, setWvName] = useState('')
+  const [wvAgree, setWvAgree] = useState(false)
 
   const isCoach = role === 'coach' || role === 'head_coach' || role === 'external_coach'
   const isMember = role === 'student' || role === 'parent'
@@ -47,7 +55,12 @@ export function OnboardingClient({
     if (lang !== locale || lang) {
       await supabase.from('profiles').update({ locale: lang }).eq('id', userId)
     }
-    // 3. Clear the forced-change flag + accept the invite + refresh JWT.
+    // 3. F3: if a waiver step was shown and signed, record it (best-effort —
+    //    a signing hiccup must never block finishing onboarding).
+    if (waiver && wvSig && wvName.trim() && wvAgree) {
+      try { await signWaiver({ studentId: waiver.studentId, signature: wvSig, typedName: wvName }) } catch { /* never abort */ }
+    }
+    // 4. Clear the forced-change flag + accept the invite + refresh JWT.
     const res = await completeOnboarding()
     setBusy(false)
     if (!res.ok) { setError(res.error); return }
@@ -128,6 +141,25 @@ export function OnboardingClient({
       ),
     },
   ]
+
+  // F3: insert the waiver step before orientation when the member has one to sign.
+  if (waiver) {
+    steps.splice(steps.length - 1, 0, {
+      key: 'waiver',
+      title: tw('signTitle'),
+      valid: !!wvSig && wvName.trim().length > 0 && wvAgree,
+      content: (
+        <div data-testid="ob-waiver">
+          <WaiverConsentFields
+            title={waiver.title} body={waiver.body} locale={locale}
+            signature={wvSig} onSignature={setWvSig}
+            typedName={wvName} onTypedName={setWvName}
+            agreed={wvAgree} onAgreed={setWvAgree}
+          />
+        </div>
+      ),
+    })
+  }
 
   return (
     <div className={cn('flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-secondary-900 to-primary-950 p-4', isRTL && 'rtl')}>

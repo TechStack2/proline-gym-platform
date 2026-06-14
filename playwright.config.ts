@@ -318,11 +318,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // G1 WhatsApp channel — LAST: flips the gym's WhatsApp config to active and
+      // G1 WhatsApp channel: flips the gym's WhatsApp config to active and
       // records outbound rows; mutates gym config nothing later should read.
       name: 'g1',
       dependencies: ['setup'],
       testMatch: /g1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // F3 waivers — LAST: bumps the gym's waiver template version (flips every
+      // member to "outdated"); append-only signatures, nothing later reads them.
+      name: 'f3',
+      dependencies: ['setup'],
+      testMatch: /f3\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

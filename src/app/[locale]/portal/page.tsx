@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar as KidAvatar } from '@/components/shared/avatar'
+import { getWaiverContext } from '@/lib/waivers/server'
+import { waiverTitle, waiverBody } from '@/lib/waivers/status'
+import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
 
 type Props = { params: { locale: string }; searchParams?: { kid?: string } }
 
@@ -29,7 +32,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
   const { data: student } = await supabase
     .from('students')
-    .select('id, profile_id, join_date')
+    .select('id, profile_id, join_date, gym_id')
     .eq('profile_id', user.id)
     .maybeSingle()
 
@@ -176,6 +179,10 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
   const discObj = Array.isArray(disc) ? disc[0] : disc
   const disciplineNameVal = discObj ? (isRTL ? discObj.name_ar : (locale === 'fr' ? discObj.name_fr : discObj.name_en)) : ''
 
+  // F3: the member's own waiver status + sign CTA (read in-gym under RLS).
+  const tw = await getTranslations({ locale, namespace: 'waiver' })
+  const waiver = student?.gym_id ? await getWaiverContext(supabase, student.id, student.gym_id) : null
+
   const getCName = (cls: any) => {
     const cdata: any = Array.isArray(cls?.classes) ? cls.classes[0] : cls?.classes
     if (!cdata) return 'Unknown'
@@ -266,6 +273,29 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           </div>
         </div>
       </div>
+
+      {/* F3: waiver status + sign CTA when unsigned/outdated */}
+      {waiver && waiver.state !== 'none' && (
+        <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="portal-waiver" data-state={waiver.state}>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm text-gray-900">{tw('myWaiver')}</h3>
+            <WaiverChip state={waiver.state} version={waiver.signedVersion} testid="portal-waiver-chip" />
+          </div>
+          {waiver.template && (waiver.state === 'unsigned' || waiver.state === 'outdated') && student && (
+            <div className="mt-3">
+              <WaiverSign
+                studentId={student.id}
+                title={waiverTitle(waiver.template, locale)}
+                body={waiverBody(waiver.template, locale)}
+                locale={locale}
+                outdated={waiver.state === 'outdated'}
+                label={waiver.state === 'outdated' ? tw('resign') : tw('signNow')}
+                testidPrefix="portal-waiver"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         {[

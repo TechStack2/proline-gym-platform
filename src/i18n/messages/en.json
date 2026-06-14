@@ -1773,7 +1773,9 @@
       "ageWarning": "Outside the camp age range ({min}–{max}) — you can still register (desk override)."
     },
     "regOverdue": "renewal overdue",
-    "regExpiring": "renews soon"
+    "regExpiring": "renews soon",
+    "waiverSign": "Sign waiver",
+    "waiverResign": "Re-sign waiver"
   },
   "money": {
     "title": "Money",
@@ -2379,5 +2381,44 @@
     "testSent": "Test queued ✓",
     "testInactive": "Activate first",
     "testFailed": "Test failed"
+  },
+  "waiver": {
+    "drawHere": "Sign here",
+    "clear": "Clear",
+    "signature": "Signature",
+    "typedName": "Full name",
+    "typedNamePlaceholder": "Type your full name",
+    "agree": "I have read and agree to the waiver.",
+    "signTitle": "Sign waiver",
+    "submitSign": "Sign",
+    "chipSigned": "Signed v{v}",
+    "chipOutdated": "Outdated",
+    "chipUnsigned": "Unsigned",
+    "myWaiver": "Liability waiver",
+    "signNow": "Sign waiver",
+    "resign": "Re-sign waiver",
+    "signForKid": "Sign waiver"
+  },
+  "waiverSettings": {
+    "title": "Liability waiver",
+    "versionBadge": "v{v}",
+    "inactive": "inactive",
+    "explainer": "The waiver members sign at onboarding. Editing the body bumps the version and asks members to re-sign.",
+    "edit": "Edit waiver",
+    "create": "Create waiver",
+    "editorTitle": "Waiver template",
+    "save": "Save",
+    "stepTitle": "Title",
+    "titleAr": "Title (Arabic)",
+    "titleEn": "Title (English)",
+    "titleFr": "Title (French)",
+    "stepBody": "Consent text",
+    "bodyHint": "The text members read and agree to before signing.",
+    "bodyAr": "Body (Arabic)",
+    "bodyEn": "Body (English)",
+    "bodyFr": "Body (French)",
+    "stepActivate": "Activate",
+    "activeLabel": "Active (members are asked to sign this waiver)",
+    "bumpNote": "Editing the body bumps the version — existing signatures become outdated and members are asked to re-sign."
   }
 }

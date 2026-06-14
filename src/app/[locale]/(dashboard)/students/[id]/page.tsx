@@ -19,6 +19,9 @@ import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel
 import { MembershipCard, type MembershipCardData, type PlanOption } from './membership-card'
 import { registrationState } from '@/lib/lifecycle/status'
 import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
+import { getWaiverContext } from '@/lib/waivers/server'
+import { waiverTitle, waiverBody } from '@/lib/waivers/status'
+import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
 
 export const dynamic = 'force-dynamic'
 
@@ -308,6 +311,10 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     freezeUsedBy.set(f.membership_id, (freezeUsedBy.get(f.membership_id) ?? 0) + (f.days_frozen ?? 0))
   }
 
+  // F3: waiver status for this member (active template + signing state + the
+  // signed artifact/signer, staff-only — surfaces who signed for guardian proof).
+  const waiver = await getWaiverContext(supabase, id, gymIdForPromote, { locale, includeArtifact: true })
+
   const prof: any = one((student as any).profiles)
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
@@ -402,6 +409,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                 <span className={cn('rounded-full px-2 py-0.5 font-medium', student.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
                   {student.is_active ? t('active') : t('inactive')}
                 </span>
+                {/* F3: waiver status chip */}
+                <WaiverChip state={waiver.state} version={waiver.signedVersion} />
               </p>
               {(guardianLinks ?? []).length > 0 && (
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500" data-testid="member-guardians">
@@ -421,6 +430,29 @@ export default async function Member360Page({ params: { locale, id }, searchPara
           <div className="flex flex-col items-end gap-2">
             {/* ON-1: invite this member to the portal (external credential share) */}
             <InviteButton kind="student" id={id} name={name} locale={locale} />
+            {/* F3: front-desk waiver capture when unsigned/outdated (staff signs on a tablet) */}
+            {waiver.template && (waiver.state === 'unsigned' || waiver.state === 'outdated') && (
+              <WaiverSign
+                studentId={id}
+                title={waiverTitle(waiver.template, locale)}
+                body={waiverBody(waiver.template, locale)}
+                locale={locale}
+                outdated={waiver.state === 'outdated'}
+                label={waiver.state === 'outdated' ? t('waiverResign') : t('waiverSign')}
+                testidPrefix="member-waiver"
+              />
+            )}
+            {/* F3: the signed record — proves the artifact persisted + who signed (guardian path) */}
+            {waiver.signature && (
+              <div className="flex flex-col items-end gap-1 rounded-xl border border-gray-100 p-2" data-testid="member-waiver-record">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={waiver.signature} alt="signature" data-testid="member-waiver-artifact"
+                  className="h-10 w-28 rounded bg-white object-contain" />
+                {waiver.signedByName && (
+                  <span className="text-[10px] text-gray-500" data-testid="member-waiver-signer">{waiver.signedByName}</span>
+                )}
+              </div>
+            )}
             <MemberActions
               studentId={id}
               memberName={name}

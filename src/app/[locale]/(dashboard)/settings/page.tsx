@@ -6,6 +6,8 @@ import { SettingsClient } from './_components/settings-client';
 import { PtPolicySettings } from './_components/pt-policy-settings';
 import { WhatsAppSettings } from './_components/whatsapp-settings';
 import { getWhatsAppStatus } from './_components/whatsapp-actions';
+import { WaiverSettings } from './_components/waiver-settings';
+import { getWaiverTemplate } from './_components/waiver-actions';
 import Link from 'next/link';
 
 type Props = { params: { locale: string }; searchParams?: { tab?: string } };
@@ -112,6 +114,9 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       {/* G1: per-gym WhatsApp Cloud-API config (status read via the definer; the
           token is write-only and never fetched to the client). */}
       <WhatsAppSettings initial={await getWhatsAppStatus()} locale={locale} />
+
+      {/* F3: gym-configurable liability waiver (tenant-clean DATA; body edit bumps version). */}
+      <WaiverSettings initial={await getWaiverTemplate()} locale={locale} />
     </div>
   );
 }

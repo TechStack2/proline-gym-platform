@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils'
 import { one } from '@/lib/names'
 import { Award, CalendarDays, ClipboardList, CreditCard, Flame, ChevronRight } from 'lucide-react'
 import { Avatar } from '@/components/shared/avatar'
+import { getWaiverContext } from '@/lib/waivers/server'
+import { waiverTitle, waiverBody } from '@/lib/waivers/status'
+import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
 
 /**
  * Guardian's per-kid dashboard (B3). Rendered on /portal?kid=<studentId> for a
@@ -36,7 +39,7 @@ export async function KidDashboard({
     { data: beltPromos },
     { data: enrollments },
   ] = await Promise.all([
-    supabase.from('students').select('id, current_belt_rank, is_active').eq('id', kid.id).maybeSingle(),
+    supabase.from('students').select('id, current_belt_rank, is_active, gym_id').eq('id', kid.id).maybeSingle(),
     supabase
       .from('class_registrations')
       .select('id, status, waitlist_position, monthly_fee_usd, classes:class_id (name_ar, name_en, name_fr)')
@@ -89,6 +92,10 @@ export async function KidDashboard({
     streak += 1
     cursor.setDate(cursor.getDate() - 7)
   }
+
+  // F3: the kid's waiver status — the GUARDIAN signs from here (signed_by = guardian).
+  const tw = await getTranslations({ locale, namespace: 'waiver' })
+  const waiver = kidStudent?.gym_id ? await getWaiverContext(supabase, kid.id, kidStudent.gym_id) : null
 
   const dayNames = isRTL
     ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
@@ -161,6 +168,29 @@ export async function KidDashboard({
           </ul>
         )}
       </div>
+
+      {/* F3: the kid's waiver — guardian signs for the minor (signed_by = guardian) */}
+      {waiver && waiver.state !== 'none' && (
+        <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="kid-waiver" data-state={waiver.state}>
+          <div className="flex items-center justify-between">
+            <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{tw('myWaiver')}</h3>
+            <WaiverChip state={waiver.state} version={waiver.signedVersion} testid="kid-waiver-chip" />
+          </div>
+          {waiver.template && (waiver.state === 'unsigned' || waiver.state === 'outdated') && (
+            <div className="mt-3">
+              <WaiverSign
+                studentId={kid.id}
+                title={waiverTitle(waiver.template, locale)}
+                body={waiverBody(waiver.template, locale)}
+                locale={locale}
+                outdated={waiver.state === 'outdated'}
+                label={waiver.state === 'outdated' ? tw('resign') : tw('signForKid')}
+                testidPrefix="kid-waiver"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Weekly schedule (the kid's enrolled classes) */}
       <div className="rounded-2xl bg-white p-4 shadow-sm">

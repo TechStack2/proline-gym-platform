@@ -1773,7 +1773,9 @@
       "ageWarning": "Hors de la tranche d’âge du camp ({min}–{max}) — inscription possible (décision du comptoir)."
     },
     "regOverdue": "renouvellement en retard",
-    "regExpiring": "renouvelle bientôt"
+    "regExpiring": "renouvelle bientôt",
+    "waiverSign": "Signer la décharge",
+    "waiverResign": "Re-signer"
   },
   "money": {
     "title": "Finances",
@@ -2379,5 +2381,44 @@
     "testSent": "Test en file ✓",
     "testInactive": "Activez d'abord",
     "testFailed": "Échec du test"
+  },
+  "waiver": {
+    "drawHere": "Signez ici",
+    "clear": "Effacer",
+    "signature": "Signature",
+    "typedName": "Nom complet",
+    "typedNamePlaceholder": "Saisissez votre nom complet",
+    "agree": "J'ai lu et j'accepte la décharge.",
+    "signTitle": "Signer la décharge",
+    "submitSign": "Signer",
+    "chipSigned": "Signé v{v}",
+    "chipOutdated": "Obsolète",
+    "chipUnsigned": "Non signé",
+    "myWaiver": "Décharge de responsabilité",
+    "signNow": "Signer la décharge",
+    "resign": "Re-signer",
+    "signForKid": "Signer la décharge"
+  },
+  "waiverSettings": {
+    "title": "Décharge de responsabilité",
+    "versionBadge": "v{v}",
+    "inactive": "inactif",
+    "explainer": "La décharge que les membres signent à l'intégration. Modifier le texte incrémente la version et demande aux membres de re-signer.",
+    "edit": "Modifier la décharge",
+    "create": "Créer une décharge",
+    "editorTitle": "Modèle de décharge",
+    "save": "Enregistrer",
+    "stepTitle": "Titre",
+    "titleAr": "Titre (arabe)",
+    "titleEn": "Titre (anglais)",
+    "titleFr": "Titre (français)",
+    "stepBody": "Texte de consentement",
+    "bodyHint": "Le texte que les membres lisent et acceptent avant de signer.",
+    "bodyAr": "Texte (arabe)",
+    "bodyEn": "Texte (anglais)",
+    "bodyFr": "Texte (français)",
+    "stepActivate": "Activer",
+    "activeLabel": "Actif (les membres doivent signer cette décharge)",
+    "bumpNote": "Modifier le texte incrémente la version — les signatures existantes deviennent obsolètes et les membres doivent re-signer."
   }
 }
