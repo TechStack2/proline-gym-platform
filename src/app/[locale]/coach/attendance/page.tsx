@@ -7,6 +7,9 @@ import { createClient } from '@/lib/supabase/client';
 import { attendanceRecordSchema } from '@/lib/validators';
 import { saveAttendance } from './actions';
 import { computeEligibility } from '@/lib/eligibility';
+import { useOnline, usePendingAttendance } from '@/lib/offline/use-online';
+import { cacheRoster, readRoster, queueMark, flushPending } from '@/lib/offline/attendance';
+import { OfflineBanner } from '@/components/offline/offline-banner';
 import {
   Calendar,
   ClipboardCheck,
@@ -68,6 +71,10 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  // G2: offline attendance — online status + pending-marks count.
+  const online = useOnline();
+  const { count: pending, refresh: refreshPending } = usePendingAttendance();
+
   // REP-1: a coach can mark/correct attendance for a PAST date (today or up to 7
   // days back, never the future). The date drives which weekday's classes show,
   // which day's existing records prefill, and the date written by saveAttendance —
@@ -86,6 +93,19 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
   // Fetch today's classes for this coach
   useEffect(() => {
     async function loadClasses() {
+      // G2: offline — hydrate the day's class list from the roster cache.
+      if (!navigator.onLine) {
+        const cached = await readRoster<ClassOption[]>(`roster:classes:${selectedDate}`);
+        if (cached) {
+          setClasses(cached);
+          setSelectedClassId(prev =>
+            prev && cached.some(o => o.id === prev) ? prev
+              : initialClassId && cached.some(o => o.id === initialClassId) ? initialClassId : '');
+        }
+        setLoaded(true);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -152,6 +172,8 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
       });
 
       setClasses(options);
+      // G2: cache the day's roster for offline reachability.
+      void cacheRoster(`roster:classes:${selectedDate}`, options);
 
       // Keep a still-valid selection across date changes; otherwise fall back to
       // the initialClassId (deep link) or clear it (the class isn't on this day).
@@ -173,6 +195,15 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
     async function loadStudents() {
       setLoading(true);
       setStudents([]);
+
+      // G2: offline — hydrate the class roster (with any locally-queued statuses
+      // already applied at cache time) from the cache; skip the network reads.
+      if (!navigator.onLine) {
+        const cached = await readRoster<StudentEntry[]>(`roster:students:${selectedClassId}:${selectedDate}`);
+        if (cached) setStudents(cached);
+        setLoading(false);
+        return;
+      }
 
       // Existing records prefill for the SELECTED date (correction-aware).
       const recordDate = selectedDate;
@@ -249,11 +280,31 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
       );
 
       setStudents(studentEntries);
+      // G2: cache this class roster for offline marking.
+      void cacheRoster(`roster:students:${selectedClassId}:${selectedDate}`, studentEntries);
       setLoading(false);
     }
 
     loadStudents();
   }, [selectedClassId, loaded, locale, selectedDate]);
+
+  // G2: flush the pending queue on page load AND whenever connectivity returns,
+  // draining oldest-first through the EXISTING idempotent upsert (saveAttendance).
+  useEffect(() => {
+    const doFlush = async () => {
+      if (!navigator.onLine) return;
+      const res = await flushPending(saveAttendance);
+      await refreshPending();
+      if (res.flushed > 0) {
+        toast.success(msg('offline.synced'));
+        router.refresh();
+      }
+    };
+    void doFlush();
+    window.addEventListener('online', doFlush);
+    return () => window.removeEventListener('online', doFlush);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleStatus = (studentId: string, status: AttendanceStatus) => {
     setStudents(prev =>
@@ -290,10 +341,27 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         return;
       }
 
-      // Server action: idempotent upsert + transition-guarded attendance_absent
-      // notifications (sanctioned F2 pattern, RETURNING-free). marked_by is set
-      // server-side from the authed session.
       void markedBy;
+
+      // G2: OFFLINE — queue the marks locally (the optimistic UI already shows
+      // them) and surface the pending count; the coach keeps working. The queue
+      // drains on reconnect / next page load through the SAME upsert path.
+      if (!navigator.onLine) {
+        for (const s of students) {
+          await queueMark({
+            class_id: selectedClassId, student_id: s.student_id,
+            attendance_date: markDate, status: s.status,
+          });
+        }
+        void cacheRoster(`roster:students:${selectedClassId}:${markDate}`, students); // keep cache coherent
+        await refreshPending();
+        toast.success(msg('offline.savedOffline'));
+        setSaving(false);
+        return;
+      }
+
+      // ONLINE — write through as today: idempotent upsert + transition-guarded
+      // attendance_absent notifications. marked_by is set server-side.
       const res = await saveAttendance({
         classId: selectedClassId,
         date: markDate,
@@ -305,6 +373,8 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         toast.error(msg('coach.attendance.saveError'));
       } else {
         toast.success(msg('coach.attendance.savedSuccess'));
+        // Opportunistically drain anything left queued from a prior outage.
+        void flushPending(saveAttendance).then(() => refreshPending());
         router.refresh();
       }
     } catch (err) {
@@ -337,6 +407,9 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">{msg('coach.attendance.subtitle')}</p>
       </div>
+
+      {/* G2: offline / pending-sync banner */}
+      <OfflineBanner online={online} pending={pending} locale={locale} />
 
       {/* Date Picker (today or up to 7 days back; no future) */}
       <div>

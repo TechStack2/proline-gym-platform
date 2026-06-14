@@ -11,6 +11,7 @@ import { ProcessRenewalsButton } from '@/components/dashboard/lifecycle-buttons'
 import { OwnerFinances } from './money-owner-dashboard'
 import { WinbackView } from './winback-view'
 import { getWinbackQueue } from '@/lib/finances/winback'
+import { OnlineOnlyNotice } from '@/components/offline/online-only-notice'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -59,6 +60,9 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
           <TabLink k="winback" label={t('winback')} icon={Heart} />
         </div>
       </div>
+
+      {/* G2 scope guard: payments are ONLINE-ONLY (only attendance works offline). */}
+      <OnlineOnlyNotice locale={locale} messageKey="paymentsNeedConnection" />
 
       {tab === 'overview' && <MoneyOverview locale={locale} />}
       {tab === 'invoices' && <InvoicesView locale={locale} searchParams={searchParams} />}

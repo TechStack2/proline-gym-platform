@@ -401,6 +401,25 @@ export interface SyncMetadata {
   record_count: number;
 }
 
+// ─── G2: Offline attendance (queue + roster cache) ──────────────────
+// The ONLY offline-write flow in V1. The queue drains through the EXISTING
+// idempotent attendance upsert (saveAttendance, onConflict
+// class_id+student_id+attendance_date), so a re-flush is safe (LWW).
+
+export interface PendingAttendanceMark {
+  class_id: string;
+  student_id: string;
+  attendance_date: string; // YYYY-MM-DD
+  status: 'present' | 'absent' | 'late' | 'excused';
+  client_ts: string; // ISO — drain oldest-first; last write per (class,student,date) wins
+}
+
+export interface RosterCacheEntry {
+  key: string; // e.g. roster:classes:<date> / roster:students:<classId>:<date>
+  value: unknown; // the roster snapshot cached on an ONLINE page load
+  cached_at: string; // ISO
+}
+
 // ─── Dexie Database ─────────────────────────────────────────────────
 
 class ProlineOfflineDB extends Dexie {
@@ -430,6 +449,10 @@ class ProlineOfflineDB extends Dexie {
   // Sync infrastructure
   sync_queue!: Table<SyncQueueItem, number>;
   sync_metadata!: Table<SyncMetadata, string>;
+
+  // G2: offline attendance
+  pending_attendance!: Table<PendingAttendanceMark, [string, string, string]>;
+  roster_cache!: Table<RosterCacheEntry, string>;
 
   constructor() {
     super('proline_offline_db');
@@ -461,6 +484,14 @@ class ProlineOfflineDB extends Dexie {
       // Sync infrastructure
       sync_queue: '++id, table_name, record_id, created_at',
       sync_metadata: 'table_name',
+    });
+
+    // G2: additive upgrade — offline-attendance queue + roster cache. The
+    // compound PK [class_id+student_id+attendance_date] makes a re-mark REPLACE
+    // the queued row (local LWW + natural dedup); client_ts orders the flush.
+    this.version(2).stores({
+      pending_attendance: '[class_id+student_id+attendance_date], client_ts, class_id, attendance_date',
+      roster_cache: 'key, cached_at',
     });
   }
 }

@@ -2420,5 +2420,13 @@
     "stepActivate": "Activate",
     "activeLabel": "Active (members are asked to sign this waiver)",
     "bumpNote": "Editing the body bumps the version — existing signatures become outdated and members are asked to re-sign."
+  },
+  "offline": {
+    "offlineNPending": "Offline — {n} pending to sync",
+    "syncingNPending": "Syncing… {n} left",
+    "needsConnection": "This needs a connection.",
+    "paymentsNeedConnection": "Payments need a connection — only attendance works offline.",
+    "synced": "Synced",
+    "savedOffline": "Saved offline — will sync when you reconnect"
   }
 }

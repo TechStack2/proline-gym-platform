@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Check, X, Clock, AlertCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
+import { useOnline, usePendingAttendance } from '@/lib/offline/use-online'
+import { queueMark, flushPending } from '@/lib/offline/attendance'
+import { OfflineBanner } from '@/components/offline/offline-banner'
+import { saveAttendance } from '@/app/[locale]/coach/attendance/actions'
 
 interface Student {
   id: string
@@ -55,6 +59,8 @@ export function AttendanceDashboardClient({
 }: AttendanceDashboardClientProps) {
   const t = useTranslations('attendance')
   const supabase = createClient()
+  const online = useOnline()
+  const { count: pending, refresh: refreshPending } = usePendingAttendance()
   const [loading, setLoading] = useState<string | null>(null)
   const [records, setRecords] = useState<Record<string, AttendanceStatus>>(() => {
     const initial: Record<string, AttendanceStatus> = {}
@@ -64,17 +70,41 @@ export function AttendanceDashboardClient({
     return initial
   })
 
+  // G2: flush the pending queue on mount AND on reconnect (oldest-first, through
+  // the same idempotent upsert) — shared with the coach surface.
+  useEffect(() => {
+    const doFlush = async () => {
+      if (!navigator.onLine) return
+      const res = await flushPending(saveAttendance)
+      await refreshPending()
+      if (res.flushed > 0) toast({ title: t('toast.saved'), variant: 'success' })
+    }
+    void doFlush()
+    window.addEventListener('online', doFlush)
+    return () => window.removeEventListener('online', doFlush)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const updateAttendance = useCallback(async (studentId: string, status: AttendanceStatus) => {
     setLoading(studentId)
     try {
+      // G2: OFFLINE — queue the mark + optimistic UI; drains on reconnect.
+      if (!navigator.onLine) {
+        await queueMark({ class_id: classId, student_id: studentId, attendance_date: date, status })
+        setRecords(prev => ({ ...prev, [studentId]: status }))
+        await refreshPending()
+        setLoading(null)
+        return
+      }
+
       const existingRecord = attendanceRecords.find(r => r.student_id === studentId)
-      
+
       if (existingRecord) {
         const { error } = await supabase
           .from('attendance_records')
           .update({ status })
           .eq('id', existingRecord.id)
-        
+
         if (error) throw error
       } else {
         const { error } = await supabase
@@ -86,7 +116,7 @@ export function AttendanceDashboardClient({
             attendance_date: date,
             status,
           })
-        
+
         if (error) throw error
       }
 
@@ -98,11 +128,24 @@ export function AttendanceDashboardClient({
     } finally {
       setLoading(null)
     }
-  }, [attendanceRecords, classScheduleId, classId, date, supabase, t])
+  }, [attendanceRecords, classScheduleId, classId, date, supabase, t, refreshPending])
 
   const markAllPresent = useCallback(async () => {
     setLoading('all')
     try {
+      // G2: OFFLINE — queue every student present + optimistic UI.
+      if (!navigator.onLine) {
+        for (const enrollment of enrollments) {
+          await queueMark({ class_id: classId, student_id: enrollment.student_id, attendance_date: date, status: 'present' })
+        }
+        const newRecords: Record<string, AttendanceStatus> = {}
+        enrollments.forEach(e => { newRecords[e.student_id] = 'present' })
+        setRecords(prev => ({ ...prev, ...newRecords }))
+        await refreshPending()
+        setLoading(null)
+        return
+      }
+
       const updates = enrollments.map(enrollment => ({
         student_id: enrollment.student_id,
         schedule_id: classScheduleId,
@@ -129,7 +172,7 @@ export function AttendanceDashboardClient({
     } finally {
       setLoading(null)
     }
-  }, [enrollments, classScheduleId, classId, date, supabase, t])
+  }, [enrollments, classScheduleId, classId, date, supabase, t, refreshPending])
 
   const getStatusIcon = (status: AttendanceStatus) => {
     switch (status) {
@@ -163,6 +206,8 @@ export function AttendanceDashboardClient({
 
   return (
     <div className="space-y-3">
+      {/* G2: offline / pending-sync banner */}
+      <OfflineBanner online={online} pending={pending} locale={locale} />
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-medium">{t('dashboard.students')} ({enrollments.length})</p>
         <Button

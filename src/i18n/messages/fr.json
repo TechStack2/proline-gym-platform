@@ -2420,5 +2420,13 @@
     "stepActivate": "Activer",
     "activeLabel": "Actif (les membres doivent signer cette décharge)",
     "bumpNote": "Modifier le texte incrémente la version — les signatures existantes deviennent obsolètes et les membres doivent re-signer."
+  },
+  "offline": {
+    "offlineNPending": "Hors ligne — {n} en attente de synchronisation",
+    "syncingNPending": "Synchronisation… {n} restant",
+    "needsConnection": "Une connexion est nécessaire.",
+    "paymentsNeedConnection": "Les paiements nécessitent une connexion — seule la présence fonctionne hors ligne.",
+    "synced": "Synchronisé",
+    "savedOffline": "Enregistré hors ligne — sera synchronisé à la reconnexion"
   }
 }
