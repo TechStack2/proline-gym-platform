@@ -142,12 +142,13 @@ export function OnboardingClient({
     },
   ]
 
-  // F3: insert the waiver step before orientation when the member has one to sign.
+  // F3: insert the waiver step before orientation when the member has one to
+  // sign. OPTIONAL (no valid gate) — "block nothing in V1": the member may sign
+  // here or later from the portal; finish() only records it if they completed it.
   if (waiver) {
     steps.splice(steps.length - 1, 0, {
       key: 'waiver',
       title: tw('signTitle'),
-      valid: !!wvSig && wvName.trim().length > 0 && wvAgree,
       content: (
         <div data-testid="ob-waiver">
           <WaiverConsentFields

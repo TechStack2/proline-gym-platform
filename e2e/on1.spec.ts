@@ -35,9 +35,14 @@ async function completeOnboarding(page: Page, newPassword: string) {
   const w = (tid: string) => page.locator(`[data-testid="${tid}"]:visible`).first()
   await w('ob-password').fill(newPassword)
   await w('ob-password2').fill(newPassword)
-  await w('wizard-next').click()   // → language
-  await w('wizard-next').click()   // → avatar
-  await w('wizard-next').click()   // → orientation
+  // Advance through all intermediate steps to the last (F3 added an OPTIONAL
+  // waiver step for members with their own student → the wizard length varies;
+  // members get it, coaches don't). Step-count-agnostic: click Next until Submit.
+  for (let i = 0; i < 6; i++) {
+    const next = page.locator('[data-testid="wizard-next"]:visible')
+    if (await next.count() === 0) break
+    await next.first().click()
+  }
   await w('wizard-submit').click() // finish
 }
 
