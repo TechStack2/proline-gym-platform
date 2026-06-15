@@ -8,9 +8,10 @@ import { vis, createClassViaWizard } from './helpers'
  *   Today = run the shift (operational) · Week = plan & chase (tactical) ·
  *   Month = grow & diagnose (strategic).
  *
- * Seeded deterministically per run: Karim's membership ENDS TODAY (000040) →
- * the Week "renewals due this week" card. This spec also records a payment
- * THIS MONTH (register-to-class + pay, mirroring fd1) → the Month revenue card.
+ * Seeded deterministically per run: FIN-1's "Horizon Member" membership ends
+ * +6d (000051) and nothing renews it before this spec → the Week "renewals due
+ * this week" card always has a row. This spec also records a payment THIS MONTH
+ * (register-to-class + pay, mirroring fd1) → the Month revenue card.
  *
  * Runs LAST (after ax2); owner session; isolated contexts.
  */
@@ -48,7 +49,7 @@ test('FD-2 · horizons render DISTINCT card sets — Today/Week/Month each show 
     await expect(vis(page, '[data-testid="horizon-week"]').first()).toHaveAttribute('data-active', 'true')
     await expect(vis(page, '[data-testid="card-schedule-fill"]').first(), 'Week shows the schedule-fill card').toBeVisible({ timeout: 15_000 })
     expect(await vis(page, '[data-testid="renewals-week-row"]').count(),
-      'a renewal is due THIS WEEK (Karim ends today)').toBeGreaterThanOrEqual(1)
+      'a renewal is due THIS WEEK (Horizon Member ends +6d)').toBeGreaterThanOrEqual(1)
     await expect(page.locator('[data-testid="card-money"]'), 'operational Money-today is absent from Week').toHaveCount(0)
     await expect(page.locator('[data-testid="card-revenue-product"], [data-testid="card-empty-revenue-product"]'),
       'Month-only "revenue by product" is absent from Week').toHaveCount(0)
