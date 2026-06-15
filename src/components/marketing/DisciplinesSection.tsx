@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
-import { Dumbbell, Heart, Music, Users, Shield, Baby } from 'lucide-react';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 
 type DisciplinesSectionProps = {
@@ -9,17 +8,25 @@ type DisciplinesSectionProps = {
   gymSlug?: string;
 };
 
-// ADM-1 tenant-clean: icons/colors rotate by row position — disciplines are
-// per-gym DATA (the SSOT is the disciplines table), never name-keyed constants.
-const ICONS: React.ComponentType<{ className?: string }>[] = [Dumbbell, Shield, Heart, Music, Users, Baby];
-const COLORS: string[] = [
-  'from-red-500 to-orange-500',
-  'from-blue-500 to-indigo-500',
-  'from-green-500 to-emerald-500',
-  'from-pink-500 to-purple-500',
-  'from-violet-500 to-fuchsia-500',
-  'from-yellow-500 to-amber-500',
+// AX-2 tenant-clean icon MAP — keyed on combat-sport KEYWORDS in the discipline's
+// English name (not row position, which gave MMA a music note). A sensible
+// default covers unknown disciplines for any gym. `kick` is checked before `box`
+// so "Kick Boxing" doesn't fall into the boxing-glove bucket. (Emoji chosen for
+// crisp cross-platform rendering with no asset pipeline; a trivial swap to SVGs.)
+const ICON_MAP: { kw: string[]; key: string; glyph: string; gradient: string }[] = [
+  { kw: ['kick'], key: 'kickboxing', glyph: '🦵', gradient: 'from-blue-500 to-indigo-500' },
+  { kw: ['muay'], key: 'muaythai', glyph: '🥋', gradient: 'from-red-500 to-orange-500' },
+  { kw: ['mma', 'mixed'], key: 'mma', glyph: '🤼', gradient: 'from-violet-500 to-fuchsia-500' },
+  { kw: ['box'], key: 'boxing', glyph: '🥊', gradient: 'from-rose-500 to-red-600' },
+  { kw: ['karate', 'taekwondo', 'judo', 'jiu', 'bjj', 'grappl', 'wrestl'], key: 'grappling', glyph: '🥋', gradient: 'from-emerald-500 to-green-600' },
 ];
+const DEFAULT_ICON = { key: 'default', glyph: '🥊', gradient: 'from-primary-500 to-primary-700' };
+
+function disciplineIcon(nameEn: string) {
+  const n = (nameEn || '').toLowerCase();
+  for (const m of ICON_MAP) if (m.kw.some((k) => n.includes(k))) return m;
+  return DEFAULT_ICON;
+}
 
 export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSectionProps) {
   const t = await getTranslations({ locale, namespace: 'landing.disciplinesSec' });
@@ -37,10 +44,10 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
         .order('sort_order')
     : { data: null };
 
-  const programs = (disciplines || []).map((d: any, i: number) => ({
+  const programs = (disciplines || []).map((d: any) => ({
     name: d[`name_${locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'}`] || d.name_en,
-    key: d.name_en,
-    idx: i,
+    nameEn: d.name_en as string,
+    icon: disciplineIcon(d.name_en),
   }));
 
   return (
@@ -56,35 +63,35 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
             {t('title')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-            {t('subtitle')}
+            {t('subtitle', { count: programs.length })}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {programs.map((program: { name: string; key: string; idx: number }) => {
-            const Icon = ICONS[program.idx % ICONS.length] || Dumbbell;
-            const gradient = COLORS[program.idx % COLORS.length] || 'from-primary-500 to-primary-700';
-
-            return (
+        {/* AX-2: flex-wrap + justify-center with fixed-width cards → any count
+            stacks centered (4 cards no longer orphan a lonely 4th in a 3-col grid). */}
+        <div className="flex flex-wrap justify-center gap-6">
+          {programs.map((program) => (
+            <div
+              key={program.nameEn}
+              data-testid="discipline-card"
+              data-icon={program.icon.key}
+              className="group relative flex w-full flex-col items-center rounded-2xl bg-white p-8 text-center shadow-elevation-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-elevation-3 sm:w-72"
+            >
               <div
-                key={program.key}
-                className="group relative rounded-2xl bg-white p-6 shadow-elevation-1 hover:shadow-elevation-3 transition-all duration-300 hover:-translate-y-1"
+                className={cn(
+                  'mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl shadow-lg',
+                  program.icon.gradient
+                )}
+                aria-hidden
               >
-                <div
-                  className={cn(
-                    'mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br',
-                    gradient
-                  )}
-                >
-                  <Icon className="h-6 w-6 text-white" />
-                </div>
-                <h3 className={cn('text-lg font-semibold text-secondary-900', isRTL && 'font-arabic')}>
-                  {program.name}
-                </h3>
-                <div className="mt-3 h-1 w-12 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 group-hover:w-20 transition-all duration-300" />
+                <span className="leading-none">{program.icon.glyph}</span>
               </div>
-            );
-          })}
+              <h3 className={cn('text-lg font-semibold text-secondary-900', isRTL && 'font-arabic')}>
+                {program.name}
+              </h3>
+              <div className="mt-3 h-1 w-12 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-300 group-hover:w-20" />
+            </div>
+          ))}
         </div>
 
         {(!disciplines || disciplines.length === 0) && (

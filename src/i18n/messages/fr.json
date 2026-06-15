@@ -728,7 +728,7 @@
     },
     "disciplinesSec": {
       "title": "Nos programmes",
-      "subtitle": "Un entraînement de classe mondiale dans 6 disciplines — pour tous les âges et niveaux",
+      "subtitle": "Un entraînement de classe mondiale dans {count} disciplines — pour tous les âges et niveaux",
       "empty": "Les programmes seront publiés bientôt."
     },
     "pricing": {
@@ -750,7 +750,8 @@
       "subtitle": "Entraînez-vous dans notre salle moderne au Sky Business Center de Baabda. Appelez-nous ou écrivez-nous sur WhatsApp pour réserver.",
       "callUs": "Appelez-nous",
       "email": "Email",
-      "igStats": "2 760 abonnés • 177 publications"
+      "igStats": "2 760 abonnés • 177 publications",
+      "viewOnGoogle": "Voir sur Google Maps"
     },
     "why": {
       "title": "Pourquoi PRO LINE ?",
@@ -789,7 +790,8 @@
       "programLabel": "Programme souhaité",
       "programPh": "Choisissez un programme",
       "send": "Envoyer",
-      "noSpam": "Nous répondons via WhatsApp. Pas de spam."
+      "noSpam": "Nous répondons via WhatsApp. Pas de spam.",
+      "submitFailed": "Échec de l'envoi — vérifiez vos informations ou écrivez-nous sur WhatsApp."
     }
   },
   "belts": {

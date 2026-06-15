@@ -15,16 +15,18 @@ export function HeroSection({ locale }: HeroSectionProps) {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Real gym photo background — the LCP element, so it's priority-preloaded
-          and served optimized. `fill` over the relative section = zero layout shift. */}
+      {/* AX-2: a CLEAN full-bleed gym photo (no baked-in text). The old hero.jpg
+          had "START YOUR OWN SAGA…" baked in → it cropped left under object-cover
+          and fought the live headline. This real training shot (no text) keeps the
+          centered content balanced at desktop + mobile. LCP element → priority. */}
       <Image
-        src="/landing/hero.jpg"
+        src="/landing/gym-1.jpg"
         alt=""
         aria-hidden
         fill
         priority
         sizes="100vw"
-        className="object-cover"
+        className="object-cover object-center"
       />
 
       {/* Dark gradient background */}

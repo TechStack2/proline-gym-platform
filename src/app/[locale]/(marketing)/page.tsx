@@ -36,6 +36,10 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // GRW-1: gym's active disciplines (anon-readable, 000035) → trial-capture
   // interest chips. One fetch here keeps the chips id-accurate for the RPC.
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
+  // AX-2 (defect 4): the RESOLVED, post-fallback slug. On the bare prod landing
+  // (no ?gym=) the raw `gymSlug` is undefined → the trial RPC got p_gym_slug=null
+  // → 'invalid' → dead form. Every gym-scoped section gets the resolved slug.
+  const sectionSlug = gym?.slug ?? DEFAULT_GYM_SLUG;
   const supabase = await createClient();
   const { data: discRows } = gym
     ? await supabase.from('disciplines').select('id, name_ar, name_en, name_fr')
@@ -50,16 +54,16 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
     <>
       <HeroSection locale={locale} />
       <AffiliationsSection locale={locale} />
-      <DisciplinesSection locale={locale} gymSlug={gymSlug} />
-      <ScheduleSection locale={locale} gymSlug={gymSlug} />
+      <DisciplinesSection locale={locale} gymSlug={sectionSlug} />
+      <ScheduleSection locale={locale} gymSlug={sectionSlug} />
       <ChampionsSection locale={locale} />
       <GallerySection locale={locale} />
       <WhySection locale={locale} />
-      <PricingSection locale={locale} gymSlug={gymSlug} />
-      <PtSection locale={locale} gymSlug={gymSlug} />
-      <CampsSection locale={locale} gymSlug={gymSlug} />
+      <PricingSection locale={locale} gymSlug={sectionSlug} />
+      <PtSection locale={locale} gymSlug={sectionSlug} />
+      <CampsSection locale={locale} gymSlug={sectionSlug} />
       <FacilitySection locale={locale} />
-      <TrialCTASection locale={locale} gymSlug={gymSlug} disciplines={captureDisciplines} />
+      <TrialCTASection locale={locale} gymSlug={sectionSlug} disciplines={captureDisciplines} />
     </>
   );
 }

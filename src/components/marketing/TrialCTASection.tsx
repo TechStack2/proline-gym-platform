@@ -47,6 +47,8 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
       // campaign attribution) + emits the lead_new staff notification (anon
       // caller → in-RPC, sanctioned definer exception). Returns ok/duplicate/
       // invalid only — no row data to anon.
+      // AX-2: the page passes the RESOLVED gym slug, so this is real on the bare
+      // landing. Defensive only — a missing slug is a config error, not "fill all".
       const { data, error: rpcError } = await supabase.rpc('submit_trial_inquiry', {
         p_gym_slug: gymSlug || null,
         p_name: name,
@@ -56,8 +58,10 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
         p_honeypot: honeypot || null,
       });
       if (rpcError) throw rpcError;
+      // 'invalid' means the RPC couldn't resolve the gym / inputs — an honest
+      // "couldn't submit" message (the empty-field case is caught client-side above).
       if (data === 'invalid') {
-        setError(t('fillAll'));
+        setError(t('submitFailed'));
         return;
       }
       setSuccess(true); // 'ok' and 'duplicate' both land on the success state
