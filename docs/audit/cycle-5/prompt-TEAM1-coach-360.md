@@ -71,6 +71,11 @@ Branch prompt-team1-coach-360 off main (git checkout main && git pull && git che
   docs/audit/cycle-5/prompt-TEAM1-coach-360.md
 design: docs/audit/design-360-today-coach.md (operator-locked)
 
+PARALLEL: you are the WORKTREE lane (../proline-team1, port 3100); FD-2 runs concurrently in the main
+repo. Stay in your fence (diary/Team/Coach-360 + coach libs + nav-config + coach360.*/team.* i18n ONLY;
+do NOT touch today/** or lib/finances/** or DashboardLayoutClient). DO NOT merge to main — report
+"TEAM-1 ready" and the auditor merges. Work only in ../proline-team1. See the PARALLEL-LANE FENCE section.
+
 Mirror the Member-360 pattern. AIM FOR ZERO schema (coach_availability [PT-2], coach CRUD [ADM-1/2],
 pt_assignments/pt_sessions, class_enrollments exist — verify real columns first; any addition minimal+named).
 Do: (1) DAY DIARY = cross-coach floor lens: per-coach columns for the chosen day show classes AND booked

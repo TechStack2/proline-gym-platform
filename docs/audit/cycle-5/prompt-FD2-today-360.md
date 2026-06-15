@@ -82,6 +82,11 @@ Read in full and execute exactly:
   docs/audit/cycle-5/prompt-FD2-today-360.md
 design: docs/audit/design-360-today-coach.md (operator-locked)
 
+PARALLEL: you are the MAINLINE lane (main repo, port 3000); TEAM-1 runs concurrently in a worktree. Stay
+in your fence (today/** + lib/finances/** + the DashboardLayoutClient footer fix + today.* i18n ONLY; do
+NOT touch the diary/Team/coach files or nav-config). DO NOT merge to main — report "FD-2 ready" and the
+auditor merges. See the PARALLEL-LANE FENCE section in the prompt.
+
 ZERO schema — read-time off existing FIN-1/ML-1/D1/GRW-1 data; reuse the ActionCard framework + horizon
 plumbing.
 Do: (0) PWA FOOTER FIX: dashboard content hides under the fixed mobile NativeTabBar → add mobile bottom
