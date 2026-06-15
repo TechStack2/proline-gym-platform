@@ -2679,3 +2679,55 @@ The mobile `NativeTabBar` is `fixed bottom-0`, so the last rows of every dashboa
 **The quiet correctness trap was cross-spec ordering.** The obvious "renewal due this week" fixture is Karim (000040 seeds his membership ending TODAY) — but `ml1` runs *before* `fd2` and RENEWS Karim's membership (+30d, then freeze +10d), so by the time the Week lens is asserted Karim no longer ends this week. The robust anchor is FIN-1's **Horizon Member (+6d)**: nothing renews it before fd2, and +6 ≤ +7 keeps it in the rolling week window every day of the month. The assertion uses `count ≥ 1` (not "Karim"), so it holds regardless of which members happen to be expiring — but the lesson is that in a serial shared-gym suite, a "deterministic seed" is only deterministic relative to *what every earlier spec did to it*; pick a fixture no earlier spec mutates.
 
 **Honest residue, all named:** (1) the Month "renewals rest-of-month" uses the existing **rolling +30d** horizon window, not a calendar month-end — consistent with `horizon.ts` and immune to month-boundary flakiness (a calendar-end window would drop a +6d renewal near the 25th), but the label says "rest of month"; a true calendar clamp is a later refinement. (2) "win-back recovered" is the **lifetime** reactivated count from the queue, not strictly this-month — an honest proxy (the queue has no per-month recovery timestamp); a precise monthly figure would need a reactivation event. (3) **active-member trend** shows `activeNow` + the net (new − churn) this month rather than a true month-start snapshot (no historical count exists without a snapshot table — out of scope for read-time). (4) **coach load** is a plain list with no drill, by design — TEAM-1 owns the Coach-360 link and will wire each row after merge.
+
+---
+
+## Cycle 5 / V1 / TEAM-1 — Coach 360 + Day Diary
+
+**Branch:** `prompt-team1-coach-360` (worktree lane, parallel with FD-2) · **Status:** TEAM-1 ready for review (NOT merged — auditor merges) · **Schema:** ZERO new migrations.
+
+### Day Diary reframe (the cross-coach floor lens)
+`/schedule` day view (`src/app/[locale]/(dashboard)/schedule/page.tsx`) was a flat class+PT grid. Now each coach column answers *"who's on the floor, who's free"*:
+- **Open availability gaps** — published `coach_availability` windows for the chosen weekday (+ same-date `coach_availability_overrides`: whole-day/partial `block`, one-off `extra`) MINUS busy (recurring class slots + non-cancelled PT) = the unbooked bookable slots, rendered as dashed `diary-availability-gap` blocks (the PT-upsell signal). Pure interval math in `src/lib/coach/availability.ts` (`openAvailabilityGaps` + `hmInTz` to resolve PT timestamps into the gym timezone so they share the naive-TIME class clock).
+- **Coach header → Coach 360** — the column header is now a `Link` into that coach's file (`diary-coach-header` testid preserved so ADM-2's avatar assertion still holds).
+- Columns now also include coaches who have *only* published windows (not just events); the existing date picker + DiaryBookPt picker + read-side conflict warning are untouched; a `diary-no-pt` empty hint sits beside the book affordance.
+
+### Coach 360 (single-coach file — the hub), mirror of Member-360
+`/coaches/[id]` rebuilt (`page.tsx` + `coach-actions.tsx`; the old husk `coach-detail.tsx` removed). Panels + sources:
+| Panel | Source (live, RLS-scoped) |
+|---|---|
+| Header (avatar · specialty/belt chips · `tel:`/`wa.me` · active badge) | `coaches` + embedded `profiles` |
+| Schedule (classes + PT, day/week toggle) | `classes`+`class_schedules` (coach_id), `pt_sessions` windowed |
+| **Availability (view + staff edit)** | the PT-2 `AvailabilityEditor` reused as-is → `coach_availability` / `coach_availability_overrides` writes |
+| Roster (each → Member-360) | `class_enrollments` (active, this coach's classes) + `pt_assignments` (active) clients |
+| Load / utilization | active class count · weekly slot count · `pt_sessions` count this week / this month |
+| Quick actions | Assign-to-class → class wizard · Book PT → shared DiaryBookPt→BookPtModal (PT-2) · Edit/Invite (ADM-1/ON-1) · Deactivate/Reactivate (gated) |
+All actions delegate to **existing verified writers — no new ones** (only `setCoachActive` for the deactivate guardrail).
+
+### Permission gating (locked fork #3)
+- **owner + head_coach + reception**: view Diary + Coach 360, edit availability, manage assignments, book PT. Reception gained the `schedule` + `team` workspaces in `nav-config.ts`.
+- **Deactivate = owner/head_coach ONLY**: `coaches/[id]/actions.ts` `setCoachActive` reads the caller's `user_roles.role` and rejects anyone outside `{owner, head_coach}` (`forbidden`); reception's control is hidden in `CoachActions` (`canDeactivate=false`). Defense-in-depth on top of RLS.
+- **`database-reviewer` read**: NO RLS weakened. `coach_availability_staff` (`is_staff() AND gym`) already covers reception writes (verified: `is_staff()` = owner/head_coach/coach/receptionist). `coaches_staff` (`gym AND role IN (owner, head_coach, receptionist)`) lets reception manage coach rows in-gym — *named gap:* RLS alone can't restrict only the `is_active`/`deleted_at` columns to owner/head_coach without splitting the `FOR ALL` staff policy (a weakening we deliberately did NOT make), so the deactivate guardrail lives in the server action per the locked design ("server-action gate on caller role + the existing RLS"). `book_pt_session` already authorizes `is_staff() AND gym` (reception included; member-only override blocked) — reception PT-book reuses it.
+
+### Real-columns audit (target: zero additions — MET)
+- `coach_availability` → `coach_id, gym_id, day_of_week, start_time, end_time, is_active` (000044). ✓
+- `coach_availability_overrides` → `coach_id, gym_id, date, kind('block'|'extra'), start_time, end_time` (000044). ✓
+- `pt_sessions` → `coach_id, student_id, assignment_id, scheduled_at, duration_minutes, status` (000027/000044). ✓
+- `pt_assignments` → `coach_id, student_id, status, is_active, sessions_remaining, expires_at, purchased_at, package_id`. ✓
+- `class_enrollments` → `class_id, student_id, is_active` (000003; populated by the seed + class-registration approval). ✓
+- `coaches` → `gym_id, profile_id, is_active, deleted_at, belt_rank, specialization_{ar,en,fr}`; `gyms.timezone`. ✓
+No missing column required a read I couldn't satisfy → **zero new schema**, zero Verify-Foundation dispatch.
+
+### Verification — E2E CI (behavior-green, not tsc)
+- **Run:** `27547182081` — https://github.com/TechStack2/proline-gym-platform/actions/runs/27547182081 — **conclusion: success**, `81 passed (34.7m)`.
+- New `e2e/team1.spec.ts` (`team1` project, appended LAST): **✓ passed first attempt (51.5s)** — drives a real PT-2 sale (Karim ← Sami) + reception override-booking, then asserts: diary shows the seeded class slot **AND** the booked PT **AND** an open availability gap **AND** the header links to Coach 360; Coach 360 renders profile + schedule + availability (reception edit persists across reload) + roster (Karim as PT client **and** a class member, each → Member-360) + load; reception's deactivate is **absent**, owner's deactivate **works** then re-activates; `/ar` Coach 360 + day diary clean (no MISSING_MESSAGE).
+- The only non-green line was a pre-existing **flaky** `adm1` *disciplines SSOT* test (`data-active` toggle timing) that recovered on retry #1 — unrelated to this slice (disciplines surface, not touched). Full suite incl. ADM-1/ADM-2/schedule-cal/pt2 (the surfaces this slice borders) green.
+- tsc `--noEmit` + `next build` clean. i18n: `coach360.*` + `team.*` only, ar/en/fr, RTL, design-system, tenant-clean.
+
+**Day Diary floor lens (class+PT+gaps) + Coach 360 hub + reception-manage/owner-deactivate: PASS**
+
+### DRAG READ
+- **Diary PT clock skew (cosmetic):** the diary *displays* PT time in the Node runtime TZ (`toLocaleTimeString`) while the new gap math resolves PT into the **gym** TZ (`hmInTz`). On a non-gym-TZ host (CI=UTC) a booked PT block can read e.g. 16:30 while its gap subtraction lands at the Beirut-shifted hour. Gaps are still correct/robust (class subtraction alone guarantees a gap), but a demo eye comparing the block label to the gap edges could notice the offset. Real fix = render the diary PT label in the gym TZ too (a small, separate diary-display change; out of this slice's fence). Tracks the broader [[white-label]] timezone-display debt.
+- **"Assign to class" is a link, not an inline assign** — it routes to the class wizard (where coach↔class assignment already lives) to honor "no new writers." Fine for V1; a future inline "add this coach to class X" picker would tighten the loop but needs a writer.
+- **Availability editor is list-of-windows, not a visual week grid** — reused verbatim from PT-2 (pill UI, no dropdowns) so it's consistent, but a calendar-style availability view would read better on the big screen during a demo.
+- **Reception now sees Team/Schedule nav** — correct per the locked fork, but it widens reception's surface; confirm the operator is comfortable reception can open every coach file (they cannot deactivate).

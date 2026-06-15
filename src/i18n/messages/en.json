@@ -2512,5 +2512,44 @@
     "paymentsNeedConnection": "Payments need a connection — only attendance works offline.",
     "synced": "Synced",
     "savedOffline": "Saved offline — will sync when you reconnect"
+  },
+  "coach360": {
+    "schedule": "Schedule",
+    "week": "Week",
+    "day": "Day",
+    "days": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "noClasses": "No classes assigned",
+    "ptToday": "PT today",
+    "ptThisWeek": "PT this week",
+    "noPtWindow": "No PT sessions in this window",
+    "load": "Load & utilization",
+    "activeClasses": "Active classes",
+    "weeklySlots": "Weekly slots",
+    "ptWeek": "PT this week",
+    "ptMonth": "PT this month",
+    "roster": "Roster",
+    "classMembers": "Class members",
+    "noMembers": "No class members",
+    "ptClients": "PT clients",
+    "noPtClients": "No PT clients",
+    "sessionsLeft": "{n} left",
+    "actions": {
+      "assignClass": "Assign to class",
+      "reactivate": "Reactivate"
+    }
+  },
+  "team": {
+    "diary": {
+      "openGap": "Open slot",
+      "noPt": "No PT booked"
+    }
   }
 }

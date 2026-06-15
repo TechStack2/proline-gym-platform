@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { Avatar } from '@/components/shared/avatar'
 import { DiaryBookPt, type DiaryAssignment } from './diary-book-pt'
-import { CalendarRange, CalendarClock, Dumbbell } from 'lucide-react'
+import { openAvailabilityGaps, hmInTz, type Interval } from '@/lib/coach/availability'
+import { CalendarRange, CalendarClock, Dumbbell, Clock, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +45,8 @@ const hhmm = (v: string | null) => (v || '').slice(0, 5)
 export default async function SchedulePage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('scheduleView')
+  // TEAM-1: floor-lens strings (open gaps / Coach-360 link) live under `team.*`.
+  const tTeam = await getTranslations('team')
   const supabase = await createClient()
 
   const view = searchParams.view === 'day' ? 'day' : 'week'
@@ -84,18 +87,33 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
 
   // ── Day view data ──
   const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.date ?? '') ? searchParams.date! : new Date().toISOString().slice(0, 10)
-  let diary: { coachId: string; classes: any[]; pts: any[] }[] = []
+  let diary: { coachId: string; classes: any[]; pts: any[]; gaps: Interval[] }[] = []
+  let tz = 'Asia/Beirut' // hoisted so the PT label (render) shares the gap math's gym TZ
   if (view === 'day') {
     const dow = new Date(`${dateStr}T12:00:00`).getDay()
-    const { data: ptsRaw } = await supabase
-      .from('pt_sessions')
-      .select(`id, coach_id, scheduled_at, duration_minutes, status,
-        students:student_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
-        coaches:coach_id (gym_id)`)
-      .gte('scheduled_at', `${dateStr}T00:00:00`)
-      .lt('scheduled_at', `${dateStr}T23:59:59`)
-      .neq('status', 'cancelled')
-      .order('scheduled_at')
+    // TEAM-1: gym timezone resolves PT timestamps into the same clock the
+    // (naive TIME) class slots + availability windows live in, for gap math.
+    const [{ data: ptsRaw }, { data: availRows }, { data: ovRows }, { data: gym }] = await Promise.all([
+      supabase
+        .from('pt_sessions')
+        .select(`id, coach_id, scheduled_at, duration_minutes, status,
+          students:student_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
+          coaches:coach_id (gym_id)`)
+        .gte('scheduled_at', `${dateStr}T00:00:00`)
+        .lt('scheduled_at', `${dateStr}T23:59:59`)
+        .neq('status', 'cancelled')
+        .order('scheduled_at'),
+      // Published bookable windows for this weekday (PT-2 coach_availability).
+      supabase.from('coach_availability')
+        .select('coach_id, day_of_week, start_time, end_time')
+        .eq('gym_id', gymId).eq('is_active', true).eq('day_of_week', dow),
+      // Per-date exceptions (block/extra) that reshape the windows for THIS date.
+      supabase.from('coach_availability_overrides')
+        .select('coach_id, date, kind, start_time, end_time')
+        .eq('gym_id', gymId).eq('date', dateStr),
+      supabase.from('gyms').select('timezone').eq('id', gymId).single(),
+    ])
+    tz = (gym as any)?.timezone || 'Asia/Beirut'
     const pts = (ptsRaw ?? []).filter((s: any) => one(s.coaches)?.gym_id === gymId)
       .filter((s: any) => !fCoach || s.coach_id === fCoach)
 
@@ -114,15 +132,38 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
       list.push(s)
       ptsByCoach.set(s.coach_id, list)
     }
-    // Columns: coaches with any event that day; fallback all active coaches.
-    let coachIds = [...new Set([...slotsByCoach.keys(), ...ptsByCoach.keys()])]
+    const availByCoach = new Map<string, any[]>()
+    for (const w of (availRows ?? []) as any[]) {
+      if (fCoach && w.coach_id !== fCoach) continue
+      const list = availByCoach.get(w.coach_id) ?? []
+      list.push(w)
+      availByCoach.set(w.coach_id, list)
+    }
+    // Columns: coaches with any class/PT/published-window that day; fallback all.
+    let coachIds = [...new Set([...slotsByCoach.keys(), ...ptsByCoach.keys(), ...availByCoach.keys()])]
     if (coachIds.length === 0) coachIds = (coaches ?? []).map((c: any) => c.id)
     if (fCoach) coachIds = coachIds.filter((id) => id === fCoach)
-    diary = coachIds.map((coachId) => ({
-      coachId,
-      classes: (slotsByCoach.get(coachId) ?? []).sort((a, b) => a.slot.start_time.localeCompare(b.slot.start_time)),
-      pts: ptsByCoach.get(coachId) ?? [],
-    }))
+    diary = coachIds.map((coachId) => {
+      const coachClasses = (slotsByCoach.get(coachId) ?? []).sort((a, b) => a.slot.start_time.localeCompare(b.slot.start_time))
+      const coachPts = ptsByCoach.get(coachId) ?? []
+      // Busy = recurring class slots that day + booked PT (resolved to gym clock).
+      const busy: Interval[] = [
+        ...coachClasses.map(({ slot }: any) => ({ start: slot.start_time, end: slot.end_time })),
+        ...coachPts.map((s: any) => {
+          const start = hmInTz(s.scheduled_at, tz)
+          const [h, m] = start.split(':').map(Number)
+          const endMin = h * 60 + m + (s.duration_minutes ?? 60)
+          return { start, end: `${String(Math.floor(endMin / 60) % 24).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}` }
+        }),
+      ]
+      const gaps = openAvailabilityGaps({
+        date: dateStr, dow,
+        windows: availByCoach.get(coachId) ?? [],
+        overrides: (ovRows ?? []).filter((o: any) => o.coach_id === coachId) as any,
+        busy,
+      })
+      return { coachId, classes: coachClasses, pts: coachPts, gaps }
+    })
   }
 
   // ── Week view rows: distinct (start,end) slots ──
@@ -284,15 +325,18 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3" data-testid="coach-diary">
               {diary.map((col) => (
                 <div key={col.coachId} className="rounded-2xl border bg-white p-3 shadow-sm" data-testid="diary-coach-column" data-coach-id={col.coachId}>
-                  <p className={cn('mb-2 flex items-center gap-2 border-b pb-2 text-sm font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="diary-coach-header">
+                  {/* TEAM-1: the column header is the door into the coach's file. */}
+                  <Link href={`/${locale}/coaches/${col.coachId}`} data-testid="diary-coach-header" data-coach-link="1"
+                    className={cn('mb-2 flex items-center gap-2 border-b pb-2 text-sm font-bold text-gray-900 hover:text-[#cd1419]', isRTL && 'font-arabic')}>
                     <Avatar
                       url={one((coaches ?? []).find((c: any) => c.id === col.coachId)?.profiles)?.avatar_url}
                       name={coachName(col.coachId) || '—'}
                       size="sm"
                     />
-                    {coachName(col.coachId) || '—'}
-                  </p>
-                  {col.classes.length === 0 && col.pts.length === 0 ? (
+                    <span className="flex-1 truncate">{coachName(col.coachId) || '—'}</span>
+                    <ChevronRight className={cn('h-3.5 w-3.5 text-gray-300', isRTL && 'rotate-180')} />
+                  </Link>
+                  {col.classes.length === 0 && col.pts.length === 0 && col.gaps.length === 0 ? (
                     <p className="py-4 text-center text-xs text-gray-400">{t('noEventsCoach')}</p>
                   ) : (
                     <div className="space-y-1.5">
@@ -311,12 +355,24 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                           className="block rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-2.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100">
                           <span className="flex items-center gap-1 font-semibold"><Dumbbell className="h-3 w-3" /> {t('ptSession')} · {localizedName(one(one(s.students)?.profiles), locale)}</span>
                           <span className="block opacity-70" dir="ltr">
-                            {new Date(s.scheduled_at).toLocaleTimeString(dateLocale(locale), { hour: '2-digit', minute: '2-digit' })}
+                            {hmInTz(s.scheduled_at, tz)}
                             {` · ${s.duration_minutes ?? 60}${t('min')}`}
                           </span>
                         </Link>
                       ))}
+                      {/* TEAM-1: PUBLISHED-but-unbooked windows — the PT-upsell signal. */}
+                      {col.gaps.map((g, i) => (
+                        <div key={`gap-${i}`} data-testid="diary-availability-gap"
+                          className="rounded-lg border border-dashed border-emerald-300 bg-emerald-50 px-2.5 py-2 text-xs font-medium text-emerald-700">
+                          <span className="flex items-center gap-1 font-semibold"><Clock className="h-3 w-3" /> {tTeam('diary.openGap')}</span>
+                          <span className="block opacity-80" dir="ltr">{g.start}–{g.end}</span>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                  {/* "Who's free" → book it: empty-state hint + the PT-2 picker. */}
+                  {col.pts.length === 0 && (
+                    <p className="mt-2 text-center text-[11px] text-gray-400" data-testid="diary-no-pt">{tTeam('diary.noPt')}</p>
                   )}
                   <DiaryBookPt assignments={diaryAssignByCoach.get(col.coachId) ?? []} locale={locale} />
                 </div>

@@ -350,12 +350,23 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // FD-2 Today 360 — LAST: distinct Today/Week/Month card sets + PWA footer.
+      // FD-2 Today 360 — distinct Today/Week/Month card sets + PWA footer.
       // Records a paid-this-month (register-to-class + pay) for the Month revenue
-      // proof; a mobile-viewport test asserts the footer fix. Runs after all else.
+      // proof; a mobile-viewport test asserts the footer fix.
       name: 'fd2',
       dependencies: ['setup'],
       testMatch: /fd2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // TEAM-1 Coach 360 hub + Day Diary floor lens. Drives a PT-2 sale + override
+      // booking, then proves the diary (class+PT+open gaps + Coach-360 link), the
+      // Coach 360 panels (incl. reception availability-edit/PT-book that persist),
+      // and the owner/head_coach-only deactivate. Switches roles internally
+      // (owner + reception); appended at the END — runs LAST.
+      name: 'team1',
+      dependencies: ['setup'],
+      testMatch: /team1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

@@ -63,7 +63,10 @@ export const WORKSPACES: Workspace[] = [
 export const ROLE_WORKSPACES: Record<DashboardRole, WorkspaceKey[]> = {
   owner: ['today', 'inbox', 'members', 'schedule', 'money', 'team', 'settings', 'profile'],
   head_coach: ['today', 'inbox', 'members', 'schedule', 'team', 'profile'],
-  receptionist: ['today', 'inbox', 'members', 'money', 'profile'],
+  // TEAM-1 (locked fork #3): reception manages coach scheduling/availability/
+  // assignments, so the Diary (schedule) + Team (Coach 360) workspaces are in
+  // their nav. Deactivate stays owner/head_coach-only (gated in the action).
+  receptionist: ['today', 'inbox', 'members', 'schedule', 'money', 'team', 'profile'],
   coach: [], // (coach) shell
   student: [], // (portal) shell
   parent: [], // (portal) shell
