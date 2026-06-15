@@ -2430,5 +2430,44 @@
     "paymentsNeedConnection": "Les paiements nécessitent une connexion — seule la présence fonctionne hors ligne.",
     "synced": "Synchronisé",
     "savedOffline": "Enregistré hors ligne — sera synchronisé à la reconnexion"
+  },
+  "coach360": {
+    "schedule": "Planning",
+    "week": "Semaine",
+    "day": "Jour",
+    "days": {
+      "sun": "Dim",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam"
+    },
+    "noClasses": "Aucun cours assigné",
+    "ptToday": "Coaching aujourd’hui",
+    "ptThisWeek": "Coaching cette semaine",
+    "noPtWindow": "Aucune séance dans cette période",
+    "load": "Charge & utilisation",
+    "activeClasses": "Cours actifs",
+    "weeklySlots": "Créneaux hebdo",
+    "ptWeek": "Coaching cette semaine",
+    "ptMonth": "Coaching ce mois",
+    "roster": "Effectif",
+    "classMembers": "Membres des cours",
+    "noMembers": "Aucun membre",
+    "ptClients": "Clients coaching",
+    "noPtClients": "Aucun client",
+    "sessionsLeft": "{n} restantes",
+    "actions": {
+      "assignClass": "Assigner à un cours",
+      "reactivate": "Réactiver"
+    }
+  },
+  "team": {
+    "diary": {
+      "openGap": "Créneau libre",
+      "noPt": "Aucun coaching réservé"
+    }
   }
 }

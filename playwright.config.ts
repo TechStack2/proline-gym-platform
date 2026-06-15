@@ -349,6 +349,17 @@ export default defineConfig({
       testMatch: /ax2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // TEAM-1 Coach 360 hub + Day Diary floor lens. Drives a PT-2 sale + override
+      // booking, then proves the diary (class+PT+open gaps + Coach-360 link), the
+      // Coach 360 panels (incl. reception availability-edit/PT-book that persist),
+      // and the owner/head_coach-only deactivate. Switches roles internally
+      // (owner + reception); appended at the END — runs LAST.
+      name: 'team1',
+      dependencies: ['setup'],
+      testMatch: /team1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
