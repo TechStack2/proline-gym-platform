@@ -334,11 +334,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // G2 offline attendance — LAST: toggles context.setOffline + queues/flushes
+      // G2 offline attendance: toggles context.setOffline + queues/flushes
       // attendance marks via the idempotent upsert; isolated browser contexts.
       name: 'g2',
       dependencies: ['setup'],
       testMatch: /g2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // AX-2 landing polish — LAST: anon (no storageState); asserts hero/icons/
+      // map + the bare-landing trial submit (default gym, no ?gym=).
+      name: 'ax2',
+      dependencies: ['setup'],
+      testMatch: /ax2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

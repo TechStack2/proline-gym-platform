@@ -17,18 +17,19 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
           {/* Facility image / map placeholder */}
           <div className="relative">
             <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-secondary-800 to-secondary-900 overflow-hidden shadow-elevation-3">
-              {/* Embedded Google Maps — keyless place-search embed (a real,
-                  interactive map, not the null-place placeholder). Operator can
-                  later swap in the exact Maps → Share → Embed iframe. */}
+              {/* AX-2: keyless OpenStreetMap embed — always renders (the keyless
+                  Google embed showed a blank dark box). Centered on Sky Business
+                  Center, Baabda. A Google Maps API key, if supplied later, is a
+                  trivial swap. */}
               <iframe
-                src="https://www.google.com/maps?q=Sky%20Business%20Center%2C%20Baabda%2C%20Lebanon&output=embed"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=35.5390%2C33.8290%2C35.5490%2C33.8390&layer=mapnik&marker=33.8340%2C35.5440"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
-                allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="PRO LINE Gym — Sky Business Center, Baabda"
+                data-testid="facility-map"
                 className="absolute inset-0"
               />
             </div>
@@ -47,6 +48,15 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
                   <p className="text-xs text-gray-500 mt-0.5">
                     {t('country')}
                   </p>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Sky+Business+Center+Baabda"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="view-on-google-maps"
+                    className="mt-1 inline-block text-xs font-medium text-primary-600 hover:underline"
+                  >
+                    {t('viewOnGoogle')}
+                  </a>
                 </div>
               </div>
             </div>
