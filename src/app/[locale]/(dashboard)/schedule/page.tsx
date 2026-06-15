@@ -88,6 +88,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   // ── Day view data ──
   const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.date ?? '') ? searchParams.date! : new Date().toISOString().slice(0, 10)
   let diary: { coachId: string; classes: any[]; pts: any[]; gaps: Interval[] }[] = []
+  let tz = 'Asia/Beirut' // hoisted so the PT label (render) shares the gap math's gym TZ
   if (view === 'day') {
     const dow = new Date(`${dateStr}T12:00:00`).getDay()
     // TEAM-1: gym timezone resolves PT timestamps into the same clock the
@@ -112,7 +113,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
         .eq('gym_id', gymId).eq('date', dateStr),
       supabase.from('gyms').select('timezone').eq('id', gymId).single(),
     ])
-    const tz = (gym as any)?.timezone || 'Asia/Beirut'
+    tz = (gym as any)?.timezone || 'Asia/Beirut'
     const pts = (ptsRaw ?? []).filter((s: any) => one(s.coaches)?.gym_id === gymId)
       .filter((s: any) => !fCoach || s.coach_id === fCoach)
 
@@ -354,7 +355,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                           className="block rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-2.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100">
                           <span className="flex items-center gap-1 font-semibold"><Dumbbell className="h-3 w-3" /> {t('ptSession')} · {localizedName(one(one(s.students)?.profiles), locale)}</span>
                           <span className="block opacity-70" dir="ltr">
-                            {new Date(s.scheduled_at).toLocaleTimeString(dateLocale(locale), { hour: '2-digit', minute: '2-digit' })}
+                            {hmInTz(s.scheduled_at, tz)}
                             {` · ${s.duration_minutes ?? 60}${t('min')}`}
                           </span>
                         </Link>
