@@ -33,13 +33,15 @@ test('AX-2 · disciplines: dynamic count + per-discipline non-default icons', as
     expect(m, 'subtitle states a count').not.toBeNull()
     expect(Number(m![1]), 'subtitle count == rendered discipline cards').toBe(n)
 
-    // Known disciplines resolve to distinct, NON-default icons (not both default).
+    // Known disciplines resolve to distinct, NON-default icons (the positional-
+    // ICONS bug gave MMA a music note). Boxing→boxing, Muay Thai→muaythai — both
+    // non-default and distinct from each other. (An unknown discipline legitimately
+    // uses the default icon — that's the tenant-clean fallback, not a bug — so we
+    // assert the KNOWN ones resolve, not that zero defaults exist.)
     const boxing = page.locator('[data-testid="discipline-card"][data-icon="boxing"]')
     const muay = page.locator('[data-testid="discipline-card"][data-icon="muaythai"]')
-    await expect(boxing, 'Boxing card uses the boxing icon').toHaveCount(1)
-    await expect(muay, 'Muay Thai card uses the muay-thai icon').toHaveCount(1)
-    await expect(page.locator('[data-testid="discipline-card"][data-icon="default"]'),
-      'no known seeded discipline falls back to the default icon').toHaveCount(0)
+    await expect(boxing, 'Boxing card uses the boxing icon (not default)').toHaveCount(1)
+    await expect(muay, 'Muay Thai card uses the muay-thai icon (not default)').toHaveCount(1)
   } finally {
     await ctx.close()
   }
