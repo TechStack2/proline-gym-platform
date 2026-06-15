@@ -2,6 +2,18 @@
 
 > **For:** the MAIN coding agent (mainline) · **Issued by:** Project Auditor · **Sequence:** after FD-2 merges (branch `prompt-team1-coach-360` off `main`). Design: [`../design-360-today-coach.md`](../design-360-today-coach.md) (operator-locked). Mirror of the Member-360 pattern that worked. **Aim for zero schema** — `coach_availability` (PT-2), coach CRUD (ADM-1/2), `pt_assignments`/`pt_sessions`, `class_enrollments` all exist; verify real columns first.
 
+## PARALLEL-LANE FENCE (TEAM-1 runs CONCURRENTLY with FD-2 — read before touching anything)
+You are the **WORKTREE lane** (`../proline-team1`, **port 3100**). FD-2 (Today 360) runs in parallel in
+the main repo. To keep the two merges clean:
+- **YOUR surfaces ONLY:** the schedule/diary view, the Team workspace, the NEW Coach-360 page + coach
+  libs, `nav-config.ts` (you own the Coach-360 nav link), and the `coach360.*` / `team.*` i18n namespaces.
+- **DO NOT touch:** `src/app/[locale]/(dashboard)/today/**`, `src/lib/finances/**`,
+  `DashboardLayoutClient`, or i18n keys outside `coach360.*` / `team.*`.
+- i18n: add only `coach360.*` / `team.*` keys; append your Playwright project at the **END** of the array.
+- **DO NOT merge to main.** When green, report **"TEAM-1 ready for review"** — the AUDITOR merges (FD-2
+  likely lands first; you rebase + re-run). If `main` moves under you mid-run, finish on your base and
+  report; the auditor rebases. Work ONLY in `../proline-team1`; never `git checkout` in the main repo.
+
 ## Strategic context
 The "Open Diary" is thin and unintuitive — flat schedule, no PT, no management. **Gym 360 Pro** needs a coach-management hub as strong as Member-360. Split into two complementary surfaces, minimal overlap: the **Day Diary = the floor lens** (all coaches, one day) and **Coach 360 = the coach's file** (one coach, everything). Permissions (locked): owner + head_coach + **reception** view+manage; **deactivate** owner/head_coach only.
 

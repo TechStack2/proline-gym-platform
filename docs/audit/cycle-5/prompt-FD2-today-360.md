@@ -2,6 +2,20 @@
 
 > **For:** the MAIN coding agent (mainline) · **Issued by:** Project Auditor · **Sequence:** after AX-2 merges (branch `prompt-fd2-today-360` off `main`). Design: [`../design-360-today-coach.md`](../design-360-today-coach.md) (operator-locked). **Zero schema** — all read-time off existing FIN-1/ML-1/D1/GRW-1 data.
 
+## PARALLEL-LANE FENCE (FD-2 runs CONCURRENTLY with TEAM-1 — read before touching anything)
+You are the **MAINLINE lane** (the main repo checkout, port 3000). TEAM-1 (Coach-360 + diary) runs in
+parallel in a separate worktree. To keep the two merges clean:
+- **YOUR surfaces ONLY:** `src/app/[locale]/(dashboard)/today/**`, `src/lib/finances/**`, the
+  `DashboardLayoutClient` PWA-footer fix, and the `today.*` i18n namespace.
+- **DO NOT touch:** the schedule/diary, the Team workspace, any coach-360 / coach files,
+  `nav-config.ts` (TEAM-1 owns all nav changes), or i18n keys outside `today.*`.
+- The **"coach load this week"** card = a PLAIN read-only list (no Coach-360 link — TEAM-1 wires that
+  after). Build no coach management here.
+- i18n: add only `today.*` keys; append your Playwright project at the **END** of the array.
+- **DO NOT merge to main.** When green, append the audit and report **"FD-2 ready for review"** — the
+  AUDITOR merges (controls order vs TEAM-1, resolves the i18n/playwright merges, runs union validation).
+  If `main` moves under you mid-run, finish on your base and report; the auditor rebases.
+
 ## Strategic context
 Platform is now **Gym 360 Pro** — the Today/Week/Month switcher is the namesake feature and must deliver three genuinely different lenses, not one wider-window. Today already re-scopes the date range but labels say "today" and the dominant cards (class/PT) are today-only → Week/Month look identical. Make each horizon answer a different question: **Today = run the shift · Week = plan & chase · Month = grow & diagnose.**
 
