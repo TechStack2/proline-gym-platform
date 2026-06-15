@@ -86,7 +86,11 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
           isActive={true}
           locale={locale}
         >
-          <div key={pathname}>{children}</div>
+          {/* FD-2 PWA footer fix: the mobile NativeTabBar is `fixed bottom-0`, so
+              the last rows of every dashboard page (seen on Today/Inbox) hid
+              behind it. Clear it with tab-bar height + safe-area bottom padding
+              on mobile only (the md+ side-rail has no bottom bar → md:pb-0). */}
+          <div key={pathname} className="pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">{children}</div>
         </PageTransition>
       </main>
 
