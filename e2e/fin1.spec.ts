@@ -60,7 +60,12 @@ test('FIN-1 · horizons swap card sets: +6d member renews in Week+Month not Toda
     await expect(vis(page, '[data-testid="horizon-week"]').first()).toHaveAttribute('data-active', 'true')
     expect(await renewalsWeekHas(), 'Horizon Member renews this week').toBeGreaterThanOrEqual(1)
     const projWeek = money((await vis(page, '[data-testid="renewals-week-projected"]').first().textContent()) ?? '$0')
-    expect(projWeek, 'Week renewals project collectable revenue').toBeGreaterThan(0)
+    // The renewals card projects FORWARD renewal value = the membership PLAN
+    // price (Horizon Member is on the cheapest seeded plan, Monthly $50.00) —
+    // not the prior invoice's $55.50 TVA-inclusive total. The card may sum other
+    // week-renewals too, so assert the known $50.00 floor (>=), float-tolerant.
+    expect(projWeek, 'Week renewals project ≥ the +6d Horizon Member renewal (Monthly plan $50.00)')
+      .toBeGreaterThanOrEqual(50.0 - 0.01)
 
     // ── Month (strategic): still present under "renewals due rest of month" ──
     await page.goto('/en/today?h=month')
