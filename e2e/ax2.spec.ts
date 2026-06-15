@@ -50,12 +50,18 @@ test('AX-2 · disciplines: dynamic count + per-discipline non-default icons', as
 test('AX-2 · facility map is the keyless OSM embed + a Google Maps link', async ({ browser }) => {
   const { ctx, page } = await anon(browser)
   try {
-    await page.goto(`/en?gym=${encodeURIComponent(gymSlug())}`)
+    const resp = await page.goto(`/en?gym=${encodeURIComponent(gymSlug())}`)
     const map = page.locator('[data-testid="facility-map"]')
     await expect(map).toHaveCount(1)
     const src = (await map.getAttribute('src')) ?? ''
     expect(src, 'the map is the OpenStreetMap export/embed (never a blank Google box)')
       .toContain('openstreetmap.org/export/embed')
+    // AX-3: the iframe ORIGIN must be allowed by the page CSP — the AX-2 src-only
+    // check passed while prod's frame-src 'self' silently refused the embed, so
+    // the map rendered as a grey box. Assert frame-src permits the OSM origin.
+    const csp = resp?.headers()['content-security-policy'] ?? ''
+    expect(csp, 'frame-src must allow the OSM embed origin (else the iframe is blocked → grey box)')
+      .toMatch(/frame-src[^;]*\bhttps:\/\/www\.openstreetmap\.org/)
     await expect(page.locator('[data-testid="view-on-google-maps"]').first(), 'View on Google Maps link present')
       .toBeVisible()
   } finally {

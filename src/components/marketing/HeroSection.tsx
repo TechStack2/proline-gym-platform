@@ -15,10 +15,10 @@ export function HeroSection({ locale }: HeroSectionProps) {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* AX-2: a CLEAN full-bleed gym photo (no baked-in text). The old hero.jpg
-          had "START YOUR OWN SAGA…" baked in → it cropped left under object-cover
-          and fought the live headline. This real training shot (no text) keeps the
-          centered content balanced at desktop + mobile. LCP element → priority. */}
+      {/* Full-bleed gym photo (no baked-in text). Every usable source photo is
+          portrait/square (the only landscape file, hero.jpg, has baked text), so
+          object-cover crops it to a vertical band — see the wash below for why
+          that's fine. LCP element → priority. */}
       <Image
         src="/landing/gym-1.jpg"
         alt=""
@@ -29,11 +29,18 @@ export function HeroSection({ locale }: HeroSectionProps) {
         className="object-cover object-center"
       />
 
-      {/* Dark gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-secondary-950/90 via-secondary-900/85 to-primary-950/90" />
+      {/* AX-3: an EVEN, horizontally-uniform brand wash. The old overlay paired a
+          to-br + a to-t gradient (uneven across the WIDTH), so the portrait photo's
+          bright side read as a blob on the LEFT and unbalanced the centered content
+          ("pushing the hero to the right"). A vertical-only wash subdues the photo
+          equally left-to-right → a balanced, text-forward hero on any source crop. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-secondary-950/85 via-secondary-950/88 to-secondary-950/95" />
 
-      {/* Crimson overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-secondary-950/95 via-secondary-950/50 to-secondary-950/30" />
+      {/* Symmetric crimson brand glow (centered → no left/right bias) for depth. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 42%, rgba(205,20,25,0.18), transparent 70%)' }}
+      />
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-32 text-center">

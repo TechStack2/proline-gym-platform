@@ -120,7 +120,9 @@ const nextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self'",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-              "frame-src 'self'",
+              // AX-3: allow the keyless OpenStreetMap embed (Facility map) in dev
+              // too, so dev mirrors prod (the operative prod CSP is in middleware).
+              "frame-src 'self' https://www.openstreetmap.org",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
