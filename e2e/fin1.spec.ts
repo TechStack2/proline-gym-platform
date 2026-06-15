@@ -33,34 +33,44 @@ async function openFile(page: Page, name: string) {
   await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 })
 }
 
-test('FIN-1 · horizons re-scope: +6d member in Week+Month not Today; projected collections sum', async ({ browser }) => {
+test('FIN-1 · horizons swap card sets: +6d member renews in Week+Month not Today; Week projects revenue', async ({ browser }) => {
+  // FD-2: the horizon no longer widens the SAME cards — it swaps the whole card
+  // SET. The +6d "Horizon Member" therefore moves from the Today-only Expiring
+  // card (where it must be absent) into the Week "renewals due this week" and
+  // the Month "renewals due rest of month" cards, which also project revenue.
   test.setTimeout(120_000)
   const { ctx, page } = await ctxFor(browser, 'owner')
   try {
-    const expiringHas = async () =>
+    const expiringHasToday = async () =>
       vis(page, '[data-testid="expiring-row"]').filter({ hasText: 'Horizon Member' }).count()
-    const projected = async () =>
-      money((await vis(page, '[data-testid="projected-usd"]').first().textContent()) ?? '$0')
+    const renewalsWeekHas = async () =>
+      vis(page, '[data-testid="renewals-week-row"]').filter({ hasText: 'Horizon Member' }).count()
+    const renewalsMonthHas = async () =>
+      vis(page, '[data-testid="renewals-month-row"]').filter({ hasText: 'Horizon Member' }).count()
 
-    // ── Today (default): the +6d member must NOT appear in expiring ──
+    // ── Today (operational): the +6d member must NOT appear in the today-only Expiring card ──
     await page.goto('/en/today')
     await expect(vis(page, '[data-testid="horizon-switcher"]').first()).toBeVisible({ timeout: 15_000 })
     await expect(vis(page, '[data-testid="horizon-today"]').first()).toHaveAttribute('data-active', 'true')
-    expect(await expiringHas(), 'Horizon Member (+6d) is NOT in the Today expiring lens').toBe(0)
-    const projToday = await projected()
+    expect(await expiringHasToday(), 'Horizon Member (+6d) is NOT in the Today expiring lens').toBe(0)
 
-    // ── Week: the +6d member appears; projected grows by at least its invoice ──
+    // ── Week (tactical): the +6d member surfaces under "renewals due this week",
+    //    and the card projects collectable revenue. ──
     await page.goto('/en/today?h=week')
     await expect(vis(page, '[data-testid="horizon-week"]').first()).toHaveAttribute('data-active', 'true')
-    expect(await expiringHas(), 'Horizon Member appears in the Week lens').toBeGreaterThanOrEqual(1)
-    const projWeek = await projected()
-    expect(projWeek, 'Week projected collections includes the +6d invoice ($55.50)')
-      .toBeGreaterThanOrEqual(projToday + 55.5 - 0.01)
+    expect(await renewalsWeekHas(), 'Horizon Member renews this week').toBeGreaterThanOrEqual(1)
+    const projWeek = money((await vis(page, '[data-testid="renewals-week-projected"]').first().textContent()) ?? '$0')
+    // The renewals card projects FORWARD renewal value = the membership PLAN
+    // price (Horizon Member is on the cheapest seeded plan, Monthly $50.00) —
+    // not the prior invoice's $55.50 TVA-inclusive total. The card may sum other
+    // week-renewals too, so assert the known $50.00 floor (>=), float-tolerant.
+    expect(projWeek, 'Week renewals project ≥ the +6d Horizon Member renewal (Monthly plan $50.00)')
+      .toBeGreaterThanOrEqual(50.0 - 0.01)
 
-    // ── Month: still present (cumulative) ──
+    // ── Month (strategic): still present under "renewals due rest of month" ──
     await page.goto('/en/today?h=month')
     await expect(vis(page, '[data-testid="horizon-month"]').first()).toHaveAttribute('data-active', 'true')
-    expect(await expiringHas(), 'Horizon Member appears in the Month lens').toBeGreaterThanOrEqual(1)
+    expect(await renewalsMonthHas(), 'Horizon Member renews within the month').toBeGreaterThanOrEqual(1)
   } finally {
     await ctx.close()
   }

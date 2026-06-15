@@ -342,11 +342,20 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // AX-2 landing polish — LAST: anon (no storageState); asserts hero/icons/
+      // AX-2 landing polish — anon (no storageState); asserts hero/icons/
       // map + the bare-landing trial submit (default gym, no ?gym=).
       name: 'ax2',
       dependencies: ['setup'],
       testMatch: /ax2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // FD-2 Today 360 — LAST: distinct Today/Week/Month card sets + PWA footer.
+      // Records a paid-this-month (register-to-class + pay) for the Month revenue
+      // proof; a mobile-viewport test asserts the footer fix. Runs after all else.
+      name: 'fd2',
+      dependencies: ['setup'],
+      testMatch: /fd2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],
