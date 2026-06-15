@@ -24,14 +24,21 @@
 **Root cause (`FacilitySection.tsx`):** the keyless Google Maps embed renders an empty dark box (recurring).
 **Fix:** replace with a **reliable keyless OpenStreetMap embed** — an `<iframe>` to `https://www.openstreetmap.org/export/embed.html?bbox=<…>&marker=<lat,lng>` centered on **Sky Business Center, Baabda, Lebanon** (geocode the coordinates; Baabda ≈ 33.834, 35.544 — verify/refine to the actual building), plus a "View on Google Maps" link (`https://www.google.com/maps/search/?api=1&query=Sky+Business+Center+Baabda`) under it. OSM needs no API key and always renders. Keep the address text + the existing card chrome. (If the operator later supplies a Google Maps API key, that's a trivial swap — but ship OSM now so it's never blank.)
 
+## Defect 4 — "Start Your Free Trial" form rejects with "please fill in all fields" (DEMO-CRITICAL: the lead funnel is dead on prod)
+**Root cause (verified):** `(marketing)/page.tsx` resolves the gym for *rendering* with a fallback — `getLandingGym(gymSlug || DEFAULT_GYM_SLUG)` (line ~38) — but passes the **raw, un-fallback'd `gymSlug = searchParams?.gym` (line ~34)** down to the section components, including `<TrialCTASection gymSlug={gymSlug} />` (line ~62). On the production landing (bare `/en`, no `?gym=` param) `gymSlug` is `undefined`, so the form calls `submit_trial_inquiry({ p_gym_slug: null, … })`; the RPC's active-gym-by-slug guard can't resolve a gym and returns `'invalid'`, which `TrialCTASection` maps to the `fillAll` message (line ~59). It works at `/en?gym=proline-gym` and in e2e (which passes the run slug) but is dead on the real domain.
+**Fix:**
+- In `(marketing)/page.tsx`, **propagate the RESOLVED slug to every section child** — pass `gym.slug` (the slug returned by `getLandingGym`, which already applied the `DEFAULT_GYM_SLUG` fallback) instead of the raw `gymSlug`, to `TrialCTASection` AND all the other gym-scoped sections (Disciplines/Schedule/Pricing/Pt/Camps) so anon queries + the capture RPC always receive a real slug on the bare landing.
+- Defensive: in `TrialCTASection`, if `gymSlug` is still falsy at submit, surface a real error (not `fillAll`) — but the page-level fix is the actual cure. Also consider distinguishing the RPC `'invalid'` return from the client-side empty-field check so the message is honest (e.g. `'invalid'` → "couldn't submit, please check your details / try WhatsApp").
+
 ## Out of scope
-Schema; other sections; the `sharp` install (separate one-liner); Google Maps API key procurement.
+Schema; other sections' content; the `sharp` install (separate one-liner); Google Maps API key procurement.
 
 ## Verify (e2e, ephemeral TI gym + visual)
 1. **Disciplines:** the subtitle count equals the number of seeded active disciplines (assert the rendered number matches, not a hardcoded 6); each card renders a non-default icon for a known discipline name (assert the MMA/Boxing cards don't both fall to the default); cards present for all active disciplines, no console error.
 2. **Map:** the Facility section contains an iframe whose `src` includes `openstreetmap.org/export/embed` (or a real Google embed with a key) — NOT the null-place placeholder; the "View on Google Maps" link is present.
 3. **Hero:** no baked-text image regression — assert the hero `<img>`/background is the clean photo (filename check) and the headline is centered (smoke).
-4. `/ar` renders all three clean (RTL, no MISSING_MESSAGE); full suite green — no regression (75+ tests).
+4. **Trial form (the load-bearing one):** on the bare landing **without** a `?gym=` param (i.e. the prod default), filling name + phone and submitting **succeeds** (lead created for the default gym, success state shown) — assert the capture works with NO gym query param, reproducing the prod bug and proving the fix. Also keep the existing `?gym=<run slug>` e2e path green.
+5. `/ar` renders all four clean (RTL, no MISSING_MESSAGE); full suite green — no regression (75+ tests).
 
 ## Acceptance
 1. Hero balanced (clean photo, centered) at desktop + mobile; cards have correct per-discipline icons + dynamic count + clean stacking; map renders (OSM keyless) — all green in E2E CI (run ID/URL) + operator-visible on the live deploy after redeploy.
@@ -72,11 +79,19 @@ stack cleanly for ANY count (flex-wrap justify-center or grid justify-items-cent
 (3) MAP (FacilitySection.tsx): keyless Google embed renders blank → replace with a keyless OpenStreetMap
 iframe (openstreetmap.org/export/embed.html?bbox=…&marker=lat,lng centered on Sky Business Center Baabda
 ~33.834,35.544 — refine to the building) + a "View on Google Maps" link; keep address + card chrome.
+(4) TRIAL FORM DEAD ON PROD (demo-critical): (marketing)/page.tsx resolves the gym for rendering with
+getLandingGym(gymSlug || DEFAULT_GYM_SLUG) but passes the RAW searchParams gymSlug (undefined on the bare
+/en) to <TrialCTASection> + the other sections → submit_trial_inquiry gets p_gym_slug=null → returns
+'invalid' → shows "please fill in all fields". FIX: pass the RESOLVED gym.slug (post-fallback) to ALL
+gym-scoped section children, so the capture RPC + anon queries get a real slug with no ?gym= param;
+defensively, TrialCTASection should surface a non-fillAll error if slug is still missing.
 i18n ar/en/fr, RTL, tenant-clean.
 Verify in the E2E CI run, not tsc: disciplines subtitle count == seeded active disciplines (not 6) +
 known-discipline cards render non-default icons; Facility iframe src includes openstreetmap.org/export/
 embed (not the null placeholder) + "View on Google Maps" link present; hero background is the clean photo
-(filename) + headline centered; /ar clean (no MISSING_MESSAGE); FULL suite green (75+, no regression). If
+(filename) + headline centered; TRIAL FORM submits successfully on the landing with NO ?gym= param
+(reproduces+fixes the prod bug) while the ?gym=<run slug> path stays green; /ar clean (no MISSING_MESSAGE);
+FULL suite green (75+, no regression). If
 the sandbox can't run the browser, push so e2e.yml runs and report the run ID; do NOT fabricate. Dev port
 3000; scoped git add + git show --stat (commit new assets); no Claude/Co-Authored-By trailer; never weaken
 RLS; stay on your branch.
