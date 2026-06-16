@@ -369,6 +369,14 @@ export default defineConfig({
       testMatch: /team1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // AX-3 auth-shell guard: a server-HTML check that the auth route renders a
+      // single <html>/<body> (no nested-layout duplication → the removeChild
+      // crash). Pure request fetch — no auth state / gym needed.
+      name: 'auth-shell',
+      testMatch: /auth-shell\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
