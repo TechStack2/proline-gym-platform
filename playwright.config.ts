@@ -372,8 +372,10 @@ export default defineConfig({
     {
       // AX-3 auth-shell guard: a server-HTML check that the auth route renders a
       // single <html>/<body> (no nested-layout duplication → the removeChild
-      // crash). Pure request fetch — no auth state / gym needed.
+      // crash). Reads raw HTML via a browser navigation; depends on setup so it
+      // runs against the warm server (the bare APIRequestContext path flaked).
       name: 'auth-shell',
+      dependencies: ['setup'],
       testMatch: /auth-shell\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
