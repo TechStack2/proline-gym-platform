@@ -42,7 +42,8 @@ export async function generateMetadata(props: Omit<Props, 'children'>) {
       template: `%s | ${t('name')}`,
     },
     description: t('tagline'),
-    icons: { icon: '/favicon.ico' },
+    // AX-3: use the PRO LINE logo as the favicon (there was no /favicon.ico → 404).
+    icons: { icon: '/logo.jpg' },
     // Prevent in-browser auto-translation (e.g. Chrome) from rewriting text
     // nodes React owns, which corrupts reconciliation and crashes with
     // "NotFoundError: Node.removeChild" on client navigations.
