@@ -1,41 +1,36 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
-import { cn } from '@/lib/utils';
-import '@/app/globals.css';
-
-const latin = Inter({ subsets: ['latin'], variable: '--font-latin', display: 'swap' });
-const arabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  weight: ['400', '500', '700'],
-  variable: '--font-arabic',
-  display: 'swap',
-});
 
 type Props = {
   children: React.ReactNode;
-  params: { locale: string };
 };
 
-export default async function AuthLayout({ children, params }: Props) {
-  const { locale } = params;
+/**
+ * Auth route layout.
+ *
+ * Two things matter here, both learned the hard way:
+ *
+ * 1. NO `<html>`/`<body>` — the locale ROOT layout renders the single
+ *    `<html>`/`<body>` + fonts for the whole tree. A nested second `<html><body>`
+ *    is invalid DOM and threw `NotFoundError: removeChild` on the auth→app
+ *    navigation (every login, in dev).
+ *
+ * 2. It MUST stay dynamically rendered. The production CSP (middleware) uses
+ *    `script-src 'strict-dynamic' 'nonce-<per-request>'`; a statically prerendered
+ *    (SSG) route bakes its <script> tags at build time WITHOUT that per-request
+ *    nonce, so `strict-dynamic` blocks every chunk → no hydration → the login
+ *    form does a native submit and login silently fails in prod. Calling
+ *    `getMessages()` here (WITHOUT `setRequestLocale`) opts the route into
+ *    per-request rendering — exactly what kept it working on `main` — so the
+ *    scripts carry the nonce. (Do NOT add `setRequestLocale`: it re-enables
+ *    static rendering and reintroduces the CSP/nonce breakage.)
+ */
+export default async function AuthLayout({ children }: Props) {
   const messages = await getMessages();
-  const isRTL = locale === 'ar';
 
   return (
-    <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'}>
-      <body
-        className={cn(
-          latin.variable,
-          arabic.variable,
-          'min-h-screen bg-gray-50',
-          isRTL ? 'font-arabic' : 'font-latin'
-        )}
-      >
-        <NextIntlClientProvider messages={messages}>
-          {children}
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      {children}
+    </NextIntlClientProvider>
   );
 }

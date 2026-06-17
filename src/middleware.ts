@@ -86,7 +86,11 @@ function buildProdCspHeader(nonce: string): string {
     "img-src 'self' data: https: blob:",
     "font-src 'self'",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-    "frame-src 'self'",
+    // AX-3: the Facility section embeds the keyless OpenStreetMap map (the
+    // operator's "view our location" block). frame-src 'self' silently REFUSED
+    // it in prod → the map rendered as a grey box (CI only checked the iframe
+    // src attribute, never that it loaded cross-origin). Allow only OSM's embed.
+    "frame-src 'self' https://www.openstreetmap.org",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
