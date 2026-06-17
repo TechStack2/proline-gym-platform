@@ -424,8 +424,8 @@ BEGIN
   -- ===== Camp (minimal): 1 upcoming + 3 signups (Month camp signups) =====
   DECLARE v_camp uuid;
   BEGIN
-    INSERT INTO camps (gym_id, name_ar, name_en, name_fr, max_capacity, status, start_date, end_date)
-    VALUES (v_gym, 'مخيم صيفي', 'Summer Camp', 'Camp Été', 25, 'open', v_today + 14, v_today + 18)
+    INSERT INTO camps (gym_id, name_ar, name_en, name_fr, max_capacity, price_usd, status, start_date, end_date)
+    VALUES (v_gym, 'مخيم صيفي', 'Summer Camp', 'Camp Été', 25, 120, 'open', v_today + 14, v_today + 18)
     RETURNING id INTO v_camp;
     v_inv := _system_issue_invoice(v_gym, v_students[6], 'camp', 120, 0, NULL, NULL, NULL, v_month0 + 9, 'Summer Camp');
     INSERT INTO payments (invoice_id, student_id, amount_usd, payment_method, payment_date) VALUES (v_inv.id, v_students[6], 120, 'cash_usd', (v_month0+9)::timestamptz);
