@@ -119,7 +119,7 @@ DECLARE
   fn text[] := ARRAY['Karim','Lina','Omar','Maya','Rami','Nour','Sami','Dana','Ali','Yara','Hadi','Lara','Ziad','Rana','Fadi','Sara','Jad','Mira','Tarek','Hala'];
   ln text[] := ARRAY['Mourad','Khalil','Haddad','Saad','Aoun','Fares','Nassar','Rizk','Sleiman','Daher','Karam','Najjar','Abou','Chami','Hage','Tannous','Geara','Zein','Bitar','Saliba'];
   gn text[] := ARRAY['male','female','male','female','male','female','male','female','male','female','male','female','male','female','male','female','male','female','male','female'];
-  belts text[] := ARRAY['white','yellow','orange','white','green','yellow','blue','orange','white','yellow','green','white','orange','yellow','blue','white','green','yellow','white','orange'];
+  belts text[] := ARRAY['orange','yellow','orange','white','green','yellow','blue','orange','white','yellow','green','white','orange','yellow','blue','white','green','yellow','white','orange'];
   v_plan uuid; v_end date; v_status membership_status_enum; v_lapsed timestamptz;
   v_coach uuid; v_disc uuid;
 BEGIN
@@ -457,7 +457,7 @@ BEGIN
     'members_active', (SELECT count(DISTINCT sm.student_id) FROM student_memberships sm JOIN students s ON s.id=sm.student_id WHERE s.gym_id=v_gym AND sm.status='active'),
     'expiring_today', (SELECT count(*) FROM student_memberships sm JOIN students s ON s.id=sm.student_id WHERE s.gym_id=v_gym AND sm.status='active' AND sm.end_date=v_today),
     'expiring_this_week', (SELECT count(*) FROM student_memberships sm JOIN students s ON s.id=sm.student_id WHERE s.gym_id=v_gym AND sm.status='active' AND sm.end_date > v_today AND sm.end_date <= v_today+7),
-    'lapsed', (SELECT count(*) FROM student_memberships sm JOIN students s ON s.id=sm.student_id WHERE s.gym_id=v_gym AND sm.status='expired'),
+    'lapsed', (SELECT count(*) FROM student_memberships sm JOIN students s ON s.id=sm.student_id WHERE s.gym_id=v_gym AND sm.status='lapsed'),
     'winback_recovered', (SELECT count(*) FROM member_followups WHERE gym_id=v_gym AND outcome='reactivated'),
     'classes', (SELECT count(*) FROM classes WHERE gym_id=v_gym),
     'classes_today', (SELECT count(DISTINCT c.id) FROM classes c JOIN class_schedules cs ON cs.class_id=c.id WHERE c.gym_id=v_gym AND cs.day_of_week=v_dow AND cs.is_active),
