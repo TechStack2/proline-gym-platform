@@ -36,8 +36,8 @@ DECLARE
   v_gym uuid;
   t     text;
   -- tables scoped directly by gym_id
-  gym_tables text[] := ARRAY['gyms','profiles','students','coaches','disciplines',
-    'belt_hierarchies','membership_plans','pt_packages','classes','class_registrations',
+  gym_tables text[] := ARRAY['profiles','students','coaches','disciplines',
+    'membership_plans','pt_packages','classes','class_registrations',
     'invoices','leads','notifications','waiver_templates','waiver_signatures',
     'member_followups','coach_availability','guardians','camps','user_roles','rentals'];
 BEGIN
@@ -51,6 +51,10 @@ BEGIN
   FOREACH t IN ARRAY gym_tables LOOP
     EXECUTE format('CREATE TABLE demo_backup.%I AS SELECT * FROM public.%I WHERE gym_id = %L', t, t, v_gym);
   END LOOP;
+
+  -- special scoping: gyms (by id), belt_hierarchies (by discipline)
+  EXECUTE format('CREATE TABLE demo_backup.gyms AS SELECT * FROM public.gyms WHERE id = %L', v_gym);
+  EXECUTE format($q$CREATE TABLE demo_backup.belt_hierarchies AS SELECT * FROM public.belt_hierarchies WHERE discipline_id IN (SELECT id FROM public.disciplines WHERE gym_id = %L)$q$, v_gym);
 
   -- child tables scoped via their proline parent
   EXECUTE format($q$CREATE TABLE demo_backup.student_memberships AS SELECT * FROM public.student_memberships WHERE student_id IN (SELECT id FROM public.students WHERE gym_id = %L)$q$, v_gym);
