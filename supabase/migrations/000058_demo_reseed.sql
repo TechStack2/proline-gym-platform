@@ -249,7 +249,7 @@ BEGIN
       WHERE id = v_prof;
     ELSE
       INSERT INTO profiles (gym_id, first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone, gender)
-      VALUES (v_gym, fn[i], fn[i], fn[i], ln[i], ln[i], ln[i], '+9617010' || lpad(i::text,4,'0'), gn[i])
+      VALUES (v_gym, fn[i], fn[i], fn[i], ln[i], ln[i], ln[i], '+9617010' || lpad(i::text,4,'0'), gn[i]::gender_enum)
       RETURNING id INTO v_prof;
     END IF;
 
