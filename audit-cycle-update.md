@@ -2731,3 +2731,42 @@ No missing column required a read I couldn't satisfy → **zero new schema**, ze
 - **"Assign to class" is a link, not an inline assign** — it routes to the class wizard (where coach↔class assignment already lives) to honor "no new writers." Fine for V1; a future inline "add this coach to class X" picker would tighten the loop but needs a writer.
 - **Availability editor is list-of-windows, not a visual week grid** — reused verbatim from PT-2 (pill UI, no dropdowns) so it's consistent, but a calendar-style availability view would read better on the big screen during a demo.
 - **Reception now sees Team/Schedule nav** — correct per the locked fork, but it widens reception's surface; confirm the operator is comfortable reception can open every coach file (they cannot deactivate).
+
+## Cycle 6 / DRILL-360 — card drill-down completeness (2026-06-19)
+
+**Agent:** coding agent · **Branch:** `prompt-drill-360` off `main`. **Zero schema — read-time only.** Demo feedback: the owner loved card→rows drill-down but it was inconsistent (Month headline cards + Week coach-load were dead numbers). Now every 360 card answers "what's driving this?" and revenue/movement RECONCILE.
+
+### Per-card drill targets
+- **Month · revenue-by-product** → each product line is an inline `<details>` expanding to **the payments collected this month for that product** (student · date · $), each row → Member-360. The rows **SUM to the product headline $** (`getRevenueRowsThisMonth`, same payments as `getRevenueByMonth`).
+- **Month · new-vs-churn movement** → each segment (new / churned / recovered) expands to **its member set**, each row → Member-360. Rows **COUNT to the segment number** (`getMemberMovement` now returns the rows; counts derived from them).
+- **Month · conversion** → expands to **the converted leads this month** (row → Member-360 via `converted_student_id`, else /leads) + the /leads ActionRow + denominator in the footer (`getConvertedLeadsThisMonth`).
+- **Month · active-trend** → expands to **the active members** (each → Member-360); rows count to `activeNow`.
+- **Month · extras** → PT-sold and camp-signups each expand to their lists (→ Member-360); utilization → /classes (`getMonthExtras` now returns ptRows/campRows).
+- **Month · aging** → each open bucket → `/money?tab=invoices&aging=<bucket>` (already wired; confirmed all open buckets drill).
+- **Month · renewals** → each → Member-360 (already wired).
+- **Week · coach-load** → each coach → **Coach-360** (`/coaches/[id]`, TEAM-1) — was a plain list, now wired.
+- **Week · schedule-fill** → each class → **class detail/roster** (`/classes/[id]`); **leads** → /leads; renewals/trials/PT-low already drill.
+- **Today** — already fully drillable (FD-1); left as-is.
+
+### Mechanism (read-time, no new aggregation)
+New `<DrillDetails>` = a native `<details>`/`<summary>` server component (zero client JS); the helpers in `lib/finances/horizon-cards.ts` were extended to **expose the rows they already query** (not recompute). Shared `getRevenueByMonth`/`getFunnel` were left untouched (added sibling helpers).
+
+### Reconciliation proof
+- **revenue:** for a product, Σ(`revenue-drill-row[data-v]`) === `revenue-amount[data-v]` (the headline $), asserted < $0.05 apart.
+- **movement:** for each of new/churned/recovered, `count(movement-<seg>-row)` === the headline count.
+- **active-trend:** `count(active-trend-row)` === `active-now`.
+
+### CI evidence (behavior, not tsc)
+- **No migration** (zero schema).
+- **E2E gate `27815028345` — SUCCESS, 88 passed (34.3m), 0 failed** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27815028345
+  - `drill360 · every Month card drills + reconcile`: every Month card (revenue/movement/conversion/active/extras) exposes a `<details>` drill or ActionRow href; revenue rows sum to the product headline; movement + active-trend rows count to their headlines; a drilled active-member row → Member-360; Week coach-load row → Coach-360, schedule-fill → /classes/[id].
+  - `drill360 · /ar` clean (no MISSING_MESSAGE).
+  - **No regression** — full suite green; FD-2's distinct-set + horizon tests unaffected (Today untouched, Week/Month card sets unchanged, only drill targets added).
+- `tsc` + `next build` clean; i18n ar/en/fr parity (**2158 keys ×3, 0 missing/0 orphan**), RTL.
+
+### **Every 360 card drills + reconciles: PASS**
+
+### DRAG READ
+**The reconciliation requirement is what made this more than a "wrap each number in a link" task** — the owner's delight wasn't the navigation, it was the *transparency* (the rows ARE the number). A drill that links to an unrelated/over-broad list (e.g. active-trend → `/students?status=active`) would have looked done but **lied**: `students.is_active` (the student record flag) is a different predicate than "has an active membership" (`activeNow`), so the list wouldn't reconcile. That mismatch is why active-trend, movement, and revenue use an **inline expand of the exact contributing rows** rather than a filtered list — the helper that computed the headline now hands back the same rows, so the count/sum is true by construction, and the e2e asserts it numerically. The cheap-looking cards (conversion, extras, coach-load) could reuse existing surfaces, but the three "diagnostic" numbers had to expose their own evidence. Net: read-time only, no new aggregation, no schema — just surfacing the rows the FIN-1/GRW-1/ML-1 reads were already fetching and throwing away.
+
+**CI note:** DRILL-360's own two tests passed on every run. The suite needed re-runs to clear PRE-EXISTING flakes unrelated to this slice — pt2 (booking races), pt1 (realtime PT roster + freeze/extend date math, failing at *varying* points), and one ax1 attempt (recovered on retry). `main` is 87/0 on the same day and none of the 9 changed files have import linkage to those specs (drill360 runs LAST), so they are not DRILL-360 regressions. Run `27815028345` is fully green (88/0).
