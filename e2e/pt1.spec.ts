@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, gymSlug, expectNotification } from './helpers';
+import { vis, gymSlug, expectNotification, untilConsistent } from './helpers';
 
 /**
  * PT-1 — catalog → landing → desk sale → use → refill → re-sell → expiry/extend
@@ -106,9 +106,14 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
   const student = await ctxFor(browser, 'student'); // Karim
   try {
     // ── Coach logs 8 deliveries on the run's 10-pack (10 → 2 = the threshold) ──
-    await coach.page.goto('/en/coach/pt');
-    const roster = coach.page.locator(`[data-testid="pt-roster-row"][data-package-en="${TYPE_NAME}"]:visible`).first();
-    await expect(roster).toBeVisible({ timeout: 15_000 });
+    // ROOT RACE: the just-sold package (committed in test 1) can lag the coach
+    // roster read (PostgREST replica/realtime) → re-navigate until it surfaces.
+    const rosterSel = `[data-testid="pt-roster-row"][data-package-en="${TYPE_NAME}"]:visible`;
+    await untilConsistent(async () => {
+      await coach.page.goto('/en/coach/pt');
+      await expect(coach.page.locator(rosterSel).first()).toBeVisible({ timeout: 6_000 });
+    });
+    const roster = coach.page.locator(rosterSel).first();
     for (let remaining = 10; remaining > 2; remaining--) {
       await roster.getByTestId('pt-log').click();
       await expect(
@@ -157,15 +162,24 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
     const expiredCard = vis(owner.page, '[data-testid="member-pt-row"][data-status="expired"]').filter({ hasText: '5 Sessions Pack' }).first();
     await expect(expiredCard, 'the expired package renders FROZEN on the file').toBeVisible({ timeout: 15_000 });
     await expiredCard.getByTestId('pt-extend-btn').click();
-    await owner.page.goto(fileUrl);
-    await expect(
-      vis(owner.page, '[data-testid="member-pt-row"][data-status="active"]').filter({ hasText: '5 Sessions Pack' }).first(),
-      'Extend +30d un-freezes the package',
-    ).toBeVisible({ timeout: 20_000 });
+    // ROOT RACE: Extend writes (RPC) then we re-read the file — the un-frozen
+    // status can lag the read; re-navigate until the active card reflects it.
+    await untilConsistent(async () => {
+      await owner.page.goto(fileUrl);
+      await expect(
+        vis(owner.page, '[data-testid="member-pt-row"][data-status="active"]').filter({ hasText: '5 Sessions Pack' }).first(),
+        'Extend +30d un-freezes the package',
+      ).toBeVisible({ timeout: 6_000 });
+    });
 
-    // …and delivery works again (4 → 3).
-    await coach.page.goto('/en/coach/pt');
-    const thawed = coach.page.locator('[data-testid="pt-roster-row"][data-package-en="5 Sessions Pack"]:visible').first();
+    // …and delivery works again (4 → 3). Re-navigate until the thawed roster row
+    // surfaces (same write→read lag), THEN log exactly once.
+    const thawedSel = '[data-testid="pt-roster-row"][data-package-en="5 Sessions Pack"]:visible';
+    await untilConsistent(async () => {
+      await coach.page.goto('/en/coach/pt');
+      await expect(coach.page.locator(thawedSel).first()).toBeVisible({ timeout: 6_000 });
+    });
+    const thawed = coach.page.locator(thawedSel).first();
     await thawed.getByTestId('pt-log').click();
     await expect(
       coach.page.locator('[data-testid="pt-roster-row"][data-package-en="5 Sessions Pack"]:visible').first(),

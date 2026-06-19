@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, expectNotification } from './helpers';
+import { vis, expectNotification, untilConsistent } from './helpers';
 
 /**
  * PT-2 — signature booking: availability → policy-bounded slots → instant
@@ -56,6 +56,25 @@ function portalCard(page: Page, name: string) {
   return page.locator('[data-testid="pt-my-request"]').filter({ hasText: name }).first();
 }
 
+/**
+ * Open the Book modal and wait until at least one `pt-slot` RENDERS.
+ * ROOT RACE: availability-publish → slot-compute → render isn't instant, and a
+ * one-shot 20s wait intermittently observed an empty list. Re-navigate + reopen
+ * the modal until slots appear (re-reading availability each attempt). Returns
+ * the (now-populated) slots locator with the modal open. NB it navigates, so a
+ * caller relying on a STALE list (the race-loser) must capture its list from
+ * THIS call and not navigate again before clicking.
+ */
+async function openSlots(page: Page, name: string): Promise<ReturnType<Page['locator']>> {
+  const slots = page.locator('[data-testid="pt-slot"]');
+  await untilConsistent(async () => {
+    await page.goto('/en/portal/pt');
+    await portalCard(page, name).getByTestId('pt-book-open').click();
+    await expect(slots.first()).toBeVisible({ timeout: 6_000 });
+  }, { timeout: 45_000 });
+  return slots;
+}
+
 /** Publish 7-day 08:00–20:00 windows once; later calls no-op (rows persist). */
 async function ensureAvailability(coachPage: Page) {
   await coachPage.goto('/en/coach/pt');
@@ -89,10 +108,7 @@ test('PT-2 · publish → policy-bounded slots → instant book everywhere → s
     await sellToKarim(owner.page, PACK);
 
     // ── Member: only policy-bounded slots (≥ 12h notice), tap = booked ──
-    await student.page.goto('/en/portal/pt');
-    await portalCard(student.page, PACK).getByTestId('pt-book-open').click();
-    const slots = student.page.locator('[data-testid="pt-slot"]');
-    await expect(slots.first()).toBeVisible({ timeout: 20_000 });
+    const slots = await openSlots(student.page, PACK);
     const whens = await slots.evaluateAll((els) => els.map((e) => e.getAttribute('data-when')!));
     const minNotice = Date.now() + 12 * 3600_000;
     expect(whens.length, 'slots are offered').toBeGreaterThan(0);
@@ -164,14 +180,10 @@ test('PT-2 · race loser gets clean slot-taken + fresh slots; anti-overbook reje
     await sellToKarim(owner.page, PACK);
 
     // ── Race (stale list): B opens slots, A books one, B clicks the same ──
-    await a.page.goto('/en/portal/pt');
-    await b.page.goto('/en/portal/pt');
-    await portalCard(a.page, PACK).getByTestId('pt-book-open').click();
-    await portalCard(b.page, PACK).getByTestId('pt-book-open').click();
-    const aSlots = a.page.locator('[data-testid="pt-slot"]');
-    const bSlots = b.page.locator('[data-testid="pt-slot"]');
-    await expect(aSlots.first()).toBeVisible({ timeout: 20_000 });
-    await expect(bSlots.first()).toBeVisible({ timeout: 20_000 });
+    // Both lists are loaded BEFORE A books (below) → B's list is genuinely
+    // stale w.r.t. A's booking, preserving the race-loser path.
+    const aSlots = await openSlots(a.page, PACK);
+    const bSlots = await openSlots(b.page, PACK);
     const target = (await aSlots.first().getAttribute('data-when'))!;
 
     await aSlots.first().click();
@@ -189,19 +201,13 @@ test('PT-2 · race loser gets clean slot-taken + fresh slots; anti-overbook reje
     // ── Anti-overbook: 2-credit pack, 2 bookings, the 3rd rejected ──
     await createType(owner.page, MINI, '2', '50');
     await sellToKarim(owner.page, MINI);
-    await a.page.goto('/en/portal/pt');
     for (let i = 0; i < 2; i++) {
-      await portalCard(a.page, MINI).getByTestId('pt-book-open').click();
-      const s = a.page.locator('[data-testid="pt-slot"]');
-      await expect(s.first()).toBeVisible({ timeout: 20_000 });
+      const s = await openSlots(a.page, MINI);
       await s.first().click();
       await expect(a.page.locator('[data-testid="app-toast"]').filter({ hasText: /booked/i }).first())
         .toBeVisible({ timeout: 15_000 });
-      await a.page.goto('/en/portal/pt');
     }
-    await portalCard(a.page, MINI).getByTestId('pt-book-open').click();
-    const s3 = a.page.locator('[data-testid="pt-slot"]');
-    await expect(s3.first()).toBeVisible({ timeout: 20_000 });
+    const s3 = await openSlots(a.page, MINI);
     await s3.first().click();
     await expect(
       a.page.locator('[data-testid="app-toast"]').filter({ hasText: /no bookable credits/i }).first(),
@@ -227,11 +233,8 @@ test('PT-2 · propose → counter → member accepts (same guards); member cance
     await sellToKarim(owner.page, PACK);
 
     // ── Member books one slot (the cancel target), then proposes a time ──
-    await student.page.goto('/en/portal/pt');
-    await portalCard(student.page, PACK).getByTestId('pt-book-open').click();
-    const firstSlot = student.page.locator('[data-testid="pt-slot"]').first();
-    await expect(firstSlot).toBeVisible({ timeout: 20_000 });
-    await firstSlot.click();
+    const slots = await openSlots(student.page, PACK);
+    await slots.first().click();
     await expect(student.page.locator('[data-testid="app-toast"]').filter({ hasText: /booked/i }).first())
       .toBeVisible({ timeout: 15_000 });
 
