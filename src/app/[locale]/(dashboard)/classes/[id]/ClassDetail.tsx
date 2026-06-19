@@ -192,7 +192,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-muted-foreground">{t('discipline')}</label>
-                  <p className="font-medium">
+                  <p className="font-medium" data-testid="class-discipline">
                     {classData.discipline?.[`name_${locale}`] || classData.discipline?.name_en}
                   </p>
                 </div>
@@ -265,7 +265,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
                               the floor view is informative. EXTENSION POINT: more
                               per-student chips drop in here from `memberInfo`. */}
                           <div className="flex flex-wrap items-center gap-1.5 mt-1" data-testid="roster-info">
-                            <Badge className={getBeltColor(enrollment.student?.current_belt_rank || 'white')}>
+                            <Badge data-testid="roster-belt" className={getBeltColor(enrollment.student?.current_belt_rank || 'white')}>
                               {enrollment.student?.current_belt_rank}
                             </Badge>
                             {(memberInfo[enrollment.student?.id]?.disciplines ?? []).map((d: string) => (

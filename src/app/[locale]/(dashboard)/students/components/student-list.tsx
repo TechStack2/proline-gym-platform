@@ -139,7 +139,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Award className="w-4 h-4" />
                     {student.current_belt_rank ? (
-                      <Badge className={beltColor(student.current_belt_rank)}>
+                      <Badge data-testid="member-belt" className={beltColor(student.current_belt_rank)}>
                         {beltLabel(student.current_belt_rank)}
                       </Badge>
                     ) : (

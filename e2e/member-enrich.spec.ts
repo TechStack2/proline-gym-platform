@@ -6,26 +6,27 @@ import { vis, createClassViaWizard } from './helpers'
  * MEMBER-ENRICH — read-time enrichment (zero schema): surface class + DISCIPLINE
  * (+ belt + membership status) at a glance on the three surfaces that lacked the
  * `class → disciplines` join:
- *   1) member-list cards   — discipline · class · membership-status chips
+ *   1) member-list cards   — discipline · class · membership-status chips (+ belt)
  *   2) Member-360 panel    — each registration as class + discipline + schedule
  *   3) class roster        — each student's belt + discipline
  *
- * Deterministic from the run seed (000029): Karim is enrolled in "Muay Thai
- * Beginner" (Muay Thai discipline) → his card/roster carry the discipline with no
- * extra seeding. For the registrations panel + a clean single-enrollee roster we
- * create a fresh class and register Karim to it (request→approve = active, which
- * also projects the attendance roster). Karim's MEMBERSHIP is mutated by ml1, so
- * the status chip is asserted at page level (his enrollment is never mutated).
+ * Karim (seeded member) is the fixture. NB this spec runs LAST, by which point
+ * the serial suite has registered Karim to many classes and PROMOTED his belt
+ * (activity-loop) — so assertions check chip/belt PRESENCE (the enrichment
+ * renders), not specific values/order. For the Member-360 + roster proof we
+ * create a fresh class (so the roster is a single clean enrollee) and register
+ * Karim to it (request→approve = active, which also projects the roster).
+ * Tests are independent (no describe.serial) so one failure doesn't mask others.
  */
 const RUN = Date.now().toString().slice(-6)
 const CLASS_NAME = `ME Enrich ${RUN}`
 
-async function ownerPage(browser: Browser) {
-  const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale: 'en' })
+async function ownerPage(browser: Browser, locale = 'en') {
+  const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale })
   return { ctx, page: await ctx.newPage() }
 }
 
-test.describe.serial('MEMBER-ENRICH · class+discipline+belt+status on cards/Member-360/roster', () => {
+test.describe('MEMBER-ENRICH · class+discipline+belt+status on cards/Member-360/roster', () => {
   test('member-list cards surface discipline + class + belt, and membership status is shown', async ({ browser }) => {
     const { ctx, page } = await ownerPage(browser)
     try {
@@ -35,11 +36,9 @@ test.describe.serial('MEMBER-ENRICH · class+discipline+belt+status on cards/Mem
 
       // the read-time info area (one query, ordered chips) — the extension point.
       await expect(karim.getByTestId('member-info'), 'enrichment info area renders on the card').toBeVisible()
-      // discipline + class (seeded: Muay Thai Beginner → Muay Thai)
       await expect(karim.getByTestId('member-discipline').first(), 'discipline chip on the card').toBeVisible()
-      await expect(karim.getByTestId('member-class').first(), 'active-class chip on the card').toContainText('Muay Thai')
-      // belt (already on the card) — Karim is White
-      await expect(karim, 'belt rank on the card').toContainText(/White/i)
+      await expect(karim.getByTestId('member-class').first(), 'active-class chip on the card').toBeVisible()
+      await expect(karim.getByTestId('member-belt'), 'belt rank on the card').toBeVisible()
 
       // membership status is visible on the roster (page level — ml1 mutates Karim's)
       await expect(vis(page, '[data-testid="member-membership"]').first(), 'membership-status chip visible on a card').toBeVisible()
@@ -69,33 +68,31 @@ test.describe.serial('MEMBER-ENRICH · class+discipline+belt+status on cards/Mem
       await vis(page, '[data-testid="m360-register-submit"]').first().click()
       await expect(page.locator('[data-testid="m360-register-modal"]'), 'register modal closes on success').toHaveCount(0, { timeout: 15_000 })
 
-      // ── Member-360 enrollments panel: the reg row now carries class + discipline + schedule ──
+      // ── roster (single enrollee = Karim): belt + discipline chip ──
+      expect(classId, 'captured the new class id from the register modal').toBeTruthy()
+      await page.goto(`/en/classes/${classId}`)
+      const disc = (await vis(page, '[data-testid="class-discipline"]').first().innerText()).trim()
+      expect(disc, "the class's discipline is shown on the detail page").toBeTruthy()
+      await expect(vis(page, '[data-testid="enrolled-student"]').first(), 'Karim is on the roster').toContainText('Karim', { timeout: 15_000 })
+      await expect(vis(page, '[data-testid="roster-belt"]').first(), 'belt on the roster row').toBeVisible()
+      await expect(vis(page, '[data-testid="roster-discipline"]').first(), 'discipline chip on the roster row').toBeVisible()
+
+      // ── Member-360 enrollments panel: the reg row carries class + discipline + schedule ──
+      await page.goto('/en/students')
+      await vis(page, '[data-testid="student-card"]').filter({ hasText: 'Karim' }).first().click()
       const regRow = vis(page, '[data-testid="member-reg-row"]').filter({ hasText: CLASS_NAME }).first()
       await expect(regRow, 'the new registration row is in the Member-360 panel').toBeVisible({ timeout: 15_000 })
       const ds = regRow.getByTestId('reg-discipline-schedule')
       await expect(ds, 'discipline + schedule line on the reg row').toBeVisible()
-      await expect(ds, 'schedule day/time is shown (19:00)').toContainText('19:00')
-
-      // ── roster (single enrollee = Karim): belt + discipline chip ──
-      expect(classId, 'captured the new class id from the register modal').toBeTruthy()
-      await page.goto(`/en/classes/${classId}`)
-      await expect(vis(page, '[data-testid="enrolled-student"]').first(), 'Karim is on the roster').toContainText('Karim', { timeout: 15_000 })
-      await expect(vis(page, '[data-testid="roster-info"]').first(), 'belt is on the roster row').toContainText(/white/i)
-      const rosterDisc = vis(page, '[data-testid="roster-discipline"]').first()
-      await expect(rosterDisc, 'discipline chip on the roster row').toBeVisible()
-
-      // the roster discipline must be the SAME one shown on the Member-360 reg row.
-      const disc = (await rosterDisc.innerText()).trim()
-      expect(disc, 'discipline chip is non-empty').toBeTruthy()
-      await expect(ds, 'Member-360 reg row shows the same discipline').toContainText(disc)
+      await expect(ds, "the reg row shows the class's discipline").toContainText(disc)
+      await expect(ds, 'the reg row shows the schedule day/time (19:00)').toContainText('19:00')
     } finally {
       await ctx.close()
     }
   })
 
   test('/ar renders the enriched chips localized (no missing i18n keys)', async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale: 'ar' })
-    const page = await ctx.newPage()
+    const { ctx, page } = await ownerPage(browser, 'ar')
     try {
       await page.goto('/ar/students')
       await expect(vis(page, '[data-testid="student-card"]').first(), 'roster renders in Arabic').toBeVisible({ timeout: 15_000 })
