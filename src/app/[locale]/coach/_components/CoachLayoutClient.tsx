@@ -7,6 +7,7 @@ import { COACH_TABS, COACH_BASE_PATH } from './CoachTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { LogOut } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { PortalContent } from '@/components/portal/portal-kit';
 
 type Props = {
   children: React.ReactNode;
@@ -63,7 +64,9 @@ export function CoachLayoutClient({ children, locale }: Props) {
           isActive={true}
           locale={locale}
         >
-          <div key={pathname}>{children}</div>
+          <div key={pathname}>
+            <PortalContent>{children}</PortalContent>
+          </div>
         </PageTransition>
       </main>
       <NativeTabBar
