@@ -30,6 +30,27 @@ Phases are **sequential at the seam** (each depends on the prior foundation) but
 
 ---
 
+## ⭐ Post-Demo-2 Reprioritization (2026-06-19) — what's live, and what's next
+
+V1 shipped + deployed; demo 2 ran on the reseeded `proline-gym`. **The owner loved the staff-side premium-360 (drill-down, Member-360, Today-360) — and that feedback exposed the real gap: the premium-360 treatment lives *only* on the staff dashboard; the two self-service portals never got it** (coach portal: 0 files use the `ActionCard`/`DrillDetails` kit; member portal: 0 — both flagged thin / themeless / not-drillable / "doesn't feel premium"). So the scattered feedback is one theme: **the portals lag the dashboard.** Plus the hard operational constraint: **the front desk has unreliable internet.**
+
+**The 360 vision completes by extending it to the portals** — Member-360 (built = the *staff's* view of a member) → the member's **own** 360 (their portal) + the coach's **own** 360 (their portal). "360 everywhere" across all four seats.
+
+**Reprioritized sequence (post-V1):**
+| # | Work | Status | Maps to |
+|---|---|---|---|
+| 1 | **DRILL-360** — every Today/Week/Month card drills + reconciles | ✅ merged + deployed | FD-2 follow-up |
+| 2 | **MEMBER-ENRICH** — class/discipline/belt/status on member cards + schedules | 🔄 in flight | Phase 2/4 polish |
+| 3 | **Suite-stabilization** — pin `pt1`/`pt2`/`g2`/`adm1` timing + serial-shared-gym flake | next (gate health — prereq for the big chapters) | infra |
+| 4 | **Offline + parity** — *LEAD must-have* (operator-confirmed: front desk can't operate without it) | design-first next | **Phase 6B pulled forward** + parity audit |
+| 5 | **Portal Elevation** — design-system/shell foundation → **Member-360 Portal** → **Coach-360 Portal** (premium, drillable, themed) | foundation spec'd now | **Phase 2 + Phase 3** sharpened with the premium-360 lens |
+
+**Offline scope (locked principle):** cache reads + queue *safe* writes (attendance ✓, check-ins, leads, draft registrations, cash-as-queued) + sync-on-reconnect; **server-authoritative writes** (invoice numbering, money finalization, membership transitions) = "queue locally → server assigns canonical on reconnect," never two truths. SW lifecycle + cache-vs-queue coherence need deliberate design (we've already been bitten by SW caching — see [[stale-sw-localhost]], [[prod-csp-strict-dynamic-needs-dynamic-render]]).
+
+*(More portal/UX feedback incoming — folds into the Portal Elevation arc + the MEMBER-ENRICH extension point. Also tracked: 4F staff segmented broadcast (V2), the `000058` reseed-fn merge, the 5th-active-coach demo tweak.)*
+
+---
+
 ## PHASE 0 — Foundation & Identity Integrity · *NEW, blocking all*
 
 **Why this is now first:** Live testing showed every authenticated portal renders empty. Root cause = the identity foundation never existed: the auto-profile trigger is commented out ([000005:163](../../supabase/migrations/000005_create_triggers.sql#L163)), seed `000006` references demo users created later in `000008` (ordering bug → silent skip), and `000008` creates no `profiles`. Result: demo logins have null gym → all gym-scoped queries return nothing; writes fail. No feature above can work until this is fixed.
