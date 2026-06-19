@@ -45,46 +45,58 @@ test.describe('OFF-1 · installed-PWA offline foundation (desktop viewport)', ()
     }
   })
 
-  test('desktop offline → shell banner engages + SW-cached shell loads; online → clears', async ({ browser }) => {
+  test('desktop offline → shell banner engages on the loaded page; online → clears', async ({ browser }) => {
     test.setTimeout(120_000)
     const { ctx, page } = await ownerPage(browser)
     try {
-      // Load online so the SW registers + page-caches the front-desk shell. A
-      // second online load lets the (now-active) SW control + cache this shell.
       await page.goto('/en/today')
       await expect(vis(page, '[data-testid="shell-offline-banner"]'),
         'no offline banner while online').toHaveCount(0)
-      await page.reload()
-      await page.waitForLoadState('networkidle').catch(() => {})
-      // Bounded wait for the SW to CONTROL the page (skipWaiting w/o clientsClaim
-      // → control lands after a post-activation navigation). NB never await
-      // `serviceWorker.ready` here — it can hang with no internal timeout.
-      await page
-        .waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 15_000 })
-        .catch(() => {})
 
-      // ── OFFLINE: the banner engages on the DESKTOP viewport (was mobile/page-only) ──
+      // ── OFFLINE: the offline UX ENGAGES on the DESKTOP viewport — previously the
+      //    banner/use-online lived only on the mobile shell + a couple pages, so
+      //    the desk laptop showed nothing. No SW needed: the loaded SPA reacts. ──
       await ctx.setOffline(true)
       const banner = vis(page, '[data-testid="shell-offline-banner"]').first()
       await expect(banner, 'offline banner engages on the desktop front-desk shell').toBeVisible({ timeout: 15_000 })
       await expect(banner).toHaveAttribute('data-online', 'false')
 
-      // ── The cached SHELL still loads on an offline reload (SW-served, not a
-      //    browser error). The banner re-rendering after the reload proves the
-      //    React app mounted from cache. Retry the reload — the SW may serve on a
-      //    later attempt (NetworkFirst falls back to cache after its timeout). ──
-      await untilConsistent(async () => {
-        await page.reload()
-        await expect(
-          vis(page, '[data-testid="shell-offline-banner"]').first(),
-          'SW serves the cached shell offline (app mounted, not an error page)',
-        ).toBeVisible({ timeout: 8_000 })
-      }, { timeout: 45_000 })
-
       // ── ONLINE again → the banner clears ──
       await ctx.setOffline(false)
       await expect(vis(page, '[data-testid="shell-offline-banner"]'),
         'banner clears when back online').toHaveCount(0, { timeout: 15_000 })
+    } finally {
+      await ctx.close()
+    }
+  })
+
+  test('the SW registers + controls, then serves the cached shell on an offline reload', async ({ browser }) => {
+    test.setTimeout(150_000)
+    const { ctx, page } = await ownerPage(browser)
+    try {
+      await page.goto('/en/today')
+      // The SW must REGISTER + take CONTROL of the page (worker-src 'self' lets it
+      // register under the strict-dynamic CSP; skipWaiting+clientsClaim claim it).
+      // A real wait (no silent catch) so a non-registering SW fails here, loudly.
+      await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 40_000 })
+
+      // Prime the page-cache: a navigation the (now-controlling) SW HANDLES is the
+      // one that gets cached. The first load happened before control, so reload
+      // online once under control → /en/today lands in NetworkFirst page-cache.
+      await page.reload()
+      await page.waitForLoadState('networkidle').catch(() => {})
+
+      // ── OFFLINE reload: the SW serves the cached shell — not a browser error. The
+      //    banner re-rendering proves the React app mounted from cache. ──
+      await ctx.setOffline(true)
+      await untilConsistent(async () => {
+        await page.reload()
+        await expect(
+          vis(page, '[data-testid="shell-offline-banner"]').first(),
+          'SW serves the cached shell offline (app mounted from cache, not an error page)',
+        ).toBeVisible({ timeout: 10_000 })
+      }, { timeout: 60_000 })
+      await ctx.setOffline(false)
     } finally {
       await ctx.close()
     }

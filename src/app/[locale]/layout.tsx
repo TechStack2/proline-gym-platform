@@ -1,4 +1,5 @@
 import { DevSwCleanup } from '@/components/dev/sw-cleanup'
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -89,6 +90,7 @@ export default async function RootLayout({ children, params }: Props) {
           <Toaster richColors position={isRTL ? 'bottom-left' : 'bottom-right'} />
           <UseToastRenderer />
         <DevSwCleanup />
+        <ServiceWorkerRegister />
         </NextIntlClientProvider>
       </body>
     </html>

@@ -8,6 +8,24 @@ const withPWA = withPWAInit({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  // OFF-1: next-pwa builds an all-or-nothing precache manifest that, with Next 14
+  // App Router, includes URLs `next start` 404s → the SW precache install REJECTS
+  // → the worker goes redundant → never activates/controls → the offline machine
+  // never engaged (compounding the missing worker-src CSP). Confirmed 404s:
+  //   • /_next/app-build-manifest.json (build-time internal, never served)
+  //   • /_next/static/<buildId>/_buildManifest.js + _ssgManifest.js
+  //   • app-router page chunks under route groups — precached with URL-ENCODED
+  //     `%5Blocale%5D` segments the static handler doesn't match (the app itself
+  //     loads them via a different URL form, so this is precache-only).
+  // Excluding these from PRECACHE lets install succeed; they're still cached at
+  // runtime by the next-static StaleWhileRevalidate route on first online visit,
+  // so a visited page still loads offline.
+  buildExcludes: [
+    /app-build-manifest\.json$/,
+    /_buildManifest\.js$/,
+    /_ssgManifest\.js$/,
+    /\/chunks\/app\//,
+  ],
   // Workbox caching strategies per MASTER_PLAN Phase D4
   runtimeCaching: [
     // ─── API Routes: Network First (fresh data, fallback to cache) ───
