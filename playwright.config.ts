@@ -379,6 +379,15 @@ export default defineConfig({
       testMatch: /auth-shell\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // DRILL-360 — every 360 card drills + the Month revenue/movement cards
+      // reconcile (drilled rows sum/count to the headline). Seeds a paid class
+      // registration for deterministic revenue; runs LAST.
+      name: 'drill360',
+      dependencies: ['setup'],
+      testMatch: /drill360\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

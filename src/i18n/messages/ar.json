@@ -1753,7 +1753,14 @@
       "noneExtras": "لا شيء بعد هذا الشهر",
       "ptSold": "تدريب خاص مُباع",
       "campSignups": "تسجيلات المخيمات",
-      "utilization": "متوسط إشغال الحصص"
+      "utilization": "متوسط إشغال الحصص",
+      "noneNew": "لا أعضاء جدد هذا الشهر",
+      "noneChurned": "لا منسحبين هذا الشهر",
+      "noneRecovered": "لا مستعادين بعد",
+      "convertedThisMonth": "تحوّلوا هذا الشهر",
+      "noneConverted": "لا تحويلات هذا الشهر",
+      "nonePtSold": "لا تدريب خاص مُباع هذا الشهر",
+      "noneCampSignups": "لا تسجيلات مخيمات هذا الشهر"
     }
   },
   "inbox": {

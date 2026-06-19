@@ -1753,7 +1753,14 @@
       "noneExtras": "rien encore ce mois",
       "ptSold": "PT vendus",
       "campSignups": "inscriptions camps",
-      "utilization": "remplissage moyen"
+      "utilization": "remplissage moyen",
+      "noneNew": "aucun nouveau membre ce mois",
+      "noneChurned": "aucun départ ce mois",
+      "noneRecovered": "aucun récupéré",
+      "convertedThisMonth": "convertis ce mois",
+      "noneConverted": "aucune conversion ce mois",
+      "nonePtSold": "aucun PT vendu ce mois",
+      "noneCampSignups": "aucune inscription camp ce mois"
     }
   },
   "inbox": {

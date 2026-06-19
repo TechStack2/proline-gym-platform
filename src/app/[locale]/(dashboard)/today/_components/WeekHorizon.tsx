@@ -54,7 +54,7 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
         badge={underfilledCount > 0 ? `${underfilledCount} ${t('week.underfilled')}` : `${fill.length}`}
         emptyText={t('week.noneSchedule')} testid="schedule-fill" isRTL={isRTL}>
         {fill.map((f) => (
-          <ActionRow key={f.classId} href={`/${locale}/schedule`} testid="schedule-fill-row"
+          <ActionRow key={f.classId} href={`/${locale}/classes/${f.classId}`} testid="schedule-fill-row"
             action={
               <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
                 f.underfilled ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')}
@@ -132,18 +132,22 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
         ))}
       </ActionCard>
 
-      {/* ── Coach load this week (PLAIN list — TEAM-1 wires Coach-360) ── */}
+      {/* ── Coach load this week → each coach drills into their Coach-360 (TEAM-1) ── */}
       <ActionCard icon={Users} title={t('week.coachLoad')} count={coachLoad.length}
         emptyText={t('week.noneCoachLoad')} testid="coach-load-week" isRTL={isRTL}>
         <div className="space-y-2" data-testid="coach-load-list">
           {coachLoad.map((c) => (
-            <div key={c.coachId} data-testid="coach-load-row"
-              className="flex items-center justify-between gap-3 rounded-xl border bg-gray-50/60 px-3 py-2.5">
+            <ActionRow key={c.coachId} href={`/${locale}/coaches/${c.coachId}`} testid="coach-load-row"
+              action={
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="text-xs text-gray-500" data-total={c.total}>
+                    {t('week.coachLoadStat', { classes: c.classes, pt: c.ptSessions })}
+                  </span>
+                  <ChevronRight className={cn('h-4 w-4 text-gray-400', isRTL && 'rotate-180')} />
+                </span>
+              }>
               <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
-              <p className="shrink-0 text-xs text-gray-500" data-total={c.total}>
-                {t('week.coachLoadStat', { classes: c.classes, pt: c.ptSessions })}
-              </p>
-            </div>
+            </ActionRow>
           ))}
         </div>
       </ActionCard>
