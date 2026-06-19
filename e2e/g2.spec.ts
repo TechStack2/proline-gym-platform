@@ -3,41 +3,32 @@ import { ROLES } from './roles'
 import { vis, untilConsistent } from './helpers'
 
 /**
- * ROOT RACE (SW cold-open): next-pwa registers with skipWaiting but NOT
- * clientsClaim, so the prod SW activates yet may not control the page until a
- * navigation. Going offline mid-install left the SW/cache in a cold state and
- * the reconnect flush could stall. Wait for an ACTIVE worker before cutting the
- * network so nothing installs while offline. (No-op when the SW is disabled.)
- */
-async function waitForServiceWorker(page: Page): Promise<void> {
-  await page
-    .evaluate(async () => {
-      if (!('serviceWorker' in navigator)) return
-      await navigator.serviceWorker.ready
-    })
-    .catch(() => {})
-}
-
-/**
  * Reconnect, then wait for the SIGNAL — the queue DRAINED (banner gone), not a
- * fixed timeout. The 'online' event runs the flush; if it stalls (cold-open /
- * transient save failure), a reload re-runs the SAME on-mount flush, which is
- * IDEMPOTENT (keyed upsert) — so retrying never duplicates or weakens anything.
+ * fixed timeout. ROOT RACE: `setOffline(false)` fires 'online' → the product's
+ * flush runs EXACTLY ONCE and has no auto-retry; a transient save failure on
+ * that single attempt left the queue stuck (the "fails then recovers on retry"
+ * flake). Re-fire the 'online' event with a quick offline→online toggle so the
+ * SAME flush re-runs — it's IDEMPOTENT (keyed upsert), so re-firing never
+ * duplicates. No reload (keeps the open roster intact); nothing weakened — the
+ * banner must still reach hidden. The first attempt does NOT toggle, giving the
+ * natural online-event flush a clean shot.
  */
 async function reconnectAndDrain(page: Page, ctx: BrowserContext): Promise<void> {
   await ctx.setOffline(false)
+  const banner = '[data-testid="attendance-offline-banner"]'
+  let attempt = 0
   await untilConsistent(
     async () => {
-      if ((await page.locator('[data-testid="attendance-offline-banner"]').count()) > 0) {
-        await page.reload()
-        await page.waitForLoadState('domcontentloaded')
+      if (attempt++ > 0 && (await page.locator(banner).count()) > 0) {
+        await ctx.setOffline(true)
+        await ctx.setOffline(false) // re-dispatch 'online' → doFlush retries (idempotent)
       }
       await expect(
-        vis(page, '[data-testid="attendance-offline-banner"]').first(),
+        vis(page, banner).first(),
         'the banner clears once the queue drains',
-      ).toBeHidden({ timeout: 4_000 })
+      ).toBeHidden({ timeout: 6_000 })
     },
-    { timeout: 60_000, intervals: [1_000, 2_000, 3_000, 5_000] },
+    { timeout: 45_000, intervals: [2_000, 3_000, 5_000] },
   )
 }
 
@@ -108,7 +99,6 @@ test('G2 · offline mark → queue + banner → reconnect-sync → persisted + i
   try {
     // ── Load online so the roster caches ──
     await openRoster(coach.page)
-    await waitForServiceWorker(coach.page) // active SW BEFORE we cut the network
 
     // ── Go OFFLINE → mark absent → queued + optimistic UI + pending banner ──
     await coach.ctx.setOffline(true)
@@ -128,9 +118,7 @@ test('G2 · offline mark → queue + banner → reconnect-sync → persisted + i
 
     // ── Idempotency: a 2nd offline cycle re-marks the SAME key → flush drains to
     //    0 (the keyed upsert updated in place; a dup INSERT would error + requeue) ──
-    // Re-open the roster (the drain may have reloaded the page) before re-marking.
-    await openRoster(coach.page)
-    await waitForServiceWorker(coach.page)
+    // The drain no longer reloads, so the roster is still open — re-mark directly.
     await coach.ctx.setOffline(true)
     await mark(coach.page, 'late')
     await expect(vis(coach.page, '[data-testid="attendance-offline-banner"]').first()).toBeVisible({ timeout: 10_000 })
