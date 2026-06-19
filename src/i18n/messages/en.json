@@ -1753,7 +1753,14 @@
       "noneExtras": "nothing yet this month",
       "ptSold": "PT sold",
       "campSignups": "camp signups",
-      "utilization": "avg class fill"
+      "utilization": "avg class fill",
+      "noneNew": "no new members this month",
+      "noneChurned": "nobody churned this month",
+      "noneRecovered": "none won back yet",
+      "convertedThisMonth": "converted this month",
+      "noneConverted": "no conversions this month",
+      "nonePtSold": "no PT sold this month",
+      "noneCampSignups": "no camp signups this month"
     }
   },
   "inbox": {

@@ -8,7 +8,11 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { localizedName, one } from '@/lib/names'
-import { getChurnByMonth, getWinbackQueue } from '@/lib/finances/winback'
+import { getWinbackQueue } from '@/lib/finances/winback'
+import { productOf, type Product } from '@/lib/finances/owner'
+
+const PROFILE_SEL =
+  'profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)'
 
 const lname = (r: any, locale: string) =>
   ((locale === 'ar' ? r?.name_ar : locale === 'fr' ? r?.name_fr : r?.name_en) || r?.name_en || '')
@@ -177,62 +181,143 @@ export async function getCoachLoad(
 }
 
 // ── Month · member movement (new vs churn + recovered + active trend) ────
+// DRILL-360: each headline is backed by its CONTRIBUTING ROWS so the card can
+// reconcile (count of rows === the number shown). Counts are derived FROM the
+// rows, never separately.
+export type MemberRow = { studentId: string; name: string; detail?: string }
 export type MemberMovement = {
-  activeNow: number; newMembers: number
-  lapsed: number; cancelled: number; suspended: number; churn: number
-  recovered: number; net: number
+  activeNow: number; newMembers: number; churn: number; recovered: number; net: number
+  activeRows: MemberRow[]; newRows: MemberRow[]; churnedRows: MemberRow[]; recoveredRows: MemberRow[]
 }
 
 export async function getMemberMovement(
   supabase: SupabaseClient, gymId: string, locale: string, now = new Date(),
 ): Promise<MemberMovement> {
-  const monthStartDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10)
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10)
+  const nameOf = (st: any) => localizedName(one(st?.profiles), locale)
 
-  const [{ count: newMembers }, { data: am }, { data: ar }, churnSeries, queue] = await Promise.all([
+  const [{ data: newMem }, { data: am }, { data: ar }, queue] = await Promise.all([
     supabase.from('student_memberships')
-      .select('id, students!inner(gym_id)', { count: 'exact', head: true })
-      .eq('students.gym_id', gymId).gte('start_date', monthStartDate),
+      .select(`student_id, students!inner (id, gym_id, ${PROFILE_SEL})`)
+      .eq('students.gym_id', gymId).gte('start_date', monthStart),
     supabase.from('student_memberships')
-      .select('student_id, students!inner(gym_id)').eq('students.gym_id', gymId).eq('status', 'active'),
+      .select(`student_id, students!inner (id, gym_id, ${PROFILE_SEL})`)
+      .eq('students.gym_id', gymId).eq('status', 'active'),
     supabase.from('class_registrations')
-      .select('student_id').eq('gym_id', gymId).eq('status', 'active'),
-    getChurnByMonth(supabase, gymId, 1),
+      .select(`student_id, students:student_id (id, gym_id, ${PROFILE_SEL})`)
+      .eq('gym_id', gymId).eq('status', 'active'),
     getWinbackQueue(supabase, gymId, locale),
   ])
 
-  const active = new Set<string>()
-  for (const r of (am ?? []) as any[]) active.add(r.student_id)
-  for (const r of (ar ?? []) as any[]) active.add(r.student_id)
+  // active = distinct students with an active membership OR active class reg
+  const activeMap = new Map<string, MemberRow>()
+  for (const r of [...((am ?? []) as any[]), ...((ar ?? []) as any[])]) {
+    const st = one(r.students)
+    if (st?.id && !activeMap.has(st.id)) activeMap.set(st.id, { studentId: st.id, name: nameOf(st) })
+  }
+  // new = distinct students whose membership STARTED this month
+  const newMap = new Map<string, MemberRow>()
+  for (const r of (newMem ?? []) as any[]) {
+    const st = one(r.students)
+    if (st?.id && !newMap.has(st.id)) newMap.set(st.id, { studentId: st.id, name: nameOf(st) })
+  }
+  // churned this month (from the win-back queue's persisted churn timestamp);
+  // recovered = those reactivated read-time. Counts derive from these rows.
+  const churnedRows: MemberRow[] = queue
+    .filter((w) => (w.churnedAt ?? '').slice(0, 10) >= monthStart)
+    .map((w) => ({ studentId: w.studentId, name: w.name, detail: w.churnKind }))
+  const recoveredRows: MemberRow[] = queue
+    .filter((w) => w.reactivated)
+    .map((w) => ({ studentId: w.studentId, name: w.name }))
 
-  const cur = churnSeries[0] ?? { lapsed: 0, cancelled: 0, suspended: 0 }
-  const churn = cur.lapsed + cur.cancelled + cur.suspended
-  const recovered = queue.filter((w) => w.reactivated).length
-  const nm = newMembers ?? 0
+  const activeRows = [...activeMap.values()]
+  const newRows = [...newMap.values()]
   return {
-    activeNow: active.size, newMembers: nm,
-    lapsed: cur.lapsed, cancelled: cur.cancelled, suspended: cur.suspended, churn,
-    recovered, net: nm - churn,
+    activeNow: activeRows.length, newMembers: newRows.length,
+    churn: churnedRows.length, recovered: recoveredRows.length, net: newRows.length - churnedRows.length,
+    activeRows, newRows, churnedRows, recoveredRows,
   }
 }
 
+// ── Month · revenue rows this month (per-product payment detail → drill) ──
+export type RevenueRow = { product: Product; studentId: string; name: string; amount: number; date: string; invoiceId: string }
+
+/** Every payment collected this month, tagged by its invoice's product — the
+ *  rows behind the revenue-by-product headline (Σ amount per product). */
+export async function getRevenueRowsThisMonth(
+  supabase: SupabaseClient, gymId: string, locale: string, now = new Date(),
+): Promise<RevenueRow[]> {
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
+  const { data: pays } = await supabase
+    .from('payments')
+    .select(`amount_usd, payment_date, invoice_id,
+      students:student_id (id, ${PROFILE_SEL}),
+      invoices:invoice_id!inner (gym_id, invoice_type)`)
+    .eq('invoices.gym_id', gymId).gte('payment_date', monthStart)
+    .order('payment_date', { ascending: false }).limit(2000)
+
+  return ((pays ?? []) as any[]).map((p) => {
+    const inv = one(p.invoices); const st = one(p.students)
+    return {
+      product: productOf(inv?.invoice_type ?? 'other'),
+      studentId: st?.id ?? '', name: localizedName(one(st?.profiles), locale),
+      amount: Number(p.amount_usd ?? 0), date: String(p.payment_date).slice(0, 10), invoiceId: p.invoice_id,
+    }
+  })
+}
+
+// ── Month · converted leads this month (→ conversion drill) ──────────────
+export type ConvertedLead = { leadId: string; name: string; source: string | null; studentId: string | null }
+
+export async function getConvertedLeadsThisMonth(
+  supabase: SupabaseClient, gymId: string, now = new Date(),
+): Promise<ConvertedLead[]> {
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
+  const { data } = await supabase
+    .from('leads')
+    .select('id, first_name, last_name, source, converted_student_id, converted_at')
+    .eq('gym_id', gymId).eq('status', 'converted').gte('converted_at', monthStart)
+    .order('converted_at', { ascending: false })
+  return ((data ?? []) as any[]).map((l) => ({
+    leadId: l.id, name: [l.first_name, l.last_name].filter(Boolean).join(' '),
+    source: l.source, studentId: l.converted_student_id,
+  }))
+}
+
 // ── Month · extras (PT sold MTD · camp signups MTD · avg class utilization) ──
-export type MonthExtras = { ptSold: number; campSignups: number; avgUtilPct: number; classCount: number }
+// DRILL-360: returns the contributing PT-sale + camp-signup rows so each tile
+// reconciles (count of rows === the number shown).
+export type ExtraRow = { studentId: string; name: string; detail: string }
+export type MonthExtras = {
+  ptSold: number; campSignups: number; avgUtilPct: number; classCount: number
+  ptRows: ExtraRow[]; campRows: ExtraRow[]
+}
 
 export async function getMonthExtras(
   supabase: SupabaseClient, gymId: string, locale: string, now = new Date(),
 ): Promise<MonthExtras> {
   const monthStartISO = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
+  const ln = (r: any) => lname(r, locale)
 
-  const [{ count: ptSold }, { count: campSignups }, fill] = await Promise.all([
+  const [{ data: ptData }, { data: campData }, fill] = await Promise.all([
     supabase.from('pt_assignments')
-      .select('id, students!inner(gym_id)', { count: 'exact', head: true })
-      .eq('students.gym_id', gymId).gte('created_at', monthStartISO),
+      .select(`id, created_at, students!inner (id, gym_id, ${PROFILE_SEL}), pt_packages:package_id (name_ar, name_en, name_fr)`)
+      .eq('students.gym_id', gymId).gte('created_at', monthStartISO).order('created_at', { ascending: false }),
     supabase.from('camp_registrations')
-      .select('id, camps!inner(gym_id)', { count: 'exact', head: true })
-      .eq('camps.gym_id', gymId).eq('status', 'confirmed').gte('created_at', monthStartISO),
+      .select(`id, created_at, students:student_id (id, ${PROFILE_SEL}), camps!inner (gym_id, name_ar, name_en, name_fr)`)
+      .eq('camps.gym_id', gymId).eq('status', 'confirmed').gte('created_at', monthStartISO).order('created_at', { ascending: false }),
     getScheduleFill(supabase, gymId, locale),
   ])
 
+  const ptRows: ExtraRow[] = ((ptData ?? []) as any[]).map((a) => {
+    const st = one(a.students)
+    return { studentId: st?.id ?? '', name: localizedName(one(st?.profiles), locale), detail: ln(one(a.pt_packages)) }
+  })
+  const campRows: ExtraRow[] = ((campData ?? []) as any[]).map((c) => {
+    const st = one(c.students)
+    return { studentId: st?.id ?? '', name: localizedName(one(st?.profiles), locale), detail: ln(one(c.camps)) }
+  })
+
   const avgUtilPct = fill.length ? Math.round(fill.reduce((s, r) => s + r.fillPct, 0) / fill.length) : 0
-  return { ptSold: ptSold ?? 0, campSignups: campSignups ?? 0, avgUtilPct, classCount: fill.length }
+  return { ptSold: ptRows.length, campSignups: campRows.length, avgUtilPct, classCount: fill.length, ptRows, campRows }
 }
