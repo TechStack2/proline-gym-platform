@@ -75,7 +75,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       .limit(5),
     supabase
       .from('class_registrations')
-      .select('id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, paid_until, requested_at, classes:class_id (name_ar, name_en, name_fr)')
+      .select('id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, paid_until, requested_at, classes:class_id (name_ar, name_en, name_fr, disciplines:discipline_id (name_ar, name_en, name_fr), class_schedules (day_of_week, start_time, end_time, is_active))')
       .eq('student_id', id)
       .order('requested_at', { ascending: false })
       .limit(10),
@@ -321,6 +321,19 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
   const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
   const beltLabel = (r: string | null) => (r ? r.replace(/_/g, ' ') : '—')
+  // MEMBER-ENRICH: format an enrolled class's weekly schedule (day(s) · time).
+  const DOW: Record<string, string[]> = {
+    en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    fr: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
+    ar: ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'],
+  }
+  const fmtSchedule = (cls: any): string => {
+    const scheds = ((one(cls) as any)?.class_schedules ?? []).filter((s: any) => s.is_active)
+    if (!scheds.length) return ''
+    const days = [...new Set(scheds.map((s: any) => (DOW[locale] ?? DOW.en)[s.day_of_week] ?? '?'))].join('/')
+    const time = (scheds[0].start_time ?? '').slice(0, 5)
+    return time ? `${days} · ${time}` : days
+  }
   const ptActive = (ptAssignments ?? []).filter((a: any) => a.is_active && a.status === 'active')
   const ptRemaining = ptActive.reduce((s: number, a: any) => s + (a.sessions_remaining ?? 0), 0)
 
@@ -496,6 +509,16 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                 <li key={r.id} className="flex items-center justify-between text-sm" data-testid="member-reg-row" data-status={r.status}>
                   <div>
                     <p className="font-medium text-gray-800">{lname(one(r.classes))}</p>
+                    {(() => {
+                      const cls = one(r.classes) as any
+                      const disc = lname(one(cls?.disciplines))
+                      const sched = fmtSchedule(r.classes)
+                      return (disc || sched) ? (
+                        <p className="text-xs text-gray-600" data-testid="reg-discipline-schedule">
+                          {[disc, sched].filter(Boolean).join(' · ')}
+                        </p>
+                      ) : null
+                    })()}
                     <p className="text-xs text-gray-500">
                       {r.monthly_fee_usd != null ? `$${Number(r.monthly_fee_usd).toFixed(0)}/${t('mo')}` : ''}
                       {Number(r.discount_pct) > 0 ? ` · −${Number(r.discount_pct)}%` : ''}

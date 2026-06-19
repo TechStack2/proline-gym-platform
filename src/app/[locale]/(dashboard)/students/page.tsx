@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { StudentList } from './components/student-list'
 import { StudentFilters } from './components/student-filters'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
+import { getMemberEnrichment } from '@/lib/members/enrichment'
 import { LeadsPipeline } from '../leads/leads-pipeline'
 
 export default async function StudentsPage({
@@ -134,6 +135,12 @@ export default async function StudentsPage({
   }
   const chip = searchParams.chip && chipPredicates[searchParams.chip] ? searchParams.chip : ''
   const visibleStudents = chip ? (students ?? []).filter(chipPredicates[chip]) : (students ?? [])
+
+  // MEMBER-ENRICH: discipline(s) + active class(es) + membership status per
+  // visible member (one gym-scoped read; the class→discipline join the card lacked).
+  const memberInfo = await getMemberEnrichment(
+    supabase, gymId, visibleStudents.map((s: any) => s.id), locale,
+  )
   const chipCounts = Object.fromEntries(
     Object.entries(chipPredicates).map(([k, pred]) => [k, (students ?? []).filter(pred).length]),
   )
@@ -210,6 +217,7 @@ export default async function StudentsPage({
         isRTL={isRTL}
         expiringBy={Object.fromEntries(expiringBy)}
         owing={[...owingSet]}
+        memberInfo={memberInfo}
       />
     </div>
   )

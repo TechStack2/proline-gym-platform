@@ -251,6 +251,11 @@
       "call": "Call",
       "file": "File",
       "pay": "Payment"
+    },
+    "membership": {
+      "active": "Active",
+      "expiring": "Expiring",
+      "lapsed": "Lapsed"
     }
   },
   "coaches": {
