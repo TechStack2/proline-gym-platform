@@ -23,11 +23,13 @@ interface ClassDetailProps {
   disciplines?: any[]
   coaches?: any[]
   activeRegCount?: number
+  /** MEMBER-ENRICH: student_id → discipline(s)/class(es)/status for the roster. */
+  memberInfo?: Record<string, { disciplines: string[]; classes: string[]; membershipStatus: string }>
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function ClassDetail({ classData, locale, registrations = [], students = [], disciplines = [], coaches = [], activeRegCount = 0 }: ClassDetailProps) {
+export default function ClassDetail({ classData, locale, registrations = [], students = [], disciplines = [], coaches = [], activeRegCount = 0, memberInfo = {} }: ClassDetailProps) {
   const t = useTranslations('classes')
   const router = useRouter()
   const [showEnrollModal, setShowEnrollModal] = useState(false)
@@ -259,10 +261,19 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
                           <p className="font-medium" data-testid="enrolled-student">
                             {localizedName(enrollment.student?.profiles, locale)}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
+                          {/* MEMBER-ENRICH: belt + the student's discipline(s) so
+                              the floor view is informative. EXTENSION POINT: more
+                              per-student chips drop in here from `memberInfo`. */}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1" data-testid="roster-info">
                             <Badge className={getBeltColor(enrollment.student?.current_belt_rank || 'white')}>
                               {enrollment.student?.current_belt_rank}
                             </Badge>
+                            {(memberInfo[enrollment.student?.id]?.disciplines ?? []).map((d: string) => (
+                              <span key={d} data-testid="roster-discipline"
+                                className="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
+                                {d}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       </div>

@@ -251,6 +251,11 @@
       "call": "اتصال",
       "file": "الملف",
       "pay": "دفعة"
+    },
+    "membership": {
+      "active": "نشط",
+      "expiring": "ينتهي قريباً",
+      "lapsed": "منقضٍ"
     }
   },
   "coaches": {

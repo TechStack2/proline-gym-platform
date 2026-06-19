@@ -251,6 +251,11 @@
       "call": "Appeler",
       "file": "Dossier",
       "pay": "Paiement"
+    },
+    "membership": {
+      "active": "Actif",
+      "expiring": "Bientôt expiré",
+      "lapsed": "Expiré"
     }
   },
   "coaches": {

@@ -3,10 +3,18 @@
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Phone, Calendar, Award, DollarSign, FolderOpen } from 'lucide-react'
+import { Phone, Calendar, Award, DollarSign, FolderOpen, Dumbbell } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import type { MemberInfo, MembershipStatus } from '@/lib/members/enrichment'
+
+const membershipTone: Record<MembershipStatus, string> = {
+  active: 'bg-green-100 text-green-800',
+  expiring: 'bg-amber-100 text-amber-800',
+  lapsed: 'bg-red-100 text-red-700',
+  none: 'bg-gray-100 text-gray-600',
+}
 
 // Matches the server query in students/page.tsx:
 //   select('*, profiles!inner(first_name_*, last_name_*, phone, avatar_url)')
@@ -38,6 +46,8 @@ interface StudentListProps {
   expiringBy?: Record<string, string>
   /** FD-1 row badges: student ids with open (pending/partial/overdue) invoices. */
   owing?: string[]
+  /** MEMBER-ENRICH: student_id → discipline(s)/class(es)/membership status. */
+  memberInfo?: Record<string, MemberInfo>
 }
 
 function profileOf(s: Student): ProfileShape {
@@ -54,7 +64,7 @@ function localized(p: ProfileShape, base: 'first_name' | 'last_name', locale: st
   return ''
 }
 
-export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = [] }: StudentListProps) {
+export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = [], memberInfo = {} }: StudentListProps) {
   const t = useTranslations('students')
   const router = useRouter()
   const owingSet = new Set(owing)
@@ -91,6 +101,8 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
         const p = profileOf(student)
         const name = [localized(p, 'first_name', locale), localized(p, 'last_name', locale)].filter(Boolean).join(' ').trim()
         const status = student.is_active ? 'active' : 'inactive'
+        const info = memberInfo[student.id]
+        const hasInfo = info && (info.disciplines.length > 0 || info.classes.length > 0 || info.membershipStatus !== 'none')
         return (
           <div
             key={student.id}
@@ -147,6 +159,31 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                     <span>{new Date(student.join_date).toLocaleDateString()}</span>
                   </div>
                 </div>
+
+                {/* MEMBER-ENRICH info area — an ordered, one-query-fed chip set
+                    (discipline · class · membership status). EXTENSION POINT:
+                    incoming per-member fields drop in here as another chip block
+                    (extend MemberInfo + the getMemberEnrichment read), no re-plumbing. */}
+                {hasInfo && info && (
+                  <div className="mt-3 flex flex-wrap gap-1.5" data-testid="member-info">
+                    {info.disciplines.map((d) => (
+                      <span key={`d-${d}`} data-testid="member-discipline" data-kind="discipline"
+                        className="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">{d}</span>
+                    ))}
+                    {info.classes.map((c) => (
+                      <span key={`c-${c}`} data-testid="member-class" data-kind="class"
+                        className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        <Dumbbell className="h-3 w-3" />{c}
+                      </span>
+                    ))}
+                    {info.membershipStatus !== 'none' && (
+                      <span data-testid="member-membership" data-status={info.membershipStatus}
+                        className={cn('rounded-full px-2 py-0.5 text-xs font-medium', membershipTone[info.membershipStatus])}>
+                        {t(`membership.${info.membershipStatus}`)}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* FD-1 row quick-actions: call · open file · record payment */}
                 <div className="mt-3 flex gap-2 border-t pt-3" onClick={(e) => e.stopPropagation()}>

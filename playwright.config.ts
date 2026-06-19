@@ -388,6 +388,16 @@ export default defineConfig({
       testMatch: /drill360\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // MEMBER-ENRICH — read-time class+discipline(+belt+status) on the member
+      // cards, Member-360 enrollments panel, and the class roster. Creates a
+      // fresh class + registers the seeded member; isolated owner contexts.
+      // Appended at the END — runs LAST.
+      name: 'member-enrich',
+      dependencies: ['setup'],
+      testMatch: /member-enrich\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

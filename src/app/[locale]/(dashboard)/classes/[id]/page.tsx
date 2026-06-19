@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { localizedName, one } from '@/lib/names'
+import { getMemberEnrichment } from '@/lib/members/enrichment'
 import ClassDetail from './ClassDetail'
 
 export const dynamic = 'force-dynamic'
@@ -56,6 +57,10 @@ export default async function ClassDetailPage({
     notFound()
   }
 
+  // MEMBER-ENRICH: each roster student's discipline(s) (belt already on the row).
+  const rosterIds = (classData.enrollments as any[]).map((e) => one(e.student)?.id).filter(Boolean) as string[]
+  const memberInfo = await getMemberEnrichment(supabase, (classData as any).gym_id, rosterIds, locale)
+
   // B2: registrations (request→approve→bill→waitlist) + a member picker for walk-ins.
   const { data: regsRaw } = await supabase
     .from('class_registrations')
@@ -102,6 +107,7 @@ export default async function ClassDetailPage({
       disciplines={disciplines ?? []}
       coaches={coaches ?? []}
       activeRegCount={activeRegCount ?? 0}
+      memberInfo={memberInfo}
     />
   )
 }
