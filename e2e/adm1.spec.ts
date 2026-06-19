@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, gymSlug, createClassViaWizard } from './helpers';
+import { vis, gymSlug, createClassViaWizard, untilConsistent } from './helpers';
 
 /**
  * ADM-1 — catalog management (Cycle 5 / V1).
@@ -35,6 +35,10 @@ async function openLanding(page: Page) {
   await page.goto(`/en?gym=${encodeURIComponent(gymSlug())}`);
   await page.waitForLoadState('networkidle').catch(() => {});
 }
+async function openClassWizard(page: Page) {
+  await page.goto('/en/classes');
+  await vis(page, '[data-testid="add-class-btn"]').click();
+}
 
 test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven anon-side', async ({ browser }) => {
   test.setTimeout(240_000);
@@ -66,10 +70,14 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
     await expect(vis(owner.page, '[data-testid="class-publish-toggle"]').first())
       .toHaveAttribute('data-on', 'true', { timeout: 15_000 });
 
-    // Now the anon landing shows it.
-    await openLanding(anon.page);
-    await expect(anon.page.locator('#schedule'), 'published class visible on the public landing')
-      .toContainText(CLASS_NAME, { timeout: 15_000 });
+    // Now the anon landing shows it. ROOT RACE: the landing is ISR/cache-backed,
+    // so the publish revalidation is eventually-consistent — re-navigate until it
+    // reflects the write (a one-shot goto + in-place poll can sit on a stale page).
+    await untilConsistent(async () => {
+      await openLanding(anon.page);
+      await expect(anon.page.locator('#schedule'), 'published class visible on the public landing')
+        .toContainText(CLASS_NAME, { timeout: 5_000 });
+    });
 
     // Edit (rename) via the wizard in edit mode → propagates everywhere.
     await owner.page.goto(detailUrl);
@@ -84,8 +92,10 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
     await owner.page.goto('/en/schedule');
     await expect(vis(owner.page, `[data-testid="week-chip"][data-class-en="${CLASS_NAME_V2}"]`).first())
       .toBeVisible({ timeout: 15_000 });
-    await openLanding(anon.page);
-    await expect(anon.page.locator('#schedule')).toContainText(CLASS_NAME_V2, { timeout: 15_000 });
+    await untilConsistent(async () => {
+      await openLanding(anon.page);
+      await expect(anon.page.locator('#schedule')).toContainText(CLASS_NAME_V2, { timeout: 5_000 });
+    });
 
     // Archive (no active registrations → plain confirm) → gone everywhere.
     await owner.page.goto(detailUrl);
@@ -95,8 +105,11 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
     await expect(owner.page).toHaveURL(/\/en\/classes/, { timeout: 15_000 });
     await owner.page.goto('/en/schedule');
     await expect(vis(owner.page, `[data-testid="week-chip"][data-class-en="${CLASS_NAME_V2}"]`)).toHaveCount(0, { timeout: 15_000 });
-    await openLanding(anon.page);
-    await expect(anon.page.locator('#schedule')).not.toContainText(CLASS_NAME_V2);
+    // Archived → drops off the landing (eventually-consistent revalidation).
+    await untilConsistent(async () => {
+      await openLanding(anon.page);
+      await expect(anon.page.locator('#schedule')).not.toContainText(CLASS_NAME_V2);
+    });
 
     // Affiliations: the four real logos respond 200 (no 404 placeholders).
     for (const f of ['lmf.jpg', 'ifma.png', 'lmmaf.png', 'mma-lebanon.jpg']) {
@@ -174,16 +187,22 @@ test('ADM-1 · disciplines SSOT: settings-created → wizard chips + anon landin
       vis(owner.page, `[data-testid="discipline-row"][data-name-en="${DISC_NAME}"]`).first(),
     ).toBeVisible({ timeout: 15_000 });
 
-    // It appears in the class-wizard discipline chips…
-    await owner.page.goto('/en/classes');
-    await vis(owner.page, '[data-testid="add-class-btn"]').click();
-    await expect(owner.page.locator('[data-testid="wizard-discipline-chip"]').filter({ hasText: DISC_NAME }).first())
-      .toBeVisible({ timeout: 15_000 });
+    // It appears in the class-wizard discipline chips… ROOT RACE (the named adm1
+    // flake): the SSOT read after the Settings write is eventually-consistent;
+    // re-open the wizard until the new chip surfaces.
+    await untilConsistent(async () => {
+      await openClassWizard(owner.page);
+      await expect(owner.page.locator('[data-testid="wizard-discipline-chip"]').filter({ hasText: DISC_NAME }).first())
+        .toBeVisible({ timeout: 5_000 });
+    });
 
-    // …and on the anon landing Disciplines section (000035 anon read).
-    await openLanding(anon.page);
-    await expect(anon.page.locator('#disciplines'), 'new discipline live on the public landing')
-      .toContainText(DISC_NAME, { timeout: 15_000 });
+    // …and on the anon landing Disciplines section (000035 anon read) — same ISR
+    // cache lag → re-navigate until it reflects the new discipline.
+    await untilConsistent(async () => {
+      await openLanding(anon.page);
+      await expect(anon.page.locator('#disciplines'), 'new discipline live on the public landing')
+        .toContainText(DISC_NAME, { timeout: 5_000 });
+    });
 
     // Archive it → leaves the wizard chips.
     await owner.page.goto('/en/settings?tab=disciplines');
@@ -192,9 +211,13 @@ test('ADM-1 · disciplines SSOT: settings-created → wizard chips + anon landin
     await expect(
       vis(owner.page, `[data-testid="discipline-row"][data-name-en="${DISC_NAME}"]`).first(),
     ).toHaveAttribute('data-active', 'false', { timeout: 15_000 });
-    await owner.page.goto('/en/classes');
-    await vis(owner.page, '[data-testid="add-class-btn"]').click();
-    await expect(owner.page.locator('[data-testid="wizard-discipline-chip"]').filter({ hasText: DISC_NAME })).toHaveCount(0);
+    await untilConsistent(async () => {
+      await openClassWizard(owner.page);
+      // chips loaded (seeded disciplines present) → guards against a false 0 on
+      // an unpopulated wizard; THEN the archived discipline must be gone.
+      await expect(owner.page.locator('[data-testid="wizard-discipline-chip"]').first()).toBeVisible({ timeout: 5_000 });
+      await expect(owner.page.locator('[data-testid="wizard-discipline-chip"]').filter({ hasText: DISC_NAME })).toHaveCount(0);
+    });
   } finally {
     await owner.ctx.close();
     await anon.ctx.close();

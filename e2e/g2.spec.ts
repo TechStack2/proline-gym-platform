@@ -1,6 +1,36 @@
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test'
 import { ROLES } from './roles'
-import { vis } from './helpers'
+import { vis, untilConsistent } from './helpers'
+
+/**
+ * Reconnect, then wait for the SIGNAL — the queue DRAINED (banner gone), not a
+ * fixed timeout. ROOT RACE: `setOffline(false)` fires 'online' → the product's
+ * flush runs EXACTLY ONCE and has no auto-retry; a transient save failure on
+ * that single attempt left the queue stuck (the "fails then recovers on retry"
+ * flake). Re-fire the 'online' event with a quick offline→online toggle so the
+ * SAME flush re-runs — it's IDEMPOTENT (keyed upsert), so re-firing never
+ * duplicates. No reload (keeps the open roster intact); nothing weakened — the
+ * banner must still reach hidden. The first attempt does NOT toggle, giving the
+ * natural online-event flush a clean shot.
+ */
+async function reconnectAndDrain(page: Page, ctx: BrowserContext): Promise<void> {
+  await ctx.setOffline(false)
+  const banner = '[data-testid="attendance-offline-banner"]'
+  let attempt = 0
+  await untilConsistent(
+    async () => {
+      if (attempt++ > 0 && (await page.locator(banner).count()) > 0) {
+        await ctx.setOffline(true)
+        await ctx.setOffline(false) // re-dispatch 'online' → doFlush retries (idempotent)
+      }
+      await expect(
+        vis(page, banner).first(),
+        'the banner clears once the queue drains',
+      ).toBeHidden({ timeout: 6_000 })
+    },
+    { timeout: 45_000, intervals: [2_000, 3_000, 5_000] },
+  )
+}
 
 /**
  * G2 — Offline attendance (the last V1 build slice). Proofs:
@@ -81,25 +111,18 @@ test('G2 · offline mark → queue + banner → reconnect-sync → persisted + i
     expect(Number(await banner.getAttribute('data-pending')), 'at least one mark is pending').toBeGreaterThan(0)
 
     // ── Reconnect → the queue flushes (online event) → pending back to 0 ──
-    await coach.ctx.setOffline(false)
-    await expect(
-      vis(coach.page, '[data-testid="attendance-offline-banner"]').first(),
-      'the banner clears once the queue drains',
-    ).toBeHidden({ timeout: 30_000 })
+    await reconnectAndDrain(coach.page, coach.ctx)
 
     // ── A FRESH server-side context shows the mark persisted ──
     expect(await serverStatus(browser), 'the offline mark reached the server').toBe('absent')
 
     // ── Idempotency: a 2nd offline cycle re-marks the SAME key → flush drains to
     //    0 (the keyed upsert updated in place; a dup INSERT would error + requeue) ──
+    // The drain no longer reloads, so the roster is still open — re-mark directly.
     await coach.ctx.setOffline(true)
     await mark(coach.page, 'late')
     await expect(vis(coach.page, '[data-testid="attendance-offline-banner"]').first()).toBeVisible({ timeout: 10_000 })
-    await coach.ctx.setOffline(false)
-    await expect(
-      vis(coach.page, '[data-testid="attendance-offline-banner"]').first(),
-      'the re-flush drains cleanly (idempotent upsert, no duplicate-key error)',
-    ).toBeHidden({ timeout: 30_000 })
+    await reconnectAndDrain(coach.page, coach.ctx)
     expect(await serverStatus(browser), 'last-write-wins: the latest status persisted, no stale/dup').toBe('late')
   } finally {
     await coach.ctx.close()

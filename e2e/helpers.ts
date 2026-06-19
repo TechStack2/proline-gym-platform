@@ -94,3 +94,23 @@ export async function createClassViaWizard(
   // The wizard auto-closes shortly after success.
   await expect(page.locator('[data-testid="class-wizard"]')).toHaveCount(0, { timeout: 10_000 });
 }
+
+/**
+ * Wait for the SIGNAL, not a fixed timeout (STABILIZE-E2E). Re-runs `action`
+ * until it passes — for **eventually-consistent reads** where a one-shot
+ * `goto` + `expect(…,{timeout})` can observe a stale snapshot (PostgREST replica
+ * lag, ISR/landing cache, SW-served stale, a queue still draining). `action`
+ * MUST be idempotent: it re-runs on every attempt, so it may only
+ * navigate/revalidate/read + assert — NEVER perform a one-shot mutation
+ * (a click that books/logs/sells) inside it. Keep the inner per-attempt
+ * `expect` timeout short so retries cycle.
+ */
+export async function untilConsistent(
+  action: () => Promise<void>,
+  opts: { timeout?: number; intervals?: number[] } = {},
+): Promise<void> {
+  await expect(action).toPass({
+    timeout: opts.timeout ?? 40_000,
+    intervals: opts.intervals ?? [500, 1_000, 2_000, 3_000, 5_000],
+  });
+}
