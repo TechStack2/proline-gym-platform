@@ -2563,5 +2563,14 @@
       "openGap": "Open slot",
       "noPt": "No PT booked"
     }
+  },
+  "pwa": {
+    "installTitle": "Install PRO LINE",
+    "installDescription": "Add to your device for offline access at the front desk.",
+    "installButton": "Install",
+    "dismissButton": "Not now",
+    "offlineTitle": "You're offline",
+    "offlineDescription": "Changes will sync when you reconnect.",
+    "backOnline": "Back online"
   }
 }

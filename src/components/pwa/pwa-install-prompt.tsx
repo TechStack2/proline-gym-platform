@@ -29,6 +29,12 @@ interface PwaInstallPromptProps {
     offlineDescription: string;
     backOnline: string;
   };
+  /**
+   * OFF-1: when this prompt is mounted alongside the shell-level `OfflineBanner`
+   * (which owns the offline indicator), suppress this component's own offline bar
+   * so the two don't double up. Defaults true to preserve standalone usage.
+   */
+  showOfflineBar?: boolean;
 }
 
 // ─── Component ───────────────────────────────────────────────────────
@@ -36,6 +42,7 @@ interface PwaInstallPromptProps {
 export function PwaInstallPrompt({
   locale,
   dictionaries: d,
+  showOfflineBar = true,
 }: PwaInstallPromptProps) {
   const [showInstall, setShowInstall] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
@@ -122,15 +129,17 @@ export function PwaInstallPrompt({
 
   // ─── Don't show if already PWA or dismissed ─────────────────────────
 
-  if (!showInstall && !isOffline) return null;
-  if (dismissed && !isOffline) return null;
+  // OFF-1: when the shell owns the offline indicator, this component is install-only.
+  const offlineVisible = showOfflineBar && isOffline;
+  if (!showInstall && !offlineVisible) return null;
+  if (dismissed && !offlineVisible) return null;
 
   // ─── Render ───────────────────────────────────────────────────────
 
   return (
     <div className={cn('fixed bottom-0 left-0 right-0 z-50', isAr && 'rtl')}>
       {/* Offline Bar */}
-      {isOffline && (
+      {offlineVisible && (
         <div
           className={cn(
             'flex items-center gap-3 px-4 py-3 animate-in slide-in-from-bottom',

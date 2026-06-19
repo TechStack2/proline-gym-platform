@@ -83,6 +83,13 @@ function buildProdCspHeader(nonce: string): string {
     "default-src 'self'",
     `script-src 'self' 'strict-dynamic' 'nonce-${nonce}'`,
     `style-src 'self' 'strict-dynamic' 'nonce-${nonce}'`,
+    // OFF-1: the service worker IS the offline foundation, but `script-src` uses
+    // 'strict-dynamic' — under which Chrome's worker-src FALLBACK refuses
+    // `navigator.serviceWorker.register('/sw.js')` (the worker URL is not a
+    // dynamically-inserted trusted script). With no explicit worker-src the SW
+    // never registered in prod → no offline ANYWHERE (this is why G2's
+    // serviceWorker.ready hung). Allow same-origin workers explicitly.
+    "worker-src 'self'",
     "img-src 'self' data: https: blob:",
     "font-src 'self'",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
