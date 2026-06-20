@@ -37,6 +37,7 @@ export function PortalContent({
 }) {
   return (
     <div
+      data-testid="portal-shell"
       className={cn(
         'mx-auto w-full max-w-3xl md:px-4',
         'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0',
@@ -50,16 +51,22 @@ export function PortalContent({
 
 /**
  * The portal card — the documented `rounded-2xl` anatomy, composed over the
- * ui/* <Card>. Spreads `...props` (incl. data-testid) to the underlying div so
- * existing test hooks (self-view, portal-waiver, …) keep working unchanged.
+ * ui/* <Card>. A caller's own `data-testid` (self-view, portal-waiver, …) wins;
+ * absent one, it falls back to `portal-card` so the kit's ui/*-component render
+ * is assertable. Remaining `...props` still spread to the underlying div.
  */
 export function PortalCard({
   className,
   children,
+  'data-testid': testid,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: React.HTMLAttributes<HTMLDivElement> & { 'data-testid'?: string }) {
   return (
-    <Card className={cn('rounded-2xl border-gray-100 p-4 shadow-sm', className)} {...props}>
+    <Card
+      data-testid={testid ?? 'portal-card'}
+      className={cn('rounded-2xl border-gray-100 p-4 shadow-sm', className)}
+      {...props}
+    >
       {children}
     </Card>
   )
@@ -80,7 +87,7 @@ export function PortalCardTitle({
   return (
     <div className={cn('mb-3 flex items-center justify-between gap-2', className)}>
       <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-gray-900">
-        {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-600" />}
+        {Icon && <Icon data-testid="portal-brand" className="h-4 w-4 shrink-0 text-[#cd1419]" />}
         <span className="truncate">{children}</span>
       </h3>
       {right}

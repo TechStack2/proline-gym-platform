@@ -166,6 +166,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
           label={t('coach.home.stats.totalStudents')}
           color="text-[#cd1419]"
           bg="bg-red-50"
+          testid="portal-brand"
         />
         <StatCard
           icon={CheckCircle2}
@@ -317,17 +318,19 @@ function StatCard({
   label,
   color,
   bg,
+  testid,
 }: {
   icon: any;
   value: number;
   label: string;
   color: string;
   bg: string;
+  testid?: string;
 }) {
   return (
     <PortalCard className="text-center">
       <div className={cn('inline-flex items-center justify-center h-10 w-10 rounded-full mb-2', bg)}>
-        <Icon className={cn('h-5 w-5', color)} />
+        <Icon data-testid={testid} className={cn('h-5 w-5', color)} />
       </div>
       <p className="text-xl font-bold text-gray-900">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5 truncate">{label}</p>
