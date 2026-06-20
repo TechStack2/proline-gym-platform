@@ -2604,5 +2604,28 @@
     "editDirect": "Edit directly",
     "saveDraft": "Save draft",
     "lastPublished": "Last published"
+  },
+  "desk": {
+    "title": "Front Desk · Offline",
+    "cachedAt": "Cached as of {time}",
+    "noCache": "No cached data yet — Sync now while online",
+    "syncNow": "Sync now",
+    "syncOfflineHint": "Connect to sync",
+    "loading": "Loading cached data…",
+    "findMember": "Find a member",
+    "searchPlaceholder": "Search by name or phone…",
+    "noResults": "No matching member in the cache",
+    "membership": {
+      "active": "Active",
+      "none": "No membership",
+      "inactive": "Inactive"
+    },
+    "ptRemaining": "{n} PT left",
+    "openFile": "Open full file",
+    "fileNeedsConnection": "Full file + edits need a connection",
+    "todaySchedule": "Today’s classes",
+    "noClassesToday": "No classes scheduled today",
+    "roster": "Roster",
+    "emptyRoster": "No one enrolled"
   }
 }

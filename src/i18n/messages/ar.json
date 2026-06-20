@@ -2604,5 +2604,28 @@
     "editDirect": "تعديل مباشر",
     "saveDraft": "حفظ المسودة",
     "lastPublished": "آخر نشر"
+  },
+  "desk": {
+    "title": "المكتب الأمامي · دون اتصال",
+    "cachedAt": "محفوظ بتاريخ {time}",
+    "noCache": "لا بيانات محفوظة بعد — زامِن الآن أثناء الاتصال",
+    "syncNow": "مزامنة الآن",
+    "syncOfflineHint": "اتصل للمزامنة",
+    "loading": "جارٍ تحميل البيانات المحفوظة…",
+    "findMember": "ابحث عن عضو",
+    "searchPlaceholder": "ابحث بالاسم أو الهاتف…",
+    "noResults": "لا يوجد عضو مطابق في الذاكرة المؤقتة",
+    "membership": {
+      "active": "نشط",
+      "none": "بلا اشتراك",
+      "inactive": "غير نشط"
+    },
+    "ptRemaining": "{n} حصة خاصة متبقية",
+    "openFile": "فتح الملف الكامل",
+    "fileNeedsConnection": "الملف الكامل والتعديلات تتطلب اتصالاً",
+    "todaySchedule": "حصص اليوم",
+    "noClassesToday": "لا حصص مجدولة اليوم",
+    "roster": "قائمة الحضور",
+    "emptyRoster": "لا أحد مسجّل"
   }
 }
