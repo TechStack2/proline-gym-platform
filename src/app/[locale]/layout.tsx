@@ -1,4 +1,5 @@
 import { DevSwCleanup } from '@/components/dev/sw-cleanup'
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -42,6 +43,11 @@ export async function generateMetadata(props: Omit<Props, 'children'>) {
       template: `%s | ${t('name')}`,
     },
     description: t('tagline'),
+    // OFF-1: link the web-app manifest so the app is INSTALLABLE (desktop Chrome
+    // "Install app" + mobile A2HS). It was never linked → no install criteria met
+    // → no installed PWA / no offline engagement anywhere. start_url is "/" so the
+    // launch respects the user's locale (was hard-coded "/en").
+    manifest: '/manifest.json',
     // AX-3: use the PRO LINE logo as the favicon (there was no /favicon.ico → 404).
     icons: { icon: '/logo.jpg' },
     // Prevent in-browser auto-translation (e.g. Chrome) from rewriting text
@@ -84,6 +90,7 @@ export default async function RootLayout({ children, params }: Props) {
           <Toaster richColors position={isRTL ? 'bottom-left' : 'bottom-right'} />
           <UseToastRenderer />
         <DevSwCleanup />
+        <ServiceWorkerRegister />
         </NextIntlClientProvider>
       </body>
     </html>

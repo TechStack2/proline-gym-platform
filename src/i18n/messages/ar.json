@@ -2563,5 +2563,14 @@
       "openGap": "وقت متاح",
       "noPt": "لا تدريب خاص محجوز"
     }
+  },
+  "pwa": {
+    "installTitle": "تثبيت برو لاين",
+    "installDescription": "أضِفه إلى جهازك للعمل دون إنترنت عند المكتب الأمامي.",
+    "installButton": "تثبيت",
+    "dismissButton": "ليس الآن",
+    "offlineTitle": "أنت غير متصل بالإنترنت",
+    "offlineDescription": "ستتم المزامنة عند عودة الاتصال.",
+    "backOnline": "عاد الاتصال"
   }
 }

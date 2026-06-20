@@ -2833,3 +2833,45 @@ After fixing g2 (see drag-read), the full e2e suite was dispatched back-to-back 
 **The most important finding is a real product observation the flake exposed (named here, not silently "fixed"): the G2 reconnect flush has no retry.** `doFlush` runs on mount and on the `'online'` event; if that single network attempt fails transiently (and under the serial suite's load it sometimes does), nothing re-attempts until the next mount/online event — so the queue sits and the banner never clears. The *product* is arguably fine for real use (a human reconnect/reload re-fires it, and the upsert is idempotent so nothing corrupts), but it's a genuine "single-shot, no backoff" gap worth a V2 ticket: a small retry/backoff on the flush would make offline-sync self-heal without a user nudge. The test now models exactly that human behavior — re-fire the idempotent flush — which is legitimate (it asserts the same end state via the product's own idempotent path), not masking.
 
 **The sharper lesson was my own first attempt making g2 WORSE.** Reaching for the prompt's hypothesis ("SW cold-open → wait for the SW"), I added `await navigator.serviceWorker.ready` before `setOffline`. That promise *never rejects and never resolved in CI*, and `page.evaluate` has no implicit timeout — so it deterministically hung the whole test to the 220s limit (run `27833571649`, both attempts). Two rules fell out: (1) **never `await` a browser promise that can hang without racing it against a timeout** in a test; (2) **verify the hypothesis against the code before hardening for it** — g2's offline path is IndexedDB + `navigator.onLine` + a `fetch` flush, and it never navigates while offline, so the service worker is simply *not on its critical path*. The SW-ready wait was both harmful and useless; removing it (not bounding it) was correct. The other three were textbook eventually-consistent read-after-write / cache races, fixed by re-reading until consistent — and the discipline that keeps these honest is that the retry wrapper may only ever re-run **reads/navigations**, never a mutation, so idempotency and the assertions' meaning are untouched.
+
+---
+
+## Cycle 6 / OFF-1 — parity audit + installed-PWA offline foundation (2026-06-19)
+
+**Mandate:** first slice of the offline chapter — make the **installed PWA on a desktop viewport** (the front-desk laptop) a first-class, offline-ready surface; audit + fix web↔PWA divergences. FOUNDATION ONLY (no OFF-2..4 offline reads/writes; zero schema).
+
+### Parity divergence audit (web tab vs installed PWA vs mobile) + dispositions
+| # | Divergence | Disposition |
+|---|---|---|
+| 1 | **The SW never registered/controlled in prod.** `script-src 'strict-dynamic'` with **no `worker-src`** → Chrome's worker-src fallback refuses `serviceWorker.register('/sw.js')`. | **FIXED** — `worker-src 'self'` in the prod CSP |
+| 2 | **And even when allowed, the SW install REJECTED.** next-pwa's all-or-nothing precache (Next 14 App Router) lists URLs `next start` 404s: `/_next/app-build-manifest.json`, `_buildManifest.js`/`_ssgManifest.js`, and route-group page chunks precached with URL-encoded `%5Blocale%5D` paths. One 404 → worker goes **redundant** → never controls. | **FIXED** — `buildExcludes` (still runtime-cached on visit) |
+| 3 | **Manifest never LINKED** (no `<link rel=manifest>`) + referenced 8 **missing** icons → not installable on any platform. | **FIXED** — `metadata.manifest` + generated icon set from `logo.jpg` |
+| 4 | Desktop dashboard uses the **legacy `Sidebar`+`Header`** shell; the offline UX (`offline-banner`/`use-online`) was mounted only in the **mobile** `DashboardLayoutClient` + the attendance/money pages → **desktop engaged none of it**. | **FIXED** — shared `FrontDeskOfflineLayer` mounted once in `(dashboard)/layout`, covers both shells |
+| 5 | `PwaInstallPrompt` existed but was **mounted nowhere** → no install affordance. | **FIXED** — mounted (install-only) in the shared layer |
+| 6 | `manifest.start_url:"/en"` (locale-hardcoded) + `orientation:"portrait-primary"` (wrong for a laptop). | **FIXED** — `start_url:"/"`, `orientation:"any"` |
+| 7 | Mobile `NativeTabBar` vs desktop side-rail: NativeTabBar already renders both a bottom bar (mobile) AND a side-rail (md+), but the dashboard shows it only on mobile (the desktop branch is the legacy Sidebar). | **Accept** — both viewports have a nav; offline layer now spans both |
+| 8 | Offline copy ("Offline — 0 pending") is queue-centric, not ideal as a general shell indicator. | **Defer → OFF-2+** (reuse-as-is for foundation) |
+| 9 | Per-locale `start_url` (launch in the user's exact locale). | **Defer → OFF-2+** (dynamic manifest route) |
+
+### Gaps closed (reuse, not reinvent)
+- **The SW now genuinely engages** (registers → installs → activates → `clientsClaim` controls → NetworkFirst page-cache serves a visited shell offline). Verified on a local `next start` (`controller != null`, `active.state === 'activated'`, offline reload renders, not `ERR_INTERNET_DISCONNECTED`) AND in CI.
+- **Consistent offline shell on the desktop laptop** via `FrontDeskOfflineLayer` (reuses `OfflineBanner` + `use-online`; new optional `testid` so it doesn't collide with G2's `attendance-offline-banner`) + the installable-PWA prompt (`PwaInstallPrompt`, install-only via a new `showOfflineBar` flag). `i18n pwa.*` en/ar/fr.
+- **Installable**: manifest linked + an 8-size icon set generated from the square brand logo.
+
+### SW-lifecycle confirmation
+`DevSwCleanup` untouched (dev-only). `skipWaiting` + `clientsClaim` → clean prod succession (new SW activates + claims immediately; `cleanupOutdatedCaches` clears stale precaches). The explicit `ServiceWorkerRegister` is prod-gated (no dev /sw.js to hit). `/sw.js`, `/manifest.json`, `/icons/*` bypass the middleware (dotted paths) so they carry no strict CSP → the worker's `importScripts` is unrestricted.
+
+### CI evidence
+- **E2E gate `27850662966` — SUCCESS, 96 passed (36.9m), 0 failed** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27850662966
+  - off1: manifest linked + installable (start_url '/', icons resolve); **desktop offline → shell banner engages**; **the SW registers + controls + serves the cached shell on an offline reload** (not a browser error); /ar clean.
+  - **No regression**: G2 offline attendance green (✓✓✓); mobile PWA unaffected (the offline layer spans both shells); full suite 96/0. The pinned gate held with the SW now active prod-wide (NetworkFirst = network-first online → fresh content, so online specs are unaffected).
+- Zero schema; no OFF-2..4 scope crept in (no Dexie-mirror PULL, no offline writes beyond G2's existing one).
+
+### **installed PWA engages SW+offline on desktop; parity audited; no G2/mobile regression: PASS**
+
+### DRAG READ
+**The offline machine wasn't dormant — it was DEAD, and three independent failures hid that behind a plausible "it only works in the installed PWA" story.** The scoping doc estimated "~80% built but dormant; activate, don't build." True for the Dexie/queue layers, but the SW itself — the thing everything else rides on — had never registered in prod. Three compounding causes, each individually fatal: (1) `script-src 'strict-dynamic'` with no `worker-src` made Chrome refuse the registration; (2) even when I allowed it, next-pwa's precache manifest 404'd on `app-build-manifest.json` + URL-encoded App-Router chunk paths, and workbox precache is **all-or-nothing**, so one 404 sent the worker to `redundant`; (3) registration was implicitly gated on React hydration, which the strict-dynamic nonce CSP suppresses on statically-rendered pages. Only the front-desk routes (dynamic at runtime via auth → nonce'd → hydrate) would ever have registered it — and they couldn't, because of (1)+(2).
+
+**This retro-explains the STABILIZE-E2E mystery.** That drag-read concluded "g2's `serviceWorker.ready` hangs because the SW is not on g2's critical path." Half-right: the deeper truth is `ready` hung because **there was never an active service worker at all** — the precache install was failing on every prod page load, suite-wide. The honest lesson: a hung `.ready` isn't just "don't await unbounded promises," it's a **smoke alarm that the SW isn't activating** — worth chasing then, not just bounding.
+
+**The methodology that cracked it: a local `next start` + a 30-line Playwright probe.** CI gives a binary pass/fail every ~37 minutes; the local probe gave `controller`, `registration.active.state`, the statechange sequence (`['redundant']`), and a per-URL precache 404 sweep in seconds. The decisive datum — `/_next/app-build-manifest.json → 404` while the chunk *existed on disk* — is invisible to a green/red gate. For anything SW/CSP/caching, **reproduce against the prod server locally and inspect the worker state directly**; do not iterate via CI. And the fix stays foundation-clean: no new caching strategies (the excluded chunks are still runtime-cached on first online visit), no schema, no OFF-2..4 — just making the existing machine actually turn over.
