@@ -2928,3 +2928,36 @@ Test-only `data-testid`s added to portal-kit (`portal-shell`, default `portal-ca
 **The review was right that a no-regression pass isn't verification, and writing the test is what surfaced the real bug.** Pinning "the shell renders once, within the viewport, with the kit" forced a viewport-position assertion — which first caught my OWN test measuring the rect mid-slide (PageTransition animates `translateX` under `overflow-hidden`; `boundingBox` reported the offset position → fixed by polling the settled rect), and then, once the test was honest, made the f3 flake legible as the SAME family of bug: `transform` ancestors quietly redefining the containing block for `position:fixed`. The green-on-main / flaky-on-branch signal was the tell — a presentation-only diff that changes a card's height shouldn't move a waiver flake unless the modal's position is coupled to page layout, which `position:fixed` is *not supposed to be*.
 
 **BROADER FINDING (flagged, not fixed here — a follow-up slice):** the WaiverSign modal is not special — **every `fixed` modal rendered inside a portal/coach page has this same latent mis-positioning** under `PageTransition`'s transform (`book-pt-modal`, `form-wizard`, and the inline `(dashboard)` modals — rentals/classes/leads/camps — whenever they're mounted in portal context). The codebase has **zero `createPortal`** today; modals are inline `fixed inset-0` throughout. They happen to work on staff because the **desktop** dashboard shell has no `PageTransition` (the e2e runs Desktop Chrome) — but on the portal/coach shells, and on the *mobile* dashboard shell, they're all at risk; waiver is simply the one f3 exercised. The systemic fix is a follow-up: either a shared `<ModalPortal>` wrapper (portal-to-body for all of them) or drop the lingering transform once `PageTransition` settles (a transitionend → `transform: none`, which also restores correct `fixed` containment for free). PORTAL-FND ships only the WaiverSign `createPortal` — the minimum that unblocks the gate — and leaves the systemic sweep to its own slice with its own e2e.
+
+---
+
+## Cycle 6 / COACH-LP — coach landing showcase + edit→publish workflow (2026-06-20)
+
+**Mandate (demo feedback):** showcase the gym's coaches grandiosely on the public landing (current + "coming soon"); a coach edits their OWN profile from the portal; staff edit + the FINAL push-to-live is admin-gated (coach edits are PENDING until an admin publishes). Staff publish lives in the Coach-360 hub (TEAM-1's `coaches/[id]`).
+
+### Schema (minimal + named) — migration `000059_coach_landing_publish`, applied via VF `27871717124`
+Mirrors the 000036 `show_on_landing` switch + a pending-draft mechanism:
+- **`coaches`** (the LIVE/published surface): `landing_visible` (admin-set bool), `landing_status` (`active`|`coming_soon`, CHECK-constrained), `has_pending_changes`, `last_published_at`.
+- **`coach_profile_pending`** (a SEPARATE table, not a draft jsonb on `coaches`): holds `specialization_*`/`bio_*` drafts. *Chosen deliberately for the leak guard* — RLS is row- not column-level, so a draft column on `coaches` would be anon-readable; a separate table gives anon **zero** read path to drafts. A trigger keeps `coaches.has_pending_changes` in sync.
+- **`get_landing_coaches(gym_id)`** — SECURITY DEFINER, anon+authenticated: the ONLY anon read path — a published projection (`coaches`⋈`profiles`) of `is_active AND landing_visible` coaches, current-first then coming-soon. Never selects the drafts table.
+- **`publish_coach_profile(coach_id)`** / **`set_coach_landing(coach_id, visible, status)`** — SECURITY DEFINER, **owner/head_coach only** (`get_user_role()` check inside, mirroring TEAM-1's `setCoachActive` guardrail). Publish applies pending→live, sets `landing_visible`, `last_published_at`, clears the draft.
+- **RLS:** `coach_profile_pending` = coach-own (`coach_pending_self`) + in-gym staff (`coach_pending_staff`, owner/head_coach/receptionist) — **no anon policy**. Existing `coaches_staff`/`coaches_self` untouched (never weakened).
+
+### Showcase + workflow + gating
+- **Landing `CoachesSection`** (modeled on `ChampionsSection`, elevated): premium dark cards — avatar, name, specialty chips, bio; `coming_soon` coaches get a grayscale avatar + a "coming soon" badge. Anon, read-time via the RPC. i18n ar/en/fr + RTL + crimson.
+- **Coach portal self-edit** (`CoachProfileEditor`): bio + specialty per locale → `saveCoachDraft` writes the PENDING draft (never live); a "pending approval" badge + a live landing-card preview.
+- **Coach-360 `CoachPublishPanel`**: the pending **diff vs live**, a **"Publish to live"** action + **coming-soon toggle** + **hide** — all owner/head_coach-only (hidden for reception, enforced in the RPC); plus a staff direct-edit (reception included) that writes a draft.
+- **Photo:** stays on the existing live ADM-2 `AvatarUpload` (the avatars bucket is path-scoped Storage-RLS; staging a draft photo there fights that policy). The pending mechanism covers the editorial showcase text; `pending.avatar_url` is reserved for a photo-staging follow-up.
+
+### CI evidence
+- **E2E gate `27872302015` — SUCCESS, 103 passed (35.0m), 0 failed** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27872302015
+  - `coach-lp · workflow`: coach@ edits bio in the portal → PENDING; anon landing does NOT show it (nor the active-but-hidden coach); owner reactivates + sees the diff in Coach-360 → Publish → the coach appears on the anon landing with the published bio.
+  - `coach-lp · coming-soon`: the seeded `coming_soon` coach renders in the future treatment.
+  - `coach-lp · permissions`: reception sees the panel but **no publish/admin controls**, yet can write a draft.
+  - `coach-lp · /ar`: showcase RTL-clean, no missing keys.
+  - No regression (full suite 103/0); zero RLS weakened; i18n parity 2194×3.
+
+### **showcase + coach-edit→admin-publish→anon-landing + RLS leak-guard: PASS**
+
+### DRAG READ
+**The leak guard drove the schema shape, and a shared-fixture mutation drove the test.** The tempting model — a `profile_pending` jsonb on `coaches` — fails the core requirement silently: Postgres RLS is row-level, so an anon SELECT policy that exposes a `landing_visible` coach's row exposes *every column of that row*, drafts included. The only honest isolation is a **separate drafts table with no anon policy at all**, fronted by a SECURITY-DEFINER projection that the public calls instead of touching tables. So "anon reads only published" isn't a WHERE clause — it's the *absence* of an anon grant on the draft store. Second lesson, a callback to STABILIZE/MEMBER-ENRICH: the only coach with a login (Sami, the coach@ session needed for the *portal* self-edit) is **deactivated by TEAM-1** earlier in the same serial gym — with `deleted_at` set, which evicts him from the coaches list AND the `is_active`-gated landing reader. A naive "click Sami in the team list" would 404, and "publish → he appears" would silently never appear. The fix is the durable pattern for this suite: don't assume fixture state — the editor **exposes the coach id**, the test navigates Coach-360 **by id**, **reactivates** (idempotently — only if the reactivate button is present), then publishes. The workflow proves itself against a member the prior specs were free to mutate.
