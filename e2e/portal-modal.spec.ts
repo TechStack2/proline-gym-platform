@@ -20,13 +20,29 @@ async function ctxFor(browser: Browser, role: keyof typeof ROLES, opts: { viewpo
   return { ctx, page: await ctx.newPage() }
 }
 
-/** The modal's box sits WITHIN the viewport (not page-relative / scrolled off). */
-async function expectWithinViewport(page: Page, modal: Locator, label: string) {
+/**
+ * The modal is viewport-fixed (the PORTAL-MODAL fix), proven two ways:
+ *  1. PRIMARY (height-independent): NO transformed ancestor between the modal and
+ *     <body>. PageTransition keeps `translate-x-0` (a real transform) on the
+ *     portal/coach/mobile shells even once settled, so an UN-portaled modal always
+ *     has it as an ancestor → its `position:fixed` resolves to the page box, not
+ *     the viewport. Portaling to <body> removes every transformed ancestor.
+ *  2. SECONDARY: the modal's box sits within the viewport.
+ */
+async function expectViewportFixed(page: Page, modal: Locator, label: string) {
+  await expect(modal).toBeVisible({ timeout: 15_000 })
+  const transformedAncestor = await modal.evaluate((el) => {
+    let p = el.parentElement
+    while (p && p !== document.body && p !== document.documentElement) {
+      const t = getComputedStyle(p).transform
+      if (t && t !== 'none') return true
+      p = p.parentElement
+    }
+    return false
+  })
+  expect(transformedAncestor, `${label}: modal is portaled clear of PageTransition's transform`).toBe(false)
+
   const vp = page.viewportSize()!
-  // The page must be tall enough that a page-box-relative (buggy) modal WOULD be
-  // off-screen — otherwise the assertion is vacuous.
-  const scrollable = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 8)
-  expect(scrollable, `${label}: the shell page is taller than the viewport (the bug would manifest)`).toBeTruthy()
   const box = await modal.boundingBox()
   expect(box, `${label}: the modal has a box`).toBeTruthy()
   expect(box!.x, `${label}: left edge within viewport`).toBeGreaterThanOrEqual(-2)
@@ -76,7 +92,7 @@ test.describe('PORTAL-MODAL · portal/coach fixed modals stay viewport-centered'
       await trigger.click()
       const modal = vis(student.page, '[data-testid="pt-book-modal"]').first()
       await expect(modal).toBeVisible({ timeout: 15_000 })
-      await expectWithinViewport(student.page, modal, 'book-pt (portal, scrolled)')
+      await expectViewportFixed(student.page, modal, 'book-pt (portal, scrolled)')
     } finally {
       await student.ctx.close()
     }
@@ -93,7 +109,7 @@ test.describe('PORTAL-MODAL · portal/coach fixed modals stay viewport-centered'
       await add.click()
       const modal = vis(owner.page, '[data-testid="add-lead-modal"]').first()
       await expect(modal).toBeVisible({ timeout: 15_000 })
-      await expectWithinViewport(owner.page, modal, 'form-wizard (scrolled)')
+      await expectViewportFixed(owner.page, modal, 'form-wizard (scrolled)')
     } finally {
       await owner.ctx.close()
     }
@@ -110,7 +126,7 @@ test.describe('PORTAL-MODAL · portal/coach fixed modals stay viewport-centered'
       await add.click()
       const modal = vis(owner.page, '[data-testid="add-lead-modal"]').first()
       await expect(modal).toBeVisible({ timeout: 15_000 })
-      await expectWithinViewport(owner.page, modal, 'form-wizard /ar (scrolled)')
+      await expectViewportFixed(owner.page, modal, 'form-wizard /ar (scrolled)')
       expect(await owner.page.locator('text=MISSING_MESSAGE').count(), 'no missing i18n on /ar').toBe(0)
     } finally {
       await owner.ctx.close()
