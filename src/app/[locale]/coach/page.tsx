@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { Calendar, Clock, Users, MapPin, BookOpen, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
 import Link from 'next/link';
+import { PortalCard, PortalCardTitle, PortalEmpty } from '@/components/portal/portal-kit';
 
 type Props = { params: { locale: string } };
 
@@ -33,10 +34,11 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
   if (!coach) {
     return (
       <div className={cn('p-4', isRTL && 'rtl')}>
-        <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
-          <Calendar className="mx-auto h-10 w-10 mb-3" />
-          <p>{isRTL ? 'لم يتم العثور على ملف المدرب' : locale === 'fr' ? 'Profil coach introuvable' : 'Coach profile not found'}</p>
-        </div>
+        <PortalCard>
+          <PortalEmpty icon={Calendar}>
+            {isRTL ? 'لم يتم العثور على ملف المدرب' : locale === 'fr' ? 'Profil coach introuvable' : 'Coach profile not found'}
+          </PortalEmpty>
+        </PortalCard>
       </div>
     );
   }
@@ -164,6 +166,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
           label={t('coach.home.stats.totalStudents')}
           color="text-[#cd1419]"
           bg="bg-red-50"
+          testid="portal-brand"
         />
         <StatCard
           icon={CheckCircle2}
@@ -183,15 +186,17 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
 
       {/* Today's trials (UX-2) — actionable on the trials tab */}
       {todaysTrials.length > 0 && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm space-y-2" data-testid="coach-home-trials">
-          <div className="flex items-center justify-between">
-            <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-              {t('coachTrials.todayTitle')}
-            </h3>
-            <Link href={`/${locale}/coach/trials`} className="text-xs font-medium text-[#cd1419]">
-              {t('coachTrials.openTab')}
-            </Link>
-          </div>
+        <PortalCard className="space-y-2" data-testid="coach-home-trials">
+          <PortalCardTitle
+            icon={Users}
+            right={
+              <Link href={`/${locale}/coach/trials`} className="text-xs font-medium text-[#cd1419]">
+                {t('coachTrials.openTab')}
+              </Link>
+            }
+          >
+            {t('coachTrials.todayTitle')}
+          </PortalCardTitle>
           {todaysTrials.map((tr: any) => (
             <Link
               key={tr.id}
@@ -206,16 +211,17 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
               </span>
             </Link>
           ))}
-        </div>
+        </PortalCard>
       )}
 
       {/* Class List */}
       {todaysSchedules.length === 0 ? (
-        <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
-          <Calendar className="mx-auto h-10 w-10 mb-3" />
-          <p className="font-medium">{t('coach.home.noClasses')}</p>
-          <p className="text-xs mt-1">{t('coach.home.noClassesHint')}</p>
-        </div>
+        <PortalCard>
+          <PortalEmpty icon={Calendar}>
+            <span className="block font-medium text-gray-500">{t('coach.home.noClasses')}</span>
+            <span className="mt-1 block text-xs">{t('coach.home.noClassesHint')}</span>
+          </PortalEmpty>
+        </PortalCard>
       ) : (
         <div className="space-y-3">
           {todaysSchedules.map((schedule: any) => {
@@ -227,10 +233,10 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             const isComplete = attStatus.total > 0 && attStatus.marked >= attStatus.total;
 
             return (
-              <div
+              <PortalCard
                 key={schedule.id}
                 className={cn(
-                  'rounded-2xl bg-white p-4 shadow-sm border-l-4',
+                  'border-l-4',
                   isComplete ? 'border-l-green-500' : 'border-l-[#cd1419]'
                 )}
               >
@@ -297,7 +303,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
-              </div>
+              </PortalCard>
             );
           })}
         </div>
@@ -312,20 +318,22 @@ function StatCard({
   label,
   color,
   bg,
+  testid,
 }: {
   icon: any;
   value: number;
   label: string;
   color: string;
   bg: string;
+  testid?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm text-center">
+    <PortalCard className="text-center">
       <div className={cn('inline-flex items-center justify-center h-10 w-10 rounded-full mb-2', bg)}>
-        <Icon className={cn('h-5 w-5', color)} />
+        <Icon data-testid={testid} className={cn('h-5 w-5', color)} />
       </div>
       <p className="text-xl font-bold text-gray-900">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5 truncate">{label}</p>
-    </div>
+    </PortalCard>
   );
 }

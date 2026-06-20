@@ -408,6 +408,17 @@ export default defineConfig({
       testMatch: /off1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PORTAL-FND portal design-system + shell foundation: the member + coach
+      // portals adopt the ONE unified themed shell (portal-kit) on desktop +
+      // mobile, the ui/* + ActionCard/DrillDetails kit renders portal-side, and
+      // /ar is RTL-clean. Switches roles internally (student + coach contexts at
+      // two viewports); read-only. Appended at the END — runs LAST.
+      name: 'portal-fnd',
+      dependencies: ['setup'],
+      testMatch: /portal-fnd\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

@@ -3,9 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { PortalCampsSection } from './_components/portal-camps'
 import { cn } from '@/lib/utils'
-import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight } from 'lucide-react'
+import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight, ClipboardList } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar as KidAvatar } from '@/components/shared/avatar'
+import { PortalCard, PortalCardTitle } from '@/components/portal/portal-kit'
+import { ActionCard } from '@/components/dashboard/action-card'
+import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
@@ -248,8 +251,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         })}
       </div>
       {/* IA-2 self-view: the member answers their own top questions */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="self-view">
-        <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('myStatus')}</h3>
+      <PortalCard data-testid="self-view">
+        <PortalCardTitle icon={TrendingUp}>{t('myStatus')}</PortalCardTitle>
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-gray-500">{t('membership')}</span>
@@ -272,15 +275,17 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
             </span>
           </div>
         </div>
-      </div>
+      </PortalCard>
 
       {/* F3: waiver status + sign CTA when unsigned/outdated */}
       {waiver && waiver.state !== 'none' && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="portal-waiver" data-state={waiver.state}>
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-gray-900">{tw('myWaiver')}</h3>
-            <WaiverChip state={waiver.state} version={waiver.signedVersion} testid="portal-waiver-chip" />
-          </div>
+        <PortalCard data-testid="portal-waiver" data-state={waiver.state}>
+          <PortalCardTitle
+            icon={ClipboardList}
+            right={<WaiverChip state={waiver.state} version={waiver.signedVersion} testid="portal-waiver-chip" />}
+          >
+            {tw('myWaiver')}
+          </PortalCardTitle>
           {waiver.template && (waiver.state === 'unsigned' || waiver.state === 'outdated') && student && (
             <div className="mt-3">
               <WaiverSign
@@ -294,7 +299,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
               />
             </div>
           )}
-        </div>
+        </PortalCard>
       )}
 
       <div className="grid grid-cols-2 gap-3">
@@ -304,7 +309,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         ].map((a, i) => {
           const Icon = a.icon
           return (
-            <Link key={i} href={a.href} className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm hover:bg-gray-50 transition-colors">
+            <Link key={i} href={a.href} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-elevation-2">
               <div className="flex items-center gap-3">
                 <Icon className="h-5 w-5 text-[#cd1419]" />
                 <span className="font-medium text-sm text-gray-700">{a.label}</span>
@@ -315,8 +320,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         })}
       </div>
       {membership && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="font-semibold text-sm text-gray-900 mb-2">{t('currentMembership')}</h3>
+        <PortalCard>
+          <PortalCardTitle icon={CreditCard}>{t('currentMembership')}</PortalCardTitle>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-700">{membershipNameVal}</p>
@@ -326,11 +331,11 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
               {membership.status === 'active' ? t('active') : t('expired')}
             </span>
           </div>
-        </div>
+        </PortalCard>
       )}
       {belt && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="font-semibold text-sm text-gray-900 mb-2">{t('currentBelt')}</h3>
+        <PortalCard>
+          <PortalCardTitle icon={Award}>{t('currentBelt')}</PortalCardTitle>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center"><Award className="h-5 w-5 text-yellow-400" /></div>
             <div>
@@ -338,28 +343,49 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
               <p className="text-xs text-gray-500">{t('gymName')}</p>
             </div>
           </div>
-        </div>
+        </PortalCard>
       )}
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
-        <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('recentAttendance')}</h3>
-        {recentAttendance && recentAttendance.length > 0 ? (
-          <div className="space-y-2">
-            {recentAttendance.map((ra: any, i: number) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">{getCName(ra)}</p>
-                  <p className="text-xs text-gray-500">{new Date(ra.attendance_date).toLocaleDateString(dateLocale(locale))}</p>
-                </div>
-                <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[ra.status] || 'bg-gray-100 text-gray-700')}>
-                  {statusLabels[ra.status] || ra.status}
+      {/* PORTAL-FND kit proof-of-use: the staff app's drillable-card framework
+          (ActionCard + DrillDetails) now rendering portal-side — the headline
+          count collapses to a single ✓ line on a quiet day, and each recent
+          session drills into the schedule. Existing data, no new query. */}
+      {(() => {
+        const att = (recentAttendance ?? []) as any[]
+        const attendanceRows: DrillRow[] = att.map((ra) => ({
+          href: `/${locale}/portal/schedule`,
+          left: getCName(ra),
+          right: (
+            <span className={cn('inline-flex rounded-full px-2 py-0.5 text-2xs font-medium', statusColors[ra.status] || 'bg-gray-100 text-gray-700')}>
+              {statusLabels[ra.status] || ra.status}
+            </span>
+          ),
+        }))
+        return (
+          <ActionCard
+            icon={CalendarDays}
+            title={t('recentAttendance')}
+            count={attendanceRows.length}
+            emptyText={t('noAttendance')}
+            testid="portal-recent-attendance"
+            isRTL={isRTL}
+          >
+            <DrillDetails
+              testid="portal-attendance-drill"
+              rowTestid="portal-attendance-row"
+              isRTL={isRTL}
+              summary={
+                <span className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-medium text-gray-700">{getCName(att[0])}</span>
+                  <span className="text-xs text-gray-500">
+                    {att[0] ? new Date(att[0].attendance_date).toLocaleDateString(dateLocale(locale)) : ''}
+                  </span>
                 </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400 text-center py-4">{t('noAttendance')}</p>
-        )}
-      </div>
+              }
+              rows={attendanceRows}
+            />
+          </ActionCard>
+        )
+      })()}
 
       {/* E1: published camps — member-self request */}
       {student && <PortalCampsSection studentId={student.id} actingFor={null} locale={locale} />}

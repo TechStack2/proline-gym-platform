@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { LogOut } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { HeaderAvatar } from '@/components/shared/header-avatar';
+import { PortalContent } from '@/components/portal/portal-kit';
 
 type Props = {
   children: React.ReactNode;
@@ -64,7 +65,9 @@ export function PortalLayoutClient({ children, locale }: Props) {
           isActive={true}
           locale={locale}
         >
-          <div key={pathname}>{children}</div>
+          <div key={pathname}>
+            <PortalContent>{children}</PortalContent>
+          </div>
         </PageTransition>
       </main>
       <NativeTabBar
