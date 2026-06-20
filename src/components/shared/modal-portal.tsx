@@ -10,18 +10,33 @@
  * Portaling the overlay to <body> (which has no transform) restores viewport
  * containment. SSR-safe via a mount guard (createPortal needs the DOM).
  *
- * Presentation/positioning ONLY: children, their props, testids, and event
- * handling are unchanged — React events still bubble through the component tree
- * across the portal boundary, and <body> inherits `dir`/font from <html>, so RTL
- * + theming are preserved. No-op for positioning on shells without a transform
- * (e.g. the desktop dashboard), where a fixed element was already viewport-fixed.
+ * DOUBLE-SHELL GUARD ([[double-shell-duplicates-client-state]]): the (dashboard)
+ * layout renders its content TWICE — a mobile shell and a desktop shell — with the
+ * inactive one `display:none`. An inline modal was de-duped because the hidden
+ * shell's copy inherited `display:none`; portaling to <body> ESCAPES that, so BOTH
+ * copies would surface. We therefore portal ONLY from the VISIBLE shell: a probe
+ * whose `offsetParent` is null sits inside a `display:none` ancestor (the inactive
+ * shell) and renders nothing. Single-shell pages (portal/coach) always have a
+ * visible probe, so they portal as normal.
+ *
+ * Presentation/positioning ONLY: children, props, testids, and event handling are
+ * unchanged (React events bubble through the tree across the portal; <body>
+ * inherits `dir`/font from <html>). No-op for positioning on a transform-less
+ * shell (the desktop dashboard), where a fixed element was already viewport-fixed.
  */
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 export function ModalPortal({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  if (!mounted) return null
+  const probe = useRef<HTMLSpanElement>(null)
+  const [portal, setPortal] = useState(false)
+
+  useEffect(() => {
+    // offsetParent === null ⇒ this instance is inside a `display:none` ancestor
+    // (the inactive double-shell copy) — don't surface a duplicate in <body>.
+    setPortal(probe.current?.offsetParent != null)
+  }, [])
+
+  if (!portal) return <span ref={probe} aria-hidden="true" />
   return createPortal(children, document.body)
 }
