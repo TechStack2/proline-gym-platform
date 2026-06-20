@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { DashboardLayoutClient } from './_components/DashboardLayoutClient';
+import { FrontDeskOfflineLayer } from '@/components/offline/front-desk-offline-layer';
 import { cn } from '@/lib/utils';
 
 // AX-1 shell identity: per-shell PWA theme-color (staff = brand red).
@@ -38,6 +39,11 @@ export default async function DashboardLayout({ children, params }: Props) {
 
   return (
     <>
+      {/* OFF-1: one shared offline layer for BOTH shells (mobile NativeTabBar +
+          desktop Sidebar) → the front-desk laptop gets the same offline banner +
+          installable-PWA affordance the mobile shell had. */}
+      <FrontDeskOfflineLayer locale={locale} />
+
       {/* ─── Mobile (≤767px): Native iOS/Android feel ─── */}
       <div className="block md:hidden h-screen">
         <DashboardLayoutClient locale={locale} role={role}>

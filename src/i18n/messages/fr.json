@@ -2563,5 +2563,14 @@
       "openGap": "Créneau libre",
       "noPt": "Aucun coaching réservé"
     }
+  },
+  "pwa": {
+    "installTitle": "Installer PRO LINE",
+    "installDescription": "Ajoutez l'app à votre appareil pour un accès hors ligne à l'accueil.",
+    "installButton": "Installer",
+    "dismissButton": "Plus tard",
+    "offlineTitle": "Vous êtes hors ligne",
+    "offlineDescription": "Les modifications se synchroniseront à la reconnexion.",
+    "backOnline": "De retour en ligne"
   }
 }

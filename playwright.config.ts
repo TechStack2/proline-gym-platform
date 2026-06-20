@@ -398,6 +398,16 @@ export default defineConfig({
       testMatch: /member-enrich\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // OFF-1 installed-PWA offline foundation on a DESKTOP viewport: manifest
+      // linked/installable, the shell offline banner engages offline + the SW
+      // serves the cached shell, online clears. Reuses the G2 setOffline harness;
+      // isolated owner contexts. Appended at the END — runs LAST.
+      name: 'off1',
+      dependencies: ['setup'],
+      testMatch: /off1\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

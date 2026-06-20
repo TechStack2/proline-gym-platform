@@ -9,14 +9,16 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { CloudOff, RefreshCw } from 'lucide-react'
 
-export function OfflineBanner({ online, pending, locale }: { online: boolean; pending: number; locale: string }) {
+export function OfflineBanner({ online, pending, locale, testid = 'attendance-offline-banner' }: {
+  online: boolean; pending: number; locale: string; testid?: string
+}) {
   const t = useTranslations('offline')
   if (online && pending === 0) return null
   const isRTL = locale === 'ar'
   const offline = !online
   return (
     <div
-      data-testid="attendance-offline-banner"
+      data-testid={testid}
       data-online={online}
       data-pending={pending}
       className={cn(
