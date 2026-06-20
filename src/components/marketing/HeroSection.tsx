@@ -71,8 +71,15 @@ export function HeroSection({ locale }: HeroSectionProps) {
           {t('headline')}
         </h1>
 
-        {/* Subheadline */}
-        <p className="mt-4 mx-auto max-w-2xl text-lg sm:text-xl text-gray-300 leading-relaxed">
+        {/* Subheadline. STABILIZE-2: reserve TWO lines here. This is the SOLE
+            element that changes height on the Arabic web-font swap — at the
+            full max-w-2xl width the size-adjusted fallback (narrower glyphs) fits
+            the disciplines line in 1 row while IBM Plex Sans Arabic wraps to 2,
+            growing the centred hero block by exactly that line → re-centring
+            everything → the ax1 landing-CLS flake. A 2-line min-height makes the
+            fallback occupy the final height from first paint, so the swap can't
+            reflow it (only md+ reaches the 2-line width; narrower already wraps). */}
+        <p className="mt-4 mx-auto max-w-2xl text-lg sm:text-xl text-gray-300 leading-relaxed md:min-h-[3.5rem]">
           {t('subheadline')}
         </p>
         <p className="mt-2 text-sm font-semibold tracking-wide text-gray-300">

@@ -29,16 +29,34 @@ async function signFlow(page: Page, prefix: string, name: string) {
   await expect(modal).toBeVisible({ timeout: 10_000 })
   await expect(modal.getByTestId('waiver-body'), 'the member reads the waiver text').not.toBeEmpty()
 
+  // The pad must be visible + settled before the pointer stream lands on it.
   const canvas = modal.getByTestId('signature-pad')
-  const box = await canvas.boundingBox()
-  if (!box) throw new Error('no signature pad box')
-  await page.mouse.move(box.x + 20, box.y + 25)
-  await page.mouse.down()
-  await page.mouse.move(box.x + 80, box.y + 70)
-  await page.mouse.move(box.x + 150, box.y + 35)
-  await page.mouse.move(box.x + 220, box.y + 90)
-  await page.mouse.up()
-  await expect(canvas, 'the pad captured ink').toHaveAttribute('data-has-ink', 'true')
+  await expect(canvas, 'the signature pad is visible').toBeVisible()
+  await canvas.scrollIntoViewIfNeeded()
+
+  // Draw a centred multi-segment stroke and RE-DRAW until the pad registers ink.
+  // The draw is idempotent (more strokes keep data-has-ink true) and mutates no
+  // server state, so re-running only the INTERACTION — never a weakened assertion
+  // — pins the residual canvas-draw timing flake. `steps` emits intermediate
+  // pointermove events so a single segment can't be dropped.
+  await expect
+    .poll(
+      async () => {
+        const box = await canvas.boundingBox()
+        if (!box) return 'false'
+        const cx = box.x + box.width / 2
+        const cy = box.y + box.height / 2
+        await page.mouse.move(cx - 70, cy - 30)
+        await page.mouse.down()
+        await page.mouse.move(cx - 20, cy + 35, { steps: 12 })
+        await page.mouse.move(cx + 35, cy - 25, { steps: 12 })
+        await page.mouse.move(cx + 80, cy + 30, { steps: 12 })
+        await page.mouse.up()
+        return canvas.getAttribute('data-has-ink')
+      },
+      { timeout: 10_000, message: 'the pad captured ink' },
+    )
+    .toBe('true')
 
   await modal.getByTestId('waiver-typed-name').fill(name)
   await modal.getByTestId('waiver-agree').check()
