@@ -2984,3 +2984,31 @@ The full suite went green **3× consecutively**, with `ax1` (`ax1-ar.spec.ts:42`
 **The CLS fix is the lesson: a flake labelled "font/CLS" was a one-line re-wrap, and only per-element measurement found it.** The instinct was to reach for the amplifier (the `min-h-screen` centring) or the obvious suspects (hero image, logo, the whole font). Blocking each in turn against a **local prod build** killed the theories: noLogo still flaked, noFont went dead-zero — the font, definitively. Then a per-element fb-vs-web height diff at the exact e2e viewport (1280×720, Playwright's default) showed **one** element move: the subheadline, 28px, 1↔2 lines. That 28px is the entire content delta; `min-h-screen flex items-center` just multiplies it into 0.22 by re-centring the block. Reserving that one `<p>`'s second line fixes the cause, not the symptom — no threshold change, no centring restructure. The detour worth naming: a **stale `next start` survived my `pkill`/EADDRINUSE restarts and served two false 0.49 readings** (both my candidate fixes "failed" identically — the tell). Diffing the *served HTML* (`min-h-[3rem]`, not my class) exposed it; force-freeing the port by PID and re-measuring gave the true signal. For any prod-build perf measurement: assert the artifact under test is actually being served before trusting a number.
 
 **The f3 fix stays honest by retrying the INTERACTION, not the ASSERTION.** The residual flake was a dropped pointer stream, so the wrapper re-draws (idempotent, server-state-free) until the pad reports ink — the assertion `data-has-ink === 'true'` is unchanged and runs every attempt. Stepped pointermoves (`{ steps: 12 }`) emit the intermediate events a single jump can skip. This also retires the v1→v2 retry-doom for free: a deterministic first sign means the test no longer needs the retry that its own template bump would poison.
+
+---
+
+## Cycle 6 / PORTAL-MODAL — systemic portal modal positioning (2026-06-20)
+
+**Mandate:** generalize the WaiverSign (PORTAL-FND) fix. Every inline `fixed inset-0` modal reachable on a `PageTransition` shell (portal / coach / mobile-dashboard) resolved its `position:fixed` against the transformed page box, not the viewport → off-screen on a scrolled/tall shell page. Presentation/positioning only — no behavior change.
+
+### The shared `<ModalPortal>`
+`src/components/shared/modal-portal.tsx` — decides per instance, after a mount probe:
+- **SKIP** (render nothing) — the instance is inside a `display:none` ancestor. The `(dashboard)` layout renders content TWICE (mobile + desktop shells, the inactive one `display:none`); only the VISIBLE shell may surface a modal, else portaling duplicates it at `<body>` ([[double-shell-duplicates-client-state]]).
+- **PORTAL** to `<body>` — a transformed ancestor exists (PageTransition keeps `translate-x-0`, a real transform = the bug). Escapes it → viewport-fixed.
+- **INLINE** — visible AND no transformed ancestor (the desktop dashboard, which has no PageTransition). **Identical DOM/behavior to pre-PORTAL-MODAL**, so shell-scoped tooling/specs are unaffected and zero specs needed changing.
+
+### Modals wrapped (11) + WaiverSign consolidated
+`book-pt-modal`, `form-wizard` (covers every FormWizard form — add-student/lead/coach/settings/onboarding/campaigns), member-actions' `Modal` (m360 register/pay/camp), `AddClassModal`, `EnrollStudentModal`, leads `ConvertModal`, pt-client `ModalBackdrop`, camps wizard, pt-panel sell, rentals booking (wrapped the whole `<form>` so the native submit button stays inside it). `WaiverSign` dropped its own `createPortal`/`mounted` for `<ModalPortal>`. `SwipeableSheet`/MoreMenuSheet is shell-level (outside PageTransition) → unchanged. Same testids/markup throughout.
+
+### Viewport proof (e2e)
+`portal-modal.spec.ts` (mobile viewport): book-pt on a scrolled **portal** page (self-seeded PT) + form-wizard (add-lead) on a scrolled mobile-dashboard page each assert (a) the modal has **no transformed ancestor between it and `<body>`** — a height-independent proof that it portaled clear of PageTransition's `translate-x-0` — and (b) its box is within the viewport; `/ar` clean.
+
+### CI evidence
+- **E2E gate `27884121790` — SUCCESS, 106 passed (36.2m), 0 failed** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27884121790
+  - portal-modal 3/3: book-pt (portal) + form-wizard (add-lead) + /ar viewport-centered.
+  - WaiverSign (f3) green via the shared wrapper; every staff modal green (owner/adm1/**adm2**/pt1/e1/ux2/member360/…) — they render INLINE on the desktop suite, so unchanged.
+
+### **all portal/coach modals viewport-centered; no regression: PASS**
+
+### DRAG READ
+**Two CI rounds, two lessons, both about the double-shell.** Round 1 (9 failed) wasn't flake: blindly `createPortal`-ing to `<body>` ESCAPED the inactive shell's `display:none`, so BOTH double-shell copies surfaced — `strict mode: 2 elements`, plus the self-seed pt-sell modal duplicating into cascading timeouts. The first fix gated on a visibility probe (`offsetParent === null` ⇒ the hidden shell), which cleared 4 of the 5 regressions. But it still **relocated** the modal to `<body>` on the *transform-less* desktop dashboard, moving the coach-edit FormWizard out of `<main>` so adm2's `visibleShell`-scoped avatar upload hung for 4 minutes. The real fix isn't "portal unless hidden" — it's "**portal only when there's a transform to escape**." That makes the component a true no-op where nothing's wrong (desktop = inline, byte-for-byte the old DOM) and surgical where it matters (a transformed ancestor → escape it), so not a single existing spec needed touching — the right shape for a "presentation-only" change. The test guard taught the third lesson: the first spec gated on `scrollHeight > innerHeight` to ensure the bug *could* manifest, but that's fragile (a short page fails the guard, not the assertion). PageTransition's persistent `translate-x-0` gave a far better, height-independent oracle: assert the modal has **no transformed ancestor** — i.e. it genuinely portaled clear — which is the property the fix actually establishes, not a proxy for it.

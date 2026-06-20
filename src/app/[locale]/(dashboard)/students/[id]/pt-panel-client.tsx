@@ -13,6 +13,7 @@
  */
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { ModalPortal } from '@/components/shared/modal-portal'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -150,6 +151,7 @@ export function MemberPtPanel({
       </Button>
 
       {open && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
           <div data-testid="pt-sell-modal" onClick={(e) => e.stopPropagation()}
             className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
@@ -212,6 +214,7 @@ export function MemberPtPanel({
             )}
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

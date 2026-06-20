@@ -2,6 +2,7 @@
 
 import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { ModalPortal } from '@/components/shared/modal-portal';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -844,6 +845,7 @@ function ConvertModal({
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div
         data-testid="convert-modal"
@@ -918,5 +920,6 @@ function ConvertModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }

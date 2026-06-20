@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ModalPortal } from '@/components/shared/modal-portal'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
 import { DollarSign, CalendarDays, Dumbbell, X, Loader2, Users, Tent, AlertTriangle } from 'lucide-react'
@@ -43,6 +44,7 @@ function Modal({ title, onClose, testid, children }: {
   title: string; onClose: () => void; testid: string; children: React.ReactNode
 }) {
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div data-testid={testid} onClick={(e) => e.stopPropagation()}
         className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
@@ -55,6 +57,7 @@ function Modal({ title, onClose, testid, children }: {
         {children}
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

@@ -9,6 +9,7 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import { useState } from 'react'
 import Link from 'next/link'
+import { ModalPortal } from '@/components/shared/modal-portal'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
@@ -190,6 +191,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
       )}
 
       {wizardOpen && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setWizardOpen(false)}>
           <div data-testid="camp-wizard" onClick={(e) => e.stopPropagation()}
             className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
@@ -259,6 +261,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

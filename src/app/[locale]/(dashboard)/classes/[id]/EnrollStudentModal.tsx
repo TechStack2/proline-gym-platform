@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { X, Search, Loader2, Check, Users } from 'lucide-react'
+import { ModalPortal } from '@/components/shared/modal-portal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -111,6 +112,7 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div
         data-testid="enroll-modal"
@@ -191,5 +193,6 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
