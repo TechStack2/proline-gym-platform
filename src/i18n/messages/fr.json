@@ -797,6 +797,11 @@
       "send": "Envoyer",
       "noSpam": "Nous répondons via WhatsApp. Pas de spam.",
       "submitFailed": "Échec de l'envoi — vérifiez vos informations ou écrivez-nous sur WhatsApp."
+    },
+    "coachesSec": {
+      "title": "Nos Coachs",
+      "subtitle": "Des artistes martiaux de classe mondiale dans votre coin — et d'autres rejoignent l'équipe.",
+      "comingSoon": "Bientôt"
     }
   },
   "belts": {
@@ -2572,5 +2577,32 @@
     "offlineTitle": "Vous êtes hors ligne",
     "offlineDescription": "Les modifications se synchroniseront à la reconnexion.",
     "backOnline": "De retour en ligne"
+  },
+  "coachEdit": {
+    "title": "Modifier mon profil public",
+    "note": "Vos modifications sont enregistrées en brouillon et ne sont publiées qu'après validation par un administrateur.",
+    "pendingBadge": "En attente de validation",
+    "specialtyLabel": "Spécialité",
+    "bioLabel": "Bio",
+    "save": "Enregistrer",
+    "saved": "Enregistré — en attente de validation",
+    "previewTitle": "Aperçu de la page"
+  },
+  "coachPublish": {
+    "title": "Vitrine des coachs",
+    "liveActive": "Sur la page",
+    "liveComingSoon": "Sur la page · Bientôt",
+    "notVisible": "Pas sur la page",
+    "pendingTitle": "Modifications en attente — vérifiez puis publiez",
+    "specialization": "Spécialité",
+    "bio": "Bio",
+    "noPending": "Aucune modification en attente.",
+    "publish": "Publier en ligne",
+    "markActive": "Marquer actif",
+    "markComingSoon": "Marquer bientôt",
+    "hide": "Masquer de la page",
+    "editDirect": "Modifier directement",
+    "saveDraft": "Enregistrer le brouillon",
+    "lastPublished": "Dernière publication"
   }
 }

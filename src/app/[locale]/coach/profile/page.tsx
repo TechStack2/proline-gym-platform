@@ -1,4 +1,5 @@
 import { dateLocale } from '@/lib/utils/locale-format'
+import { CoachProfileEditor } from './CoachProfileEditor'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,11 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
   const coach: any = coachRaw
   const profilesArr = coach?.profiles
   const profile = Array.isArray(profilesArr) ? profilesArr[0] : profilesArr
+
+  // COACH-LP: the coach's own pending draft (if any) — seeds the self-editor.
+  const { data: pendingDraft } = coach?.id
+    ? await supabase.from('coach_profile_pending').select('*').eq('coach_id', coach.id).maybeSingle()
+    : { data: null }
 
   // Fetch user roles
   const { data: roles } = await supabase.from('user_roles').select('*').eq('user_id', user.id)
@@ -250,6 +256,26 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           }
         />
       </div>
+
+      {/* COACH-LP: self-edit → pending draft (admin publishes from Coach-360) */}
+      {coach?.id && (
+        <CoachProfileEditor
+          coachId={coach.id}
+          locale={locale}
+          name={[firstName, lastName].filter(Boolean).join(' ').trim() || (profile?.first_name_en ?? '')}
+          avatarUrl={profile?.avatar_url ?? null}
+          live={{
+            specialization_ar: coach.specialization_ar ?? '',
+            specialization_en: coach.specialization_en ?? '',
+            specialization_fr: coach.specialization_fr ?? '',
+            bio_ar: coach.bio_ar ?? '',
+            bio_en: coach.bio_en ?? '',
+            bio_fr: coach.bio_fr ?? '',
+          }}
+          pending={pendingDraft ?? null}
+          hasPending={!!coach.has_pending_changes}
+        />
+      )}
     </div>
   )
 }

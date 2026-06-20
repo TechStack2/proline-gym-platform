@@ -797,6 +797,11 @@
       "send": "Send",
       "noSpam": "We'll reply via WhatsApp. No spam.",
       "submitFailed": "Couldn't submit — please check your details or message us on WhatsApp."
+    },
+    "coachesSec": {
+      "title": "Meet Our Coaches",
+      "subtitle": "World-class martial artists in your corner — and more joining the roster.",
+      "comingSoon": "Coming soon"
     }
   },
   "belts": {
@@ -2572,5 +2577,32 @@
     "offlineTitle": "You're offline",
     "offlineDescription": "Changes will sync when you reconnect.",
     "backOnline": "Back online"
+  },
+  "coachEdit": {
+    "title": "Edit my public profile",
+    "note": "Your changes are saved as a draft and go live only after an admin publishes them.",
+    "pendingBadge": "Pending approval",
+    "specialtyLabel": "Specialty",
+    "bioLabel": "Bio",
+    "save": "Save changes",
+    "saved": "Saved — pending approval",
+    "previewTitle": "Landing preview"
+  },
+  "coachPublish": {
+    "title": "Landing showcase",
+    "liveActive": "On landing",
+    "liveComingSoon": "On landing · Coming soon",
+    "notVisible": "Not on landing",
+    "pendingTitle": "Pending changes — review then publish",
+    "specialization": "Specialty",
+    "bio": "Bio",
+    "noPending": "No pending changes.",
+    "publish": "Publish to live",
+    "markActive": "Mark active",
+    "markComingSoon": "Mark coming soon",
+    "hide": "Hide from landing",
+    "editDirect": "Edit directly",
+    "saveDraft": "Save draft",
+    "lastPublished": "Last published"
   }
 }
