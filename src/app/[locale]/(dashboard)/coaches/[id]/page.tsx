@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { AvailabilityEditor, type AvailabilityRow, type OverrideRow } from '../../../coach/pt/availability-editor'
 import { CoachActions } from './coach-actions'
+import { CoachPublishPanel } from './CoachPublishPanel'
 import type { DiaryAssignment } from '../../schedule/diary-book-pt'
 
 export const dynamic = 'force-dynamic'
@@ -52,6 +53,9 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
     : { data: null }
   const callerRole = (roleRow as any)?.role ?? ''
   const canDeactivate = ['owner', 'head_coach'].includes(callerRole)
+  // COACH-LP: the coach's pending profile draft (if any) for the publish panel.
+  const { data: coachPending } = await supabase
+    .from('coach_profile_pending').select('*').eq('coach_id', id).maybeSingle()
 
   // Schedule window (day/week toggle).
   const schedView = searchParams?.sched === 'day' ? 'day' : 'week'
@@ -220,6 +224,26 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
           />
         </div>
       </div>
+
+      {/* COACH-LP — landing showcase publish: pending draft + admin gate */}
+      <CoachPublishPanel
+        coachId={id}
+        locale={locale}
+        canPublish={canDeactivate}
+        live={{
+          specialization_ar: (coach as any).specialization_ar ?? '',
+          specialization_en: (coach as any).specialization_en ?? '',
+          specialization_fr: (coach as any).specialization_fr ?? '',
+          bio_ar: (coach as any).bio_ar ?? '',
+          bio_en: (coach as any).bio_en ?? '',
+          bio_fr: (coach as any).bio_fr ?? '',
+        }}
+        pending={coachPending ?? null}
+        hasPending={!!(coach as any).has_pending_changes}
+        landingVisible={!!(coach as any).landing_visible}
+        landingStatus={(coach as any).landing_status ?? 'active'}
+        lastPublishedAt={(coach as any).last_published_at ?? null}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── 1. Schedule (classes + PT, day/week toggle) ── */}

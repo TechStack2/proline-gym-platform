@@ -6,6 +6,7 @@ import { AffiliationsSection } from '@/components/marketing/AffiliationsSection'
 import { DisciplinesSection } from '@/components/marketing/DisciplinesSection';
 import { ScheduleSection } from '@/components/marketing/ScheduleSection';
 import { ChampionsSection } from '@/components/marketing/ChampionsSection';
+import { CoachesSection } from '@/components/marketing/CoachesSection';
 import { GallerySection } from '@/components/marketing/GallerySection';
 import { WhySection } from '@/components/marketing/WhySection';
 import { PricingSection } from '@/components/marketing/PricingSection';
@@ -57,6 +58,7 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
       <DisciplinesSection locale={locale} gymSlug={sectionSlug} />
       <ScheduleSection locale={locale} gymSlug={sectionSlug} />
       <ChampionsSection locale={locale} />
+      <CoachesSection locale={locale} gymSlug={sectionSlug} />
       <GallerySection locale={locale} />
       <WhySection locale={locale} />
       <PricingSection locale={locale} gymSlug={sectionSlug} />

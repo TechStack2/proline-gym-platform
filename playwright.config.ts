@@ -419,6 +419,18 @@ export default defineConfig({
       testMatch: /portal-fnd\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // COACH-LP grandiose coach showcase on the landing + coach-edit→admin-publish:
+      // coach (coach@) self-edits → PENDING draft → owner publishes in Coach-360 →
+      // the coach appears on the anon landing; coming-soon treatment; RLS leak guard
+      // (active-but-hidden + drafts never anon-visible); reception can edit not
+      // publish; /ar RTL. Switches roles internally (coach + owner + reception +
+      // anon contexts). Appended at the END — runs LAST.
+      name: 'coach-lp',
+      dependencies: ['setup'],
+      testMatch: /coach-lp\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
