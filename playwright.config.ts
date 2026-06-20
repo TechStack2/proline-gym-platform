@@ -431,6 +431,17 @@ export default defineConfig({
       testMatch: /coach-lp\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PORTAL-MODAL systemic fix: inline `fixed inset-0` modals reachable on a
+      // PageTransition shell (portal/coach/mobile-dashboard) are portaled to <body>
+      // via <ModalPortal>, staying viewport-centered on a scrolled page. Proves
+      // book-pt (portal, self-seeded PT) + form-wizard (add-lead) viewport-centered;
+      // switches roles internally at a mobile viewport. Appended at the END.
+      name: 'portal-modal',
+      dependencies: ['setup'],
+      testMatch: /portal-modal\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

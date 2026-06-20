@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { ModalPortal } from '@/components/shared/modal-portal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
@@ -276,6 +277,7 @@ export function RentalsClient({ rentals: initialRentals, bookings, locale }: Pro
 
       {/* Booking Modal */}
       {bookModal && (
+        <ModalPortal>
         <form onSubmit={handleSubmit(handleBooking)}>
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
@@ -316,6 +318,7 @@ export function RentalsClient({ rentals: initialRentals, bookings, locale }: Pro
             </div>
           </div>
         </form>
+        </ModalPortal>
       )}
 
       {/* Waivers Section */}

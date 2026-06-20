@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { ModalPortal } from './modal-portal'
 import { X, Loader2, Check } from 'lucide-react'
 
 export type WizardStep = {
@@ -50,6 +51,7 @@ export function FormWizard({
   const valid = current?.valid !== false
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
       onClick={onClose}>
       <div
@@ -106,6 +108,7 @@ export function FormWizard({
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

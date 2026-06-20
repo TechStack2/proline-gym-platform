@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ModalPortal } from '@/components/shared/modal-portal';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -476,9 +477,11 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
 
   // ── Shared Modal wrapper ───────────────────────────────────────
   const ModalBackdrop = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       {children}
     </div>
+    </ModalPortal>
   );
 
   // ── Render ─────────────────────────────────────────────────────

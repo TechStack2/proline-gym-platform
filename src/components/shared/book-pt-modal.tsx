@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { ModalPortal } from './modal-portal'
 import { toast } from '@/components/ui/use-toast'
 import { CalendarPlus, X, Loader2, Send, AlertTriangle } from 'lucide-react'
 import { bookPtSlot, getPtSlots, proposePtTime } from '@/lib/pt/booking-actions'
@@ -101,6 +102,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
       </Button>
 
       {open && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
           <div data-testid="pt-book-modal" onClick={(e) => e.stopPropagation()}
             className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
@@ -187,6 +189,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
             )}
           </div>
         </div>
+        </ModalPortal>
       )}
     </>
   )

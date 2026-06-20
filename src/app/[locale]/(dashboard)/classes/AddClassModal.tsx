@@ -21,6 +21,7 @@
  *     gym_id resolution kept). Zero schema changes.
  */
 import { useState } from 'react'
+import { ModalPortal } from '@/components/shared/modal-portal'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { X, Loader2, Minus, Plus, Check, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
@@ -229,6 +230,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
   const steps = [t('stepBasics'), t('stepSchedule'), t('stepPricing'), t('stepReview')]
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
       {/* Full-screen sheet on mobile, modal on desktop */}
       <div
@@ -493,5 +495,6 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
         )}
       </div>
     </div>
+    </ModalPortal>
   )
 }

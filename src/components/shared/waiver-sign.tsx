@@ -8,8 +8,8 @@
  * is unsigned or outdated. The same fields plug into the ON-1 onboarding wizard
  * as a step. RTL-aware, design-system. Record + surface only — blocks nothing.
  */
-import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useState } from 'react'
+import { ModalPortal } from './modal-portal'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -70,15 +70,8 @@ export function WaiverSign({
   const [agreed, setAgreed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; version?: number; error?: string } | null>(null)
-  // PORTAL-FND: portal the modal to <body>. Portal/coach pages wrap content in
-  // PageTransition (a `transform` ancestor), which makes a `position:fixed` child
-  // position to the PAGE box, not the viewport — so on a scrolled/tall page the
-  // modal (and its signature canvas) could land off-screen (the F3 e2e flake).
-  // Escaping to <body> makes it viewport-fixed everywhere; no-op for the staff
-  // shell (already viewport-fixed). Guard on mount — createPortal needs the DOM.
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
+  // PORTAL-MODAL: the modal is portaled to <body> via the shared <ModalPortal>
+  // (escapes PageTransition's transform so a fixed modal stays viewport-centered).
   const canSubmit = !!signature && typedName.trim().length > 0 && agreed && !busy
 
   const submit = async () => {
@@ -106,7 +99,8 @@ export function WaiverSign({
           data-ok={result.ok} data-version={result.version ?? ''}>{result.error ?? 'ok'}</span>
       )}
 
-      {open && mounted && createPortal(
+      {open && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
           onClick={() => !busy && setOpen(false)}>
           <div data-testid={`${testidPrefix}-sign-modal`} onClick={(e) => e.stopPropagation()}
@@ -135,8 +129,8 @@ export function WaiverSign({
               </Button>
             </div>
           </div>
-        </div>,
-        document.body,
+        </div>
+        </ModalPortal>
       )}
     </>
   )
