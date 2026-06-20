@@ -39,16 +39,26 @@ async function assertShell(page: Page, viewport: { width: number; height: number
   // Rendered exactly once — the portals don't double-mount the shell.
   await expect(shell, `${label}: the shell renders exactly once (no double-shell)`).toHaveCount(1)
 
-  // Not clipped: the shell's box sits within the viewport (no horizontal overflow
-  // off either edge — the centred max-width column + the rail-clearing margin).
+  // Not clipped: the shell settles fully WITHIN the viewport (no horizontal
+  // overflow off either edge). Poll the live rect so we wait out the entrance
+  // slide (PageTransition animates translateX over 300ms) before judging.
+  await expect
+    .poll(
+      async () =>
+        shell.first().evaluate((el) => {
+          const r = (el as Element).getBoundingClientRect()
+          return r.width > 100 && r.left >= -1 && Math.round(r.right) <= window.innerWidth + 2
+        }),
+      { timeout: 10_000, message: `${label}: the shell settles within the viewport (not clipped)` },
+    )
+    .toBe(true)
+
+  // On desktop the shell is the centred max-width column (not full-bleed sprawl —
+  // the "thin/unorganized" fix); on mobile it spans the device width.
   const bb = await shell.first().boundingBox()
-  expect(bb, `${label}: the shell has a layout box`).toBeTruthy()
-  expect(bb!.width, `${label}: the shell has real width`).toBeGreaterThan(100)
-  expect(bb!.x, `${label}: the shell is not pushed off the left edge`).toBeGreaterThanOrEqual(0)
-  expect(
-    Math.round(bb!.x + bb!.width),
-    `${label}: the shell is not clipped off the right edge`,
-  ).toBeLessThanOrEqual(viewport.width + 2)
+  if (viewport.width >= 768) {
+    expect(bb!.width, `${label}: desktop shell is a capped reading column, not full-bleed`).toBeLessThanOrEqual(820)
+  }
 
   // A design-system card token renders (PortalCard → the ui/* <Card>).
   await expect(
