@@ -181,3 +181,40 @@ Migration **000062** (additive, forward-only, applied via VF — run `2790368270
 - **OFF-4 attaches here:** deep reconciliation — roster-vs-queue coherence, group-flush, SW cold-open, and a rich conflict-resolution UI. OFF-3 **surfaces** conflicts (flagged + kept + shown); OFF-4 hardens them (today a flagged conflict stays visible for manual review and is skipped by the auto-flush so it can't spam).
 - **Idempotency depends on the additive 000062** — without it a re-push would double-record (or PK-violate on the `client_uuid` index). Applied to the live DB via VF; flagged here per the hygiene rule.
 - **Method-type bridge:** the offline queue stores `method` as a plain string; the flush adapter casts it back to `payment_method_enum` at the `record_payment` boundary — the same Supabase-type bridge pattern as the rest of the repo.
+
+---
+
+## Cycle 6 / OFF-4 — reconciliation & conflict resolution
+
+> **Branch:** `prompt-off4-reconciliation` (off `main` `3c345a0`, has OFF-3) · **Prompt:** [`cycle-5/prompt-OFF4-reconciliation.md`](./cycle-5/prompt-OFF4-reconciliation.md). **The final offline slice — closes the offline arc** (OFF-1 parity/PWA → OFF-2 reads → OFF-3 Tier-1 writes → **OFF-4 reconciliation**). OFF-3 *recorded* offline + *surfaced* conflicts but couldn't **resolve** them or **reconcile against server truth**; a rejected money record accumulated forever. OFF-4 makes the offline front desk **trustworthy**, not just functional.
+
+### Conflict resolution loop (headliner — on the existing outbox, no fork)
+A conflicted row in the desk's `PendingSyncBar` is now **resolvable** ([`desk-payments.tsx`](../../src/app/[locale]/(dashboard)/desk/desk-payments.tsx) `ConflictRow`). Expanding it shows the rejection reason + the **server's authoritative state** and offers two bounded actions:
+- **Re-submit corrected** ([`payments.ts`](../../src/lib/offline/payments.ts) `resubmitPayment`): re-queue under the **same `op_id`** with a corrected amount → back to `pending` for the next flush. A conflict means the writer rejected it (never recorded), so the idempotency key still holds (and a lost-ACK re-push just no-ops).
+- **Discard with an audited reason** (`discardPayment` → `discardOfflinePayment` action → **000063** `discard_offline_payment`): the server writes a `delete` audit row (op_id/amount/reason in `new_data`) **FIRST**, and only on success is the queue intent dropped. **Never a silent drop** of a money record (the locked decision); a reason is mandatory.
+
+### Reconnect reconciliation against server truth (Tier-3)
+On reconnect the flush pushes each pending intent through the authoritative `record_payment`; a write whose **premise changed while offline** (the invoice was settled/cancelled by another op or actor) is **rejected by the server** → surfaced as a **reviewable conflict**, not a wrong write or a hang. The resolution UI then fetches the **current** invoice status + balance (`getInvoiceState`) so staff reconcile the stale intent to server truth (re-submit the real balance, or discard). The server stays the source of truth.
+
+### SW cold-open robustness
+The installed PWA cold-opening **offline** hydrates correctly: the desk mounts → reads the persisted Dexie queue (no network) → the pending-sync bar shows the real pending/conflict counts; reads still work; on reconnect the queue flushes/reconciles. Proven in e2e by opening a **fresh page** (cold SW start) offline and asserting the bar hydrates.
+
+### Migration
+**000063** (additive, forward-only, applied via VF — run [`27912202563`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27912202563), HTTP 201): one SECURITY DEFINER `discard_offline_payment(op_id, invoice_id, amount, reason)` → writes an audit row (reuses the existing `delete` audit-action; **no schema/enum change**). `is_staff()` + gym-scoped, reason mandatory, REVOKE PUBLIC + GRANT authenticated. RLS untouched.
+
+### Verify (e2e — extends the G2/OFF-3 `setOffline` harness; anchored project, every wait bounded)
+[`e2e/off4.spec.ts`](../../e2e/off4.spec.ts) — 4 specs:
+1. **Resolve by discard:** two full-balance offline payments → reconnect → one settles, the other reconciles to a conflict → staff **discards with a reason** → conflict clears, audit written, invoice still **exactly one** payment (no dup, no silent drop).
+2. **Resolve by re-submit corrected:** an overpay intent → conflict → **re-submit the balance** under the same op_id → records → exactly one payment.
+3. **SW cold-open:** queue offline → open a **fresh page offline** → the pending-sync bar hydrates the count → reconnect flushes to exactly one.
+4. **`/ar`** localized resolution UI, no `MISSING_MESSAGE` / raw `desk.` keys.
+
+### ⟶ conflicts resolvable + reconciled against server truth + survive cold-open; G2/OFF-2/OFF-3 no-regression: **PASS**
+**CI:** [run `27915426316`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27915426316) — **116 passed** (36.2m) on `f287e8d`. off4 ✓✓✓✓ (resolve-by-discard: conflict reconciled → discarded with an audited reason → cleared, audit written, still exactly one canonical payment, no silent drop; resolve-by-re-submit: overpay conflict → re-submit the reconciled balance under the same op_id → exactly one payment; SW cold-open: a fresh page opened offline hydrates the queue + pending bar; /ar localized), **G2 ✓✓✓ + OFF-2 ✓✓ + OFF-3 ✓✓✓✓** (no regression). (ml1:129 flaked on attempt #0 and passed on retry — the known shared-gym flake, not OFF-4.) Migration 000063 applied via VF `27912202563`. Two earlier reds were test-only: the re-submit spec hardcoded an amount that ignored the 11% TVA on the balance (now uses the auto-filled reconciled balance).
+
+### DRAG READ — this CLOSES the offline arc
+- **The offline arc is complete:** OFF-1 (PWA/parity) → OFF-2 (offline reads) → OFF-3 (Tier-1 writes, idempotent) → **OFF-4 (resolution + reconciliation + cold-open)**. The front desk genuinely runs offline at the L3 "Managed" reliability bar.
+- **OFF-3b attaches here:** lead-capture + draft-registration (the other Tier-1 writes) — same `queuePayment`/`flushPayments`/`ConflictRow` pattern; add a `pending_leads` store + `flushLeads(writer)` + a discard-audit for leads, compose into `outbox.ts`. Not wired (separate slice).
+- **Deep Tier-3 (group-flush ordering + server-canonical-id assignment for brand-new offline-CREATED entities)** is the remaining hardening — not needed for the current Tier-1 set (payment/attendance act on entities that already exist server-side). Flagged extension point if offline-created entities arrive.
+- **Reconciliation scope:** the money path is reconciled via `record_payment`'s authoritative rejection + `getInvoiceState`. Attendance (`saveAttendance`, idempotent upsert) is the lighter case; an "unenrolled student" edge reconciles only if the writer rejects it — flagged for OFF-3b/Tier-3 if richer attendance reconciliation is wanted.
+- **No regression:** OFF-2 reads, G2 attendance, OFF-3 happy-path untouched (the resolution is additive to the existing flush; conflict rows that aren't resolved still behave as in OFF-3).
