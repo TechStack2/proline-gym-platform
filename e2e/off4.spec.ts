@@ -151,17 +151,21 @@ test.describe('OFF-4 · reconciliation & conflict resolution', () => {
         await expect(vis(page, '[data-testid="desk-conflict-row"]').first()).toBeVisible({ timeout: 5_000 })
       }, { timeout: 60_000 })
 
-      // RESOLVE by re-submitting a corrected amount (the balance) under the SAME op_id.
+      // RESOLVE by re-submitting under the SAME op_id. Expanding fetches the
+      // server's authoritative balance and AUTO-FILLS the corrected amount (the
+      // real TVA-inclusive balance) — don't hardcode it. Wait for that server state
+      // to land before re-submitting.
       const row = vis(page, '[data-testid="desk-conflict-row"]').first()
       await row.getByTestId('desk-conflict-resolve').click()
-      await row.getByTestId('desk-resubmit-amount').fill('25')
+      await expect(row.getByTestId('desk-conflict-server-state'), 'reconciled balance auto-filled').toBeVisible({ timeout: 15_000 })
       await row.getByTestId('desk-resubmit-btn').click()
-      await untilConsistent(async () => {
-        await expect(vis(page, '[data-testid="desk-conflict-row"]'), 'conflict cleared after re-submit').toHaveCount(0, { timeout: 5_000 })
-      }, { timeout: 30_000 })
 
-      await page.goto(inv.url)
-      await expect(vis(page, '[data-testid="invoice-status"]').first()).toHaveText(/Paid/i, { timeout: 15_000 })
+      // The corrected re-submit records exactly one canonical payment → settled.
+      // (Re-navigate until the async flush lands.)
+      await untilConsistent(async () => {
+        await page.goto(inv.url)
+        await expect(vis(page, '[data-testid="invoice-status"]').first()).toHaveText(/Paid/i, { timeout: 5_000 })
+      }, { timeout: 45_000 })
       await expect(paymentRows(page), 'corrected re-submit records exactly one').toHaveCount(1)
     } finally {
       await ctx.close()
