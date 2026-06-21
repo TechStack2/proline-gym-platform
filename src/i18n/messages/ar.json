@@ -1605,6 +1605,63 @@
       "role_label": "مدرب"
     }
   },
+  "coachHub": {
+    "noCoach": "لم يتم العثور على ملف المدرب",
+    "hello": "مرحباً 👋",
+    "helloName": "مرحباً، {name} 👋",
+    "subtitle": "يومك وطلابك وعالمك في لمحة.",
+    "stats": {
+      "today": "حصص اليوم",
+      "students": "طلابي",
+      "week": "حصص / الأسبوع",
+      "ptSessions": "جلسات PT متبقية"
+    },
+    "today": {
+      "title": "اليوم",
+      "empty": "لا حصص اليوم",
+      "marked": "مُسجّل",
+      "startAttendance": "بدء الحضور"
+    },
+    "week": {
+      "title": "هذا الأسبوع",
+      "empty": "لا حصص مجدولة",
+      "sessions": "{n} حصص",
+      "hours": "{h} ساعة تدريس",
+      "roster": "{n} طالب",
+      "load": "{n} حصص · {h} ساعة",
+      "acrossClasses": "عبر {n} صفوف"
+    },
+    "students": {
+      "title": "طلابي",
+      "empty": "لا طلاب بعد",
+      "headline": "{n} طالب نشط",
+      "dueToTest": "{n} جاهز للاختبار",
+      "due": "للاختبار",
+      "noDiscipline": "أخرى"
+    },
+    "pt": {
+      "title": "التدريب الخاص",
+      "empty": "لا باقات نشطة",
+      "headline": "{n} عميل نشط",
+      "remaining": "{n} جلسة متبقية",
+      "manage": "إدارة PT"
+    },
+    "trials": {
+      "title": "حصص تجريبية قادمة",
+      "empty": "لا حصص تجريبية قادمة",
+      "headline": "{n} حصة تجريبية قادمة",
+      "manage": "فتح التجارب"
+    },
+    "profile": {
+      "title": "ملفي",
+      "landingLabel": "على الصفحة العامة",
+      "live": "ظاهر",
+      "comingSoon": "ظاهر · قريباً",
+      "pending": "بانتظار الموافقة",
+      "notVisible": "غير ظاهر",
+      "manage": "تعديل الملف"
+    }
+  },
   "coachTrials": {
     "title": "التجارب",
     "empty": "لا توجد تجارب مسندة بعد",

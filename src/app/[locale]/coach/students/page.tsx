@@ -2,6 +2,7 @@
 
 import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Users, Search, BookOpen, Award, Calendar, ChevronRight } from 'lucide-react';
@@ -43,10 +44,12 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
   const isRTL = locale === 'ar';
   const supabase = createClient();
 
+  // COACH360-PORTAL: the hub's My Students rows drill here focused via ?q=.
+  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<any>(null);
   const [students, setStudents] = useState<StudentEntry[]>([]);
   const [filtered, setFiltered] = useState<StudentEntry[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [loading, setLoading] = useState(true);
   const [disciplineFilter, setDisciplineFilter] = useState('');
   const [beltFilter, setBeltFilter] = useState('');

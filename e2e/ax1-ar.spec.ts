@@ -101,7 +101,7 @@ test('AX-1 · /ar renders Arabic on every shell + brand font without layout shif
     const coach = await ctxFor(browser, 'coach');
     try {
       await coach.page.goto('/ar/coach');
-      await assertArabicActive(coach.page, '/ar/coach', 'حصصي');
+      await assertArabicActive(coach.page, '/ar/coach', 'طلابي'); // COACH360-PORTAL hub: "My students" (stat + card)
       await expect(
         coach.page.locator('[data-testid="shell-badge"][data-shell="coach"]:visible').first(),
         'coach header carries the labeled shell badge',

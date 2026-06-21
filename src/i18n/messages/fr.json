@@ -1605,6 +1605,63 @@
       "role_label": "Entraîneur"
     }
   },
+  "coachHub": {
+    "noCoach": "Profil coach introuvable",
+    "hello": "Bonjour 👋",
+    "helloName": "Bonjour, {name} 👋",
+    "subtitle": "Votre journée, vos élèves, votre univers en un coup d'œil.",
+    "stats": {
+      "today": "Cours aujourd'hui",
+      "students": "Mes élèves",
+      "week": "Séances / semaine",
+      "ptSessions": "Séances PT restantes"
+    },
+    "today": {
+      "title": "Aujourd'hui",
+      "empty": "aucun cours aujourd'hui",
+      "marked": "pointé",
+      "startAttendance": "Faire l'appel"
+    },
+    "week": {
+      "title": "Cette semaine",
+      "empty": "aucune séance planifiée",
+      "sessions": "{n} séances",
+      "hours": "{h}h d'enseignement",
+      "roster": "{n} élèves",
+      "load": "{n} séances · {h}h",
+      "acrossClasses": "sur {n} cours"
+    },
+    "students": {
+      "title": "Mes élèves",
+      "empty": "aucun élève",
+      "headline": "{n} élèves actifs",
+      "dueToTest": "{n} à évaluer",
+      "due": "À évaluer",
+      "noDiscipline": "Autre"
+    },
+    "pt": {
+      "title": "PT",
+      "empty": "aucun forfait actif",
+      "headline": "{n} clients actifs",
+      "remaining": "{n} séances restantes",
+      "manage": "Gérer le PT"
+    },
+    "trials": {
+      "title": "Pipeline d'essais",
+      "empty": "aucun essai à venir",
+      "headline": "{n} essais à venir",
+      "manage": "Ouvrir les essais"
+    },
+    "profile": {
+      "title": "Mon profil",
+      "landingLabel": "Sur la page publique",
+      "live": "En ligne",
+      "comingSoon": "En ligne · Bientôt",
+      "pending": "En attente de validation",
+      "notVisible": "Pas sur la page",
+      "manage": "Modifier le profil"
+    }
+  },
   "coachTrials": {
     "title": "Essais",
     "empty": "Aucun essai assigné",

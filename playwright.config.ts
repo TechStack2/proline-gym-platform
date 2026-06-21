@@ -433,6 +433,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // COACH360-PORTAL: the coach's own drillable premium 360 hub (portal home) —
+      // Today · This Week · My Students (by discipline/belt) · PT · Trials · Profile.
+      // Reads-only; proves render + reconcile (students rows → headline) + drill +
+      // /ar + no coach-tab regression. Opens its own coach context (ROLES.coach),
+      // so it must NOT pin a single session. Appended at the END.
+      name: 'coach360-portal',
+      dependencies: ['setup'],
+      testMatch: /coach360-portal\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PORTAL-MODAL systemic fix: inline `fixed inset-0` modals reachable on a
       // PageTransition shell (portal/coach/mobile-dashboard) are portaled to <body>
       // via <ModalPortal>, staying viewport-centered on a scrolled page. Proves
