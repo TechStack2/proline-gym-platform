@@ -144,3 +144,39 @@ A dedicated client surface [`/desk`](../../src/app/[locale]/(dashboard)/desk/off
 - **Prime is desk-scoped, not login-global — deliberate.** First take primed in the dashboard layout ("on login"), which pulled on every dashboard mount and **destabilised the timing-marginal realtime-race specs** (pt1/pt2/ml1 went red on Run 1 `27887396156` while off2 ✓✓ + G2 ✓✓✓). A layout-level pull is a *standing* load on every future dashboard spec, so shrinking it wasn't a real guarantee. Moved the prime into `OfflineDesk` → only the surface that reads offline pays for it, and the race specs see **zero** priming contention. Trade-off: the mirror primes on **visiting the desk online** (the realistic front-desk flow), not at login; a user who logs in and goes offline *without ever opening the desk* has an unprimed mirror — acceptable for this use case; a login-time prime would need its own non-contending mechanism (e.g. a web worker).
 - **`.claude/settings.json` leak fixed in-branch:** a `git add -A` had swept the local Claude permission file into the first commit; dropped it and added `.claude/` to `.gitignore`.
 - **Not addressed (out of scope):** offline writes (OFF-3), reconciliation (OFF-4), non-core read surfaces (billing/reports).
+
+---
+
+## Cycle 6 / COACH360-PORTAL — coach's own premium 360 hub
+
+> **Branch:** `prompt-coach360-portal` (off `main`) · **Prompt:** [`cycle-5/prompt-COACH360-PORTAL.md`](./cycle-5/prompt-COACH360-PORTAL.md). First of the two Portal-360 builds PORTAL-FND unblocked. **Read-time / display only — zero schema, no write paths.** Advances the Portal Elevation arc: the coach portal home from L1 (themed shell) toward the L3 premium-360 bar the staff side hit (a staff Coach-360 existed via TEAM-1; the coach's OWN 360 did not).
+
+### Before → after
+- **Before:** [`coach/page.tsx`](../../src/app/[locale]/coach/page.tsx) was a **TODAY-only** view (today's classes + a 4-stat bar + today's trials). The coach's other areas (roster, belts, PT, trials pipeline, landing status) were scattered across tabs; **nothing drilled or reconciled** (0 portal files used `ActionCard`/`DrillDetails` on the coach side).
+- **After:** a drillable Coach-360 hub built on the PORTAL-FND kit + `ActionCard`/`DrillDetails` (the DRILL-360 "card → reconciling rows → drill" pattern the member portal already used), brand theme, mobile + desktop, i18n ar/en/fr + RTL.
+
+### What the hub surfaces + drills
+1. **Today** (`card-coach-today`) — today's classes (time · room · `marked/enrolled`) + one-tap **Start attendance**; each row drills → the class attendance roster.
+2. **This Week** (`card-coach-week`) — teaching load: session count + **hours/week** + roster size; `DrillDetails` rows (weekday · time · class) drill → the class roster.
+3. **My Students** (`card-coach-students`) — distinct active students **by discipline + belt**, with a **"who's due to test"** badge (no belt promotion in 120d); each row drills → the Member-360 (`/dashboard/students/<id>`).
+4. **PT** (`card-coach-pt`) — active PT assignments (sessions remaining, low flag) via `get_coach_pt_roster` → drills → `/coach/pt`.
+5. **Trials pipeline** (`card-coach-trials`) — upcoming (non-today) assigned trials → drills → `/coach/trials`. Today's trials keep their own surface (`coach-home-trials`, the UX-2 testids preserved).
+6. **My Profile / Landing** (`coach-profile-status`) — the landing publish status (Live / Live·Coming-soon / Pending approval / Not on landing, from COACH-LP/PHOTO-GATE) → drills → `/coach/profile`. **Display only — the publish gate is untouched.**
+
+### Reconciliation
+The **My Students** headline number (`card-coach-students[data-count]`) equals the `DrillDetails` row count (`coach-students-drill[data-rows]`) — the rows are the proof they sum to the headline; the by-discipline chips sum to the same count.
+
+### Scope discipline
+Zero schema; **no write paths** (attendance/PT/trial writes stay in their tabs; the landing publish gate + RLS untouched); the **offline layer was not touched** (OFF-3 owns it — the hub is the `/coach` portal, not the front-desk `/desk` surface). New `coachHub` i18n namespace (ar/en/fr), kept **distinct from the staff `coach360`** namespace so TEAM-1's Coach-360 is unaffected.
+
+### Verify (e2e, ephemeral TI gym — `coach360-portal` project)
+`e2e/coach360-portal.spec.ts` (Sami = coach@, class every day, Karim+Omar enrolled, 1 seeded PT):
+1. the hub renders all six surfaces; **reconcile** — student rows count to the headline; **drill** — student row → Member-360, PT → `/coach/pt`, Profile → `/coach/profile`, Today → the class roster.
+2. `/ar` RTL-clean (no `MISSING_MESSAGE` / unresolved `coachHub.` keys).
+3. no regression — the coach tabs (students/attendance/trials/pt/profile) still load + the roster shows Karim. (UX-2's `coach-home-trials` surface preserved.)
+
+### ⟶ coach portal is a drillable premium 360 hub; every card drills; no regression: **PASS**
+**CI:** [run `27912232257`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27912232257) — **112 passed, 0 failed** (39.7m). coach360-portal ✓✓✓ (render+reconcile+drill, `/ar` RTL-clean, no coach-tab regression), `ax1` ✓ (the /ar coach-shell guard, re-pointed to the new copy), `ux2` ✓ (the preserved `coach-home-trials` surface still drives the trials loop). Two prior reds, both fixed: (1) the My Students drill targeted `/dashboard/students/<id>` which **middleware bounces coaches off** → re-pointed to the in-portal `/coach/students?q=<name>` (the tab now seeds its search from `?q=`); (2) `ax1` hard-coded the old coach-home title `حصصي` → updated to `طلابي`.
+
+### DRAG READ
+The win was **reuse, not invention**: the member portal had already proven `ActionCard`/`DrillDetails` render portal-side (PORTAL-FND), so the coach hub is the same card framework pointed at the coach's own reads — every "headline number · reconciling rows · drill" card is the staff-side 360 language the owner liked, now in the coach's hand. Two traps avoided: (a) the `coach360` i18n namespace **already belongs to the staff TEAM-1 Coach-360** (its `week`/`load`/`roster` are *strings*), so the portal hub took a fresh `coachHub` namespace — colliding would have turned strings into objects and broken the staff page; (b) UX-2 drives `coach-home-trials`/`coach-home-trial-row` on `/coach`, so the rebuild **kept those exact testids** for today's trials rather than folding them silently into a generic card. **Where the Member-360-portal attaches next:** the same kit + the member portal's existing self-view → the member's drillable 360 is the second Portal-360 build (membership/PT/belt/attendance/billing cards, each drilling into the existing portal tabs), mirroring this hub's shape.
