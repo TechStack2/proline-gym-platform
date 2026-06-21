@@ -40,6 +40,16 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
     ? await supabase.from('coach_profile_pending').select('*').eq('coach_id', coach.id).maybeSingle()
     : { data: null }
 
+  // COACH-PHOTO-GATE: a staged draft photo lives in the PRIVATE coach-avatar-drafts
+  // bucket → sign it for the coach's own preview (RLS lets the owner read it).
+  let draftPhotoUrl: string | null = null
+  if ((pendingDraft as any)?.avatar_url) {
+    const { data: signed } = await supabase.storage
+      .from('coach-avatar-drafts')
+      .createSignedUrl((pendingDraft as any).avatar_url, 3600)
+    draftPhotoUrl = signed?.signedUrl ?? null
+  }
+
   // Fetch user roles
   const { data: roles } = await supabase.from('user_roles').select('*').eq('user_id', user.id)
 
@@ -264,6 +274,10 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           locale={locale}
           name={[firstName, lastName].filter(Boolean).join(' ').trim() || (profile?.first_name_en ?? '')}
           avatarUrl={profile?.avatar_url ?? null}
+          gymId={coach.gym_id}
+          profileId={user.id}
+          draftPhotoUrl={draftPhotoUrl}
+          draftPhotoPath={(pendingDraft as any)?.avatar_url ?? null}
           live={{
             specialization_ar: coach.specialization_ar ?? '',
             specialization_en: coach.specialization_en ?? '',

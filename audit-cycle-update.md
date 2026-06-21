@@ -3031,3 +3031,32 @@ The full suite went green **3× consecutively**, with `ax1` (`ax1-ar.spec.ts:42`
 - **Anon landing render** (dev on :3101, viewport 1280×720): `/en` + `/ar` each show **4 cards = 3 active + 1 coming-soon badge** (`landing-coach-card` count 4; `coach-coming-soon-badge` 1); Arabic RTL clean. Screenshots: `Screenshots/coach-showcase-en.png`, `coach-showcase-ar.png`. (Aside, out of fence: the coming-soon coach carries a junk test avatar on its profile — `profiles.avatar_url`, owned by COACH-PHOTO-GATE — rendered correctly grayscaled.)
 
 ### **anon landing showcase populated after reseed (3 active + 1 coming-soon, no leak): PASS**
+
+## Cycle 6 / COACH-PHOTO-GATE — stage the coach headshot through the admin gate (2026-06-21)
+
+**Mandate:** COACH-LP gated bio/specialty (coach edits → draft → admin publishes) but left the **photo** updating *live* via the ADM-2 uploader — a coach headshot could hit the public landing without approval. Bring the photo under the same gate. FENCE: coach editor / `publish_coach_profile` (000059 extension) / Storage draft-path RLS / Coach-360 panel only — no offline/Dexie/desk (OFF-2).
+
+### The fiddly part 000059 deferred — a PRIVATE drafts bucket (migration `000061`)
+The live `avatars` bucket is **public**, so *any* path in it (even `pending/`) is anon-readable via the public CDN endpoint — a draft photo cannot live there. The clean isolation mirrors how 000059 isolated the text drafts (a separate table with no anon policy):
+- **`coach-avatar-drafts`** — a SEPARATE bucket created `public = false`; path contract `<gym_id>/<profile_id>.jpg` (mirrors avatars).
+- **Storage RLS** `coach_avatar_drafts_{select,insert,update,delete}` — owner (filename stem = `auth.uid()`) OR in-gym staff (`is_staff()` AND folder = `get_user_gym_id()`); **no public/anon policy at all**. The SELECT policy is owner/staff-only (no public read). The existing `avatars` policies (000039) are **untouched / not weakened**.
+
+### Publish applies the photo — atomic + gated
+- `publish_coach_profile` gains **`p_live_avatar_url TEXT DEFAULT NULL`** (the 1-arg overload is **dropped** so the defaulted 2-arg form is unambiguous). It sets `profiles.avatar_url` from that promoted PUBLIC url alongside the text promotion, inside the **existing owner/head_coach gate**, then clears the draft. The old `pending.avatar_url → profiles` copy is **removed** (the column now holds a PRIVATE path, never a public url).
+- The gated **`publishCoachProfile`** action is the only path a coach photo goes live: it downloads the private draft, uploads it to the public `avatars` bucket at the live path (cache-busted), passes the url to the RPC (RPC re-checks the gate — defense in depth), then removes the orphaned draft. Done before the RPC so a non-owner caller is rejected and nothing goes live.
+
+### Coach side + staff diff
+- **Coach self-editor** (`CoachPhotoDraftUpload` in the portal): downscales + uploads to the private bucket, records the path in `coach_profile_pending.avatar_url` (`saveCoachDraftPhoto`), shows a "photo pending approval" badge + a signed-url preview. Live `profiles.avatar_url` untouched until publish.
+- **Coach-360 `CoachPublishPanel`**: a before/after **photo diff** (`coach360-photo-diff`) — live avatar → the staged draft (signed url), beside the text diff. Owner/head_coach publish; reception sees the diff but no publish control.
+- i18n `coachEdit.photo*` + `coachPublish.{photo,photoLive,photoNew}` in ar/en/fr.
+
+### Apply + evidence
+- **VF apply `27888590874` — SUCCESS** (`-f apply=true -f migrations='000061_coach_photo_draft'`): `apply 000061` → **HTTP 201**, recorded.
+- **Storage-level proof (service/anon keys, live DB):** bucket `coach-avatar-drafts` exists with **`public=false`**; an anon fetch of `…/object/public/coach-avatar-drafts/<path>` returns **HTTP 400** (the private bucket's public endpoint refuses to serve it) — the leak guard at the storage layer.
+- **E2E CI `27888735405` — SUCCESS, 106 passed (39.1m), 0 failed** — https://github.com/TechStack2/proline-gym-platform/actions/runs/27888735405
+  - `✓ 100 [coach-lp]` coach uploads a photo → **PENDING**: the live landing avatar is unchanged + the draft object is **not anon-readable** (anon GET on the public endpoint ≠ 200); **reception** sees the photo diff but **cannot publish**; **owner** publishes → the **new photo is live** on the anon landing (src changed, points at `/avatars/`, loads with `naturalWidth > 0`). `/ar` clean; no regression to ADM-2 avatar uploads (adm2 spec green).
+
+### **coach photo flows draft→admin-publish→live; draft not anon-readable; publish owner/head_coach-only: PASS**
+
+### DRAG READ
+**The public bucket is what made this "fiddly," and the answer was the same shape 000059 already proved for text: isolation by *absence of a grant*, not a WHERE clause.** A `pending/` prefix in the live `avatars` bucket reads as the obvious move until you remember a `public = true` bucket serves every object through `/object/public/` *regardless of RLS* — the draft would be one guessable URL away from the landing it's meant to gate (gym id + profile id are already visible in the live avatar path, so the draft path is not a secret). So the draft MUST live in a private bucket, which forces the second decision: a private object can't be the live landing photo (anon `<img>` can't sign), so **publish has to move bytes private→public**, and bytes move via the Storage API, not SQL. The honest split is therefore: the **RPC owns the atomic DB switch + the gate** (avatar_url + text + visibility + clear-draft in one transaction), the **gated action owns the byte copy** (and re-checks the gate so the copy can't be a back-door). Removing the old `pending.avatar_url → profiles` line was the load-bearing change: once the column holds a private path, copying it to `profiles` would publish a broken/illegitimate url — the photo's ONLY route to live is the action's copy + the gated RPC. One residue noted for the auditor: staff still set coach photos directly via the ADM-2 coach-form (trusted, unchanged) — the gate closes the *coach's own* ungated path, which is the gap the prompt named.

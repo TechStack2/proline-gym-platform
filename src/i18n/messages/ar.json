@@ -2586,7 +2586,12 @@
     "bioLabel": "نبذة",
     "save": "حفظ التغييرات",
     "saved": "تم الحفظ — بانتظار الموافقة",
-    "previewTitle": "معاينة الصفحة"
+    "previewTitle": "معاينة الصفحة",
+    "photoLabel": "الصورة الشخصية",
+    "photoHint": "ارفع صورتك — لا تظهر علناً إلا بعد نشرها من قبل المسؤول.",
+    "photoPending": "الصورة بانتظار الموافقة",
+    "photoChange": "تغيير الصورة",
+    "photoFailed": "فشل رفع الصورة"
   },
   "coachPublish": {
     "title": "عرض المدرّبين",
@@ -2603,6 +2608,9 @@
     "hide": "إخفاء من الصفحة",
     "editDirect": "تعديل مباشر",
     "saveDraft": "حفظ المسودة",
-    "lastPublished": "آخر نشر"
+    "lastPublished": "آخر نشر",
+    "photo": "الصورة",
+    "photoLive": "الحالية",
+    "photoNew": "الجديدة"
   }
 }
