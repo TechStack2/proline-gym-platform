@@ -2634,6 +2634,30 @@
     "todaySchedule": "حصص اليوم",
     "noClassesToday": "لا حصص مجدولة اليوم",
     "roster": "قائمة الحضور",
-    "emptyRoster": "لا أحد مسجّل"
+    "emptyRoster": "لا أحد مسجّل",
+    "openInvoices": "فواتير مفتوحة",
+    "noOpenInvoices": "لا فواتير مفتوحة",
+    "recordPayment": "تسجيل دفعة",
+    "saveOffline": "حفظ دون اتصال",
+    "savedOffline": "حُفظ دون اتصال · ستتم المزامنة",
+    "recorded": "تم تسجيل الدفعة",
+    "willQueueOffline": "دون اتصال — ستُدرَج هذه الدفعة وتُزامَن عند عودة الاتصال",
+    "amountUsd": "المبلغ (دولار)",
+    "amountLbp": "المبلغ (ليرة)",
+    "method": "طريقة الدفع",
+    "optional": "اختياري",
+    "cancel": "إلغاء",
+    "amountPositive": "أدخل مبلغاً موجباً.",
+    "pendingSync": "{n} محفوظة دون اتصال · ستتم المزامنة",
+    "needsReview": "{n} بحاجة لمراجعة",
+    "needsReviewShort": "بحاجة لمراجعة",
+    "methods": {
+      "cash_usd": "نقداً (دولار)",
+      "cash_lbp": "نقداً (ليرة)",
+      "omt": "OMT",
+      "whish": "Whish",
+      "bank_transfer": "تحويل مصرفي",
+      "bob_finance": "BOB Finance"
+    }
   }
 }

@@ -330,7 +330,8 @@ export default defineConfig({
       // member to "outdated"); append-only signatures, nothing later reads them.
       name: 'f3',
       dependencies: ['setup'],
-      testMatch: /f3\.spec\.ts/,
+      testMatch: /\/f3\.spec\.ts$/, // anchored: must not also match off3.spec.ts
+
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -450,6 +451,16 @@ export default defineConfig({
       name: 'off2',
       dependencies: ['setup'],
       testMatch: /off2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // OFF-3 — the front desk RECORDS offline: a payment queued in Dexie pushes
+      // through record_payment on reconnect, idempotent on a client op_id (exactly
+      // one canonical record), with pending UX + conflict surfacing; /ar clean.
+      // G2 setOffline harness. Appended at the END — runs LAST.
+      name: 'off3',
+      dependencies: ['setup'],
+      testMatch: /\/off3\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

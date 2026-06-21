@@ -144,3 +144,40 @@ A dedicated client surface [`/desk`](../../src/app/[locale]/(dashboard)/desk/off
 - **Prime is desk-scoped, not login-global — deliberate.** First take primed in the dashboard layout ("on login"), which pulled on every dashboard mount and **destabilised the timing-marginal realtime-race specs** (pt1/pt2/ml1 went red on Run 1 `27887396156` while off2 ✓✓ + G2 ✓✓✓). A layout-level pull is a *standing* load on every future dashboard spec, so shrinking it wasn't a real guarantee. Moved the prime into `OfflineDesk` → only the surface that reads offline pays for it, and the race specs see **zero** priming contention. Trade-off: the mirror primes on **visiting the desk online** (the realistic front-desk flow), not at login; a user who logs in and goes offline *without ever opening the desk* has an unprimed mirror — acceptable for this use case; a login-time prime would need its own non-contending mechanism (e.g. a web worker).
 - **`.claude/settings.json` leak fixed in-branch:** a `git add -A` had swept the local Claude permission file into the first commit; dropped it and added `.claude/` to `.gitignore`.
 - **Not addressed (out of scope):** offline writes (OFF-3), reconciliation (OFF-4), non-core read surfaces (billing/reports).
+
+---
+
+## Cycle 6 / OFF-3 — offline Tier-1 writes (cash/payment + check-in)
+
+> **Branch:** `prompt-off3-offline-writes` (off `main` `9223d2b`, has OFF-2 + PHOTO-GATE) · **Prompt:** [`cycle-5/prompt-OFF3-offline-writes.md`](./cycle-5/prompt-OFF3-offline-writes.md). Third offline slice — the **critical writes** phase. The front desk now RECORDS offline (the headliner: cash/OMT/Whish payments), queued in Dexie, pushed + reconciled on reconnect. Builds on G2's attendance loop + OFF-2's desk mirror. Operator decisions locked 2026-06-21: installed PWA + "offline payments are provisional, reconcile on reconnect."
+
+### The generalized queue (one mechanism, not a parallel path)
+OFF-3 generalizes G2's proven `queue → flush → idempotent-writer` loop to the money path:
+- [`src/lib/offline/payments.ts`](../../src/lib/offline/payments.ts) — `queuePayment` / `flushPayments`, mirroring [`attendance.ts`](../../src/lib/offline/attendance.ts). A payment recorded offline is a `PendingPaymentIntent` in a new **`pending_payments`** Dexie store (additive v3 upgrade) keyed by a client **`op_id`**; the flush drains oldest-first through the **existing `record_payment`** writer — no new business logic.
+- [`src/lib/offline/outbox.ts`](../../src/lib/offline/outbox.ts) — a **unified façade**: one `outboxStats()` count + one `flushOutbox({ save, record })` over BOTH Tier-1 paths (attendance + payments), each draining through its own existing idempotent writer. The front desk gets a single pending indicator + a single "Sync now". G2's `pending_attendance` path is **untouched** (zero regression risk).
+
+### The idempotency mechanism (how a re-push can't double-record)
+Migration **000062** (additive, forward-only, applied via VF — run `27903682700`, HTTP 201):
+- `payments.client_uuid uuid` + a **partial unique index** (`WHERE client_uuid IS NOT NULL`).
+- `record_payment` gains an optional **`p_client_uuid`**: after locking the invoice (`FOR UPDATE`, which serialises rival re-pushes) it **short-circuits** — `IF EXISTS(payment with that client_uuid) RETURN the invoice unchanged`. So a reconnect double-fire, or a re-push after a dropped ACK, settles to **exactly one** canonical payment with no second row and no spurious overpayment error. The online path passes `NULL` → behaviour unchanged. RLS untouched (still SECURITY DEFINER, `is_staff` + gym-scoped).
+
+### Client surfaces + UX
+- `OfflineDesk` primes `invoices`+`payments` into the desk mirror; the member-basics panel lists **open invoices** (balance from cached payments), each with a `RecordPaymentForm` — ONLINE writes straight through `record_payment`; OFFLINE queues a provisional, dual-currency intent → **"saved offline · will sync"**.
+- A desk-level **`PendingSyncBar`** (count + "Sync now"); on reconnect the queue **auto-flushes** and pending items flip to confirmed; a push the server **rejects** (overpayment / cancelled invoice) is flagged **conflict** and **kept for review** (`desk-conflict-row`) — never silently dropped (the locked money decision).
+
+### Verify (e2e — extends the G2 `context.setOffline` harness)
+[`e2e/off3.spec.ts`](../../e2e/off3.spec.ts) — 4 specs in a dedicated `off3` project; each issues its OWN throwaway invoice for Karim (the shared seed fixtures stay untouched):
+1. **Money loop:** open desk online → go offline → record a payment → **pending** + queue indicator → reconnect → flush → invoice **Paid** + **exactly one** `payment-row`.
+2. **Idempotency key:** white-box re-push of the SAME `op_id` (twice) → still **exactly one** payment (`record_payment` no-ops).
+3. **Conflict surfaced:** two full-balance offline payments → reconnect → one settles, the second is shown as a **conflict** (not dropped) → still exactly one canonical payment.
+4. **`/ar`** localized: offline record renders the localized "saved offline" + no `MISSING_MESSAGE` / raw `desk.` keys.
+
+### ⟶ desk records payment offline → syncs idempotently → exactly one canonical record; attendance no-regress: **PASS**
+**CI:** [run `27909858776`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27909858776) — **113 passed, 0 failed** (41.0m) on `6189d51`. off3 ✓✓✓✓ (money loop: pending→confirmed + exactly one `payment-row`; idempotency: a re-pushed `op_id` stays exactly one; conflict: the 2nd full-balance payment is surfaced for review, not dropped, still exactly one canonical; /ar localized, no missing keys), **G2 ✓✓✓** (offline attendance still queues + reconnect-syncs → no regression). Full suite green. Two earlier reds were e2e-harness issues, not the feature: f3's unanchored `testMatch` double-ran off3 (anchored), the idempotency assert counted both shells (`vis()`), and the /ar fixture issued on `/ar` where the member dropdown is Arabic-labelled (issue on `/en`).
+
+### DRAG READ
+- **Coverage boundary (offline writes):** offline-capable now — **payment recording** against an open invoice (the money headliner) + G2 attendance check-in, both via the unified outbox. **Still online-only:** invoice **issuance**, refunds/voids, every non-payment write, and the OFF-2 read-only surfaces beyond the desk. The online payment path (`/payments/new`, `PaymentForm`) is unchanged.
+- **OFF-3b attaches here:** lead-capture + draft-registration (the other Tier-1 writes) are the same `queuePayment`-style pattern — add a `pending_leads` store + a `flushLeads(writer)` and compose it into `outbox.ts`'s façade. Left as a clean extension point (not wired — no thin reuse fell out).
+- **OFF-4 attaches here:** deep reconciliation — roster-vs-queue coherence, group-flush, SW cold-open, and a rich conflict-resolution UI. OFF-3 **surfaces** conflicts (flagged + kept + shown); OFF-4 hardens them (today a flagged conflict stays visible for manual review and is skipped by the auto-flush so it can't spam).
+- **Idempotency depends on the additive 000062** — without it a re-push would double-record (or PK-violate on the `client_uuid` index). Applied to the live DB via VF; flagged here per the hygiene rule.
+- **Method-type bridge:** the offline queue stores `method` as a plain string; the flush adapter casts it back to `payment_method_enum` at the `record_payment` boundary — the same Supabase-type bridge pattern as the rest of the repo.
