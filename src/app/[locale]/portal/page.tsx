@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { PortalCampsSection } from './_components/portal-camps'
 import { cn } from '@/lib/utils'
-import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight, ClipboardList } from 'lucide-react'
+import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight, ClipboardList, Dumbbell, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar as KidAvatar } from '@/components/shared/avatar'
 import { PortalCard, PortalCardTitle } from '@/components/portal/portal-kit'
@@ -122,11 +122,13 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
   const { data: pendingInvoices } = await supabase
     .from('invoices')
-    .select('total_usd, status')
+    .select('id, invoice_number, total_usd, status, created_at')
     .eq('student_id', student?.id)
     .in('status', ['pending', 'overdue'])
+    .order('created_at', { ascending: false })
 
-  const balanceDue = pendingInvoices?.reduce((sum, inv) => sum + (inv.total_usd || 0), 0) || 0
+  const openInvoices = (pendingInvoices ?? []) as any[]
+  const balanceDue = openInvoices.reduce((sum, inv) => sum + (inv.total_usd || 0), 0) || 0
 
   // ── IA-2 self-view: PT remaining + next class / next PT (own rows via RLS) ──
   const { data: ptActive } = await supabase
@@ -233,51 +235,153 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           ))}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Scan bar — quick glance (mirrors Coach-360) */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: t('classes'), value: enrolledCount || 0, icon: Users, color: 'bg-blue-50 text-blue-600' },
-          { label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600' },
-          { label: t('belt'), value: beltLabelVal || '—', icon: Award, color: 'bg-purple-50 text-purple-600' },
-          { label: t('balance'), value: balanceDue > 0 ? `$${balanceDue}` : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600' },
+          { label: t('classes'), value: enrolledCount || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'text-green-600' : 'text-red-600', bg: membership?.status === 'active' ? 'bg-green-50' : 'bg-red-50' },
+          { label: t('belt'), value: beltLabelVal || '—', icon: Award, color: 'text-violet-600', bg: 'bg-violet-50' },
+          { label: t('balance'), value: balanceDue > 0 ? `$${balanceDue}` : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'text-red-600' : 'text-emerald-600', bg: balanceDue > 0 ? 'bg-red-50' : 'bg-emerald-50' },
         ].map((s, i) => {
           const Icon = s.icon
           return (
-            <div key={i} className={cn('rounded-2xl p-4 shadow-sm', s.color)}>
-              <Icon className="h-5 w-5 mb-2 opacity-70" />
-              <p className="text-2xs font-medium uppercase tracking-wider opacity-70">{s.label}</p>
-              <p className="text-lg font-bold mt-0.5">{s.value}</p>
-            </div>
+            <PortalCard key={i} className="text-center">
+              <div className={cn('mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full', s.bg)}>
+                <Icon className={cn('h-5 w-5', s.color)} />
+              </div>
+              <p className="truncate text-lg font-bold text-gray-900">{s.value}</p>
+              <p className="mt-0.5 truncate text-xs text-gray-500">{s.label}</p>
+            </PortalCard>
           )
         })}
       </div>
-      {/* IA-2 self-view: the member answers their own top questions */}
-      <PortalCard data-testid="self-view">
-        <PortalCardTitle icon={TrendingUp}>{t('myStatus')}</PortalCardTitle>
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">{t('membership')}</span>
-            <span data-testid="self-membership" className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', membership?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-              {membership?.status === 'active' ? (membershipNameVal || t('active')) : t('noMembership')}
+
+      {/* MEMBER-360 — the member's own drillable world. The `self-view` wrapper
+          keeps the IA-2 testids (self-membership/self-pt-remaining/self-next-class)
+          as descendants, and the myStatus heading keeps the AX-1 /ar known string. */}
+      <section data-testid="self-view" className="space-y-4">
+        <h2 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+          <TrendingUp className="h-4 w-4 text-[#cd1419]" />{t('myStatus')}
+        </h2>
+
+        {/* 1 · Membership → drills to billing (renewal) */}
+        <PortalCard data-testid="card-membership">
+          <PortalCardTitle icon={CreditCard}
+            right={<Link href={`/${locale}/portal/billing`} data-testid="membership-open" className="text-xs font-medium text-[#cd1419]">{t('view')}</Link>}>
+            {t('membership')}
+          </PortalCardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-800">{membership?.status === 'active' ? (membershipNameVal || t('active')) : t('noMembership')}</p>
+              {membership && <p className="text-xs text-gray-500">{t('expires')}: {new Date(membership.end_date).toLocaleDateString(dateLocale(locale))}</p>}
+            </div>
+            <span data-testid="self-membership" className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold', membership?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+              {membership?.status === 'active' ? t('active') : t('noMembership')}
             </span>
           </div>
-          <div className="flex items-center justify-between">
+        </PortalCard>
+
+        {/* 2 · Billing → open-invoice rows reconcile to the balance → billing */}
+        <ActionCard
+          icon={Wallet} title={t('billing')} count={openInvoices.length}
+          badge={balanceDue > 0 ? `$${balanceDue}` : t('allSettled')}
+          emptyText={t('allSettled')} testid="billing" isRTL={isRTL}
+          footer={<Link href={`/${locale}/portal/billing`} data-testid="billing-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#cd1419]">{t('billing')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
+        >
+          <DrillDetails
+            testid="billing-drill" rowTestid="billing-row" isRTL={isRTL}
+            summary={<span className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-medium text-gray-700">{t('outstanding')}</span>
+              <span data-testid="billing-balance" className="font-bold text-gray-900">${balanceDue}</span>
+            </span>}
+            rows={openInvoices.map((inv): DrillRow => ({
+              href: `/${locale}/portal/billing`,
+              left: inv.invoice_number || t('invoice'),
+              right: <span className="font-medium">${inv.total_usd}</span>,
+              value: inv.total_usd,
+            }))}
+          />
+        </ActionCard>
+
+        {/* 3 · PT → sessions remaining + next session → pt */}
+        <PortalCard data-testid="card-pt">
+          <PortalCardTitle icon={Dumbbell}
+            right={<Link href={`/${locale}/portal/pt`} data-testid="pt-open" className="text-xs font-medium text-[#cd1419]">{t('view')}</Link>}>
+            PT
+          </PortalCardTitle>
+          <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">{t('ptRemaining')}</span>
             <span data-testid="self-pt-remaining" className="font-bold text-gray-900">{ptTotal > 0 ? `${ptRemaining}/${ptTotal}` : '—'}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">{t('nextClass')}</span>
-            <span data-testid="self-next-class" className="text-xs font-medium text-gray-700" dir="ltr">{nextClassLabel || '—'}</span>
-          </div>
-          <div className="flex items-center justify-between">
+          <div className="mt-1 flex items-center justify-between text-sm">
             <span className="text-gray-500">{t('nextPt')}</span>
-            <span data-testid="self-next-pt" className="text-xs font-medium text-gray-700" dir="ltr">
-              {nextPt ? new Date(nextPt.scheduled_at).toLocaleString(dateLocale(locale), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
-            </span>
+            <span data-testid="self-next-pt" className="text-xs font-medium text-gray-700" dir="ltr">{nextPt ? new Date(nextPt.scheduled_at).toLocaleString(dateLocale(locale), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
           </div>
-        </div>
-      </PortalCard>
+        </PortalCard>
 
-      {/* F3: waiver status + sign CTA when unsigned/outdated */}
+        {/* 4 · Belt progress → progress */}
+        <PortalCard data-testid="card-belt">
+          <PortalCardTitle icon={Award}
+            right={<Link href={`/${locale}/portal/progress`} data-testid="belt-open" className="text-xs font-medium text-[#cd1419]">{t('view')}</Link>}>
+            {t('belt')}
+          </PortalCardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-900"><Award className="h-5 w-5 text-yellow-400" /></div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-700">{beltLabelVal ? `${beltLabelVal}${disciplineNameVal ? ` — ${disciplineNameVal}` : ''}` : t('none')}</p>
+              <p className="text-xs text-gray-500">{t('gymName')}</p>
+            </div>
+          </div>
+        </PortalCard>
+
+        {/* 5 · Classes + attendance → classes/schedule (keeps the PORTAL-FND
+            recent-attendance ActionCard + DrillDetails; rows reconcile to count) */}
+        {(() => {
+          const att = (recentAttendance ?? []) as any[]
+          const attendanceRows: DrillRow[] = att.map((ra) => ({
+            href: `/${locale}/portal/schedule`,
+            left: getCName(ra),
+            right: (
+              <span className={cn('inline-flex rounded-full px-2 py-0.5 text-2xs font-medium', statusColors[ra.status] || 'bg-gray-100 text-gray-700')}>
+                {statusLabels[ra.status] || ra.status}
+              </span>
+            ),
+          }))
+          return (
+            <ActionCard
+              icon={CalendarDays}
+              title={t('recentAttendance')}
+              count={attendanceRows.length}
+              emptyText={t('noAttendance')}
+              testid="portal-recent-attendance"
+              isRTL={isRTL}
+              footer={
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs" data-testid="classes-footer">
+                  <span className="text-gray-500">{t('enrolledClasses')}: <span className="font-medium text-gray-700">{enrolledCount || 0}</span> · {t('nextClass')}: <span data-testid="self-next-class" className="font-medium text-gray-700" dir="ltr">{nextClassLabel || '—'}</span></span>
+                  <Link href={`/${locale}/portal/classes`} data-testid="classes-open" className="inline-flex items-center gap-1 font-medium text-[#cd1419]">{t('classes')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>
+                </div>
+              }
+            >
+              <DrillDetails
+                testid="portal-attendance-drill"
+                rowTestid="portal-attendance-row"
+                isRTL={isRTL}
+                summary={
+                  <span className="flex items-center justify-between gap-2 text-sm">
+                    <span className="font-medium text-gray-700">{getCName(att[0])}</span>
+                    <span className="text-xs text-gray-500">
+                      {att[0] ? new Date(att[0].attendance_date).toLocaleDateString(dateLocale(locale)) : ''}
+                    </span>
+                  </span>
+                }
+                rows={attendanceRows}
+              />
+            </ActionCard>
+          )
+        })()}
+      </section>
+
+      {/* F3: waiver status + sign CTA when unsigned/outdated (preserved) */}
       {waiver && waiver.state !== 'none' && (
         <PortalCard data-testid="portal-waiver" data-state={waiver.state}>
           <PortalCardTitle
@@ -301,91 +405,6 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           )}
         </PortalCard>
       )}
-
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: t('schedule'), href: `/${locale}/portal/schedule`, icon: CalendarDays },
-          { label: t('billing'), href: `/${locale}/portal/billing`, icon: CreditCard },
-        ].map((a, i) => {
-          const Icon = a.icon
-          return (
-            <Link key={i} href={a.href} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-elevation-2">
-              <div className="flex items-center gap-3">
-                <Icon className="h-5 w-5 text-[#cd1419]" />
-                <span className="font-medium text-sm text-gray-700">{a.label}</span>
-              </div>
-              <ArrowRight className={cn('h-4 w-4 text-gray-400', isRTL && 'rotate-180')} />
-            </Link>
-          )
-        })}
-      </div>
-      {membership && (
-        <PortalCard>
-          <PortalCardTitle icon={CreditCard}>{t('currentMembership')}</PortalCardTitle>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-700">{membershipNameVal}</p>
-              <p className="text-xs text-gray-500">{t('expires')}: {new Date(membership.end_date).toLocaleDateString(dateLocale(locale))}</p>
-            </div>
-            <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold', membership.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
-              {membership.status === 'active' ? t('active') : t('expired')}
-            </span>
-          </div>
-        </PortalCard>
-      )}
-      {belt && (
-        <PortalCard>
-          <PortalCardTitle icon={Award}>{t('currentBelt')}</PortalCardTitle>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center"><Award className="h-5 w-5 text-yellow-400" /></div>
-            <div>
-              <p className="font-medium text-gray-700">{beltLabelVal} — {disciplineNameVal}</p>
-              <p className="text-xs text-gray-500">{t('gymName')}</p>
-            </div>
-          </div>
-        </PortalCard>
-      )}
-      {/* PORTAL-FND kit proof-of-use: the staff app's drillable-card framework
-          (ActionCard + DrillDetails) now rendering portal-side — the headline
-          count collapses to a single ✓ line on a quiet day, and each recent
-          session drills into the schedule. Existing data, no new query. */}
-      {(() => {
-        const att = (recentAttendance ?? []) as any[]
-        const attendanceRows: DrillRow[] = att.map((ra) => ({
-          href: `/${locale}/portal/schedule`,
-          left: getCName(ra),
-          right: (
-            <span className={cn('inline-flex rounded-full px-2 py-0.5 text-2xs font-medium', statusColors[ra.status] || 'bg-gray-100 text-gray-700')}>
-              {statusLabels[ra.status] || ra.status}
-            </span>
-          ),
-        }))
-        return (
-          <ActionCard
-            icon={CalendarDays}
-            title={t('recentAttendance')}
-            count={attendanceRows.length}
-            emptyText={t('noAttendance')}
-            testid="portal-recent-attendance"
-            isRTL={isRTL}
-          >
-            <DrillDetails
-              testid="portal-attendance-drill"
-              rowTestid="portal-attendance-row"
-              isRTL={isRTL}
-              summary={
-                <span className="flex items-center justify-between gap-2 text-sm">
-                  <span className="font-medium text-gray-700">{getCName(att[0])}</span>
-                  <span className="text-xs text-gray-500">
-                    {att[0] ? new Date(att[0].attendance_date).toLocaleDateString(dateLocale(locale)) : ''}
-                  </span>
-                </span>
-              }
-              rows={attendanceRows}
-            />
-          </ActionCard>
-        )
-      })()}
 
       {/* E1: published camps — member-self request */}
       {student && <PortalCampsSection studentId={student.id} actingFor={null} locale={locale} />}

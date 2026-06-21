@@ -2305,7 +2305,12 @@
       "frozen": "Your membership is currently frozen",
       "expiring": "Your membership is expiring soon — renew at the desk",
       "lapsed": "Your membership has ended — please renew at the desk"
-    }
+    },
+    "view": "View",
+    "outstanding": "Outstanding",
+    "allSettled": "All settled",
+    "invoice": "Invoice",
+    "enrolledClasses": "Enrolled"
   },
   "portalBilling": {
     "household": "Household billing",
