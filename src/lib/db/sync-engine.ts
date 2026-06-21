@@ -316,28 +316,31 @@ export class SyncEngine {
    * Pull all server changes since last sync into local Dexie.
    * Uses updated_at cursor for efficient incremental sync.
    */
-  async pullAll(opts?: { full?: boolean }): Promise<{ pulled: number; errors: string[] }> {
+  async pullAll(opts?: { full?: boolean; tables?: readonly string[] }): Promise<{ pulled: number; errors: string[] }> {
     if (this.syncing) return { pulled: 0, errors: ['Sync already in progress'] };
     this.syncing = true;
 
     const errors: string[] = [];
     let totalPulled = 0;
+    // OFF-2: the prime narrows to the front-desk core (keeps the prime light so it
+    // doesn't contend with the rest of the app); default = the full mirror.
+    const tables = opts?.tables ?? PULL_SYNC_TABLES;
 
     try {
       this.emit('syncing', {
         phase: 'pull',
         current: 0,
-        total: PULL_SYNC_TABLES.length,
+        total: tables.length,
         table_name: 'starting',
       });
 
-      for (let i = 0; i < PULL_SYNC_TABLES.length; i++) {
-        const table_name = PULL_SYNC_TABLES[i];
+      for (let i = 0; i < tables.length; i++) {
+        const table_name = tables[i];
 
         this.emit('syncing', {
           phase: 'pull',
           current: i + 1,
-          total: PULL_SYNC_TABLES.length,
+          total: tables.length,
           table_name,
         });
 
