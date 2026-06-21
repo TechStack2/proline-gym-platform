@@ -84,3 +84,32 @@ export async function flushPayments(
   }
   return { flushed, remaining: await pendingPaymentsCount(), conflicts }
 }
+
+// ── OFF-4: conflict resolution (re-submit corrected / discard-with-audit) ───────
+export type DiscardPayment = (input: {
+  opId: string; invoiceId: string; amountUsd: number; reason: string
+}) => Promise<{ ok: true } | { ok: false; error: string }>
+
+/** Re-submit a conflicted intent (optionally with a corrected amount) under the
+ *  SAME op_id → back to `pending` for the next flush. A conflict means the writer
+ *  rejected it, so it was never recorded → the idempotency key still holds (and if
+ *  it HAD recorded via a lost ACK, the re-push simply no-ops). */
+export async function resubmitPayment(op_id: string, correctedAmountUsd?: number): Promise<void> {
+  const patch: Partial<PendingPaymentIntent> = { status: 'pending', last_error: undefined }
+  if (correctedAmountUsd != null && Number.isFinite(correctedAmountUsd) && correctedAmountUsd > 0) {
+    patch.amount_usd = correctedAmountUsd
+  }
+  await db().pending_payments.update(op_id, patch)
+}
+
+/** Discard a conflicted intent WITH an audit trail (never a silent drop): the
+ *  server audit write runs FIRST; only on success is the queue intent deleted. */
+export async function discardPayment(
+  op_id: string, reason: string, discard: DiscardPayment,
+): Promise<{ ok: boolean; error?: string }> {
+  const row = await db().pending_payments.get(op_id)
+  if (!row) return { ok: true }
+  const res = await discard({ opId: op_id, invoiceId: row.invoice_id, amountUsd: row.amount_usd, reason })
+  if (res.ok) { await db().pending_payments.delete(op_id); return { ok: true } }
+  return { ok: false, error: res.error }
+}

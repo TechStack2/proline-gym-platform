@@ -128,3 +128,48 @@ export async function referenceExists(invoiceId: string, reference: string): Pro
     .eq('reference_number', reference.trim());
   return (count ?? 0) > 0;
 }
+
+/**
+ * OFF-4 — the server's authoritative state for an invoice, for reconciling a
+ * conflicted offline payment (show staff the real status + balance before they
+ * re-submit corrected or discard). Gym-scoped by the invoices/payments RLS.
+ */
+export async function getInvoiceState(
+  invoiceId: string,
+): Promise<{ status: string; totalUsd: number; balanceUsd: number } | null> {
+  const supabase = await createClient();
+  const { data: inv } = await supabase
+    .from('invoices').select('total_usd, status').eq('id', invoiceId).maybeSingle();
+  if (!inv) return null;
+  const { data: pays } = await supabase.from('payments').select('amount_usd').eq('invoice_id', invoiceId);
+  const paid = (pays ?? []).reduce((s, p) => s + Number(p.amount_usd ?? 0), 0);
+  return {
+    status: inv.status as string,
+    totalUsd: Number(inv.total_usd),
+    balanceUsd: Number((Number(inv.total_usd) - paid).toFixed(2)),
+  };
+}
+
+/**
+ * OFF-4 — discard a conflicted offline payment intent WITH an audit trail (never a
+ * silent drop). Writes the audit row server-side (000063); the client deletes the
+ * Dexie queue intent only on success. A reason is mandatory.
+ */
+export async function discardOfflinePayment(input: {
+  opId: string; invoiceId: string; amountUsd: number; reason: string;
+}): Promise<Result<true>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'unauthenticated' };
+  // Bridge: discard_offline_payment (000063) isn't in the generated Functions yet.
+  const { error } = await (supabase.rpc as unknown as (
+    fn: string, args: Record<string, unknown>,
+  ) => Promise<{ error: { message: string } | null }>)('discard_offline_payment', {
+    p_op_id: input.opId,
+    p_invoice_id: input.invoiceId,
+    p_amount_usd: input.amountUsd,
+    p_reason: input.reason,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: true };
+}
