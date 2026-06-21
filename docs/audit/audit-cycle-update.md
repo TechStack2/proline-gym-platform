@@ -252,3 +252,40 @@ The installed PWA cold-opening **offline** hydrates correctly: the desk mounts �
 - **Deep Tier-3 (group-flush ordering + server-canonical-id assignment for brand-new offline-CREATED entities)** is the remaining hardening — not needed for the current Tier-1 set (payment/attendance act on entities that already exist server-side). Flagged extension point if offline-created entities arrive.
 - **Reconciliation scope:** the money path is reconciled via `record_payment`'s authoritative rejection + `getInvoiceState`. Attendance (`saveAttendance`, idempotent upsert) is the lighter case; an "unenrolled student" edge reconciles only if the writer rejects it — flagged for OFF-3b/Tier-3 if richer attendance reconciliation is wanted.
 - **No regression:** OFF-2 reads, G2 attendance, OFF-3 happy-path untouched (the resolution is additive to the existing flush; conflict rows that aren't resolved still behave as in OFF-3).
+
+---
+
+## Cycle 6 / MEMBER360-PORTAL — member's own premium 360 hub
+
+> **Branch:** `prompt-member360-portal` (off `main`) · **Prompt:** [`cycle-5/prompt-MEMBER360-PORTAL.md`](./cycle-5/prompt-MEMBER360-PORTAL.md). The **second** Portal-360 build (Coach-360 was first) — **this CLOSES the Portal Elevation arc**: both portals now sit at the L3 premium-360 bar the staff side hit. **Read-time / display only — zero schema, no write paths, offline layer untouched.**
+
+### Before → after
+- **Before:** [`portal/page.tsx`](../../src/app/[locale]/portal/page.tsx) was **data-rich but flat** — it already fetched membership/plan, belt, attendance (count + recent), invoices (total/status), PT balance, next class/session, waivers, camps, the B3 kid-switcher, and already imported `ActionCard`/`DrillDetails` — yet rendered mostly **flat stat tiles + flat membership/belt cards + two quick-link tiles** that didn't drill or reconcile.
+- **After:** a drillable Member-360 mirroring Coach-360, built on the **data already fetched** (no new heavy queries — only widened the existing open-invoice select by a few columns for the reconcile rows).
+
+### What the hub surfaces + drills
+A compact 4-stat scan bar, then the `self-view` 360 (each card drills into its tab):
+1. **Membership** (`card-membership`) — status + plan + expiry → `membership-open` → `/portal/billing`.
+2. **Billing** (`card-billing`) — **open-invoice rows reconcile to the balance** (`billing-row[data-v]` sum == `billing-balance`) → `billing-open` → `/portal/billing`.
+3. **PT** (`card-pt`) — sessions remaining/total + next session → `pt-open` → `/portal/pt`.
+4. **Belt** (`card-belt`) — current rank + discipline → `belt-open` → `/portal/progress`.
+5. **Classes + attendance** (`card-portal-recent-attendance`, the PORTAL-FND card kept) — enrolled count + **next class** + the recent-attendance `DrillDetails` (rows reconcile to count) → `classes-open` → `/portal/classes`, rows → `/portal/schedule`.
+
+### Reconciliation
+- **Billing:** the open-invoice rows' `data-v` sum equals the displayed balance — an invariant by construction (balance = Σ open invoices), asserted when any are open.
+- **Classes:** the attendance drill `data-rows` equals the card `data-count` (deterministic — the member has attendance by suite end).
+
+### Preserved (no regression)
+The `self-view` wrapper keeps the **IA-2 testids** (`self-membership`/`self-pt-remaining`/`self-next-class`) as descendants; the **myStatus heading keeps the AX-1 `/ar` known string `حالتي`**; the **recent-attendance ActionCard + `portal-attendance-drill`** (PORTAL-FND) stay; the **ML-1 lifecycle banner**, **B3 guardian kid-switcher + KidDashboard**, **F3 waivers** (`portal-waiver`/chip), and **E1 camps** (`portal-camps`) are untouched. New `portalHome` keys (view/outstanding/allSettled/invoice/enrolledClasses) ar/en/fr.
+
+### Verify (e2e, ephemeral TI gym — anchored `member360-portal` project, NOT overlapping the staff `member360.spec.ts`)
+`e2e/member360-portal.spec.ts` (student@ = Karim, parent = Rana), every wait bounded:
+1. the hub renders the five 360 cards; **reconcile** billing (rows → balance) + classes (rows → count); **drill** each card → its tab.
+2. **guardian (B3)** parent → kid view + kid-switcher render; **waivers** + **camps** still render on the member home.
+3. `/ar` RTL-clean (no `MISSING_MESSAGE` / unresolved `portalHome.` keys).
+
+### ⟶ member portal is a drillable premium 360 hub; every card drills; guardian/waivers/camps intact; no regression: **PASS**
+**CI:** [run `27919113556`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27919113556) — **123 passed, 0 failed** (41.7m). member360-portal ✓✓✓ (render+reconcile billing/attendance+drill · guardian B3+waivers+camps intact · `/ar` clean); the pinned specs all green against the restructured `self-view`: **member360 (IA-2) ✓** (self-membership/self-pt-remaining/self-next-class), **portal-fnd ✓✓✓** (`card-portal-recent-attendance`+`portal-attendance-drill`, `/ar`), **ax1 ✓** (`/ar/portal` = `حالتي`), **b3 ✓** (kid-switcher), **f3 ✓** (waiver), e1/ml1 ✓. First CI run green — anchored testMatch + bounded waits held.
+
+### DRAG READ — this CLOSES the Portal Elevation arc
+Like Coach-360, the win was **reuse, not invention**: the page already fetched everything and already imported the kit — the slice was purely the drillable-360 *treatment*. The load-bearing constraint was **not breaking the surfaces other specs pin to the member home**: `member360.spec` (IA-2) reads `self-membership`/`self-pt-remaining`/`self-next-class` as descendants of `self-view`; `ax1-ar` reads `حالتي` (`portalHome.myStatus`) as the member shell's known Arabic string; `portal-fnd` reads `card-portal-recent-attendance` + `portal-attendance-drill`. Rather than duplicate (a redundant status strip *and* new cards), the new cards ARE the content and a **`self-view` section wraps them** so those testids stay descendants — no duplication, zero changes to the pinning specs. Two anchoring lessons applied verbatim from the prior slices: (1) the new project `testMatch` is anchored to `member360-portal\.spec\.ts` so it can never overlap the staff `member360\.spec\.ts` (the off3↔f3 substring trap); (2) every wait is bounded so a hung assertion can't take down the serial cloud suite. **Both portals are now drillable premium 360s — the demo-2 "themeless / not-drillable portal" feedback set is fully addressed.**
