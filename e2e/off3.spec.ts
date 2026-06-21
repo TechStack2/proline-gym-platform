@@ -208,8 +208,12 @@ test.describe('OFF-3 · offline front-desk writes (money path + idempotency)', (
     test.setTimeout(150_000)
     const { ctx, page } = await ownerPage(browser, 'ar')
     try {
-      const inv = await issueForKarim(page, 15, 'ar')
-      const invRow = () => vis(page, '[data-testid="desk-invoice-row"]').filter({ hasText: inv.number }).first()
+      // Issue on /en — the /invoices/new student dropdown shows localized names, so
+      // the 'Karim'-by-text lookup only resolves on /en. The invoice itself is
+      // locale-independent; the desk part below runs on /ar.
+      const inv = await issueForKarim(page, 15, 'en')
+      // Target the row by id (locale-proof — the rendered number can pick up bidi marks on /ar).
+      const invRow = () => vis(page, `[data-testid="desk-invoice-row"][data-invoice-id="${inv.id}"]`).first()
       await openKarimOnDesk(page, 'ar', '70000001') // Karim by phone (locale-agnostic)
       await expect(invRow(), 'issued invoice primed into the /ar desk mirror').toBeVisible({ timeout: 90_000 })
 
