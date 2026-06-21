@@ -2634,6 +2634,30 @@
     "todaySchedule": "Today’s classes",
     "noClassesToday": "No classes scheduled today",
     "roster": "Roster",
-    "emptyRoster": "No one enrolled"
+    "emptyRoster": "No one enrolled",
+    "openInvoices": "Open invoices",
+    "noOpenInvoices": "No open invoices",
+    "recordPayment": "Record payment",
+    "saveOffline": "Save offline",
+    "savedOffline": "Saved offline · will sync",
+    "recorded": "Payment recorded",
+    "willQueueOffline": "Offline — this payment will queue and sync on reconnect",
+    "amountUsd": "Amount (USD)",
+    "amountLbp": "Amount (LBP)",
+    "method": "Method",
+    "optional": "optional",
+    "cancel": "Cancel",
+    "amountPositive": "Enter a positive amount.",
+    "pendingSync": "{n} saved offline · will sync",
+    "needsReview": "{n} need review",
+    "needsReviewShort": "Needs review",
+    "methods": {
+      "cash_usd": "Cash (USD)",
+      "cash_lbp": "Cash (LBP)",
+      "omt": "OMT",
+      "whish": "Whish",
+      "bank_transfer": "Bank transfer",
+      "bob_finance": "BOB Finance"
+    }
   }
 }

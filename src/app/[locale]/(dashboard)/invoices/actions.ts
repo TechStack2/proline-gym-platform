@@ -71,6 +71,10 @@ export async function recordPayment(input: {
   reference?: string | null;
   exchangeRate?: number | null;
   paymentDate?: string | null;
+  // OFF-3: client-generated idempotency key for offline-recorded payments. When
+  // present, a re-push of the same key no-ops (record_payment returns the invoice
+  // unchanged) → exactly one canonical payment. Online single-fire passes null.
+  clientUuid?: string | null;
 }): Promise<Result<InvoiceRow>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -84,7 +88,10 @@ export async function recordPayment(input: {
     p_reference: input.reference ?? null,
     p_exchange_rate: input.exchangeRate ?? null,
     p_payment_date: input.paymentDate ?? null,
-  });
+    p_client_uuid: input.clientUuid ?? null,
+    // Bridge: the generated Args type lags the additive p_client_uuid (000062);
+    // the RPC accepts it. Same pattern as the repo's other Supabase-type bridges.
+  } as unknown as Database['public']['Functions']['record_payment']['Args']);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${input.invoiceId}`);

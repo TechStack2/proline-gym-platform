@@ -452,6 +452,16 @@ export default defineConfig({
       testMatch: /off2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // OFF-3 — the front desk RECORDS offline: a payment queued in Dexie pushes
+      // through record_payment on reconnect, idempotent on a client op_id (exactly
+      // one canonical record), with pending UX + conflict surfacing; /ar clean.
+      // G2 setOffline harness. Appended at the END — runs LAST.
+      name: 'off3',
+      dependencies: ['setup'],
+      testMatch: /off3\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

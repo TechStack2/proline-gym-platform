@@ -420,6 +420,30 @@ export interface RosterCacheEntry {
   cached_at: string; // ISO
 }
 
+// ─── OFF-3: Offline Tier-1 writes (cash/payment) ─────────────────────
+// Generalizes G2's pending-marks queue to the money path. `op_id` is the
+// client-generated idempotency key, reused on every re-push so record_payment
+// settles it EXACTLY ONCE (see 000062). Drains oldest-first (client_ts) through
+// the EXISTING record_payment writer; a server rejection flags `conflict`
+// (surfaced for review, never dropped) instead of deleting the row.
+export interface PendingPaymentIntent {
+  op_id: string;            // client UUID — PK + record_payment idempotency key
+  invoice_id: string;
+  student_id: string;
+  amount_usd: number;
+  amount_lbp: number;
+  method: string;           // payment_method_enum value
+  reference: string | null;
+  exchange_rate: number | null;
+  payment_date: string;     // YYYY-MM-DD
+  client_ts: string;        // ISO — flush order
+  status: 'pending' | 'conflict';
+  last_error?: string;
+  // Display snapshot so the pending list renders offline without a join.
+  invoice_number?: string;
+  member_name?: string;
+}
+
 // ─── Dexie Database ─────────────────────────────────────────────────
 
 class ProlineOfflineDB extends Dexie {
@@ -453,6 +477,9 @@ class ProlineOfflineDB extends Dexie {
   // G2: offline attendance
   pending_attendance!: Table<PendingAttendanceMark, [string, string, string]>;
   roster_cache!: Table<RosterCacheEntry, string>;
+
+  // OFF-3: offline payment queue
+  pending_payments!: Table<PendingPaymentIntent, string>;
 
   constructor() {
     super('proline_offline_db');
@@ -492,6 +519,13 @@ class ProlineOfflineDB extends Dexie {
     this.version(2).stores({
       pending_attendance: '[class_id+student_id+attendance_date], client_ts, class_id, attendance_date',
       roster_cache: 'key, cached_at',
+    });
+
+    // OFF-3: additive upgrade — offline payment queue. Keyed by the client op_id
+    // (the record_payment idempotency key); client_ts orders the flush, status
+    // surfaces conflicts.
+    this.version(3).stores({
+      pending_payments: 'op_id, client_ts, invoice_id, status',
     });
   }
 }

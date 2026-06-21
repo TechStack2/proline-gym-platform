@@ -2634,6 +2634,30 @@
     "todaySchedule": "Cours du jour",
     "noClassesToday": "Aucun cours prévu aujourd’hui",
     "roster": "Liste",
-    "emptyRoster": "Personne d’inscrit"
+    "emptyRoster": "Personne d’inscrit",
+    "openInvoices": "Factures ouvertes",
+    "noOpenInvoices": "Aucune facture ouverte",
+    "recordPayment": "Enregistrer un paiement",
+    "saveOffline": "Enregistrer hors ligne",
+    "savedOffline": "Enregistré hors ligne · se synchronisera",
+    "recorded": "Paiement enregistré",
+    "willQueueOffline": "Hors ligne — ce paiement sera mis en file et synchronisé à la reconnexion",
+    "amountUsd": "Montant (USD)",
+    "amountLbp": "Montant (LBP)",
+    "method": "Méthode",
+    "optional": "facultatif",
+    "cancel": "Annuler",
+    "amountPositive": "Saisissez un montant positif.",
+    "pendingSync": "{n} enregistré(s) hors ligne · à synchroniser",
+    "needsReview": "{n} à revoir",
+    "needsReviewShort": "À revoir",
+    "methods": {
+      "cash_usd": "Espèces (USD)",
+      "cash_lbp": "Espèces (LBP)",
+      "omt": "OMT",
+      "whish": "Whish",
+      "bank_transfer": "Virement bancaire",
+      "bob_finance": "BOB Finance"
+    }
   }
 }

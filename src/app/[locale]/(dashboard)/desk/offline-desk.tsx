@@ -1,22 +1,29 @@
 'use client'
 
 /**
- * OFF-2 — Front Desk offline lookup. A CLIENT surface that reads the primed Dexie
- * mirror, so the core desk lookups work with zero network (the server-component
- * pages can't render offline). Reads only — member find → basics, today's
- * schedule, a class roster. Identical online (fresh primed mirror) and offline
- * (last prime), with a "cached as of <time>" stamp. Any edit/full-file affordance
- * is gated by the existing online-only-notice; OFF-3 will make writes work.
+ * OFF-2 / OFF-3 — Front Desk offline surface. A CLIENT surface that reads the
+ * primed Dexie mirror, so the core desk lookups work with zero network (the
+ * server-component pages can't render offline). OFF-2: member find → basics,
+ * today's schedule, a class roster. OFF-3: the desk now also RECORDS — a payment
+ * against an open invoice is written straight through online, or queued offline
+ * (provisional, dual-currency) and reconciled idempotently on reconnect. A
+ * "cached as of <time>" stamp on reads; a pending-sync bar over the write queue.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { getOfflineDB } from '@/lib/db/schema'
+import type { PendingPaymentIntent } from '@/lib/db/schema'
 import { getSyncEngine } from '@/lib/db/sync-engine'
 import { useOnline } from '@/lib/offline/use-online'
+import { outboxStats, flushOutbox, type OutboxStats } from '@/lib/offline/outbox'
+import { listPendingPayments, type RecordPayment } from '@/lib/offline/payments'
+import { saveAttendance } from '@/app/[locale]/coach/attendance/actions'
+import { recordPayment } from '../invoices/actions'
 import { dateLocale } from '@/lib/utils/locale-format'
-import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff } from 'lucide-react'
+import { RecordPaymentForm, PendingSyncBar, type DeskInvoice } from './desk-payments'
+import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff, Receipt } from 'lucide-react'
 
 type Row = Record<string, any>
 type DeskData = {
@@ -25,8 +32,15 @@ type DeskData = {
   ptByStudent: Map<string, Row[]>
   schedules: Row[]; classesById: Map<string, Row>
   enrollmentsByClass: Map<string, Row[]>
+  invoicesByStudent: Map<string, Row[]>
+  paymentsByInvoice: Map<string, Row[]>
   cachedAt: string | null
 }
+
+// OFF-3: the unified flush handlers — each Tier-1 path drains through its existing
+// idempotent server writer. `i as any` bridges the lib's string `method` to the
+// action's payment_method_enum (the offline queue stores it as a plain string).
+const flushHandlers = { save: saveAttendance, record: ((i) => recordPayment(i as any)) as RecordPayment }
 
 const lname = (r: Row | undefined, base: string, locale: string): string =>
   (r?.[`${base}_${locale}`] || r?.[`${base}_en`] || '') as string
@@ -43,6 +57,9 @@ const beltLabel = (r?: string | null) => (r ? r.replace(/_/g, ' ').replace(/\b\w
 const CORE_TABLES = [
   'profiles', 'students', 'classes', 'class_schedules',
   'class_enrollments', 'student_memberships', 'pt_assignments',
+  // OFF-3: the money path needs the member's open invoices + their payments
+  // (to show the balance) cached for the offline record-payment flow.
+  'invoices', 'payments',
 ] as const
 
 let deskPrimedThisSession = false
@@ -71,10 +88,10 @@ export function OfflineDesk({ locale }: { locale: string }) {
     setLoading(true)
     try {
       const db = getOfflineDB()
-      const [students, profilesArr, memberships, pts, schedules, classesArr, enrollments, meta] = await Promise.all([
+      const [students, profilesArr, memberships, pts, schedules, classesArr, enrollments, invoicesArr, paymentsArr, meta] = await Promise.all([
         db.students.toArray(), db.profiles.toArray(), db.student_memberships.toArray(),
         db.pt_assignments.toArray(), db.class_schedules.toArray(), db.classes.toArray(),
-        db.class_enrollments.toArray(), db.sync_metadata.toArray(),
+        db.class_enrollments.toArray(), db.invoices.toArray(), db.payments.toArray(), db.sync_metadata.toArray(),
       ])
       const profiles = new Map(profilesArr.map((p: Row) => [p.id, p]))
       const classesById = new Map(classesArr.map((c: Row) => [c.id, c]))
@@ -84,8 +101,12 @@ export function OfflineDesk({ locale }: { locale: string }) {
       for (const p of pts as Row[]) (ptByStudent.get(p.student_id) ?? ptByStudent.set(p.student_id, []).get(p.student_id)!).push(p)
       const enrollmentsByClass = new Map<string, Row[]>()
       for (const e of enrollments as Row[]) (enrollmentsByClass.get(e.class_id) ?? enrollmentsByClass.set(e.class_id, []).get(e.class_id)!).push(e)
+      const invoicesByStudent = new Map<string, Row[]>()
+      for (const inv of invoicesArr as Row[]) (invoicesByStudent.get(inv.student_id) ?? invoicesByStudent.set(inv.student_id, []).get(inv.student_id)!).push(inv)
+      const paymentsByInvoice = new Map<string, Row[]>()
+      for (const p of paymentsArr as Row[]) (paymentsByInvoice.get(p.invoice_id) ?? paymentsByInvoice.set(p.invoice_id, []).get(p.invoice_id)!).push(p)
       const cachedAt = (meta as Row[]).map((m) => m.last_synced_at).filter(Boolean).sort().pop() ?? null
-      setData({ students: students as Row[], profiles, membershipsByStudent, ptByStudent, schedules: schedules as Row[], classesById, enrollmentsByClass, cachedAt })
+      setData({ students: students as Row[], profiles, membershipsByStudent, ptByStudent, schedules: schedules as Row[], classesById, enrollmentsByClass, invoicesByStudent, paymentsByInvoice, cachedAt })
     } finally {
       setLoading(false)
     }
@@ -117,6 +138,40 @@ export function OfflineDesk({ locale }: { locale: string }) {
     try { await getSyncEngine().pullAll({ full: true }); await load() }
     finally { setSyncing(false) }
   }
+
+  // ── OFF-3: pending write queue (payments + attendance) ──
+  const [pendingStats, setPendingStats] = useState<OutboxStats>({ total: 0, attendance: 0, payments: 0, conflicts: 0 })
+  const [pendingList, setPendingList] = useState<PendingPaymentIntent[]>([])
+  const [syncingPending, setSyncingPending] = useState(false)
+
+  const refreshPending = useCallback(async () => {
+    const [s, list] = await Promise.all([outboxStats(), listPendingPayments()])
+    setPendingStats(s); setPendingList(list)
+  }, [])
+
+  useEffect(() => { void refreshPending() }, [refreshPending])
+
+  // Flush the queue through the existing idempotent writers, then re-prime so the
+  // confirmed balances reflect. Safe to double-fire — record_payment no-ops on a
+  // re-pushed op_id.
+  const flushPendingNow = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return
+    setSyncingPending(true)
+    try {
+      await flushOutbox(flushHandlers)
+      await getSyncEngine().pullAll({ full: true, tables: CORE_TABLES })
+      await Promise.all([refreshPending(), load()])
+    } finally {
+      setSyncingPending(false)
+    }
+  }, [refreshPending, load])
+
+  // Reconnect → auto-flush the queue (pending money + attendance flip to confirmed).
+  useEffect(() => {
+    const onOnline = () => void flushPendingNow()
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [flushPendingNow])
 
   const memberName = useCallback((s: Row) => {
     const p = data?.profiles.get(s.profile_id)
@@ -154,6 +209,23 @@ export function OfflineDesk({ locale }: { locale: string }) {
       id: s.id,
     }
   }, [data, selectedStudent, memberName])
+
+  // ── OFF-3: the selected member's open invoices (balance from cached payments) ──
+  const openInvoices = useMemo(() => {
+    if (!data || !selectedStudent) return [] as DeskInvoice[]
+    return (data.invoicesByStudent.get(selectedStudent) ?? [])
+      .filter((inv) => !['paid', 'cancelled', 'refunded'].includes(inv.status))
+      .map((inv) => {
+        const paid = (data.paymentsByInvoice.get(inv.id) ?? []).reduce((s, p) => s + Number(p.amount_usd || 0), 0)
+        const balance = Number((Number(inv.total_usd || 0) - paid).toFixed(2))
+        return {
+          id: inv.id, invoice_number: inv.invoice_number, total_usd: Number(inv.total_usd || 0),
+          balance_usd: Math.max(0, balance), exchange_rate: inv.exchange_rate != null ? Number(inv.exchange_rate) : null,
+          student_id: selectedStudent, status: inv.status,
+        } as DeskInvoice
+      })
+      .filter((i) => i.balance_usd > 0.001)
+  }, [data, selectedStudent])
 
   // ── Today's schedule ──
   const todaySchedule = useMemo(() => {
@@ -199,6 +271,10 @@ export function OfflineDesk({ locale }: { locale: string }) {
           {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {t('syncNow')}
         </button>
       </div>
+
+      {/* OFF-3: the unified pending-sync bar (queued payments + attendance + conflicts). */}
+      <PendingSyncBar locale={locale} stats={pendingStats} pending={pendingList}
+        online={online} syncing={syncingPending} onSyncNow={() => void flushPendingNow()} />
 
       {loading ? (
         <div className="flex items-center gap-2 py-10 text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /> {t('loading')}</div>
@@ -259,6 +335,30 @@ export function OfflineDesk({ locale }: { locale: string }) {
                     <WifiOff className="h-3.5 w-3.5" /> {t('fileNeedsConnection')}
                   </p>
                 )}
+
+                {/* OFF-3: open invoices → record a payment (online write-through / offline queued). */}
+                <div className="mt-3 border-t border-gray-200 pt-3">
+                  <h3 className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <Receipt className="h-3.5 w-3.5" /> {t('openInvoices')}
+                  </h3>
+                  {openInvoices.length === 0 ? (
+                    <p className="text-xs text-gray-400" data-testid="desk-no-invoices">{t('noOpenInvoices')}</p>
+                  ) : (
+                    <ul className="space-y-2" data-testid="desk-invoices">
+                      {openInvoices.map((inv) => (
+                        <li key={inv.id} data-testid="desk-invoice-row" data-invoice-id={inv.id}
+                          className="rounded-xl border border-gray-100 bg-white p-2.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-mono font-medium text-gray-700">{inv.invoice_number}</span>
+                            <span className="font-semibold text-red-600" data-testid="desk-invoice-balance">${inv.balance_usd.toFixed(2)}</span>
+                          </div>
+                          <RecordPaymentForm locale={locale} invoice={inv} memberName={basics.name}
+                            online={online} onChange={() => { void refreshPending(); if (online) void load() }} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
           </section>
