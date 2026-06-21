@@ -21,7 +21,7 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
     test.setTimeout(180_000)
     const { ctx, page } = await ownerPage(browser)
     try {
-      // ── ONLINE: open the desk; SyncPrimer primes the gym-scoped Dexie mirror ──
+      // ── ONLINE: open the desk; opening it primes the gym-scoped Dexie mirror ──
       await page.goto('/en/desk')
       await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 15_000 })
       await vis(page, '[data-testid="desk-search"]').first().fill('Karim')

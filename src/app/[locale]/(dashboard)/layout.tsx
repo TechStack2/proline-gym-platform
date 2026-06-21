@@ -5,7 +5,6 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { DashboardLayoutClient } from './_components/DashboardLayoutClient';
 import { FrontDeskOfflineLayer } from '@/components/offline/front-desk-offline-layer';
-import { SyncPrimer } from '@/components/offline/sync-primer';
 import { cn } from '@/lib/utils';
 
 // AX-1 shell identity: per-shell PWA theme-color (staff = brand red).
@@ -44,8 +43,6 @@ export default async function DashboardLayout({ children, params }: Props) {
           desktop Sidebar) → the front-desk laptop gets the same offline banner +
           installable-PWA affordance the mobile shell had. */}
       <FrontDeskOfflineLayer locale={locale} />
-      {/* OFF-2: prime the Dexie mirror on login + each online window. */}
-      <SyncPrimer />
 
       {/* ─── Mobile (≤767px): Native iOS/Android feel ─── */}
       <div className="block md:hidden h-screen">

@@ -33,6 +33,29 @@ const lname = (r: Row | undefined, base: string, locale: string): string =>
 
 const beltLabel = (r?: string | null) => (r ? r.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—')
 
+/**
+ * OFF-2 — prime the Dexie mirror from the front desk itself (the only offline
+ * read surface). Deliberately scoped HERE rather than the dashboard layout: a
+ * layout-level pull contends with timing-sensitive specs that never open the
+ * desk (it destabilised the realtime-race specs). Core front-desk tables only,
+ * once per session + on each `online` window (throttled). Read-only (OFF-3).
+ */
+const CORE_TABLES = [
+  'profiles', 'students', 'classes', 'class_schedules',
+  'class_enrollments', 'student_memberships', 'pt_assignments',
+] as const
+
+let deskPrimedThisSession = false
+let lastDeskPrimeAt = 0
+function primeDeskMirror() {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return // offline → no-op
+  if (Date.now() - lastDeskPrimeAt < 30_000) return // throttle (double-shell mounts twice)
+  lastDeskPrimeAt = Date.now()
+  getSyncEngine().pullAll({ full: true, tables: CORE_TABLES }).catch(() => {
+    lastDeskPrimeAt = 0 // allow a retry on the next online window
+  })
+}
+
 export function OfflineDesk({ locale }: { locale: string }) {
   const t = useTranslations('desk')
   const isRTL = locale === 'ar'
@@ -70,7 +93,17 @@ export function OfflineDesk({ locale }: { locale: string }) {
 
   useEffect(() => { void load() }, [load])
 
-  // Re-read the mirror when a prime (SyncPrimer / Sync now) completes.
+  // Prime the mirror when the desk opens online + on each online window. The
+  // onSync subscription below re-reads once the pull lands. Offline → no-op,
+  // the desk just reads the last prime.
+  useEffect(() => {
+    if (!deskPrimedThisSession) { deskPrimedThisSession = true; primeDeskMirror() }
+    const onOnline = () => primeDeskMirror()
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [])
+
+  // Re-read the mirror when a prime (desk open / Sync now) completes.
   useEffect(() => {
     const unsub = getSyncEngine().onSync((status) => {
       if (status === 'online' || status === 'error') void load()
