@@ -308,7 +308,9 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             {dueCount > 0 && <span className="text-xs font-medium text-amber-700">{t('students.dueToTest', { n: dueCount })}</span>}
           </span>}
           rows={students.map((s): DrillRow => ({
-            href: `/${locale}/dashboard/students/${s.id}`,
+            // Coaches are redirected away from /dashboard/* by middleware, so drill
+            // to the coach's OWN students tab, focused on this student via ?q=.
+            href: `/${locale}/coach/students?q=${encodeURIComponent(s.name)}`,
             left: (
               <span className="inline-flex items-center gap-2">
                 {s.name}

@@ -43,12 +43,14 @@ test.describe.serial('COACH360-PORTAL · coach drillable 360 hub', () => {
       const drill = vis(page, '[data-testid="coach-students-drill"]').first()
       expect(Number(await drill.getAttribute('data-rows')), 'student rows reconcile to the headline').toBe(headline)
 
-      // DRILL: My Students row → the Member-360 (/dashboard/students/<id>)
+      // DRILL: My Students row → the coach's students tab, FOCUSED on that student
+      // (coaches are redirected away from /dashboard/*, so the drill stays in-portal).
       await drill.locator('summary').click()
       const row = vis(page, '[data-testid="coach-students-row"]').first()
       await expect(row).toBeVisible()
       await row.click()
-      await expect(page, 'student row drills into Member-360').toHaveURL(/\/dashboard\/students\/[0-9a-f-]{36}/, { timeout: 15_000 })
+      await expect(page, 'student row drills into the coach students tab').toHaveURL(/\/coach\/students\?q=/, { timeout: 15_000 })
+      await expect(vis(page, 'input[type="text"]').first(), 'the tab opens pre-filtered to the student').not.toHaveValue('')
 
       // DRILL: PT card → /coach/pt
       await page.goto('/en/coach')
