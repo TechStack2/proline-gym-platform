@@ -1,339 +1,399 @@
-import { createClient } from '@/lib/supabase/server';
-import { cn } from '@/lib/utils';
-import { Calendar, Clock, Users, MapPin, BookOpen, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
-import Link from 'next/link';
-import { PortalCard, PortalCardTitle, PortalEmpty } from '@/components/portal/portal-kit';
+import { createClient } from '@/lib/supabase/server'
+import { getTranslations } from 'next-intl/server'
+import { dateLocale } from '@/lib/utils/locale-format'
+import { cn } from '@/lib/utils'
+import {
+  Calendar, Clock, Users, MapPin, ArrowRight, CheckCircle2,
+  CalendarDays, Award, Dumbbell, CalendarClock, Megaphone, Eye, EyeOff, BookOpen,
+} from 'lucide-react'
+import Link from 'next/link'
+import { PortalCard, PortalCardTitle, PortalEmpty } from '@/components/portal/portal-kit'
+import { ActionCard } from '@/components/dashboard/action-card'
+import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
 
-type Props = { params: { locale: string } };
+type Props = { params: { locale: string } }
 
-// ─── Locale-aware label helpers ───
-function localizedField(obj: Record<string, string> | null | undefined, locale: string, fieldBase: string): string {
-  if (!obj) return '—';
-  const key = `${fieldBase}_${locale}` as string;
-  const val = obj[key];
-  if (typeof val === 'string' && val.trim()) return val;
-  const enVal = obj[`${fieldBase}_en`];
-  if (typeof enVal === 'string' && enVal.trim()) return enVal;
-  return '—';
+/**
+ * COACH360-PORTAL — the coach's own premium, drillable Coach-360 hub (portal home).
+ *
+ * Mirrors the staff Coach-360 (TEAM-1) + the DRILL-360 "card → reconciling rows →
+ * drill" pattern (ActionCard/DrillDetails) from the member portal, adapted to the
+ * coach's self-view: Today · This Week (teaching load) · My Students (by
+ * discipline/belt, who's due to test) · PT · Trials pipeline · My Profile/landing.
+ * Read-time / display only — zero schema, no write paths (attendance/PT/trial
+ * writes stay in their tabs; the landing publish gate is untouched). Brand theme
+ * via the PORTAL-FND kit; i18n ar/en/fr + RTL; mobile and desktop.
+ *
+ * NB the today's-trials block keeps the `coach-home-trials` / `coach-home-trial-row`
+ * testids UX-2 drives — do not rename.
+ */
+function lf(obj: Record<string, string> | null | undefined, locale: string, base: string): string {
+  if (!obj) return ''
+  const v = obj[`${base}_${locale}`]
+  if (typeof v === 'string' && v.trim()) return v
+  const en = obj[`${base}_en`]
+  return typeof en === 'string' && en.trim() ? en : ''
 }
+const beltLabel = (rank?: string | null) =>
+  rank ? rank.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : ''
+const one = (x: any) => (Array.isArray(x) ? x[0] : x)
+const DUE_TO_TEST_DAYS = 120 // heuristic: no promotion in 4 months ⇒ surface "due to test"
 
 export default async function CoachHomePage({ params: { locale } }: Props) {
-  const isRTL = locale === 'ar';
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const isRTL = locale === 'ar'
+  const t = await getTranslations({ locale, namespace: 'coachHub' })
+  const tct = await getTranslations({ locale, namespace: 'coachTrials' })
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
 
-  if (!user) return null;
-
-  // Get coach record
   const { data: coach } = await supabase
     .from('coaches')
-    .select('id')
+    .select('id, landing_visible, landing_status, has_pending_changes, profiles:profile_id (first_name_ar, first_name_en, first_name_fr)')
     .eq('profile_id', user.id)
-    .single();
+    .maybeSingle()
 
   if (!coach) {
     return (
       <div className={cn('p-4', isRTL && 'rtl')}>
         <PortalCard>
-          <PortalEmpty icon={Calendar}>
-            {isRTL ? 'لم يتم العثور على ملف المدرب' : locale === 'fr' ? 'Profil coach introuvable' : 'Coach profile not found'}
-          </PortalEmpty>
+          <PortalEmpty icon={Calendar}>{t('noCoach')}</PortalEmpty>
         </PortalCard>
       </div>
-    );
+    )
   }
 
-  // Get today's day of week (0=Sunday in Postgres, matches JS getDay)
-  const today = new Date();
-  const dayOfWeek = today.getDay();
+  const firstName = lf(one((coach as any).profiles), locale, 'first_name')
+  const now = new Date()
+  const dow = now.getDay()
+  const todayIso = now.toISOString().slice(0, 10)
 
-  // UX-2: today's TRIALS join the day surface (not just the tab) — same
-  // definer reader as /coach/trials; filtered to today + still-scheduled.
-  const todayIso = today.toISOString().split('T')[0];
-  const { data: allTrials } = await supabase.rpc('get_coach_trials');
-  const todaysTrials: any[] = (allTrials || []).filter(
-    (tr: any) => tr.scheduled_date === todayIso && tr.status === 'scheduled',
-  );
-
-  // Fetch today's class schedules for this coach
-  const { data: schedulesRaw } = await supabase
-    .from('class_schedules')
-    .select(`
-      id,
-      start_time,
-      end_time,
-      classes!inner (
-        id,
-        room,
-        max_capacity,
-        name_ar, name_en, name_fr,
-        discipline_id,
-        disciplines!inner (
-          name_ar, name_en, name_fr
-        )
-      )
-    `)
-    .eq('day_of_week', dayOfWeek)
-    .eq('classes.coach_id', coach.id)
-    .eq('classes.is_active', true)
+  // ── The coach's active classes (with weekly schedules + discipline) — one read
+  //    feeds Today, This Week, and My Students.
+  const { data: classesRaw } = await supabase
+    .from('classes')
+    .select(`id, room, max_capacity, name_ar, name_en, name_fr,
+      disciplines:discipline_id (name_ar, name_en, name_fr),
+      class_schedules (id, day_of_week, start_time, end_time, is_active)`)
+    .eq('coach_id', coach.id)
     .eq('is_active', true)
-    .order('start_time', { ascending: true });
+    .order('created_at', { ascending: true })
+  const classes = (classesRaw || []) as any[]
+  const classIds = classes.map((c) => c.id)
 
-  // Supabase nested joins may return arrays for one-to-one relations; normalize
-  const todaysSchedules: any[] = (schedulesRaw || []).map((s: any) => ({
-    ...s,
-    classes: Array.isArray(s.classes) ? s.classes[0] : s.classes,
-  }));
+  // enrollment counts per class + today's marked-attendance per class
+  const enrollMap: Record<string, number> = {}
+  const markedMap: Record<string, number> = {}
+  if (classIds.length) {
+    const [{ data: enr }, { data: att }] = await Promise.all([
+      supabase.from('class_enrollments').select('class_id, student_id').in('class_id', classIds).eq('is_active', true),
+      supabase.from('attendance_records').select('class_id').in('class_id', classIds).eq('attendance_date', todayIso),
+    ])
+    for (const e of (enr || [])) enrollMap[e.class_id] = (enrollMap[e.class_id] || 0) + 1
+    for (const a of (att || [])) markedMap[a.class_id] = (markedMap[a.class_id] || 0) + 1
+  }
 
-  // Collect all class IDs
-  const classIds: string[] = todaysSchedules
-    .map((s: any) => s.classes?.id)
-    .filter((id: any) => id != null);
+  const schedMins = (s: any) => {
+    if (!s?.start_time || !s?.end_time) return 0
+    const [sh, sm] = s.start_time.split(':').map(Number)
+    const [eh, em] = s.end_time.split(':').map(Number)
+    return Math.max(0, (eh * 60 + em) - (sh * 60 + sm))
+  }
 
-  // Fetch enrollment counts for each class
-  const enrollmentMap: Record<string, number> = {};
-  if (classIds.length > 0) {
-    const { data: enrollments } = await supabase
+  // ── TODAY — schedules occurring today, ordered by start. ──
+  type TodayRow = { schedId: string; classId: string; name: string; disc: string; room: string; start: string; end: string; enrolled: number; marked: number; cap: number }
+  const todayRows: TodayRow[] = []
+  for (const c of classes) {
+    for (const s of (c.class_schedules || [])) {
+      if (s.is_active === false || s.day_of_week !== dow) continue
+      todayRows.push({
+        schedId: s.id, classId: c.id, name: lf(c, locale, 'name'), disc: lf(one(c.disciplines), locale, 'name'),
+        room: c.room || '', start: (s.start_time || '').slice(0, 5), end: (s.end_time || '').slice(0, 5),
+        enrolled: enrollMap[c.id] || 0, marked: markedMap[c.id] || 0, cap: c.max_capacity || 0,
+      })
+    }
+  }
+  todayRows.sort((a, b) => a.start.localeCompare(b.start))
+
+  // ── THIS WEEK — teaching load: schedule occurrences across the week + hours. ──
+  type WeekRow = { classId: string; name: string; day: number; start: string; end: string; mins: number }
+  const weekRows: WeekRow[] = []
+  for (const c of classes) {
+    for (const s of (c.class_schedules || [])) {
+      if (s.is_active === false) continue
+      weekRows.push({ classId: c.id, name: lf(c, locale, 'name'), day: s.day_of_week, start: (s.start_time || '').slice(0, 5), end: (s.end_time || '').slice(0, 5), mins: schedMins(s) })
+    }
+  }
+  weekRows.sort((a, b) => (a.day - b.day) || a.start.localeCompare(b.start))
+  const weekHours = Math.round((weekRows.reduce((s, r) => s + r.mins, 0) / 60) * 10) / 10
+  const weekdayName = (d: number) => new Date(2024, 0, 7 + d).toLocaleDateString(dateLocale(locale), { weekday: 'short' })
+
+  // ── MY STUDENTS — distinct active students across the coach's classes, by
+  //    discipline + belt; flag who's due to test. Rows reconcile to the headline. ──
+  type Stu = { id: string; name: string; disc: string; belt: string; due: boolean }
+  const students: Stu[] = []
+  if (classIds.length) {
+    const { data: enrRows } = await supabase
       .from('class_enrollments')
-      .select('class_id')
+      .select(`student_id,
+        classes:class_id (disciplines:discipline_id (name_ar, name_en, name_fr)),
+        students:student_id (id, current_belt_rank, belt_promotion_date,
+          profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
       .in('class_id', classIds)
-      .eq('is_active', true);
-
-    for (const e of (enrollments || [])) {
-      enrollmentMap[e.class_id] = (enrollmentMap[e.class_id] || 0) + 1;
+      .eq('is_active', true)
+    const seen = new Set<string>()
+    for (const e of (enrRows || []) as any[]) {
+      const st = one(e.students)
+      if (!st || seen.has(st.id)) continue
+      seen.add(st.id)
+      const p = one(st.profiles)
+      const disc = lf(one(one(e.classes)?.disciplines), locale, 'name')
+      const promo = st.belt_promotion_date ? new Date(st.belt_promotion_date) : null
+      const due = !promo || (now.getTime() - promo.getTime()) / 864e5 > DUE_TO_TEST_DAYS
+      students.push({
+        id: st.id,
+        name: [lf(p, locale, 'first_name'), lf(p, locale, 'last_name')].filter(Boolean).join(' ').trim() || '—',
+        disc, belt: st.current_belt_rank || '', due,
+      })
     }
   }
+  students.sort((a, b) => a.disc.localeCompare(b.disc) || a.name.localeCompare(b.name))
+  const dueCount = students.filter((s) => s.due).length
+  // discipline distribution chips (sum to the headline)
+  const byDisc = students.reduce<Record<string, number>>((m, s) => { const k = s.disc || t('students.noDiscipline'); m[k] = (m[k] || 0) + 1; return m }, {})
 
-  // Fetch today's attendance status per class
-  const todayStr = today.toISOString().split('T')[0];
-  const attendanceStatusMap: Record<string, { total: number; marked: number }> = {};
-  if (classIds.length > 0) {
-    const { data: records } = await supabase
-      .from('attendance_records')
-      .select('class_id')
-      .in('class_id', classIds)
-      .eq('attendance_date', todayStr);
+  // ── PT — the coach's active assignments (sessions remaining), via the definer reader. ──
+  const { data: ptRoster } = await supabase.rpc('get_coach_pt_roster')
+  const pt = ((ptRoster || []) as any[]).map((r) => ({
+    id: r.assignment_id, name: r.student_name,
+    remaining: r.sessions_remaining ?? 0, total: r.sessions_total ?? 0,
+    low: (r.sessions_remaining ?? 0) <= 1,
+  }))
+  const ptRemaining = pt.reduce((s, r) => s + r.remaining, 0)
 
-    for (const cid of classIds) {
-      const enrolled = enrollmentMap[cid] || 0;
-      const marked = (records || []).filter((r: any) => r.class_id === cid).length;
-      attendanceStatusMap[cid] = { total: enrolled, marked };
-    }
-  }
+  // ── TRIALS — assigned trials; today's keep the UX-2 surface, upcoming feed the pipeline. ──
+  const { data: trialsRaw } = await supabase.rpc('get_coach_trials')
+  const trials = ((trialsRaw || []) as any[]).filter((tr) => tr.status === 'scheduled')
+  const todaysTrials = trials.filter((tr) => tr.scheduled_date === todayIso)
+  const upcomingTrials = trials
+    .filter((tr) => tr.scheduled_date > todayIso)
+    .sort((a, b) => (a.scheduled_date + (a.scheduled_time || '')).localeCompare(b.scheduled_date + (b.scheduled_time || '')))
 
-  const totalClasses = todaysSchedules.length;
-  const totalStudents = Object.values(enrollmentMap).reduce((sum, n) => sum + n, 0);
-  const completedClasses = Object.values(attendanceStatusMap).filter(
-    s => s.total > 0 && s.marked >= s.total
-  ).length;
-  const pendingClasses = totalClasses - completedClasses;
+  // ── landing status (display only; the publish gate is untouched). ──
+  const landing = (coach as any).has_pending_changes
+    ? { key: 'pending', label: t('profile.pending'), cls: 'bg-amber-100 text-amber-800', Icon: Clock }
+    : (coach as any).landing_visible
+      ? (coach as any).landing_status === 'coming_soon'
+        ? { key: 'coming_soon', label: t('profile.comingSoon'), cls: 'bg-blue-100 text-blue-700', Icon: Eye }
+        : { key: 'live', label: t('profile.live'), cls: 'bg-green-100 text-green-700', Icon: Eye }
+      : { key: 'hidden', label: t('profile.notVisible'), cls: 'bg-gray-100 text-gray-600', Icon: EyeOff }
 
-  // Load i18n translations
-  const { default: messages } = await import(`@/i18n/messages/${locale}.json`);
-  const t = (path: string) => {
-    const keys = path.split('.');
-    let val: any = messages;
-    for (const k of keys) {
-      val = val?.[k];
-    }
-    return typeof val === 'string' ? val : path;
-  };
+  const totalToday = todayRows.length
+  const completedToday = todayRows.filter((r) => r.cap >= 0 && r.enrolled > 0 && r.marked >= r.enrolled).length
 
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+    <div className={cn('p-4 space-y-4', isRTL && 'rtl text-right')} data-testid="coach-360-portal">
       {/* Header */}
       <div>
-        <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
-          {t('coach.home.title')}
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {t('coach.home.subtitle')}
-        </p>
+        <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
+          {firstName ? t('helloName', { name: firstName }) : t('hello')}
+        </h1>
+        <p className="mt-0.5 text-sm text-gray-500">{t('subtitle')}</p>
       </div>
 
-      {/* Stats Summary Bar */}
+      {/* Premium scan bar — 4 headline numbers, each scoped to a card below */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          icon={Calendar}
-          value={totalClasses}
-          label={t('coach.home.stats.totalClasses')}
-          color="text-blue-600"
-          bg="bg-blue-50"
-        />
-        <StatCard
-          icon={Users}
-          value={totalStudents}
-          label={t('coach.home.stats.totalStudents')}
-          color="text-[#cd1419]"
-          bg="bg-red-50"
-          testid="portal-brand"
-        />
-        <StatCard
-          icon={CheckCircle2}
-          value={completedClasses}
-          label={t('coach.home.stats.completed')}
-          color="text-green-600"
-          bg="bg-green-50"
-        />
-        <StatCard
-          icon={Circle}
-          value={pendingClasses}
-          label={t('coach.home.stats.pending')}
-          color="text-amber-600"
-          bg="bg-amber-50"
-        />
+        <Stat icon={Calendar} value={totalToday} label={t('stats.today')} tone="text-blue-600" bg="bg-blue-50" />
+        <Stat icon={Users} value={students.length} label={t('stats.students')} tone="text-[#cd1419]" bg="bg-red-50" brand />
+        <Stat icon={CalendarDays} value={weekRows.length} label={t('stats.week')} tone="text-violet-600" bg="bg-violet-50" />
+        <Stat icon={Dumbbell} value={ptRemaining} label={t('stats.ptSessions')} tone="text-emerald-600" bg="bg-emerald-50" />
       </div>
 
-      {/* Today's trials (UX-2) — actionable on the trials tab */}
+      {/* ── TODAY ── */}
+      <ActionCard
+        icon={Calendar} title={t('today.title')} count={totalToday}
+        badge={totalToday ? `${completedToday}/${totalToday}` : '0'}
+        emptyText={t('today.empty')} testid="coach-today" isRTL={isRTL}
+      >
+        {todayRows.map((r) => {
+          const complete = r.enrolled > 0 && r.marked >= r.enrolled
+          return (
+            <div key={r.schedId} data-testid="coach-today-row"
+              className="flex items-center justify-between gap-3 rounded-xl border bg-gray-50/60 px-3 py-2.5">
+              <Link href={`/${locale}/coach/attendance?classId=${r.classId}`} className="min-w-0 flex-1">
+                <span className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                  <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />{r.start}–{r.end}
+                  <span className="truncate">· {r.name}</span>
+                </span>
+                <span className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
+                  {r.room && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room}</span>}
+                  <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{r.marked}/{r.enrolled} {t('today.marked')}</span>
+                </span>
+              </Link>
+              <Link href={`/${locale}/coach/attendance?classId=${r.classId}`} data-testid="coach-today-attendance"
+                className={cn('inline-flex shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium',
+                  complete ? 'bg-green-50 text-green-700' : 'bg-[#cd1419] text-white hover:bg-[#b01216]')}>
+                {complete ? <CheckCircle2 className="h-4 w-4" /> : <>{t('today.startAttendance')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></>}
+              </Link>
+            </div>
+          )
+        })}
+      </ActionCard>
+
+      {/* Today's trials — keep the UX-2 surface (testids unchanged) */}
       {todaysTrials.length > 0 && (
         <PortalCard className="space-y-2" data-testid="coach-home-trials">
-          <PortalCardTitle
-            icon={Users}
-            right={
-              <Link href={`/${locale}/coach/trials`} className="text-xs font-medium text-[#cd1419]">
-                {t('coachTrials.openTab')}
-              </Link>
-            }
-          >
-            {t('coachTrials.todayTitle')}
+          <PortalCardTitle icon={CalendarClock}
+            right={<Link href={`/${locale}/coach/trials`} className="text-xs font-medium text-[#cd1419]">{tct('openTab')}</Link>}>
+            {tct('todayTitle')}
           </PortalCardTitle>
-          {todaysTrials.map((tr: any) => (
-            <Link
-              key={tr.id}
-              href={`/${locale}/coach/trials`}
-              data-testid="coach-home-trial-row"
-              data-lead-name={tr.lead_name}
-              className="flex items-center justify-between rounded-xl border px-3 py-2 hover:bg-gray-50"
-            >
+          {todaysTrials.map((tr) => (
+            <Link key={tr.id} href={`/${locale}/coach/trials`} data-testid="coach-home-trial-row" data-lead-name={tr.lead_name}
+              className="flex items-center justify-between rounded-xl border px-3 py-2 hover:bg-gray-50">
               <span className="text-sm font-medium text-gray-800">{tr.lead_name}</span>
-              <span className="text-xs text-gray-500">
-                {tr.scheduled_time ? tr.scheduled_time.slice(0, 5) : ''}
-              </span>
+              <span className="text-xs text-gray-500">{tr.scheduled_time ? tr.scheduled_time.slice(0, 5) : ''}</span>
             </Link>
           ))}
         </PortalCard>
       )}
 
-      {/* Class List */}
-      {todaysSchedules.length === 0 ? (
-        <PortalCard>
-          <PortalEmpty icon={Calendar}>
-            <span className="block font-medium text-gray-500">{t('coach.home.noClasses')}</span>
-            <span className="mt-1 block text-xs">{t('coach.home.noClassesHint')}</span>
-          </PortalEmpty>
-        </PortalCard>
-      ) : (
-        <div className="space-y-3">
-          {todaysSchedules.map((schedule: any) => {
-            const cls = schedule.classes;
-            const disc = cls?.disciplines && (Array.isArray(cls.disciplines) ? cls.disciplines[0] : cls.disciplines);
-            const classId = cls?.id;
-            const enrolled = enrollmentMap[classId] || 0;
-            const attStatus = attendanceStatusMap[classId] || { total: enrolled, marked: 0 };
-            const isComplete = attStatus.total > 0 && attStatus.marked >= attStatus.total;
+      {/* ── THIS WEEK — teaching load ── */}
+      <ActionCard
+        icon={CalendarDays} title={t('week.title')} count={weekRows.length}
+        emptyText={t('week.empty')} testid="coach-week" isRTL={isRTL}
+        footer={weekRows.length > 0 ? (
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500" data-testid="coach-week-summary">
+            <span>{t('week.sessions', { n: weekRows.length })}</span>
+            <span>{t('week.hours', { h: weekHours })}</span>
+            <span>{t('week.roster', { n: students.length })}</span>
+          </p>
+        ) : undefined}
+      >
+        <DrillDetails
+          testid="coach-week-drill" rowTestid="coach-week-row" isRTL={isRTL}
+          summary={<span className="flex items-center justify-between gap-2 text-sm">
+            <span className="font-medium text-gray-700">{t('week.load', { n: weekRows.length, h: weekHours })}</span>
+            <span className="text-xs text-gray-500">{t('week.acrossClasses', { n: classes.length })}</span>
+          </span>}
+          rows={weekRows.map((r): DrillRow => ({
+            href: `/${locale}/coach/attendance?classId=${r.classId}`,
+            left: <span><span className="font-medium">{weekdayName(r.day)}</span> {r.start}–{r.end} · {r.name}</span>,
+          }))}
+        />
+      </ActionCard>
 
-            return (
-              <PortalCard
-                key={schedule.id}
-                className={cn(
-                  'border-l-4',
-                  isComplete ? 'border-l-green-500' : 'border-l-[#cd1419]'
-                )}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    {/* Time */}
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-gray-700">
-                        {schedule.start_time?.substring(0, 5)} — {schedule.end_time?.substring(0, 5)}
-                      </span>
-                    </div>
+      {/* ── MY STUDENTS — by discipline/belt; who's due to test. Rows reconcile to count. ── */}
+      <ActionCard
+        icon={Users} title={t('students.title')} count={students.length}
+        emptyText={t('students.empty')} testid="coach-students" isRTL={isRTL}
+        footer={students.length > 0 ? (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5" data-testid="coach-students-bydisc">
+            {Object.entries(byDisc).map(([d, n]) => (
+              <span key={d} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                <BookOpen className="h-3 w-3" />{d} · {n}
+              </span>
+            ))}
+            {dueCount > 0 && (
+              <span data-testid="coach-students-due" className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                <Award className="h-3 w-3" />{t('students.dueToTest', { n: dueCount })}
+              </span>
+            )}
+          </div>
+        ) : undefined}
+      >
+        <DrillDetails
+          testid="coach-students-drill" rowTestid="coach-students-row" isRTL={isRTL}
+          summary={<span className="flex items-center justify-between gap-2 text-sm">
+            <span className="font-medium text-gray-700">{t('students.headline', { n: students.length })}</span>
+            {dueCount > 0 && <span className="text-xs font-medium text-amber-700">{t('students.dueToTest', { n: dueCount })}</span>}
+          </span>}
+          rows={students.map((s): DrillRow => ({
+            href: `/${locale}/dashboard/students/${s.id}`,
+            left: (
+              <span className="inline-flex items-center gap-2">
+                {s.name}
+                {s.due && <span data-testid="coach-student-due-chip" className="rounded-full bg-amber-100 px-1.5 py-0.5 text-2xs font-medium text-amber-800">{t('students.due')}</span>}
+              </span>
+            ),
+            right: (
+              <span className="inline-flex items-center gap-2 text-xs">
+                {s.belt && <span className="inline-flex items-center gap-1 text-gray-500"><Award className="h-3 w-3" />{beltLabel(s.belt)}</span>}
+                {s.disc && <span className="text-gray-400">{s.disc}</span>}
+              </span>
+            ),
+          }))}
+        />
+      </ActionCard>
 
-                    {/* Class Name */}
-                    <h3 className={cn('text-base font-bold text-gray-900', isRTL && 'font-arabic')}>
-                      {localizedField(cls, locale, 'name')}
-                    </h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* ── PT ── */}
+        <ActionCard
+          icon={Dumbbell} title={t('pt.title')} count={pt.length}
+          emptyText={t('pt.empty')} testid="coach-pt" isRTL={isRTL}
+          footer={<Link href={`/${locale}/coach/pt`} data-testid="coach-pt-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#cd1419]">{t('pt.manage')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
+        >
+          <DrillDetails
+            testid="coach-pt-drill" rowTestid="coach-pt-row" isRTL={isRTL}
+            summary={<span className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-medium text-gray-700">{t('pt.headline', { n: pt.length })}</span>
+              <span className="text-xs text-gray-500">{t('pt.remaining', { n: ptRemaining })}</span>
+            </span>}
+            rows={pt.map((r): DrillRow => ({
+              href: `/${locale}/coach/pt`,
+              left: r.name,
+              right: <span className={cn('font-medium', r.low ? 'text-amber-700' : 'text-gray-600')}>{r.remaining}/{r.total}</span>,
+            }))}
+          />
+        </ActionCard>
 
-                    {/* Discipline */}
-                    {disc && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <BookOpen className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                        <span className="text-xs text-gray-500">
-                          {localizedField(disc, locale, 'name')}
-                        </span>
-                      </div>
-                    )}
+        {/* ── TRIALS pipeline ── */}
+        <ActionCard
+          icon={CalendarClock} title={t('trials.title')} count={upcomingTrials.length}
+          emptyText={t('trials.empty')} testid="coach-trials" isRTL={isRTL}
+          footer={<Link href={`/${locale}/coach/trials`} data-testid="coach-trials-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#cd1419]">{t('trials.manage')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
+        >
+          <DrillDetails
+            testid="coach-trials-drill" rowTestid="coach-trials-row" isRTL={isRTL}
+            summary={<span className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-medium text-gray-700">{t('trials.headline', { n: upcomingTrials.length })}</span>
+            </span>}
+            rows={upcomingTrials.map((tr): DrillRow => ({
+              href: `/${locale}/coach/trials`,
+              left: tr.lead_name,
+              right: <span className="text-xs text-gray-500" dir="ltr">{new Date(tr.scheduled_date).toLocaleDateString(dateLocale(locale), { month: 'short', day: 'numeric' })}{tr.scheduled_time ? ` ${tr.scheduled_time.slice(0, 5)}` : ''}</span>,
+            }))}
+          />
+        </ActionCard>
+      </div>
 
-                    {/* Room + Students row */}
-                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                      {cls?.room && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                          <span className="text-xs text-gray-500">{cls.room}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                        <span className="text-xs text-gray-500">
-                          {enrolled} / {cls?.max_capacity || '∞'} {t('coach.home.students')}
-                        </span>
-                      </div>
-                      {isComplete && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          {t('coach.home.stats.completed')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Start Attendance Button */}
-                  <Link
-                    href={`/${locale}/coach/attendance?classId=${classId}`}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors flex-shrink-0 ml-3',
-                      isComplete
-                        ? 'bg-gray-100 text-gray-400 pointer-events-none'
-                        : 'bg-[#cd1419] text-white hover:bg-[#b01216]'
-                    )}
-                    aria-disabled={isComplete}
-                  >
-                    {t('coach.home.startAttendance')}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </PortalCard>
-            );
-          })}
+      {/* ── MY PROFILE / LANDING — display only (publish gate unchanged) ── */}
+      <PortalCard data-testid="coach-profile-status">
+        <PortalCardTitle icon={Megaphone}
+          right={<Link href={`/${locale}/coach/profile`} data-testid="coach-profile-open" className="text-xs font-medium text-[#cd1419]">{t('profile.manage')}</Link>}>
+          {t('profile.title')}
+        </PortalCardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-gray-500">{t('profile.landingLabel')}</p>
+          <span data-testid="coach-landing-status" data-status={landing.key}
+            className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium', landing.cls)}>
+            <landing.Icon className="h-3 w-3" />{landing.label}
+          </span>
         </div>
-      )}
+      </PortalCard>
     </div>
-  );
+  )
 }
 
-function StatCard({
-  icon: Icon,
-  value,
-  label,
-  color,
-  bg,
-  testid,
-}: {
-  icon: any;
-  value: number;
-  label: string;
-  color: string;
-  bg: string;
-  testid?: string;
+function Stat({ icon: Icon, value, label, tone, bg, brand }: {
+  icon: any; value: number; label: string; tone: string; bg: string; brand?: boolean
 }) {
   return (
     <PortalCard className="text-center">
-      <div className={cn('inline-flex items-center justify-center h-10 w-10 rounded-full mb-2', bg)}>
-        <Icon data-testid={testid} className={cn('h-5 w-5', color)} />
+      <div className={cn('mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full', bg)}>
+        <Icon data-testid={brand ? 'portal-brand' : undefined} className={cn('h-5 w-5', tone)} />
       </div>
       <p className="text-xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-500 mt-0.5 truncate">{label}</p>
+      <p className="mt-0.5 truncate text-xs text-gray-500">{label}</p>
     </PortalCard>
-  );
+  )
 }

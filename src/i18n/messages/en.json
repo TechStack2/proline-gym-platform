@@ -1605,6 +1605,63 @@
       "role_label": "Coach"
     }
   },
+  "coachHub": {
+    "noCoach": "Coach profile not found",
+    "hello": "Hello 👋",
+    "helloName": "Hello, {name} 👋",
+    "subtitle": "Your day, your students, your world at a glance.",
+    "stats": {
+      "today": "Classes today",
+      "students": "My students",
+      "week": "Sessions / week",
+      "ptSessions": "PT sessions left"
+    },
+    "today": {
+      "title": "Today",
+      "empty": "no classes today",
+      "marked": "marked",
+      "startAttendance": "Start attendance"
+    },
+    "week": {
+      "title": "This week",
+      "empty": "no sessions scheduled",
+      "sessions": "{n} sessions",
+      "hours": "{h}h teaching",
+      "roster": "{n} students",
+      "load": "{n} sessions · {h}h",
+      "acrossClasses": "across {n} classes"
+    },
+    "students": {
+      "title": "My students",
+      "empty": "no students yet",
+      "headline": "{n} active students",
+      "dueToTest": "{n} due to test",
+      "due": "Due",
+      "noDiscipline": "Other"
+    },
+    "pt": {
+      "title": "PT",
+      "empty": "no active packages",
+      "headline": "{n} active clients",
+      "remaining": "{n} sessions left",
+      "manage": "Manage PT"
+    },
+    "trials": {
+      "title": "Trials pipeline",
+      "empty": "no upcoming trials",
+      "headline": "{n} upcoming trials",
+      "manage": "Open trials"
+    },
+    "profile": {
+      "title": "My profile",
+      "landingLabel": "On the public landing",
+      "live": "Live",
+      "comingSoon": "Live · Coming soon",
+      "pending": "Pending approval",
+      "notVisible": "Not on landing",
+      "manage": "Edit profile"
+    }
+  },
   "coachTrials": {
     "title": "Trials",
     "empty": "No trials assigned yet",
