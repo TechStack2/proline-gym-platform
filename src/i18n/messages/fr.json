@@ -2731,6 +2731,18 @@
       "cancelled": "annulée",
       "refunded": "remboursée",
       "overdue": "en retard"
-    }
+    },
+    "captureLead": "Enregistrer un prospect",
+    "newLead": "Nouveau prospect",
+    "captureLeadHint": "Enregistrez un visiteur même hors ligne.",
+    "leadRequired": "Le nom et le téléphone sont requis.",
+    "leadFirstName": "Prénom",
+    "leadLastName": "Nom",
+    "leadPhone": "Téléphone",
+    "leadInterest": "Intérêt (optionnel)",
+    "leadWillQueueOffline": "Hors ligne — ce prospect sera mis en file et synchronisé à la reconnexion",
+    "leadSaveOffline": "Enregistrer hors ligne",
+    "leadSavedOffline": "Enregistré hors ligne · se synchronisera",
+    "leadRecorded": "Prospect enregistré"
   }
 }

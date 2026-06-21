@@ -37,7 +37,9 @@ async function staffContext(): Promise<StaffCtx | { error: string }> {
 }
 
 // ── T1b — staff-manual origination (Add Lead) ────────────────────────────────
-type AddLeadInput = LeadInsert & { source_detail?: string };
+// OFF-3b: `clientUuid` is the offline idempotency key (a re-push settles exactly
+// one lead). Online single-fire omits it → behaviour unchanged.
+type AddLeadInput = LeadInsert & { source_detail?: string; clientUuid?: string | null };
 
 export async function addLead(
   input: AddLeadInput,
@@ -49,6 +51,14 @@ export async function addLead(
   const ctx = await staffContext();
   if ('error' in ctx) return { ok: false, error: ctx.error };
   const { supabase, gymId } = ctx;
+
+  // OFF-3b idempotency: if this offline op already created a lead, return it (no dup).
+  const clientUuid = input.clientUuid ?? null;
+  if (clientUuid) {
+    const { data: existing } = await supabase
+      .from('leads').select('id').eq('client_uuid' as 'id', clientUuid).maybeSingle();
+    if (existing) return { ok: true, leadId: existing.id };
+  }
 
   // Authed staff INSERT — RLS leads_staff_insert (000023) is the guardrail
   // (same-gym, staff role). No .select() needed for the row body.
@@ -65,10 +75,20 @@ export async function addLead(
       interested_discipline_id: parsed.data.discipline_id || null,
       notes: parsed.data.notes || null,
       status: 'new',
-    })
+      client_uuid: clientUuid, // bridge: additive 000064 column, lags generated types
+    } as never)
     .select('id')
     .single();
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // A concurrent re-push collided on the client_uuid unique index → idempotent:
+    // fetch the canonical lead and return it instead of erroring.
+    if (clientUuid && error.code === '23505') {
+      const { data: dup } = await supabase
+        .from('leads').select('id').eq('client_uuid' as 'id', clientUuid).maybeSingle();
+      if (dup) return { ok: true, leadId: dup.id };
+    }
+    return { ok: false, error: error.message };
+  }
 
   // lead_new → the whole front desk (owner + receptionist), sanctioned pattern.
   // Best-effort: a notification failure must never abort the lead creation.
@@ -273,4 +293,27 @@ export async function convertLead(input: {
     totalUsd: Number(totalUsd),
     inviteStatus,
   };
+}
+
+/**
+ * OFF-3b — discard a conflicted offline lead intent WITH an audit trail (never a
+ * silent drop). The lead never reached the server, so the audit (000064) is scoped
+ * by the staff actor's gym. A reason is mandatory.
+ */
+export async function discardOfflineLead(input: {
+  opId: string; name: string; reason: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'unauthenticated' };
+  // Bridge: discard_offline_lead (000064) isn't in the generated Functions yet.
+  const { error } = await (supabase.rpc as unknown as (
+    fn: string, args: Record<string, unknown>,
+  ) => Promise<{ error: { message: string } | null }>)('discard_offline_lead', {
+    p_op_id: input.opId,
+    p_name: input.name,
+    p_reason: input.reason,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }

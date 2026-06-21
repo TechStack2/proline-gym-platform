@@ -444,6 +444,26 @@ export interface PendingPaymentIntent {
   member_name?: string;
 }
 
+// ─── OFF-3b: Offline Tier-1 writes (walk-in lead capture) ────────────
+// Third outbox path — same op_id idempotency pattern (a re-push settles exactly
+// one lead via addLead + the 000064 client_uuid). Drains oldest-first through the
+// EXISTING addLead writer; a server rejection flags `conflict` (resolvable via the
+// OFF-4 loop), never dropped.
+export interface PendingLeadIntent {
+  op_id: string;            // client UUID — PK + addLead idempotency key
+  first_name: string;
+  last_name: string;
+  phone: string;
+  email: string | null;
+  source: string;           // lead source (default 'walk_in')
+  source_detail: string | null;
+  discipline_id: string | null;
+  notes: string | null;
+  client_ts: string;        // ISO — flush order
+  status: 'pending' | 'conflict';
+  last_error?: string;
+}
+
 // ─── Dexie Database ─────────────────────────────────────────────────
 
 class ProlineOfflineDB extends Dexie {
@@ -480,6 +500,9 @@ class ProlineOfflineDB extends Dexie {
 
   // OFF-3: offline payment queue
   pending_payments!: Table<PendingPaymentIntent, string>;
+
+  // OFF-3b: offline lead-capture queue
+  pending_leads!: Table<PendingLeadIntent, string>;
 
   constructor() {
     super('proline_offline_db');
@@ -526,6 +549,11 @@ class ProlineOfflineDB extends Dexie {
     // surfaces conflicts.
     this.version(3).stores({
       pending_payments: 'op_id, client_ts, invoice_id, status',
+    });
+
+    // OFF-3b: additive upgrade — offline lead-capture queue (third outbox path).
+    this.version(4).stores({
+      pending_leads: 'op_id, client_ts, status',
     });
   }
 }

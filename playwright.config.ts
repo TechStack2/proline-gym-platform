@@ -485,6 +485,16 @@ export default defineConfig({
       testMatch: /\/off4\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // OFF-3b — offline lead capture: a walk-in lead captured offline queues in the
+      // unified outbox (3rd path) + pushes idempotently through addLead on reconnect
+      // = exactly one canonical lead; conflicts reuse OFF-4's resolution loop; /ar
+      // clean. testMatch ANCHORED ($). Appended at the END — runs LAST.
+      name: 'off3b',
+      dependencies: ['setup'],
+      testMatch: /\/off3b\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
