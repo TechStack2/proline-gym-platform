@@ -107,3 +107,40 @@ Cycle 3 security review identified 2 residual issues: missing Zod validation on 
 
 ### Summary
 Cycle 3 database review identified 4 residual issues: unscoped `pt_assignments` query, `pt_assignments` missing from `database.ts` types, no `pt_assignments` seed data, and sequential awaits in `pt/page.tsx`. Score dropped 3 points from Cycle 2's ~85/100.
+
+---
+
+## Cycle 6 / OFF-2 — offline reads (Dexie mirror + client lookup)
+
+> **Branch:** `prompt-off2-offline-reads` (off `main`) · **Prompt:** [`cycle-5/prompt-OFF2-offline-reads.md`](./cycle-5/prompt-OFF2-offline-reads.md) · **Design:** [`cycle-5/scoping-offline-parity.md`](./cycle-5/scoping-offline-parity.md). Second offline slice. **READ-ONLY** — offline writes are OFF-3, server-authoritative reconciliation OFF-4. Builds on OFF-1 (SW registers + serves the cached shell in prod).
+
+### The architectural reality
+The front-desk read surfaces — `students/page.tsx`, `schedule/page.tsx`, `students/[id]/page.tsx` — are **server components**: no network → no server render → they cannot render offline. OFF-1's `NetworkFirst` page-cache only re-serves *previously-visited* pages, but the desk must look up **any** member offline. So OFF-2 adds a **client-side read path off the primed Dexie mirror** instead of relying on server rendering.
+
+### 1 · PULL activation (prime the Dexie mirror)
+- Activated the dormant `SyncEngine` PULL ([`sync-engine.ts`](../../src/lib/db/sync-engine.ts)). `pullAll({ full?, tables? })` now (a) honours an explicit `tables` subset, (b) `full` ignores the incremental cursor for a clean prime, and (c) `fullTableSync` orders by `id` (not `updated_at` — `class_enrollments`/`belt_hierarchies` have no `updated_at`, so roster/belt rows would never sync). On completion it `emit('online'|'error')` so readers re-read.
+- **Prime is scoped to the front desk (`/desk`), not the dashboard layout** (see DRAG READ). Core front-desk tables only (`profiles, students, classes, class_schedules, class_enrollments, student_memberships, pt_assignments`), once per session + on each `online` window (throttled), via the authenticated browser client → **gym-scoped by RLS**. Plus a manual **"Sync now"**.
+
+### 2 · Client-read surfaces (the offline front desk)
+A dedicated client surface [`/desk`](../../src/app/[locale]/(dashboard)/desk/offline-desk.tsx) (`force-dynamic` so the prod CSP nonce reaches it → it hydrates; OFF-1 lesson) reads the mirror identically online (fresh prime) and offline (last prime):
+- **Member search → basics:** find by name/phone → name, contact, membership status, PT sessions remaining, belt.
+- **Today's schedule:** `class_schedules` for `new Date().getDay()`, joined to classes.
+- **Class roster:** tap a class → its enrolled members (name + belt) from `class_enrollments`.
+
+### 3 · Offline UX (OFF-1 primitives)
+- **"Cached as of <time>"** stamp on every read (max `sync_metadata.last_synced_at`), with a WifiOff glyph when offline.
+- Any write/full-file affordance is gated by the existing **`online-only-notice`** ("needs connection", testid `needs-connection`): the "Open file" link to `students/[id]` is replaced by the notice offline; **"Sync now"** is disabled offline. OFF-3 makes writes work. `offline-banner` already engages (OFF-1).
+
+### Verify (e2e, reusing the G2 `context.setOffline` harness)
+`e2e/off2.spec.ts` — 2 specs in a dedicated `off2` project:
+1. **prime online → offline → look up from cache:** open `/en/desk` (primes), confirm a seeded member found + "Cached as of" stamp; reload with the SW controlling; `setOffline(true)`; reload → the offline desk renders **from cache** (not a net-error); search Karim → basics (name/membership/PT/belt); tap his Muay Thai class → **roster row**. Asserts the write affordance shows `needs-connection` and `desk-open-file` count is 0 (no write leak).
+2. **`/ar` localized:** offline desk renders in Arabic, search by phone fragment, basics visible, **no `MISSING_MESSAGE`/raw `desk.` keys**.
+
+### ⟶ front desk looks up member/schedule/roster offline from cache; no write leak; G2 intact: **PASS**
+**CI:** [run `27894804465`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27894804465) — **108 passed, 0 failed** (33.3m) on `ba19473`. off2 ✓✓ (offline find→basics + today's schedule + class roster served from Dexie, not a net-error; `desk-open-file` count 0 + `needs-connection` shown = no write leak), G2 ✓✓✓ (offline attendance still persists + reconnect-syncs), `/ar` clean (no `MISSING_MESSAGE`). The desk-scoped prime confirmed: **pt1 ✓✓, pt2 ✓✓✓, ml1 ✓✓ recovered** (all red on the layout-prime Run 1 `27887396156`). Full suite green — no regression to OFF-1/G2.
+
+### DRAG READ
+- **Coverage boundary (offline-capable vs online-only):** the **`/desk` front-desk surface is offline-capable** (member find→basics, today's schedule, class roster). **Still online-only by design:** Member-360 (`students/[id]`), billing, reports, schedule management, and every write — read-only slice; writes are OFF-3, reconciliation OFF-4. The server pages `students/page`/`schedule/page` stay server-rendered; offline, `/desk` is the lookup path.
+- **Prime is desk-scoped, not login-global — deliberate.** First take primed in the dashboard layout ("on login"), which pulled on every dashboard mount and **destabilised the timing-marginal realtime-race specs** (pt1/pt2/ml1 went red on Run 1 `27887396156` while off2 ✓✓ + G2 ✓✓✓). A layout-level pull is a *standing* load on every future dashboard spec, so shrinking it wasn't a real guarantee. Moved the prime into `OfflineDesk` → only the surface that reads offline pays for it, and the race specs see **zero** priming contention. Trade-off: the mirror primes on **visiting the desk online** (the realistic front-desk flow), not at login; a user who logs in and goes offline *without ever opening the desk* has an unprimed mirror — acceptable for this use case; a login-time prime would need its own non-contending mechanism (e.g. a web worker).
+- **`.claude/settings.json` leak fixed in-branch:** a `git add -A` had swept the local Claude permission file into the first commit; dropped it and added `.claude/` to `.gitignore`.
+- **Not addressed (out of scope):** offline writes (OFF-3), reconciliation (OFF-4), non-core read surfaces (billing/reports).
