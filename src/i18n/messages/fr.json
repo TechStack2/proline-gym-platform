@@ -2305,7 +2305,12 @@
       "frozen": "Votre adhésion est actuellement gelée",
       "expiring": "Votre adhésion expire bientôt — renouvelez à la réception",
       "lapsed": "Votre adhésion est terminée — renouvelez à la réception"
-    }
+    },
+    "view": "Voir",
+    "outstanding": "Solde dû",
+    "allSettled": "Tout est réglé",
+    "invoice": "Facture",
+    "enrolledClasses": "Inscrits"
   },
   "portalBilling": {
     "household": "Factures du foyer",

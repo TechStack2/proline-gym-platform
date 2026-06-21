@@ -444,6 +444,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MEMBER360-PORTAL: the member's own drillable premium 360 hub (portal home) —
+      // Membership · Billing · PT · Belt · Classes+attendance, each drilling into its
+      // tab + reconciling (billing rows → balance; attendance rows → count). Read-only;
+      // preserves the B3 guardian kid-switcher, waivers, camps, lifecycle banner + the
+      // IA-2 self-view testids. Opens its own student/parent contexts → must NOT pin a
+      // single session. testMatch ANCHORED to this exact file (it must NOT overlap the
+      // staff `member360.spec.ts` project). Appended at the END.
+      name: 'member360-portal',
+      dependencies: ['setup'],
+      testMatch: /member360-portal\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PORTAL-MODAL systemic fix: inline `fixed inset-0` modals reachable on a
       // PageTransition shell (portal/coach/mobile-dashboard) are portaled to <body>
       // via <ModalPortal>, staying viewport-centered on a scrolled page. Proves
