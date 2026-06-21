@@ -2715,6 +2715,22 @@
       "whish": "Whish",
       "bank_transfer": "تحويل مصرفي",
       "bob_finance": "BOB Finance"
+    },
+    "resolve": "حل",
+    "resubmit": "إعادة الإرسال",
+    "discard": "تجاهل",
+    "discardReasonPlaceholder": "السبب (مطلوب)",
+    "discardReasonRequired": "السبب مطلوب للتجاهل.",
+    "serverState": "الخادم: {status} · الرصيد ${balance}",
+    "resolveNeedsConnection": "اتصل للحل",
+    "resolveFailed": "تعذّر الحل — حاول مجدداً",
+    "invStatus": {
+      "pending": "معلّقة",
+      "partial": "جزئية",
+      "paid": "مدفوعة",
+      "cancelled": "ملغاة",
+      "refunded": "مستردة",
+      "overdue": "متأخرة"
     }
   }
 }

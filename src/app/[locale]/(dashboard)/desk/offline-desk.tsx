@@ -18,9 +18,9 @@ import type { PendingPaymentIntent } from '@/lib/db/schema'
 import { getSyncEngine } from '@/lib/db/sync-engine'
 import { useOnline } from '@/lib/offline/use-online'
 import { outboxStats, flushOutbox, type OutboxStats } from '@/lib/offline/outbox'
-import { listPendingPayments, type RecordPayment } from '@/lib/offline/payments'
+import { listPendingPayments, resubmitPayment, discardPayment, type RecordPayment } from '@/lib/offline/payments'
 import { saveAttendance } from '@/app/[locale]/coach/attendance/actions'
-import { recordPayment } from '../invoices/actions'
+import { recordPayment, getInvoiceState, discardOfflinePayment } from '../invoices/actions'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { RecordPaymentForm, PendingSyncBar, type DeskInvoice } from './desk-payments'
 import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff, Receipt } from 'lucide-react'
@@ -173,6 +173,22 @@ export function OfflineDesk({ locale }: { locale: string }) {
     return () => window.removeEventListener('online', onOnline)
   }, [flushPendingNow])
 
+  // ── OFF-4: conflict resolution ──
+  // Server-truth for the resolution UI (reconcile a stale offline intent).
+  const handleGetState = useCallback((invoiceId: string) => getInvoiceState(invoiceId), [])
+  // Re-submit corrected (same op_id) → re-queue + immediately re-attempt the flush.
+  const handleResubmit = useCallback(async (opId: string, amountUsd?: number) => {
+    await resubmitPayment(opId, amountUsd)
+    await refreshPending()
+    await flushPendingNow()
+  }, [refreshPending, flushPendingNow])
+  // Discard with an audited reason (the server writes the trail; then drop the row).
+  const handleDiscard = useCallback(async (opId: string, reason: string) => {
+    const res = await discardPayment(opId, reason, discardOfflinePayment)
+    await refreshPending()
+    return res
+  }, [refreshPending])
+
   const memberName = useCallback((s: Row) => {
     const p = data?.profiles.get(s.profile_id)
     return [lname(p, 'first_name', locale), lname(p, 'last_name', locale)].filter(Boolean).join(' ').trim()
@@ -274,7 +290,8 @@ export function OfflineDesk({ locale }: { locale: string }) {
 
       {/* OFF-3: the unified pending-sync bar (queued payments + attendance + conflicts). */}
       <PendingSyncBar locale={locale} stats={pendingStats} pending={pendingList}
-        online={online} syncing={syncingPending} onSyncNow={() => void flushPendingNow()} />
+        online={online} syncing={syncingPending} onSyncNow={() => void flushPendingNow()}
+        getState={handleGetState} onResubmit={handleResubmit} onDiscard={handleDiscard} />
 
       {loading ? (
         <div className="flex items-center gap-2 py-10 text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /> {t('loading')}</div>

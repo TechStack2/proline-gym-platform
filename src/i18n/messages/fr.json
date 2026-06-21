@@ -2715,6 +2715,22 @@
       "whish": "Whish",
       "bank_transfer": "Virement bancaire",
       "bob_finance": "BOB Finance"
+    },
+    "resolve": "Résoudre",
+    "resubmit": "Renvoyer",
+    "discard": "Abandonner",
+    "discardReasonPlaceholder": "Motif (requis)",
+    "discardReasonRequired": "Un motif est requis pour abandonner.",
+    "serverState": "Serveur : {status} · solde ${balance}",
+    "resolveNeedsConnection": "Connectez-vous pour résoudre",
+    "resolveFailed": "Échec de la résolution — réessayez",
+    "invStatus": {
+      "pending": "en attente",
+      "partial": "partielle",
+      "paid": "payée",
+      "cancelled": "annulée",
+      "refunded": "remboursée",
+      "overdue": "en retard"
     }
   }
 }

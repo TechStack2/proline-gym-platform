@@ -2715,6 +2715,22 @@
       "whish": "Whish",
       "bank_transfer": "Bank transfer",
       "bob_finance": "BOB Finance"
+    },
+    "resolve": "Resolve",
+    "resubmit": "Re-submit",
+    "discard": "Discard",
+    "discardReasonPlaceholder": "Reason (required)",
+    "discardReasonRequired": "A reason is required to discard.",
+    "serverState": "Server: {status} · balance ${balance}",
+    "resolveNeedsConnection": "Connect to resolve",
+    "resolveFailed": "Could not resolve — try again",
+    "invStatus": {
+      "pending": "pending",
+      "partial": "partial",
+      "paid": "paid",
+      "cancelled": "cancelled",
+      "refunded": "refunded",
+      "overdue": "overdue"
     }
   }
 }

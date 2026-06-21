@@ -474,6 +474,17 @@ export default defineConfig({
       testMatch: /\/off3\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // OFF-4 — reconciliation & conflict resolution: a conflicted offline payment
+      // is RESOLVABLE (discard-with-audit / re-submit corrected), reconciles against
+      // server truth on reconnect, and survives an offline SW cold-open; /ar clean.
+      // G2 setOffline harness. testMatch ANCHORED ($) — an unanchored regex would
+      // substring-collide (the off3↔f3 trap). Appended at the END — runs LAST.
+      name: 'off4',
+      dependencies: ['setup'],
+      testMatch: /\/off4\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

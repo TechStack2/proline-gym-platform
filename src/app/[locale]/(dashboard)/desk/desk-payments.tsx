@@ -18,7 +18,9 @@ import { queuePayment } from '@/lib/offline/payments'
 import type { PendingPaymentIntent } from '@/lib/db/schema'
 import type { OutboxStats } from '@/lib/offline/outbox'
 import { recordPayment } from '../invoices/actions'
-import { CloudOff, RefreshCw, Loader2, AlertTriangle, CheckCircle2, Banknote } from 'lucide-react'
+import { CloudOff, RefreshCw, Loader2, AlertTriangle, CheckCircle2, Banknote, Undo2, Trash2, WifiOff } from 'lucide-react'
+
+export type InvoiceState = { status: string; totalUsd: number; balanceUsd: number }
 
 export type DeskInvoice = {
   id: string
@@ -155,7 +157,7 @@ export function RecordPaymentForm({
 }
 
 export function PendingSyncBar({
-  locale, stats, pending, online, syncing, onSyncNow,
+  locale, stats, pending, online, syncing, onSyncNow, getState, onResubmit, onDiscard,
 }: {
   locale: string
   stats: OutboxStats
@@ -163,6 +165,9 @@ export function PendingSyncBar({
   online: boolean
   syncing: boolean
   onSyncNow: () => void
+  getState: (invoiceId: string) => Promise<InvoiceState | null>
+  onResubmit: (opId: string, amountUsd?: number) => Promise<void>
+  onDiscard: (opId: string, reason: string) => Promise<{ ok: boolean; error?: string }>
 }) {
   const t = useTranslations('desk')
   const isRTL = locale === 'ar'
@@ -190,18 +195,120 @@ export function PendingSyncBar({
         </button>
       </div>
       {conflicts.length > 0 && (
-        <ul className="mt-2 space-y-1" data-testid="desk-conflict-list">
+        <ul className="mt-2 space-y-2" data-testid="desk-conflict-list">
           {conflicts.map((c) => (
-            <li key={c.op_id} data-testid="desk-conflict-row"
-              className="flex items-start justify-between gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs">
-              <span className="font-medium text-gray-800">
-                {c.member_name || '—'} · {c.invoice_number || c.invoice_id.slice(0, 8)} · ${c.amount_usd.toFixed(2)}
-              </span>
-              <span className="text-amber-700">{c.last_error || t('needsReviewShort')}</span>
-            </li>
+            <ConflictRow key={c.op_id} locale={locale} item={c} online={online}
+              getState={getState} onResubmit={onResubmit} onDiscard={onDiscard} />
           ))}
         </ul>
       )}
     </div>
+  )
+}
+
+/**
+ * OFF-4 — a resolvable conflict row. Expanding it fetches the server's authoritative
+ * invoice state (reconcile-against-truth) and offers two bounded actions: re-submit
+ * corrected (same op_id, idempotent) or discard-with-reason (audited, never silent).
+ */
+function ConflictRow({
+  locale, item, online, getState, onResubmit, onDiscard,
+}: {
+  locale: string
+  item: PendingPaymentIntent
+  online: boolean
+  getState: (invoiceId: string) => Promise<InvoiceState | null>
+  onResubmit: (opId: string, amountUsd?: number) => Promise<void>
+  onDiscard: (opId: string, reason: string) => Promise<{ ok: boolean; error?: string }>
+}) {
+  const t = useTranslations('desk')
+  const isRTL = locale === 'ar'
+  const [open, setOpen] = useState(false)
+  const [server, setServer] = useState<InvoiceState | null>(null)
+  const [amount, setAmount] = useState(item.amount_usd.toFixed(2))
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  const expand = async () => {
+    setOpen(true)
+    if (online) {
+      const s = await getState(item.invoice_id).catch(() => null)
+      setServer(s)
+      if (s && s.balanceUsd > 0) setAmount(s.balanceUsd.toFixed(2))
+    }
+  }
+  const resubmit = async () => {
+    setBusy(true); setErr('')
+    try { await onResubmit(item.op_id, parseFloat(amount)) } finally { setBusy(false) }
+  }
+  const discard = async () => {
+    if (!reason.trim()) { setErr(t('discardReasonRequired')); return }
+    setBusy(true); setErr('')
+    try {
+      const res = await onDiscard(item.op_id, reason.trim())
+      if (!res.ok) setErr(res.error || t('resolveFailed'))
+    } finally { setBusy(false) }
+  }
+
+  const invStatus = (s: string) => {
+    const key = `invStatus.${s}`
+    const label = t(key)
+    return label === key ? s : label
+  }
+
+  return (
+    <li data-testid="desk-conflict-row" data-op-id={item.op_id} dir={isRTL ? 'rtl' : 'ltr'}
+      className="rounded-lg border border-amber-200 bg-white p-2.5 text-xs">
+      <div className="flex items-start justify-between gap-2">
+        <span className="font-medium text-gray-800">
+          {item.member_name || '—'} · {item.invoice_number || item.invoice_id.slice(0, 8)} · ${item.amount_usd.toFixed(2)}
+        </span>
+        {!open && (
+          <button type="button" data-testid="desk-conflict-resolve" onClick={() => void expand()}
+            className="shrink-0 rounded-md bg-amber-600 px-2 py-1 font-semibold text-white hover:bg-amber-700">
+            {t('resolve')}
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-amber-700" data-testid="desk-conflict-reason">{item.last_error || t('needsReviewShort')}</p>
+
+      {open && (
+        <div className="mt-2 space-y-2 border-t border-amber-100 pt-2">
+          {online && server && (
+            <p data-testid="desk-conflict-server-state" className="text-gray-600">
+              {t('serverState', { status: invStatus(server.status), balance: server.balanceUsd.toFixed(2) })}
+            </p>
+          )}
+          {!online && (
+            <p className="inline-flex items-center gap-1 text-amber-700" data-testid="desk-resolve-needs-connection">
+              <WifiOff className="h-3 w-3" /> {t('resolveNeedsConnection')}
+            </p>
+          )}
+
+          {/* Re-submit corrected (same op_id — idempotency holds). */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input data-testid="desk-resubmit-amount" type="number" step="0.01" min="0" value={amount}
+              onChange={(e) => setAmount(e.target.value)} disabled={!online || busy}
+              className="w-24 rounded-md border border-gray-200 px-2 py-1" />
+            <button type="button" data-testid="desk-resubmit-btn" onClick={() => void resubmit()} disabled={!online || busy}
+              className="inline-flex items-center gap-1 rounded-md border px-2 py-1 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+              <Undo2 className="h-3 w-3" /> {t('resubmit')}
+            </button>
+          </div>
+          {/* Discard with a mandatory audit reason (never a silent drop). */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input data-testid="desk-discard-reason" value={reason} onChange={(e) => setReason(e.target.value)}
+              placeholder={t('discardReasonPlaceholder')} disabled={!online || busy}
+              className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1" />
+            <button type="button" data-testid="desk-discard-btn" onClick={() => void discard()} disabled={!online || busy}
+              className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 font-medium text-red-700 hover:bg-red-50 disabled:opacity-50">
+              <Trash2 className="h-3 w-3" /> {t('discard')}
+            </button>
+          </div>
+          {err && <p data-testid="desk-resolve-error" className="text-red-700">{err}</p>}
+        </div>
+      )}
+    </li>
   )
 }
