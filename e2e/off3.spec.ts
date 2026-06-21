@@ -1,4 +1,5 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
+import { randomUUID } from 'crypto'
 import { ROLES } from './roles'
 import { vis, untilConsistent } from './helpers'
 
@@ -91,7 +92,7 @@ test.describe('OFF-3 · offline front-desk writes (money path + idempotency)', (
       await untilConsistent(async () => {
         const btn = vis(page, '[data-testid="desk-sync-pending"]').first()
         if (await btn.isEnabled().catch(() => false)) await btn.click().catch(() => {})
-        await expect(page.locator('[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 5_000 })
+        await expect(vis(page, '[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 5_000 })
       }, { timeout: 90_000 })
 
       // ── EXACTLY ONE canonical payment on the server; the invoice is settled.
@@ -112,9 +113,11 @@ test.describe('OFF-3 · offline front-desk writes (money path + idempotency)', (
       await expect(vis(page, '[data-testid="desk-invoice-row"]').filter({ hasText: inv.number }).first(),
         'invoice primed (so the desk DB is open at v3)').toBeVisible({ timeout: 90_000 })
 
-      // White-box: inject a queued intent with a FIXED op_id (the idempotency key),
-      // so we can re-push the SAME key and prove record_payment no-ops the second time.
-      const opId = '0fff0000-0000-4000-8000-00000000abcd'
+      // White-box: inject a queued intent with a per-run op_id (the idempotency
+      // key), so we can re-push the SAME key and prove record_payment no-ops the
+      // second time. Per-run (not hardcoded) so retries / parallel projects on the
+      // shared gym never collide on the global-unique client_uuid.
+      const opId = randomUUID()
       const inject = () => page.evaluate(({ opId, invId }) => new Promise<void>((resolve, reject) => {
         const open = indexedDB.open('proline_offline_db')
         open.onsuccess = () => {
@@ -136,7 +139,10 @@ test.describe('OFF-3 · offline front-desk writes (money path + idempotency)', (
         await page.goto('/en/desk')
         await expect(vis(page, '[data-testid="desk-pending-bar"]').first()).toBeVisible({ timeout: 15_000 })
         await vis(page, '[data-testid="desk-sync-pending"]').first().click()
-        await expect(page.locator('[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 30_000 })
+        // :visible — a manual flush updates only the clicked shell's instance; the
+        // hidden shell keeps its own pending state (double-shell), so count the
+        // visible bar only.
+        await expect(vis(page, '[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 30_000 })
       }
 
       // First push → records the payment.
@@ -199,26 +205,23 @@ test.describe('OFF-3 · offline front-desk writes (money path + idempotency)', (
   })
 
   test('/ar offline payment UI renders localized (no missing keys)', async ({ browser }) => {
-    test.setTimeout(180_000)
+    test.setTimeout(150_000)
     const { ctx, page } = await ownerPage(browser, 'ar')
     try {
       const inv = await issueForKarim(page, 15, 'ar')
       const invRow = () => vis(page, '[data-testid="desk-invoice-row"]').filter({ hasText: inv.number }).first()
-      await page.goto('/ar/desk')
-      await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 15_000 })
-      await searchOpenKarim(page, '70000001') // Karim by phone (locale-agnostic)
-      await expect(invRow()).toBeVisible({ timeout: 90_000 })
-      await primeSW(page)
+      await openKarimOnDesk(page, 'ar', '70000001') // Karim by phone (locale-agnostic)
+      await expect(invRow(), 'issued invoice primed into the /ar desk mirror').toBeVisible({ timeout: 90_000 })
 
+      // Go offline IN PLACE — the desk is already mounted + the mirror primed, so
+      // no SW reload is needed here (off2 + the /en money loop cover the offline
+      // reload). Wait for the offline state to settle before the write.
       await ctx.setOffline(true)
-      await untilConsistent(async () => {
-        await page.reload()
-        await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 10_000 })
-      }, { timeout: 60_000 })
-      await searchOpenKarim(page, '70000001')
+      await page.waitForFunction(() => !navigator.onLine, null, { timeout: 10_000 })
       await invRow().getByTestId('desk-record-payment').click()
       await invRow().getByTestId('pay-submit').click()
       await expect(invRow().getByTestId('pay-saved-offline'), 'localized "saved offline" on /ar').toBeVisible({ timeout: 10_000 })
+      await expect(vis(page, '[data-testid="desk-pending-bar"]').first(), 'localized pending bar on /ar').toBeVisible()
       expect(await page.locator('text=MISSING_MESSAGE').count(), 'no MISSING_MESSAGE on /ar').toBe(0)
       expect(await page.locator('text=desk.').count(), 'no unresolved desk.* key').toBe(0)
       await ctx.setOffline(false)

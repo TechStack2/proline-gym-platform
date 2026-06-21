@@ -330,7 +330,8 @@ export default defineConfig({
       // member to "outdated"); append-only signatures, nothing later reads them.
       name: 'f3',
       dependencies: ['setup'],
-      testMatch: /f3\.spec\.ts/,
+      testMatch: /\/f3\.spec\.ts$/, // anchored: must not also match off3.spec.ts
+
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -459,7 +460,7 @@ export default defineConfig({
       // G2 setOffline harness. Appended at the END — runs LAST.
       name: 'off3',
       dependencies: ['setup'],
-      testMatch: /off3\.spec\.ts/,
+      testMatch: /\/off3\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],
