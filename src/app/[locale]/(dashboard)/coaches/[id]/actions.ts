@@ -62,8 +62,53 @@ export async function publishCoachProfile(input: {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'unauthenticated' }
-  const { error } = await supabase.rpc('publish_coach_profile', { p_coach_id: input.coachId })
+
+  // COACH-PHOTO-GATE: if a draft photo is staged (a PRIVATE coach-avatar-drafts
+  // path in pending.avatar_url), promote it — copy the bytes into the PUBLIC
+  // `avatars` bucket at the live contract path, then hand the resulting public
+  // URL to the RPC so it sets profiles.avatar_url atomically + gated. This byte
+  // copy is the ONLY path a coach photo reaches the landing; the owner/head_coach
+  // gate is re-checked inside the RPC (defense in depth). Done BEFORE the RPC so
+  // a non-owner caller is rejected by the RPC and nothing goes live.
+  const { data: coach } = await supabase
+    .from('coaches')
+    .select('gym_id, profile_id')
+    .eq('id', input.coachId)
+    .maybeSingle()
+  if (!coach) return { ok: false, error: 'coach not found' }
+
+  const { data: pending } = await supabase
+    .from('coach_profile_pending')
+    .select('avatar_url')
+    .eq('coach_id', input.coachId)
+    .maybeSingle()
+  const draftPath = (pending as any)?.avatar_url as string | null
+
+  let liveAvatarUrl: string | null = null
+  if (draftPath) {
+    const { data: blob, error: dlErr } = await supabase.storage.from('coach-avatar-drafts').download(draftPath)
+    if (dlErr) return { ok: false, error: dlErr.message }
+    const livePath = `${(coach as any).gym_id}/${(coach as any).profile_id}.jpg`
+    const { error: upErr } = await supabase.storage.from('avatars').upload(livePath, blob, {
+      upsert: true, contentType: 'image/jpeg', cacheControl: '3600',
+    })
+    if (upErr) return { ok: false, error: upErr.message }
+    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(livePath)
+    liveAvatarUrl = `${pub.publicUrl}?v=${Date.now()}` // cache-buster on the in-place replace
+  }
+
+  const { error } = await supabase.rpc('publish_coach_profile', {
+    p_coach_id: input.coachId,
+    p_live_avatar_url: liveAvatarUrl,
+  })
   if (error) return { ok: false, error: error.message }
+
+  // The RPC cleared pending (incl. the photo ref) — best-effort remove the now-
+  // orphaned private draft object.
+  if (draftPath) {
+    await supabase.storage.from('coach-avatar-drafts').remove([draftPath]).catch(() => {})
+  }
+
   revalidatePath('/[locale]/coaches/[id]', 'page')
   return { ok: true }
 }

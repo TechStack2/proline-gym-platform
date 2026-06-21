@@ -11,7 +11,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-import { Clock, Loader2, Rocket, Pencil, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Clock, Loader2, Rocket, Pencil, Eye, EyeOff, ArrowRight, ImageIcon } from 'lucide-react'
+import { Avatar } from '@/components/shared/avatar'
 import { publishCoachProfile, setCoachLanding, saveCoachDraftStaff } from './actions'
 
 type Fields = {
@@ -22,6 +23,7 @@ const LANGS = [{ code: 'en', label: 'EN' }, { code: 'ar', label: 'AR' }, { code:
 
 export function CoachPublishPanel({
   coachId, locale, canPublish, live, pending, hasPending, landingVisible, landingStatus, lastPublishedAt,
+  name, livePhotoUrl, draftPhotoUrl, hasPhotoDraft,
 }: {
   coachId: string
   locale: string
@@ -32,6 +34,10 @@ export function CoachPublishPanel({
   landingVisible: boolean
   landingStatus: string
   lastPublishedAt: string | null
+  name: string
+  livePhotoUrl: string | null
+  draftPhotoUrl: string | null
+  hasPhotoDraft: boolean
 }) {
   const t = useTranslations('coachPublish')
   const router = useRouter()
@@ -90,6 +96,32 @@ export function CoachPublishPanel({
               </div>
             </div>
           ))}
+
+          {/* Photo diff (before → after) — COACH-PHOTO-GATE */}
+          {hasPhotoDraft && (
+            <div className="mt-3 text-sm" data-testid="coach360-photo-diff">
+              <span className="inline-flex items-center gap-1 text-xs font-medium uppercase text-gray-400">
+                <ImageIcon className="h-3.5 w-3.5" /> {t('photo')}
+              </span>
+              <div className="mt-1 flex items-center gap-3">
+                <div className="flex flex-col items-center gap-1">
+                  <Avatar url={livePhotoUrl} name={name} size="md" />
+                  <span className="text-[10px] uppercase tracking-wide text-gray-400">{t('photoLive')}</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-amber-600 shrink-0" />
+                <div className="flex flex-col items-center gap-1">
+                  {draftPhotoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={draftPhotoUrl} alt={name} data-testid="coach360-photo-draft"
+                      className="h-12 w-12 rounded-full object-cover ring-2 ring-amber-400" />
+                  ) : (
+                    <Avatar url={null} name={name} size="md" />
+                  )}
+                  <span className="text-[10px] uppercase tracking-wide text-amber-700">{t('photoNew')}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <p className="mt-4 text-sm text-gray-500" data-testid="coach360-no-pending">{t('noPending')}</p>

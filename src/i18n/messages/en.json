@@ -2586,7 +2586,12 @@
     "bioLabel": "Bio",
     "save": "Save changes",
     "saved": "Saved — pending approval",
-    "previewTitle": "Landing preview"
+    "previewTitle": "Landing preview",
+    "photoLabel": "Profile photo",
+    "photoHint": "Upload a headshot — it goes live only after an admin publishes it.",
+    "photoPending": "Photo pending approval",
+    "photoChange": "Change photo",
+    "photoFailed": "Photo upload failed"
   },
   "coachPublish": {
     "title": "Landing showcase",
@@ -2603,6 +2608,9 @@
     "hide": "Hide from landing",
     "editDirect": "Edit directly",
     "saveDraft": "Save draft",
-    "lastPublished": "Last published"
+    "lastPublished": "Last published",
+    "photo": "Photo",
+    "photoLive": "Live",
+    "photoNew": "New"
   }
 }

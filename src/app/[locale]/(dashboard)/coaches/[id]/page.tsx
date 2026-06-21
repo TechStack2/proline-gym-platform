@@ -57,6 +57,16 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
   const { data: coachPending } = await supabase
     .from('coach_profile_pending').select('*').eq('coach_id', id).maybeSingle()
 
+  // COACH-PHOTO-GATE: sign the staged draft photo (PRIVATE bucket) so staff can
+  // review the before/after; RLS lets in-gym staff read it.
+  let draftPhotoUrl: string | null = null
+  if ((coachPending as any)?.avatar_url) {
+    const { data: signed } = await supabase.storage
+      .from('coach-avatar-drafts')
+      .createSignedUrl((coachPending as any).avatar_url, 3600)
+    draftPhotoUrl = signed?.signedUrl ?? null
+  }
+
   // Schedule window (day/week toggle).
   const schedView = searchParams?.sched === 'day' ? 'day' : 'week'
   const now = new Date()
@@ -243,6 +253,10 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
         landingVisible={!!(coach as any).landing_visible}
         landingStatus={(coach as any).landing_status ?? 'active'}
         lastPublishedAt={(coach as any).last_published_at ?? null}
+        name={name}
+        livePhotoUrl={prof?.avatar_url ?? null}
+        draftPhotoUrl={draftPhotoUrl}
+        hasPhotoDraft={!!(coachPending as any)?.avatar_url}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">

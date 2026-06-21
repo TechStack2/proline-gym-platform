@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { Award, Clock, Loader2, Save, Eye } from 'lucide-react'
 import { saveCoachDraft } from './actions'
+import { CoachPhotoDraftUpload } from './CoachPhotoDraftUpload'
 
 type Fields = {
   specialization_ar: string; specialization_en: string; specialization_fr: string
@@ -25,12 +26,16 @@ const LANGS = [
 ] as const
 
 export function CoachProfileEditor({
-  coachId, locale, name, avatarUrl, live, pending, hasPending,
+  coachId, locale, name, avatarUrl, gymId, profileId, draftPhotoUrl, draftPhotoPath, live, pending, hasPending,
 }: {
   coachId: string
   locale: string
   name: string
   avatarUrl: string | null
+  gymId: string
+  profileId: string
+  draftPhotoUrl: string | null
+  draftPhotoPath: string | null
   live: Fields
   pending: Partial<Fields> | null
   hasPending: boolean
@@ -77,6 +82,18 @@ export function CoachProfileEditor({
         )}
       </div>
       <p className="text-sm text-gray-500 mb-5">{t('note')}</p>
+
+      {/* Photo (staged as a draft — admin publishes from Coach-360) */}
+      <CoachPhotoDraftUpload
+        coachId={coachId}
+        gymId={gymId}
+        profileId={profileId}
+        name={name}
+        liveUrl={avatarUrl}
+        draftUrl={draftPhotoUrl}
+        draftPath={draftPhotoPath}
+        locale={locale}
+      />
 
       {/* Specialty (per language) */}
       <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">{t('specialtyLabel')}</label>

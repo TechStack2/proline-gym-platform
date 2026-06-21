@@ -55,3 +55,44 @@ export async function saveCoachDraft(input: {
   revalidatePath('/[locale]/coaches/[id]', 'page')
   return { ok: true }
 }
+
+/**
+ * COACH-PHOTO-GATE — record a DRAFT photo (pending, not live). The browser
+ * already uploaded the downscaled image to the PRIVATE `coach-avatar-drafts`
+ * bucket (Storage RLS: coach-own / in-gym staff, no anon); here we only record
+ * its object PATH in the reserved coach_profile_pending.avatar_url column so the
+ * Coach-360 panel can show the diff and publish can promote it. The live
+ * profiles.avatar_url is untouched until an admin publishes. Only the photo
+ * columns are written → any text draft on the same row is preserved.
+ */
+export async function saveCoachDraftPhoto(input: {
+  coachId: string
+  path: string
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: 'unauthenticated' }
+
+  const { data: coach } = await supabase
+    .from('coaches')
+    .select('gym_id')
+    .eq('id', input.coachId)
+    .maybeSingle()
+  if (!coach) return { ok: false, error: 'coach not found' }
+
+  const { error } = await supabase.from('coach_profile_pending').upsert(
+    {
+      coach_id: input.coachId,
+      gym_id: (coach as any).gym_id,
+      avatar_url: input.path,
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    },
+    { onConflict: 'coach_id' },
+  )
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/[locale]/coach/profile', 'page')
+  revalidatePath('/[locale]/coaches/[id]', 'page')
+  return { ok: true }
+}

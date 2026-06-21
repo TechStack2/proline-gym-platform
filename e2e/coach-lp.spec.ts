@@ -22,6 +22,7 @@ import { vis, gymSlug, untilConsistent } from './helpers'
  */
 const RUN = Date.now().toString().slice(-6)
 const NEW_BIO = `Championship striker COACHLP ${RUN}`
+const FIXTURE = 'e2e/fixtures/avatar.png'
 
 async function ctxFor(browser: Browser, role: keyof typeof ROLES, locale = 'en') {
   const ctx = await browser.newContext({ storageState: ROLES[role].storage, locale })
@@ -87,6 +88,74 @@ test.describe.serial('COACH-LP · landing showcase + coach-edit→admin-publish'
       }, { timeout: 45_000 })
     } finally {
       await coach.ctx.close(); await owner.ctx.close(); await anon.ctx.close()
+    }
+  })
+
+  // COACH-PHOTO-GATE — the headshot flows through the SAME admin gate as the text.
+  test('coach uploads photo → PENDING (live avatar unchanged + draft not anon-readable) → reception can\'t publish → owner publishes → new photo live', async ({ browser }) => {
+    test.setTimeout(180_000)
+    const coach = await ctxFor(browser, 'coach') // Sami
+    const reception = await ctxFor(browser, 'reception')
+    const owner = await ctxFor(browser, 'owner')
+    const anon = await anonCtx(browser)
+    // the published Sami card on the anon showcase
+    const samiCard = (p: any) => vis(p, '[data-testid="landing-coach-card"]').filter({ hasText: 'Sami' }).first()
+    const avatarSrc = async (p: any): Promise<string | null> => {
+      const img = samiCard(p).locator('img')
+      return (await img.count()) ? await img.first().getAttribute('src') : null
+    }
+    try {
+      // Sami is landing-visible from the previous test. Record his current avatar.
+      await openLanding(anon.page)
+      await expect(samiCard(anon.page), 'Sami is on the showcase').toBeVisible({ timeout: 15_000 })
+      const beforeSrc = await avatarSrc(anon.page)
+
+      // ── Coach stages a NEW photo (portal self-editor) → recorded as a DRAFT ──
+      await coach.page.goto('/en/coach/profile')
+      const editor = vis(coach.page, '[data-testid="coach-profile-editor"]').first()
+      await expect(editor).toBeVisible({ timeout: 15_000 })
+      const coachId = (await editor.getAttribute('data-coach-id')) || ''
+      // the file input is CSS-hidden (single-shell coach app) — set files directly
+      await coach.page.locator('[data-testid="coach-photo-draft-input"]').first().setInputFiles(FIXTURE)
+      await expect(vis(coach.page, '[data-testid="coach-photo-pending"]').first(), 'photo marked pending approval').toBeVisible({ timeout: 20_000 })
+      const draftPath = (await coach.page.locator('[data-testid="coach-photo-draft"]').first().getAttribute('data-path')) || ''
+      expect(draftPath, 'draft object path exposed').toBeTruthy()
+
+      // ── GATE: the live landing avatar is UNCHANGED (the draft is not live) ──
+      await openLanding(anon.page)
+      expect(await avatarSrc(anon.page), 'live landing avatar unchanged before publish').toBe(beforeSrc)
+
+      // ── LEAK GUARD: the draft object is NOT anon-readable (private bucket) ──
+      const base = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+      expect(base, 'supabase url available to the test').toBeTruthy()
+      const draftPublicUrl = `${base}/storage/v1/object/public/coach-avatar-drafts/${draftPath}`
+      const leak = await anon.page.request.get(draftPublicUrl)
+      expect(leak.status(), `draft photo not anon-readable (${draftPublicUrl})`).not.toBe(200)
+
+      // ── Reception can REVIEW the photo diff but CANNOT publish it ──
+      await reception.page.goto(`/en/coaches/${coachId}`)
+      await expect(vis(reception.page, '[data-testid="coach360-photo-diff"]').first(), 'reception sees the photo diff').toBeVisible({ timeout: 15_000 })
+      await expect(reception.page.locator('[data-testid="coach360-publish"]'), 'reception cannot publish the photo').toHaveCount(0)
+
+      // ── Owner reviews the photo diff in Coach-360 → Publish ──
+      await owner.page.goto(`/en/coaches/${coachId}`)
+      await expect(vis(owner.page, '[data-testid="coach360-photo-diff"]').first(), 'owner sees the photo before/after').toBeVisible({ timeout: 15_000 })
+      await expect(vis(owner.page, '[data-testid="coach360-photo-draft"]').first(), 'the staged photo renders in the diff').toBeVisible()
+      await vis(owner.page, '[data-testid="coach360-publish"]').first().click()
+      await expect(vis(owner.page, '[data-testid="coach360-landing-status"]').first()).toHaveAttribute('data-visible', 'true', { timeout: 15_000 })
+
+      // ── The NEW photo is now LIVE on the anon landing ──
+      await untilConsistent(async () => {
+        await openLanding(anon.page)
+        const img = samiCard(anon.page).locator('img').first()
+        await expect(img, 'Sami now has a live photo').toBeVisible({ timeout: 6_000 })
+        const src = await img.getAttribute('src')
+        expect(src && src !== beforeSrc, 'landing avatar updated to the published photo').toBeTruthy()
+        expect(src, 'published from the public avatars bucket').toContain('/avatars/')
+        expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth), 'published photo loads (no 404)').toBeGreaterThan(0)
+      }, { timeout: 45_000 })
+    } finally {
+      await coach.ctx.close(); await reception.ctx.close(); await owner.ctx.close(); await anon.ctx.close()
     }
   })
 

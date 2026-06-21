@@ -2586,7 +2586,12 @@
     "bioLabel": "Bio",
     "save": "Enregistrer",
     "saved": "Enregistré — en attente de validation",
-    "previewTitle": "Aperçu de la page"
+    "previewTitle": "Aperçu de la page",
+    "photoLabel": "Photo de profil",
+    "photoHint": "Téléversez une photo — elle n'est publiée qu'après validation par un administrateur.",
+    "photoPending": "Photo en attente de validation",
+    "photoChange": "Changer la photo",
+    "photoFailed": "Échec du téléversement de la photo"
   },
   "coachPublish": {
     "title": "Vitrine des coachs",
@@ -2603,6 +2608,9 @@
     "hide": "Masquer de la page",
     "editDirect": "Modifier directement",
     "saveDraft": "Enregistrer le brouillon",
-    "lastPublished": "Dernière publication"
+    "lastPublished": "Dernière publication",
+    "photo": "Photo",
+    "photoLive": "Actuelle",
+    "photoNew": "Nouvelle"
   }
 }
