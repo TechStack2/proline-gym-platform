@@ -16,12 +16,6 @@ async function ownerPage(browser: Browser, locale = 'en') {
   return { ctx, page: await ctx.newPage() }
 }
 
-async function primeSW(page: Page) {
-  await page.reload()
-  await page.waitForLoadState('networkidle').catch(() => {})
-  await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 20_000 }).catch(() => {})
-}
-
 /** White-box: queue a lead intent straight into the Dexie outbox (the desk DB is
  *  open at v4 once /desk has mounted). disciplineId set to a bogus-but-valid UUID
  *  forces an FK rejection on flush (the conflict path). */
@@ -60,14 +54,11 @@ test.describe('OFF-3b · offline lead capture (3rd outbox path)', () => {
     try {
       await page.goto('/en/desk')
       await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 15_000 })
-      await primeSW(page)
 
-      // OFFLINE: capture the walk-in lead.
+      // OFFLINE (in place) — the desk is already loaded; capturing a lead is a client
+      // action that needs no page reload (the SW-served offline reload is covered by
+      // off2/off4 cold-open). Wait for the offline state to settle before the write.
       await ctx.setOffline(true)
-      await untilConsistent(async () => {
-        await page.reload()
-        await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 10_000 })
-      }, { timeout: 60_000 })
       await page.waitForFunction(() => !navigator.onLine, null, { timeout: 10_000 })
       await vis(page, '[data-testid="desk-capture-lead"]').first().click()
       await vis(page, '[data-testid="lead-first-name"]').first().fill(first)
