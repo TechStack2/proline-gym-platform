@@ -316,33 +316,36 @@ export class SyncEngine {
    * Pull all server changes since last sync into local Dexie.
    * Uses updated_at cursor for efficient incremental sync.
    */
-  async pullAll(): Promise<{ pulled: number; errors: string[] }> {
+  async pullAll(opts?: { full?: boolean; tables?: readonly string[] }): Promise<{ pulled: number; errors: string[] }> {
     if (this.syncing) return { pulled: 0, errors: ['Sync already in progress'] };
     this.syncing = true;
 
     const errors: string[] = [];
     let totalPulled = 0;
+    // OFF-2: the prime narrows to the front-desk core (keeps the prime light so it
+    // doesn't contend with the rest of the app); default = the full mirror.
+    const tables = opts?.tables ?? PULL_SYNC_TABLES;
 
     try {
       this.emit('syncing', {
         phase: 'pull',
         current: 0,
-        total: PULL_SYNC_TABLES.length,
+        total: tables.length,
         table_name: 'starting',
       });
 
-      for (let i = 0; i < PULL_SYNC_TABLES.length; i++) {
-        const table_name = PULL_SYNC_TABLES[i];
+      for (let i = 0; i < tables.length; i++) {
+        const table_name = tables[i];
 
         this.emit('syncing', {
           phase: 'pull',
           current: i + 1,
-          total: PULL_SYNC_TABLES.length,
+          total: tables.length,
           table_name,
         });
 
         try {
-          const pulled = await this.pullTable(table_name);
+          const pulled = await this.pullTable(table_name, opts?.full);
           totalPulled += pulled;
         } catch (err: any) {
           errors.push(
@@ -354,15 +357,20 @@ export class SyncEngine {
       this.syncing = false;
     }
 
+    // Terminal signal so subscribers (the OFF-2 offline desk) re-read the mirror.
+    this.emit(errors.length ? 'error' : 'online');
     return { pulled: totalPulled, errors };
   }
 
   /**
    * Pull a single table from Supabase into Dexie using cursor pagination.
    */
-  private async pullTable(table_name: string): Promise<number> {
+  private async pullTable(table_name: string, full = false): Promise<number> {
     const meta = await this.db.sync_metadata.get(table_name);
-    const cursor = meta?.last_cursor || meta?.last_synced_at;
+    // `full` (OFF-2 prime) forces a full re-pull — necessary for tables without
+    // an `updated_at` column (class_enrollments, belt_hierarchies, …), whose
+    // incremental cursor query would 42703 and never refresh.
+    const cursor = full ? null : (meta?.last_cursor || meta?.last_synced_at);
     let pulled = 0;
 
     // First sync: download all records
@@ -437,10 +445,12 @@ export class SyncEngine {
       const from = page * PULL_BATCH_SIZE;
       const to = from + PULL_BATCH_SIZE - 1;
 
+      // Order by `id` (every table has it) — NOT `updated_at`, which several
+      // mirrored tables (class_enrollments, belt_hierarchies, …) don't have.
       const { data, error } = await this.supabase
         .from(table_name)
         .select('*')
-        .order('updated_at', { ascending: false })
+        .order('id', { ascending: true })
         .range(from, to);
 
       if (error) throw new Error(`Full sync failed: ${error.message}`);

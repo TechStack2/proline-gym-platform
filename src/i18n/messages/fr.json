@@ -2612,5 +2612,28 @@
     "photo": "Photo",
     "photoLive": "Actuelle",
     "photoNew": "Nouvelle"
+  },
+  "desk": {
+    "title": "Accueil · Hors ligne",
+    "cachedAt": "En cache depuis {time}",
+    "noCache": "Aucune donnée en cache — Synchronisez en ligne",
+    "syncNow": "Synchroniser",
+    "syncOfflineHint": "Connectez-vous pour synchroniser",
+    "loading": "Chargement des données en cache…",
+    "findMember": "Trouver un membre",
+    "searchPlaceholder": "Rechercher par nom ou téléphone…",
+    "noResults": "Aucun membre correspondant en cache",
+    "membership": {
+      "active": "Actif",
+      "none": "Sans abonnement",
+      "inactive": "Inactif"
+    },
+    "ptRemaining": "{n} séances PT restantes",
+    "openFile": "Ouvrir le dossier complet",
+    "fileNeedsConnection": "Le dossier complet et les modifications nécessitent une connexion",
+    "todaySchedule": "Cours du jour",
+    "noClassesToday": "Aucun cours prévu aujourd’hui",
+    "roster": "Liste",
+    "emptyRoster": "Personne d’inscrit"
   }
 }

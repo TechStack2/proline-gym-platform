@@ -442,6 +442,16 @@ export default defineConfig({
       testMatch: /portal-modal\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // OFF-2 offline reads: SyncEngine.pullAll primes the Dexie mirror on login;
+      // /desk (client) reads it so the front desk finds a member + basics +
+      // today's schedule + a roster OFFLINE from cache (G2 setOffline harness),
+      // edit gated, /ar clean. Appended at the END — runs LAST.
+      name: 'off2',
+      dependencies: ['setup'],
+      testMatch: /off2\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now
