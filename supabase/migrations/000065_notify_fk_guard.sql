@@ -65,8 +65,10 @@ CREATE TRIGGER trg_notifications_skip_orphan
   FOR EACH ROW EXECUTE FUNCTION _notifications_skip_orphan_recipient();
 
 -- 2) Surgical fix of the named blocker: request_class_registration. --------------
---    Reproduced verbatim from 000034 EXCEPT the staff `class_requested` emit, which
---    is now valid-recipient-filtered + best-effort (mirrors _notify_class_student).
+--    Based on the CURRENT definition (000037 / B3 — preserves the guardian
+--    request-for-kid branch via is_guardian_of) EXCEPT the staff `class_requested`
+--    emit, which is now valid-recipient-filtered + best-effort (mirrors
+--    _notify_class_student). Business rules (B3 guardian, E1, belt/age/gym) intact.
 CREATE OR REPLACE FUNCTION request_class_registration(
   p_class_id UUID, p_student_id UUID DEFAULT NULL
 ) RETURNS class_registrations
@@ -83,10 +85,15 @@ BEGIN
     SELECT * INTO v_student FROM students WHERE profile_id = auth.uid() LIMIT 1;
     IF v_student.id IS NULL THEN RAISE EXCEPTION 'Only a member may request a class'; END IF;
   ELSE
-    IF NOT is_staff() THEN RAISE EXCEPTION 'Only staff may register another member'; END IF;
+    -- B3: staff OR a linked guardian may act for the named student.
+    IF NOT (is_staff() OR is_guardian_of(p_student_id)) THEN
+      RAISE EXCEPTION 'Only staff or a linked guardian may register another member';
+    END IF;
     SELECT * INTO v_student FROM students WHERE id = p_student_id;
     IF v_student.id IS NULL THEN RAISE EXCEPTION 'Student % not found', p_student_id; END IF;
-    IF v_student.gym_id <> get_user_gym_id() THEN RAISE EXCEPTION 'Member is not in your gym'; END IF;
+    IF is_staff() AND v_student.gym_id <> get_user_gym_id() THEN
+      RAISE EXCEPTION 'Member is not in your gym';
+    END IF;
   END IF;
 
   SELECT * INTO v_class FROM classes WHERE id = p_class_id;
