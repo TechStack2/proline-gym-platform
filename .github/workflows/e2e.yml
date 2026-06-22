@@ -148,6 +148,77 @@ jobs:
           if [ "${PERSISTED}" != "1" ]; then echo "::error::login-less notification did NOT persist (pre-fix behavior)"; exit 1; fi
           echo "✅ Login-less notification persistence: PASS (fk→profiles; direct insert persisted; ${LL} convert-flow login-less notif(s))"
 
+      # ── REG-FIX proof: registering a member to a class SUCCEEDS even when a staff
+      #    notify recipient (a receptionist user_role) has NO profiles row. Pre-000065
+      #    the un-guarded class_requested fan-out FK-violates (23503) and rolls back
+      #    the whole registration; post-fix (valid-recipient filter + best-effort +
+      #    the BEFORE INSERT skip-orphan trigger) it succeeds. Asserts an ACTIVE
+      #    registration + an issued invoice. Acts as the owner via request.jwt.claims.
+      - name: Verify class registration survives a profile-less staff notify recipient (REG-FIX)
+        run: |
+          set -uo pipefail
+          : "${PROJECT_REF:=ufpuebfkcpohwubrutff}"
+          if [ -z "${E2E_GYM_SLUG:-}" ]; then echo "::error::no run gym slug"; exit 1; fi
+          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query"
+          SQL="$(cat <<SQL
+          DO \$\$
+          DECLARE
+            v_gym uuid; v_owner uuid; v_disc uuid; v_coach uuid; v_student uuid;
+            v_orphan uuid; v_class uuid; v_reg class_registrations; v_status text; v_inv uuid;
+          BEGIN
+            SELECT id INTO v_gym FROM gyms WHERE slug = '${E2E_GYM_SLUG}';
+            IF v_gym IS NULL THEN RAISE EXCEPTION 'run gym % not found', '${E2E_GYM_SLUG}'; END IF;
+            SELECT user_id INTO v_owner FROM user_roles WHERE gym_id=v_gym AND role='owner' LIMIT 1;
+            SELECT id INTO v_disc FROM disciplines WHERE gym_id=v_gym ORDER BY sort_order LIMIT 1;
+            SELECT id INTO v_coach FROM coaches WHERE gym_id=v_gym AND is_active=true ORDER BY created_at LIMIT 1;
+            SELECT id INTO v_student FROM students WHERE gym_id=v_gym AND is_active=true ORDER BY created_at LIMIT 1;
+            IF v_owner IS NULL OR v_disc IS NULL OR v_coach IS NULL OR v_student IS NULL THEN
+              RAISE EXCEPTION 'fixtures missing owner=% disc=% coach=% student=%', v_owner, v_disc, v_coach, v_student;
+            END IF;
+
+            -- a dedicated fee-bearing class (deterministic invoice on approve)
+            INSERT INTO classes (gym_id, discipline_id, coach_id, name_ar, name_en, name_fr, max_capacity, monthly_fee_usd, is_active)
+            VALUES (v_gym, v_disc, v_coach, 'ريج-فيكس', 'REGFIX Proof', 'REGFIX', 10, 30, true)
+            RETURNING id INTO v_class;
+
+            -- THE REPRO CONDITION: a STAFF (receptionist) user_role whose user_id has NO profiles row.
+            v_orphan := gen_random_uuid();
+            INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+              raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token)
+            VALUES ('00000000-0000-0000-0000-000000000000', v_orphan, 'authenticated', 'authenticated',
+              'regfix-orphan+${E2E_GYM_SLUG}@e2e.local',
+              extensions.crypt('x', extensions.gen_salt('bf')), now(),
+              '{"provider":"email","providers":["email"]}', jsonb_build_object('gym_id', v_gym::text),
+              now(), now(), '', '', '', '');
+            DELETE FROM profiles WHERE id = v_orphan;                 -- orphan the FK target (no profiles row)
+            INSERT INTO user_roles (user_id, gym_id, role) VALUES (v_orphan, v_gym, 'receptionist');
+
+            -- act as the owner so the SECURITY DEFINER RPC auth gate (is_staff/auth.uid) passes
+            PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner::text, 'role', 'authenticated')::text, true);
+
+            -- previously-failing path: class_requested fans out to owner+receptionist (incl. the orphan)
+            v_reg := request_class_registration(v_class, v_student);
+            PERFORM approve_class_registration(v_reg.id, 0, 0);
+
+            SELECT status, invoice_id INTO v_status, v_inv FROM class_registrations WHERE id = v_reg.id;
+            IF v_status <> 'active' THEN RAISE EXCEPTION 'registration not active (status=%)', v_status; END IF;
+            IF v_inv IS NULL OR NOT EXISTS (SELECT 1 FROM invoices WHERE id = v_inv) THEN
+              RAISE EXCEPTION 'expected an issued invoice for the registration';
+            END IF;
+            RAISE NOTICE 'REG-FIX proof OK: reg=% status=% invoice=% (profile-less receptionist present)', v_reg.id, v_status, v_inv;
+          END \$\$;
+          SELECT 'REGFIX_OK'::text AS proof;
+          SQL
+          )"
+          BODY="$(jq -Rs '{query: .}' <<<"$SQL")"
+          CODE="$(curl -sS -o /tmp/regfix.json -w '%{http_code}' -X POST "$API" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" --data-binary "$BODY")"
+          echo "HTTP ${CODE}"; jq . /tmp/regfix.json 2>/dev/null || cat /tmp/regfix.json
+          if [ "${CODE}" -ge 400 ]; then echo "::error::REG-FIX repro FAILED (HTTP ${CODE}) — registration rolled back on the staff-notify FK"; exit 1; fi
+          if [ "$(jq -r '.[0].proof // empty' /tmp/regfix.json 2>/dev/null)" != "REGFIX_OK" ]; then echo "::error::REG-FIX proof did not confirm"; exit 1; fi
+          echo "✅ REG-FIX: class registration succeeds with a profile-less staff notify recipient (active reg + invoice issued)"
+
       # ── Always tear the gym down (zero residue) ───────────────────────────────
       - name: Teardown ephemeral e2e gym
         if: always()
