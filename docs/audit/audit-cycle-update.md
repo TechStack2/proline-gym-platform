@@ -319,3 +319,39 @@ Migration **000064** (additive, forward-only, VF run [`27918239013`](https://git
 - **OFF-3c (draft-registration offline) attaches here** — the heavier remaining Tier-1 write (member + enrollment + invoice → **Tier-3 server-canonical-id assignment** for the brand-new offline-created entities, unlike payment/lead which reference/create a single row). It needs the deep-Tier-3 group-flush + canonical-id mapping flagged in OFF-4's DRAG READ, not just an op_id de-dup. Clean extension point: a `pending_registrations` store + a `flushRegistrations` composed into `outbox.ts`, but with a multi-row atomic writer + id-remap — **deliberately deferred**.
 - **Lead conflicts are rare by nature** (no server-truth premise like an invoice balance); the FK-rejection path is the realistic case, resolved by discard-with-audit (or re-submit after fixing). No `getInvoiceState`-style reconcile needed.
 - **No regression:** OFF-2 reads, G2 attendance, OFF-3 payments, OFF-4 resolution untouched — leads are purely additive (a new store + a new outbox path + an optional addLead param).
+
+---
+
+## Cycle 6 / PWA-INSTALL — desktop install + admin affordance
+
+> **Branch:** `prompt-pwa-install` (off `main` `14a7d2d`) · **Prompt:** [`cycle-5/prompt-PWA-INSTALL.md`](./cycle-5/prompt-PWA-INSTALL.md). Owner ask [4]: how do we install the PWA on Mac/Windows, and can we get an admin-side prompt? The old [`pwa-install-prompt.tsx`](../../src/components/pwa/pwa-install-prompt.tsx) only fired on `beforeinstallprompt` (Chrome/Edge/Android) — **macOS Safari saw nothing** and there was no admin-side affordance. **Frontend only; zero schema.**
+
+### Platform detection + instruction matrix
+[`src/lib/pwa/use-pwa-install.ts`](../../src/lib/pwa/use-pwa-install.ts) — a shared hook: captures the native prompt when available (`canPrompt`), detects already-installed (`display-mode: standalone` || `navigator.standalone`), a remembered dismiss (`localStorage pwa_install_dismissed`, shared with the legacy prompt's key), and a per-platform `instructions` key:
+
+| Detected | Guidance |
+|---|---|
+| macOS **Safari** | File menu (or Share) → **Add to Dock** |
+| Mac/Windows **Chrome/Edge** | address-bar **install icon (⊕)**, or ⋮ → **Install Proline** |
+| **iOS Safari** | Share → Add to Home Screen |
+| other | generic "Install / Add to Home Screen" |
+
+Where `beforeinstallprompt` IS captured (Chromium), the card's button triggers the **native** prompt; otherwise it shows the manual steps above.
+
+### Admin-side affordance + coordination (no double-up)
+[`src/components/pwa/install-app-card.tsx`](../../src/components/pwa/install-app-card.tsx) — a dismissible "Install the app" card on the **Today** front-desk hub. It **consolidates** the old Chrome/Edge-only bottom-bar prompt (which did strictly less): the bottom-bar `PwaInstallPrompt` is removed from [`front-desk-offline-layer.tsx`](../../src/components/offline/front-desk-offline-layer.tsx), so the two never double up — the card is the single install affordance (native prompt where available + manual steps everywhere else). The offline-state **banner** in that layer is untouched (no offline regression).
+
+### Already-installed → no nag
+When standalone/installed (or dismissed), the card renders nothing.
+
+### Verify (e2e — anchored `pwa-install` project, bounded waits)
+[`e2e/pwa-install.spec.ts`](../../e2e/pwa-install.spec.ts) — 4 specs (owner/staff context): non-standalone renders the card + platform steps (or native button) + dismiss is remembered (`localStorage`); a mocked `beforeinstallprompt` → the button triggers the native prompt → card hides; standalone (matchMedia mock) → **no nag** (card count 0); `/ar` localized, no `MISSING_MESSAGE`/raw `pwa.` keys.
+
+### ⟶ Mac+Windows install guidance + admin affordance; no nag when installed; no regression: **PASS**
+**CI:** [run `27946818736`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27946818736) — **131 passed, 0 failed** (42.6m) on `6b8bee6`. pwa-install ✓✓✓✓ (non-standalone renders + platform steps + dismiss remembered; mocked `beforeinstallprompt` → native button → card hides; standalone → no nag; /ar localized), **G2 ✓✓✓ + OFF-1 ✓✓✓✓** (offline banner / PWA manifest / SW foundation untouched). The first run (`27941856609`) was pwa-install 4/4 green too but flagged `b3:28` (guardian portal class-registration `reg-status`) — green on `main` ×2 and 3 other branches, untouched by this frontend-only staff-side change; it recovered on the clean re-run.
+
+### DRAG READ
+- **Single affordance by construction:** consolidating the bottom-bar prompt into the Today card is the "no double-up" — not runtime coordination between two components. The legacy `pwa-install-prompt.tsx` file is left in place (unmounted, no other refs) rather than deleted.
+- **Surface choice:** the card lives on **Today** (the front-desk hub the laptop opens to), not a settings page — most visible to the operator, still dismissible. A staff-settings entry could be added later as a non-dismissible "always available" path.
+- **e2e + `beforeinstallprompt`:** headless Chromium doesn't reliably fire it, so the manual-steps path is the deterministic default; the native-prompt path is exercised by dispatching a synthetic event (the card exposes `data-can-prompt` for the assertion).
+- **Out of scope (untouched):** the service worker / offline sync, manifest, the member portal. This is the staff/front-desk install.
