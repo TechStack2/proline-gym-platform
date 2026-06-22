@@ -289,3 +289,33 @@ The `self-view` wrapper keeps the **IA-2 testids** (`self-membership`/`self-pt-r
 
 ### DRAG READ — this CLOSES the Portal Elevation arc
 Like Coach-360, the win was **reuse, not invention**: the page already fetched everything and already imported the kit — the slice was purely the drillable-360 *treatment*. The load-bearing constraint was **not breaking the surfaces other specs pin to the member home**: `member360.spec` (IA-2) reads `self-membership`/`self-pt-remaining`/`self-next-class` as descendants of `self-view`; `ax1-ar` reads `حالتي` (`portalHome.myStatus`) as the member shell's known Arabic string; `portal-fnd` reads `card-portal-recent-attendance` + `portal-attendance-drill`. Rather than duplicate (a redundant status strip *and* new cards), the new cards ARE the content and a **`self-view` section wraps them** so those testids stay descendants — no duplication, zero changes to the pinning specs. Two anchoring lessons applied verbatim from the prior slices: (1) the new project `testMatch` is anchored to `member360-portal\.spec\.ts` so it can never overlap the staff `member360\.spec\.ts` (the off3↔f3 substring trap); (2) every wait is bounded so a hung assertion can't take down the serial cloud suite. **Both portals are now drillable premium 360s — the demo-2 "themeless / not-drillable portal" feedback set is fully addressed.**
+
+## Cycle 6 / OFF-3b — offline lead capture
+
+> **Branch:** `prompt-off3b-lead-capture` (off `main` `4e10c2b`, has OFF-3 + OFF-4) · **Prompt:** [`cycle-5/prompt-OFF3b-offline-lead-capture.md`](./cycle-5/prompt-OFF3b-offline-lead-capture.md). Extends the proven outbox to the next Tier-1 write: a **walk-in lead captured offline** — losing a prospect to a dead connection is exactly the demo pain. Small slice on a proven mechanism (generalize, don't fork).
+
+### The third outbox path
+- [`src/lib/offline/leads.ts`](../../src/lib/offline/leads.ts) — `queueLead` / `flushLeads` + `resubmitLead` / `discardLead`, mirroring OFF-3 `payments.ts`. A lead captured offline is a `PendingLeadIntent` in a new **`pending_leads`** Dexie store (additive v4) keyed by a client **`op_id`**; the flush drains oldest-first through the **existing `addLead`** writer — no new lead business logic.
+- [`outbox.ts`](../../src/lib/offline/outbox.ts) now unifies **three** paths (attendance + payments + leads) into one `outboxStats()` count + one `flushOutbox()`. The desk's pending-sync bar shows leads alongside the rest; a lead conflict reuses **OFF-4's resolution loop** (re-submit / discard-with-audit) via a `LeadConflictRow`.
+
+### Idempotency mechanism (how a re-push can't double-record)
+Migration **000064** (additive, forward-only, VF run [`27918239013`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27918239013), HTTP 201):
+- `leads.client_uuid uuid` + a **partial unique index** (`WHERE client_uuid IS NOT NULL`).
+- `addLead` gains an optional `clientUuid`: it **checks-existing** (return the lead) before inserting with the key, and **catches the unique-violation** (`23505`) on a concurrent re-push → fetches the canonical lead. So a reconnect double-fire / dropped-ACK settles **exactly one** lead. Online single-fire passes no key → unchanged. RLS untouched (authed staff insert).
+- Plus `discard_offline_lead(op_id, name, reason)` SECURITY DEFINER → a `delete` audit row (the lead never reached the server, so scoped by the staff actor's gym); `is_staff` + reason mandatory; REVOKE PUBLIC + GRANT authenticated.
+
+### Verify (e2e — extends the G2/OFF-3 `setOffline` harness; anchored project, bounded waits)
+[`e2e/off3b.spec.ts`](../../e2e/off3b.spec.ts) — 4 specs (unique per-run lead names):
+1. **Lead loop:** online → offline → capture a walk-in → **pending** in the outbox bar → reconnect → flush → `/leads` shows **exactly one** card.
+2. **Idempotency key:** white-box re-push of the SAME `op_id` (twice) → still exactly one lead card.
+3. **Conflict → discard:** a lead with a bogus discipline (FK rejection) surfaces as a conflict → **discard-with-reason** (audited) → conflict clears, the lead was **never created** (no silent write).
+4. **`/ar`** localized lead-capture UI, no `MISSING_MESSAGE` / raw `desk.` keys.
+
+### ⟶ desk captures a lead offline → syncs idempotently → exactly one canonical lead; OFF-3/OFF-4/G2 no-regression: **PASS**
+**CI:** [run `27920969102`](https://github.com/TechStack2/proline-gym-platform/actions/runs/27920969102) — **124 passed, 0 failed** (41.2m) on `d836990`. off3b ✓✓✓✓ (lead loop: capture offline → pending → reconnect → exactly one `lead-card`; idempotency: a re-pushed `op_id` stays one; conflict: an FK-rejected lead surfaced → discard-with-audit → never created; /ar localized), **G2 ✓✓✓ + OFF-3 ✓✓✓✓ + OFF-4 ✓✓✓✓** (no regression). The first run's reds were (a) the lead-loop spec failing at `waitForFunction(!navigator.onLine)` after an unnecessary offline-reload loop — fixed to capture in place; (b) `g2:96` "late vs absent" — a shared-gym attendance flake that recovered on re-run. **The v4 Dexie upgrade was investigated + proven safe** ([`schema-upgrade.test.ts`](../../src/lib/db/schema-upgrade.test.ts): fresh open + v3→v4 migration both preserve `pending_attendance`/`pending_payments`), kept as a regression guard. Migration 000064 applied via VF `27918239013`.
+
+### DRAG READ
+- **The Tier-1 offline write set is now: payments + attendance + leads** — all on one outbox, idempotent, resolvable. The unified count + flush + conflict-resolution generalize cleanly across the three.
+- **OFF-3c (draft-registration offline) attaches here** — the heavier remaining Tier-1 write (member + enrollment + invoice → **Tier-3 server-canonical-id assignment** for the brand-new offline-created entities, unlike payment/lead which reference/create a single row). It needs the deep-Tier-3 group-flush + canonical-id mapping flagged in OFF-4's DRAG READ, not just an op_id de-dup. Clean extension point: a `pending_registrations` store + a `flushRegistrations` composed into `outbox.ts`, but with a multi-row atomic writer + id-remap — **deliberately deferred**.
+- **Lead conflicts are rare by nature** (no server-truth premise like an invoice balance); the FK-rejection path is the realistic case, resolved by discard-with-audit (or re-submit after fixing). No `getInvoiceState`-style reconcile needed.
+- **No regression:** OFF-2 reads, G2 attendance, OFF-3 payments, OFF-4 resolution untouched — leads are purely additive (a new store + a new outbox path + an optional addLead param).

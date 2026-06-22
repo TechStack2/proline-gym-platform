@@ -2736,6 +2736,18 @@
       "cancelled": "cancelled",
       "refunded": "refunded",
       "overdue": "overdue"
-    }
+    },
+    "captureLead": "Capture lead",
+    "newLead": "New lead",
+    "captureLeadHint": "Record a walk-in even while offline.",
+    "leadRequired": "Name and phone are required.",
+    "leadFirstName": "First name",
+    "leadLastName": "Last name",
+    "leadPhone": "Phone",
+    "leadInterest": "Interest (optional)",
+    "leadWillQueueOffline": "Offline — this lead will queue and sync on reconnect",
+    "leadSaveOffline": "Save offline",
+    "leadSavedOffline": "Saved offline · will sync",
+    "leadRecorded": "Lead captured"
   }
 }

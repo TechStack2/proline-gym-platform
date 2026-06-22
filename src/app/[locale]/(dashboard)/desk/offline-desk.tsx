@@ -14,15 +14,17 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { getOfflineDB } from '@/lib/db/schema'
-import type { PendingPaymentIntent } from '@/lib/db/schema'
+import type { PendingPaymentIntent, PendingLeadIntent } from '@/lib/db/schema'
 import { getSyncEngine } from '@/lib/db/sync-engine'
 import { useOnline } from '@/lib/offline/use-online'
 import { outboxStats, flushOutbox, type OutboxStats } from '@/lib/offline/outbox'
 import { listPendingPayments, resubmitPayment, discardPayment, type RecordPayment } from '@/lib/offline/payments'
+import { listPendingLeads, resubmitLead, discardLead, type CreateLead } from '@/lib/offline/leads'
 import { saveAttendance } from '@/app/[locale]/coach/attendance/actions'
 import { recordPayment, getInvoiceState, discardOfflinePayment } from '../invoices/actions'
+import { addLead, discardOfflineLead } from '../leads/actions'
 import { dateLocale } from '@/lib/utils/locale-format'
-import { RecordPaymentForm, PendingSyncBar, type DeskInvoice } from './desk-payments'
+import { RecordPaymentForm, PendingSyncBar, CaptureLeadForm, type DeskInvoice } from './desk-payments'
 import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff, Receipt } from 'lucide-react'
 
 type Row = Record<string, any>
@@ -40,7 +42,16 @@ type DeskData = {
 // OFF-3: the unified flush handlers — each Tier-1 path drains through its existing
 // idempotent server writer. `i as any` bridges the lib's string `method` to the
 // action's payment_method_enum (the offline queue stores it as a plain string).
-const flushHandlers = { save: saveAttendance, record: ((i) => recordPayment(i as any)) as RecordPayment }
+const flushHandlers = {
+  save: saveAttendance,
+  record: ((i) => recordPayment(i as any)) as RecordPayment,
+  // OFF-3b: the lead path drains through addLead (null → '' for the schema's optional fields).
+  create: ((i) => addLead({
+    first_name: i.first_name, last_name: i.last_name, phone: i.phone,
+    email: i.email ?? '', source: i.source, source_detail: i.source_detail ?? undefined,
+    discipline_id: i.discipline_id ?? '', notes: i.notes ?? undefined, clientUuid: i.clientUuid,
+  })) as CreateLead,
+}
 
 const lname = (r: Row | undefined, base: string, locale: string): string =>
   (r?.[`${base}_${locale}`] || r?.[`${base}_en`] || '') as string
@@ -139,14 +150,15 @@ export function OfflineDesk({ locale }: { locale: string }) {
     finally { setSyncing(false) }
   }
 
-  // ── OFF-3: pending write queue (payments + attendance) ──
-  const [pendingStats, setPendingStats] = useState<OutboxStats>({ total: 0, attendance: 0, payments: 0, conflicts: 0 })
+  // ── OFF-3/OFF-3b: unified pending write queue (payments + attendance + leads) ──
+  const [pendingStats, setPendingStats] = useState<OutboxStats>({ total: 0, attendance: 0, payments: 0, leads: 0, conflicts: 0 })
   const [pendingList, setPendingList] = useState<PendingPaymentIntent[]>([])
+  const [pendingLeads, setPendingLeads] = useState<PendingLeadIntent[]>([])
   const [syncingPending, setSyncingPending] = useState(false)
 
   const refreshPending = useCallback(async () => {
-    const [s, list] = await Promise.all([outboxStats(), listPendingPayments()])
-    setPendingStats(s); setPendingList(list)
+    const [s, list, leads] = await Promise.all([outboxStats(), listPendingPayments(), listPendingLeads()])
+    setPendingStats(s); setPendingList(list); setPendingLeads(leads)
   }, [])
 
   useEffect(() => { void refreshPending() }, [refreshPending])
@@ -185,6 +197,17 @@ export function OfflineDesk({ locale }: { locale: string }) {
   // Discard with an audited reason (the server writes the trail; then drop the row).
   const handleDiscard = useCallback(async (opId: string, reason: string) => {
     const res = await discardPayment(opId, reason, discardOfflinePayment)
+    await refreshPending()
+    return res
+  }, [refreshPending])
+  // OFF-3b: lead conflict resolution (re-submit re-queues + re-attempts; discard audits).
+  const handleResubmitLead = useCallback(async (opId: string) => {
+    await resubmitLead(opId)
+    await refreshPending()
+    await flushPendingNow()
+  }, [refreshPending, flushPendingNow])
+  const handleDiscardLead = useCallback(async (opId: string, reason: string) => {
+    const res = await discardLead(opId, reason, discardOfflineLead)
     await refreshPending()
     return res
   }, [refreshPending])
@@ -288,10 +311,15 @@ export function OfflineDesk({ locale }: { locale: string }) {
         </button>
       </div>
 
-      {/* OFF-3: the unified pending-sync bar (queued payments + attendance + conflicts). */}
-      <PendingSyncBar locale={locale} stats={pendingStats} pending={pendingList}
+      {/* OFF-3/OFF-3b: the unified pending-sync bar (payments + attendance + leads + conflicts). */}
+      <PendingSyncBar locale={locale} stats={pendingStats} pending={pendingList} pendingLeads={pendingLeads}
         online={online} syncing={syncingPending} onSyncNow={() => void flushPendingNow()}
-        getState={handleGetState} onResubmit={handleResubmit} onDiscard={handleDiscard} />
+        getState={handleGetState} onResubmit={handleResubmit} onDiscard={handleDiscard}
+        onResubmitLead={handleResubmitLead} onDiscardLead={handleDiscardLead} />
+
+      {/* OFF-3b: capture a walk-in lead (offline-queued / online write-through). */}
+      <CaptureLeadForm locale={locale} online={online}
+        onChange={() => { void refreshPending(); if (online) void load() }} />
 
       {loading ? (
         <div className="flex items-center gap-2 py-10 text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /> {t('loading')}</div>

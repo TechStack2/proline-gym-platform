@@ -2736,6 +2736,18 @@
       "cancelled": "ملغاة",
       "refunded": "مستردة",
       "overdue": "متأخرة"
-    }
+    },
+    "captureLead": "تسجيل عميل محتمل",
+    "newLead": "عميل جديد",
+    "captureLeadHint": "سجّل زائراً حتى دون اتصال.",
+    "leadRequired": "الاسم والهاتف مطلوبان.",
+    "leadFirstName": "الاسم الأول",
+    "leadLastName": "اسم العائلة",
+    "leadPhone": "الهاتف",
+    "leadInterest": "الاهتمام (اختياري)",
+    "leadWillQueueOffline": "دون اتصال — سيُدرَج هذا العميل ويُزامَن عند عودة الاتصال",
+    "leadSaveOffline": "حفظ دون اتصال",
+    "leadSavedOffline": "حُفظ دون اتصال · ستتم المزامنة",
+    "leadRecorded": "تم تسجيل العميل"
   }
 }
