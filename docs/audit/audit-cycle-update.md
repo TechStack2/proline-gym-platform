@@ -355,3 +355,27 @@ When standalone/installed (or dismissed), the card renders nothing.
 - **Surface choice:** the card lives on **Today** (the front-desk hub the laptop opens to), not a settings page — most visible to the operator, still dismissible. A staff-settings entry could be added later as a non-dismissible "always available" path.
 - **e2e + `beforeinstallprompt`:** headless Chromium doesn't reliably fire it, so the manual-steps path is the deterministic default; the native-prompt path is exercised by dispatching a synthetic event (the card exposes `data-can-prompt` for the assertion).
 - **Out of scope (untouched):** the service worker / offline sync, manifest, the member portal. This is the staff/front-desk install.
+
+---
+
+## Cycle 6 / REG-FIX — class registration fails on the notifications FK (blocking bug)
+
+> **Branch:** `prompt-reg-fix` (off `main`) · **Prompt:** [`cycle-5/prompt-REG-FIX-notifications-fk.md`](./cycle-5/prompt-REG-FIX-notifications-fk.md). Registering a member to a class failed — `insert or update on "notifications" violates foreign key constraint "notifications_user_id_fkey"` — rolling back the whole registration. *(Auditor-authored entry: Lane B's draft didn't land before merge; recorded from the verified runs + branch.)*
+
+### Root cause
+`request_class_registration` emitted a **staff** notification (`class_requested` → owner+receptionist) via an **un-guarded** `INSERT … SELECT ur.user_id FROM user_roles`. A staff `user_role` whose `user_id` isn't in the FK target (`profiles`, since 000032) FK-violated; lacking the best-effort guard the member-side helpers have, its failure **rolled back the registration**. Real-world trigger: a profile-less `receptionist` (`eb3ca30b…`) in the proline-gym demo — cleaned by the auditor (scoped delete, verified).
+
+### Fix (migration 000065, VF HTTP 201; RLS untouched)
+1. **Guarded the staff-notify** — recipients filtered to `EXISTS (… profiles)` + best-effort.
+2. **Systemic `BEFORE INSERT` trigger** `_notifications_skip_orphan_recipient` — silently skips any notification whose `user_id` isn't in `profiles`, so **no** notify emit anywhere can FK-violate its parent txn.
+3. **In-harness proof step** (`e2e.yml`) — builds a profile-less receptionist, registers as owner, asserts an **active** registration + an issued invoice.
+
+### Self-inflicted regression (caught + fixed)
+First cut (`4c74b30`) rewrote the function from the **000034** body, silently reverting **000037/B3**'s guardian "request-for-kid" branch (`is_guardian_of`) → b3 hard-failed on every branch (shared DB) + briefly broke the live guardian path. Rebased on the **current** 000037 body (`15e23db`) + re-VF'd. See [[function-rewrite-reverts-later-migrations]].
+
+### ⟶ registration succeeds when a notify recipient lacks a profile; no notify rolls back its txn; B3 guardian path intact: **PASS**
+**CI:** runs `27947241948` + `27947568080` — both green on `15e23db` (full suite + the REG-FIX proof step + b3 guardian green).
+
+### DRAG READ
+- Two-layered fix: the targeted filter **+** the systemic orphan-skip trigger (the latter protects D1/C1, `lead_converted`, any future notify path).
+- Function-rewrite hazard logged: diff a `CREATE OR REPLACE` against the **latest** definer, not the original migration.
