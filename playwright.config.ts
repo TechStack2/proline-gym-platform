@@ -508,6 +508,16 @@ export default defineConfig({
       testMatch: /\/off3b\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PWA-INSTALL — the platform-aware, dismissible "Install the app" card on the
+      // front-desk hub (Today): renders + manual steps (Safari) / native prompt
+      // (Chromium); no nag when installed (standalone); dismiss remembered; /ar clean.
+      // testMatch ANCHORED ($). Appended at the END — runs LAST.
+      name: 'pwa-install',
+      dependencies: ['setup'],
+      testMatch: /\/pwa-install\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+    },
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

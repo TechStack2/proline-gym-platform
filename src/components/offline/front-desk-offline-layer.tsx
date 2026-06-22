@@ -10,15 +10,12 @@
  * indicator on every viewport, plus the installable-PWA prompt. Reuses the
  * existing components/hooks — no new caching, no new offline reads/writes.
  */
-import { useTranslations } from 'next-intl'
 import { useOnline, usePendingAttendance } from '@/lib/offline/use-online'
 import { OfflineBanner } from '@/components/offline/offline-banner'
-import { PwaInstallPrompt } from '@/components/pwa/pwa-install-prompt'
 
 export function FrontDeskOfflineLayer({ locale }: { locale: string }) {
   const online = useOnline()
   const { count } = usePendingAttendance()
-  const t = useTranslations('pwa')
 
   return (
     <>
@@ -36,23 +33,10 @@ export function FrontDeskOfflineLayer({ locale }: { locale: string }) {
         </div>
       )}
 
-      {/* Installable-PWA affordance — desktop Chrome "Install app" + mobile A2HS.
-          Install-only here (the banner above owns the offline state); renders
-          nothing until the browser fires `beforeinstallprompt` (i.e. installable
-          + not already standalone + not dismissed). */}
-      <PwaInstallPrompt
-        locale={locale}
-        showOfflineBar={false}
-        dictionaries={{
-          installTitle: t('installTitle'),
-          installDescription: t('installDescription'),
-          installButton: t('installButton'),
-          dismissButton: t('dismissButton'),
-          offlineTitle: t('offlineTitle'),
-          offlineDescription: t('offlineDescription'),
-          backOnline: t('backOnline'),
-        }}
-      />
+      {/* PWA-INSTALL: the install affordance is now the platform-aware, dismissible
+          `InstallAppCard` on the front-desk hub (Today) — it consolidates the old
+          Chrome/Edge-only bottom-bar prompt (which did strictly less) so the two
+          never double up. This layer keeps only the offline-state banner above. */}
     </>
   )
 }

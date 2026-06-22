@@ -2638,7 +2638,32 @@
     "dismissButton": "Not now",
     "offlineTitle": "You're offline",
     "offlineDescription": "Changes will sync when you reconnect.",
-    "backOnline": "Back online"
+    "backOnline": "Back online",
+    "cardTitle": "Install the app",
+    "cardDescription": "Install Proline on this device for a faster, offline-ready front desk.",
+    "alreadyInstalledHint": "Already installed? You can dismiss this.",
+    "steps": {
+      "macSafari": {
+        "title": "Add Proline to your Dock (Safari)",
+        "s1": "Open the File menu — or the Share button — in Safari.",
+        "s2": "Choose “Add to Dock”."
+      },
+      "chromiumDesktop": {
+        "title": "Install from the address bar (Chrome / Edge)",
+        "s1": "Click the install icon (⊕) at the right of the address bar.",
+        "s2": "Or open the ⋮ menu and choose “Install Proline”."
+      },
+      "iosSafari": {
+        "title": "Add to Home Screen (Safari)",
+        "s1": "Tap the Share button.",
+        "s2": "Choose “Add to Home Screen”."
+      },
+      "generic": {
+        "title": "Install this app",
+        "s1": "Open your browser menu.",
+        "s2": "Choose “Install” or “Add to Home Screen”."
+      }
+    }
   },
   "coachEdit": {
     "title": "Edit my public profile",

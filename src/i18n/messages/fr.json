@@ -2638,7 +2638,32 @@
     "dismissButton": "Plus tard",
     "offlineTitle": "Vous êtes hors ligne",
     "offlineDescription": "Les modifications se synchroniseront à la reconnexion.",
-    "backOnline": "De retour en ligne"
+    "backOnline": "De retour en ligne",
+    "cardTitle": "Installer l'application",
+    "cardDescription": "Installez Proline sur cet appareil pour un accueil plus rapide et prêt hors ligne.",
+    "alreadyInstalledHint": "Déjà installée ? Vous pouvez masquer ceci.",
+    "steps": {
+      "macSafari": {
+        "title": "Ajouter Proline au Dock (Safari)",
+        "s1": "Ouvrez le menu Fichier — ou le bouton Partager — dans Safari.",
+        "s2": "Choisissez « Ajouter au Dock »."
+      },
+      "chromiumDesktop": {
+        "title": "Installer depuis la barre d'adresse (Chrome / Edge)",
+        "s1": "Cliquez sur l'icône d'installation (⊕) à droite de la barre d'adresse.",
+        "s2": "Ou ouvrez le menu ⋮ et choisissez « Installer Proline »."
+      },
+      "iosSafari": {
+        "title": "Ajouter à l'écran d'accueil (Safari)",
+        "s1": "Touchez le bouton Partager.",
+        "s2": "Choisissez « Sur l'écran d'accueil »."
+      },
+      "generic": {
+        "title": "Installer cette application",
+        "s1": "Ouvrez le menu du navigateur.",
+        "s2": "Choisissez « Installer » ou « Ajouter à l'écran d'accueil »."
+      }
+    }
   },
   "coachEdit": {
     "title": "Modifier mon profil public",
