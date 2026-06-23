@@ -12,11 +12,26 @@ name: E2E Verification (behavior-green gate)
 # Required repo variable: SUPABASE_PROJECT_REF (falls back to the known ref)
 
 on:
+  # E2E-TIERED — branch validation can run a FAST TARGETED subset; the push-to-main
+  # union gate below always runs the FULL suite (unchanged).
+  #   • Targeted:  gh workflow run e2e.yml --ref <branch> -f projects="<slice-project>"
+  #                → runs setup + smoke + <those projects> only (well under the full ~45 min).
+  #   • Full:      gh workflow run e2e.yml --ref <branch>           (empty `projects`)
+  #                → runs the FULL suite (same as push-to-main).
   workflow_dispatch:
     inputs:
+      # STABILIZE-3: extra args appended to `playwright test` (e.g. an isolated
+      # "--project=off2 --repeat-each=3" stability proof). Works on both paths below.
       pw_args:
-        description: 'Extra args appended to `playwright test` (e.g. "--project=off2 --repeat-each=3" for an isolated stability proof). Empty = full suite.'
+        description: 'Extra args appended to `playwright test` (e.g. "--project=off2 --repeat-each=3"). Empty = no extra args.'
         type: string
+        required: false
+        default: ''
+      # E2E-TIERED: a TARGETED run (setup + smoke + these projects). Empty = FULL.
+      projects:
+        description: 'Space-separated playwright projects for a TARGETED run (setup + smoke are always included). Empty = FULL suite.'
+        type: string
+        required: false
         default: ''
   push:
     branches: [main]
@@ -100,9 +115,27 @@ jobs:
         run: npm run build
 
       - name: Run E2E harness
-        # Default (push / no input) runs the full suite unchanged. workflow_dispatch
-        # may pass pw_args for an isolated stability proof (STABILIZE-3 repeat-each).
-        run: npm run test:e2e -- ${{ inputs.pw_args }}
+        env:
+          # Both set only on workflow_dispatch; empty for `push` (the union gate) → FULL.
+          E2E_PROJECTS: ${{ inputs.projects }}   # E2E-TIERED targeted subset
+          PW_ARGS: ${{ inputs.pw_args }}         # STABILIZE-3 extra playwright args
+        run: |
+          set -uo pipefail
+          if [ -n "${E2E_PROJECTS// /}" ]; then
+            # ── TARGETED branch run: setup + smoke + the named projects (+ any pw_args) ──
+            # E2E_TIERED=1 makes the `smoke` project materialize (see playwright.config.ts).
+            ARGS="--project=setup --project=smoke"
+            for p in ${E2E_PROJECTS}; do ARGS="$ARGS --project=$p"; done
+            echo "▶ TARGETED run: setup + smoke + [${E2E_PROJECTS}] ${PW_ARGS}"
+            E2E_TIERED=1 npx playwright test $ARGS ${PW_ARGS}
+          else
+            # ── FULL union gate (push-to-main + bare dispatch): the regression guard,
+            #    every project, UNCHANGED. No E2E_TIERED → no `smoke` project added.
+            #    Optional STABILIZE-3 pw_args (e.g. an isolated --repeat-each proof);
+            #    empty on push → `npm run test:e2e --` = the full suite, unchanged. ──
+            echo "▶ FULL union gate (all projects) ${PW_ARGS}"
+            npm run test:e2e -- ${PW_ARGS}
+          fi
 
       # ── FK proof: a notification to a LOGIN-LESS member persists (000032) ──────
       # The suite's leads.spec converts a lead → a login-less member and (via the
