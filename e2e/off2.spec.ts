@@ -38,31 +38,26 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
       await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 20_000 }).catch(() => {})
 
       // ── DETERMINISTIC PRIME GATE (STABILIZE-3) ──
-      // The offline read path needs members + today's schedule + the class roster
-      // (class_enrollments) all mirrored. The roster table lags the prime under the
-      // shared project's latency — the :66 roster flake. Poll the Dexie mirror until
-      // those tables are populated BEFORE going offline, instead of trusting that the
-      // single online member-find (above) means the whole prime finished.
+      // The offline read path needs the member + today's schedule + THIS class's
+      // roster all mirrored. The roster (class_enrollments for the Muay Thai class)
+      // is what lagged the prime — the :94 flake. A generic "enrollments count > 0"
+      // is too loose (another class's enrollments satisfy it while this class's are
+      // still syncing), so DRILL THE ACTUAL ROSTER while still online: online and
+      // offline read the same persistent Dexie mirror (the prime bulkPuts, never
+      // clears), so an online roster guarantees the offline read. Poll until it lands.
       await untilConsistent(async () => {
-        const counts = await page.evaluate(() => new Promise<Record<string, number>>((resolve, reject) => {
-          const open = indexedDB.open('proline_offline_db')
-          open.onsuccess = () => {
-            const db = open.result
-            const stores = ['students', 'class_schedules', 'class_enrollments']
-            const out: Record<string, number> = {}
-            let remaining = stores.length
-            const tx = db.transaction(stores, 'readonly')
-            for (const s of stores) {
-              const req = tx.objectStore(s).count()
-              req.onsuccess = () => { out[s] = req.result; if (--remaining === 0) { db.close(); resolve(out) } }
-              req.onerror = () => reject(req.error)
-            }
-          }
-          open.onerror = () => reject(open.error)
-        }))
-        expect(counts.students, 'members primed into the mirror').toBeGreaterThan(0)
-        expect(counts.class_schedules, 'schedule primed into the mirror').toBeGreaterThan(0)
-        expect(counts.class_enrollments, 'roster (enrollments) primed into the mirror').toBeGreaterThan(0)
+        await vis(page, '[data-testid="desk-search"]').first().fill('Karim')
+        await expect(
+          vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first(),
+          'member mirrored',
+        ).toBeVisible({ timeout: 5_000 })
+        const sched = vis(page, '[data-testid="desk-schedule-row"]').filter({ hasText: 'Muay Thai' }).first()
+        await expect(sched, 'today\'s schedule mirrored').toBeVisible({ timeout: 5_000 })
+        await sched.click()
+        await expect(
+          vis(page, '[data-testid="desk-roster-row"]').first(),
+          'this class\'s roster (class_enrollments) mirrored',
+        ).toBeVisible({ timeout: 5_000 })
       }, { timeout: 120_000 })
 
       // ── OFFLINE: the SW serves the cached desk shell (not a net-error page) ──
