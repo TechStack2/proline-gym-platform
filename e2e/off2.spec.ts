@@ -39,32 +39,34 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
 
       // ── DETERMINISTIC PRIME GATE (STABILIZE-3) ──
       // The offline read path needs the member + today's schedule + THIS class's
-      // roster all mirrored. The roster (class_enrollments for the Muay Thai class)
-      // is the table that lags/stalls the prime under the shared project's latency —
-      // the :94 flake. The desk's on-mount prime runs ONCE; if it stalls on that
-      // (late) table there is no re-attempt while staying online, so a plain poll
-      // can't recover. RE-PRIME each iteration (reload → fresh on-mount pullAll) and
-      // drill the ACTUAL roster — a generic "enrollments count > 0" is too loose
-      // (another class's enrollments satisfy it). Online and offline read the same
-      // persistent Dexie mirror (the prime bulkPuts, never clears), so once the
-      // online roster lands the offline read is guaranteed.
+      // roster mirrored. The roster (class_enrollments for the Muay Thai class) is
+      // the table whose full-sync intermittently fails under the shared project's
+      // latency — the :94 flake (even one uninterrupted on-mount prime sometimes
+      // lands everything BUT enrollments). The fix is to drive COMPLETE re-primes
+      // and let each FINISH before checking: click "Sync now" (a full pullAll +
+      // load), wait for it to settle (the button re-enables when syncing=false —
+      // never reload mid-prime, which would abort it), then drill the ACTUAL roster.
+      // Online + offline read the same persistent Dexie mirror (the prime bulkPuts,
+      // never clears), so once the online roster lands the offline read is guaranteed.
+      const syncBtn = vis(page, '[data-testid="desk-sync-now"]').first()
       await untilConsistent(async () => {
-        await page.reload()
-        await page.waitForLoadState('networkidle').catch(() => {})
-        await expect(vis(page, '[data-testid="offline-desk"]').first(), 'desk re-mounted').toBeVisible({ timeout: 10_000 })
+        await expect(syncBtn, 'sync-now ready (online, idle)').toBeEnabled({ timeout: 10_000 })
+        await syncBtn.click()
+        await expect(syncBtn, 'prime running').toBeDisabled({ timeout: 4_000 }).catch(() => {})
+        await expect(syncBtn, 'prime settled (a full pullAll completed)').toBeEnabled({ timeout: 45_000 })
         await vis(page, '[data-testid="desk-search"]').first().fill('Karim')
         await expect(
           vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first(),
           'member mirrored',
-        ).toBeVisible({ timeout: 8_000 })
+        ).toBeVisible({ timeout: 6_000 })
         const sched = vis(page, '[data-testid="desk-schedule-row"]').filter({ hasText: 'Muay Thai' }).first()
-        await expect(sched, 'today\'s schedule mirrored').toBeVisible({ timeout: 8_000 })
+        await expect(sched, 'today\'s schedule mirrored').toBeVisible({ timeout: 6_000 })
         await sched.click()
         await expect(
           vis(page, '[data-testid="desk-roster-row"]').first(),
           'this class\'s roster (class_enrollments) mirrored',
-        ).toBeVisible({ timeout: 8_000 })
-      }, { timeout: 150_000, intervals: [2_000, 4_000, 6_000, 8_000] })
+        ).toBeVisible({ timeout: 6_000 })
+      }, { timeout: 180_000, intervals: [1_000, 2_000, 3_000] })
 
       // ── OFFLINE: the SW serves the cached desk shell (not a net-error page) ──
       await ctx.setOffline(true)
