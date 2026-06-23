@@ -18,7 +18,7 @@ async function ownerPage(browser: Browser, locale = 'en') {
 
 test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
   test('prime online → offline → find member + basics + schedule + roster from cache; edit gated', async ({ browser }) => {
-    test.setTimeout(180_000)
+    test.setTimeout(240_000) // headroom for the re-prime gate (per-test cap; not the global config timeout)
     const { ctx, page } = await ownerPage(browser)
     try {
       // ── ONLINE: open the desk; opening it primes the gym-scoped Dexie mirror ──
@@ -40,25 +40,31 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
       // ── DETERMINISTIC PRIME GATE (STABILIZE-3) ──
       // The offline read path needs the member + today's schedule + THIS class's
       // roster all mirrored. The roster (class_enrollments for the Muay Thai class)
-      // is what lagged the prime — the :94 flake. A generic "enrollments count > 0"
-      // is too loose (another class's enrollments satisfy it while this class's are
-      // still syncing), so DRILL THE ACTUAL ROSTER while still online: online and
-      // offline read the same persistent Dexie mirror (the prime bulkPuts, never
-      // clears), so an online roster guarantees the offline read. Poll until it lands.
+      // is the table that lags/stalls the prime under the shared project's latency —
+      // the :94 flake. The desk's on-mount prime runs ONCE; if it stalls on that
+      // (late) table there is no re-attempt while staying online, so a plain poll
+      // can't recover. RE-PRIME each iteration (reload → fresh on-mount pullAll) and
+      // drill the ACTUAL roster — a generic "enrollments count > 0" is too loose
+      // (another class's enrollments satisfy it). Online and offline read the same
+      // persistent Dexie mirror (the prime bulkPuts, never clears), so once the
+      // online roster lands the offline read is guaranteed.
       await untilConsistent(async () => {
+        await page.reload()
+        await page.waitForLoadState('networkidle').catch(() => {})
+        await expect(vis(page, '[data-testid="offline-desk"]').first(), 'desk re-mounted').toBeVisible({ timeout: 10_000 })
         await vis(page, '[data-testid="desk-search"]').first().fill('Karim')
         await expect(
           vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first(),
           'member mirrored',
-        ).toBeVisible({ timeout: 5_000 })
+        ).toBeVisible({ timeout: 8_000 })
         const sched = vis(page, '[data-testid="desk-schedule-row"]').filter({ hasText: 'Muay Thai' }).first()
-        await expect(sched, 'today\'s schedule mirrored').toBeVisible({ timeout: 5_000 })
+        await expect(sched, 'today\'s schedule mirrored').toBeVisible({ timeout: 8_000 })
         await sched.click()
         await expect(
           vis(page, '[data-testid="desk-roster-row"]').first(),
           'this class\'s roster (class_enrollments) mirrored',
-        ).toBeVisible({ timeout: 5_000 })
-      }, { timeout: 120_000 })
+        ).toBeVisible({ timeout: 8_000 })
+      }, { timeout: 150_000, intervals: [2_000, 4_000, 6_000, 8_000] })
 
       // ── OFFLINE: the SW serves the cached desk shell (not a net-error page) ──
       await ctx.setOffline(true)
