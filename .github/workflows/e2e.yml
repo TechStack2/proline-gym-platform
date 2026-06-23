@@ -13,6 +13,11 @@ name: E2E Verification (behavior-green gate)
 
 on:
   workflow_dispatch:
+    inputs:
+      pw_args:
+        description: 'Extra args appended to `playwright test` (e.g. "--project=off2 --repeat-each=3" for an isolated stability proof). Empty = full suite.'
+        type: string
+        default: ''
   push:
     branches: [main]
     paths-ignore:           # auditor docs land on main constantly — don't burn
@@ -95,7 +100,9 @@ jobs:
         run: npm run build
 
       - name: Run E2E harness
-        run: npm run test:e2e
+        # Default (push / no input) runs the full suite unchanged. workflow_dispatch
+        # may pass pw_args for an isolated stability proof (STABILIZE-3 repeat-each).
+        run: npm run test:e2e -- ${{ inputs.pw_args }}
 
       # ── FK proof: a notification to a LOGIN-LESS member persists (000032) ──────
       # The suite's leads.spec converts a lead → a login-less member and (via the

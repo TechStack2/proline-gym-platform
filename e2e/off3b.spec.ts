@@ -69,11 +69,18 @@ test.describe('OFF-3b · offline lead capture (3rd outbox path)', () => {
       await expect(vis(page, '[data-testid="desk-pending-bar"]').first()).toBeVisible()
       await expect(vis(page, '[data-testid="desk-pending-count"]').first()).toContainText('1')
 
-      // RECONNECT → flush.
+      // RECONNECT → flush. STABILIZE-3: the in-place 'online' DOM event is sometimes
+      // missed under CI, leaving the desk's React `online` state false → the Sync-now
+      // button stays disabled + flushPendingNow no-ops → the pending bar never clears
+      // (:77 flake). Wait for the browser to register online, then RELOAD /desk fresh
+      // so `online` reads true (the reliable pattern the sibling tests use via
+      // flushFromDesk), then poll-until the queue drains.
       await ctx.setOffline(false)
+      await page.waitForFunction(() => navigator.onLine, null, { timeout: 15_000 })
+      await page.goto('/en/desk')
       await untilConsistent(async () => {
         const btn = vis(page, '[data-testid="desk-sync-pending"]').first()
-        if (await btn.isEnabled().catch(() => false)) await btn.click().catch(() => {})
+        if ((await btn.count()) && (await btn.isEnabled().catch(() => false))) await btn.click().catch(() => {})
         await expect(vis(page, '[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 5_000 })
       }, { timeout: 90_000 })
 
