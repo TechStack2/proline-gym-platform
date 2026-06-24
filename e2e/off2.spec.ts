@@ -1,6 +1,22 @@
-import { test, expect, type Browser } from '@playwright/test'
+import { test, expect, type Browser, type Page } from '@playwright/test'
 import { ROLES } from './roles'
 import { vis, untilConsistent } from './helpers'
+
+/** Click today's schedule rows until one reveals a cached roster. In the FULL
+ *  suite the e2e gym accumulates several Muay-Thai-named classes (two "Muay Thai
+ *  Beginner" + a "Muay Thai Pro"), only some with enrollments — a blind
+ *  `.filter('Muay Thai').first()` lands on a roster-less one. This drills whatever
+ *  scheduled class actually has a roster (the offline-read assertion is unchanged:
+ *  a class roster renders from the Dexie cache). */
+async function openRosteredClass(page: Page): Promise<boolean> {
+  const rows = vis(page, '[data-testid="desk-schedule-row"]')
+  const n = await rows.count()
+  for (let i = 0; i < n; i++) {
+    await rows.nth(i).click().catch(() => {})
+    if (await vis(page, '[data-testid="desk-roster-row"]').first().isVisible({ timeout: 2_500 }).catch(() => false)) return true
+  }
+  return false
+}
 
 /**
  * OFF-2 — offline front-desk READS from the primed Dexie mirror. The front-desk
@@ -58,13 +74,7 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
           vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first(),
           'member mirrored',
         ).toBeVisible({ timeout: 6_000 })
-        const sched = vis(page, '[data-testid="desk-schedule-row"]').filter({ hasText: 'Muay Thai' }).first()
-        await expect(sched, 'today\'s schedule mirrored').toBeVisible({ timeout: 6_000 })
-        await sched.click()
-        await expect(
-          vis(page, '[data-testid="desk-roster-row"]').first(),
-          'this class\'s roster (class_enrollments) mirrored',
-        ).toBeVisible({ timeout: 6_000 })
+        expect(await openRosteredClass(page), 'a today-class roster (class_enrollments) is mirrored online').toBe(true)
       }, { timeout: 180_000, intervals: [1_000, 2_000, 3_000] })
 
       // ── OFFLINE: the SW serves the cached desk shell (not a net-error page) ──
@@ -89,11 +99,11 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
       await expect(basics.getByTestId('needs-connection'), 'edit/full-file needs a connection offline').toBeVisible()
       await expect(page.locator('[data-testid="desk-open-file"]'), 'no live file link offline').toHaveCount(0)
 
-      // ── Today's schedule → roster, FROM THE DEXIE CACHE ──
-      const schedRow = vis(page, '[data-testid="desk-schedule-row"]').filter({ hasText: 'Muay Thai' }).first()
-      await expect(schedRow, "today's seeded class from cache").toBeVisible({ timeout: 15_000 })
-      await schedRow.click()
-      await expect(vis(page, '[data-testid="desk-roster-row"]').first(), 'roster from cache').toBeVisible({ timeout: 15_000 })
+      // ── Today's schedule → roster, FROM THE DEXIE CACHE (drill a class that has
+      //    a roster — the full-suite gym carries several Muay-Thai classes, only
+      //    some enrolled, so don't blind-.first() onto a roster-less one). ──
+      await expect(vis(page, '[data-testid="desk-schedule-row"]').first(), "today's schedule from cache").toBeVisible({ timeout: 15_000 })
+      expect(await openRosteredClass(page), 'a class roster renders from the cache offline').toBe(true)
 
       await ctx.setOffline(false)
     } finally {
