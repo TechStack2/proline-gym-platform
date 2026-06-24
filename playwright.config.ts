@@ -518,6 +518,19 @@ export default defineConfig({
       testMatch: /\/pwa-install\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
     },
+    // E2E-TIERED — the `smoke` project materializes ONLY under E2E_TIERED=1 (the
+    // targeted branch-run path: `gh workflow run e2e.yml -f projects="<slice>"`).
+    // It is ABSENT from the default config, so the FULL push-to-main union gate's
+    // project set + coverage are unchanged (smoke.spec.ts is matched by no project
+    // there → never runs). testMatch ANCHORED ($).
+    ...(process.env.E2E_TIERED === '1'
+      ? [{
+          name: 'smoke',
+          dependencies: ['setup'] as string[],
+          testMatch: /\/smoke\.spec\.ts$/,
+          use: { ...devices['Desktop Chrome'] },
+        }]
+      : []),
   ],
 
   // Runs against the PRODUCTION build (`next start`). The middleware is now

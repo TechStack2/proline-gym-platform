@@ -413,3 +413,34 @@ Proven green in the **full union suite**, not just isolated.
 - **"Run isolated first" earned its keep.** Three `--repeat-each=3` isolated runs cost ~15m each instead of three ~45m union gates — and they converted "off2 is flaky" into "off2's `class_enrollments` never mirrors," which a full-suite red would never have shown. b3 + off3b are genuine read-after-write lags (pinned with `untilConsistent`); off2 is a different animal masquerading as the same symptom.
 - **The honest call: don't pin what isn't a flake.** The prompt's premise ("green code, timing flake") held for two of three; for off2 the code path itself can't deliver the data under the SW's REST-cache timeout. Forcing it green would have meant weakening the roster assertion — explicitly forbidden — so the right move was to revert + escalate with the root cause, not to ship a hack.
 - **Residual / root unlock:** the isolated-DB-per-run work (ISO-DB lane) removes the shared-project latency variance that tips `class_enrollments` past the SW's 10s timeout — that, plus excluding the prime from SW caching, is the durable fix for off2.
+
+---
+
+## Cycle 6 / E2E-TIERED — fast targeted branch runs
+
+> **Branch:** `prompt-e2e-tiered` (off `main` `8b18dc4`, post REG-FIX + PWA-INSTALL) · **Prompt:** [`cycle-5/prompt-E2E-TIERED.md`](./cycle-5/prompt-E2E-TIERED.md). **CI-infra, purely additive.** The e2e gate runs the full ~120-spec, single-worker (~45 min) suite on every branch dispatch; the full suite already runs post-merge (the push-to-main union gate). So **branch validation becomes a fast targeted subset**, while the full regression guard stays on the union gate, **unchanged**.
+
+### The smoke set
+[`e2e/smoke.spec.ts`](../../e2e/smoke.spec.ts) — 5 fast checks, each **self-contexting** (own owner / student / anon context, so it never needs a project-pinned `storageState`): **staff dashboard** loads (`/today`), **member portal** loads (`/portal/billing`), **public landing** loads (catalog), the **billing write happy-path** (issue an invoice), and **/ar** localized (no `MISSING_MESSAGE`).
+
+### Targeted vs full (the dispatch)
+- `e2e.yml`'s `workflow_dispatch` gains a `projects` string input. **Provided** → the run is `setup + smoke + <those projects>` (sets `E2E_TIERED=1` + `--project` filters); **empty** → the **FULL** suite.
+  - Coder: `gh workflow run e2e.yml --ref <branch> -f projects="<slice-project>"`.
+- **`push` to `main` always runs the FULL suite — UNCHANGED.** `push` has no `projects` input → empty → full. The REG-FIX/FK proof steps, `concurrency: e2e-cloud`, and migration-apply are all untouched.
+
+### Why the union gate is provably unchanged
+The `smoke` project materializes **only under `E2E_TIERED=1`** (a conditional spread in [`playwright.config.ts`](../../playwright.config.ts)). In the default (full) config it does **not exist**, and `smoke.spec.ts` is matched by **no** project there → never runs in the full suite. Verified locally:
+- `npx playwright test --list` (full): **no `[smoke]` project**, **0** `smoke.spec.ts` tests, project set = the original.
+- `E2E_TIERED=1 … --project=setup --project=smoke --project=owner`: selects **only** setup + smoke + owner.
+
+### ⟶ targeted branch runs fast; full union gate unchanged; no spec removed: **PASS**
+**CI:**
+- **Targeted** [run `28009224297`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28009224297) — **SUCCESS, ~4 min** (vs the full ~45). Executed **only** `setup + smoke + owner` (16 passed); proves a named-slice branch run is fast + scoped.
+- **Full (clean, on the STABILIZE-3 base)** [run `28129614425`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28129614425) — **SUCCESS, 128 passed, 0 hard reds** (47 min) on the rebased `2fabb3a`. **Union gate UNCHANGED**: `smoke` **absent** (0 `smoke.spec.ts` tests), **54 distinct projects** (the original set), runs the identical `npm run test:e2e -- ${pw_args}` (empty on push → byte-identical to before), REG-FIX/FK proof + STABILIZE-3's `pw_args` passthrough both intact.
+- **First full run** [`28009435344`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28009435344) (pre-rebase, off the old `main`) already proved the gate unchanged (smoke absent, 54 projects) but inherited the then-unpinned `off2:20` flake; the rebase onto STABILIZE-3 (`67d14ab`, off2:20 RESOLVED via SW NetworkOnly) cleared it — hence the green `28129614425` above.
+- **Rebase conflict resolution:** `e2e.yml` hand-merged to keep **both** dispatch inputs (`pw_args` + `projects`) and **one** reconciled run step (targeted = `--project` filters + `pw_args`; full = `npm run test:e2e -- ${pw_args}`); the audit doc kept both the STABILIZE-3 and E2E-TIERED sections; `playwright.config.ts` merged clean.
+
+### DRAG READ
+- **Additive only:** no spec deleted or skipped; the full coverage + project count are byte-identical without `E2E_TIERED`. The smoke checks are a *subset* re-expressed as a self-contexting spec, not a re-routing of the gate.
+- **The isolated-DB / parallel-workers unlock attaches next** — the bigger win (drop `workers:1` / `fullyParallel:false`, ~45 min → minutes) needs **per-worker gym isolation** first (today the single shared ephemeral gym + serial order is load-bearing; e.g. [[e2e-karim-mutated-by-ml1]]). E2E-TIERED is the cheap interim that doesn't require that isolation. The `projects` input + `E2E_TIERED` switch compose cleanly with a future per-worker-gym change.
+- **Smoke coverage boundary:** it catches *gross* breakage (a route 500, a dead dashboard/portal/landing, a broken billing write, an /ar key gap) — it is **not** a regression guard. That's the union gate's job, and it's intact.
