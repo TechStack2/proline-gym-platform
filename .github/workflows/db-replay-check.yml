@@ -1,0 +1,95 @@
+name: DB Replay Check (migrations replay from zero)
+
+# ISO-DB Phase 0b — the LIVE confirmation Phase 0 (static analysis) couldn't run
+# locally, and a PERMANENT migration-replay guard. Spins a real, isolated Supabase
+# stack on the runner (Postgres + GoTrue + Storage + PostgREST via Docker) and
+# replays ALL migrations from an EMPTY DB via `supabase db reset`. Catches exactly
+# the class of bug Phase 0 found (000008's out-of-band `app.demo_password` GUC) +
+# surfaces the flagged risks (direct auth.users inserts, storage buckets/policies).
+#
+# Standalone + additive: this does NOT touch e2e.yml and needs NO secrets — it never
+# talks to the cloud project (that's the whole point of the isolated local stack).
+# Phase 1 (e2e on the local stack) is separate and not started here.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - 'supabase/seed.sql'
+      - '.github/workflows/db-replay-check.yml'
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - 'supabase/seed.sql'
+
+# Independent of the e2e-cloud gate — this uses a per-run LOCAL stack, so it can run
+# concurrently with anything. Cancel superseded runs on the same ref.
+concurrency:
+  group: db-replay-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start an isolated local Supabase stack (Docker)
+        run: |
+          set -euo pipefail
+          # `supabase start` boots Postgres + GoTrue + Storage + PostgREST and applies
+          # the migration chain on first boot — a from-zero replay in itself.
+          supabase start
+
+      - name: Replay ALL migrations from an EMPTY DB (the from-zero check)
+        run: |
+          set -euo pipefail
+          # `db reset` drops the DB and re-applies 000001 → latest from scratch, then
+          # the (no-op) seed. Non-zero exit on ANY broken migration → this job goes red.
+          supabase db reset
+          echo "✅ supabase db reset exited 0 — the full migration chain replays clean from zero."
+
+      - name: Assert the replay landed (chain + the Phase-0-flagged risks)
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y postgresql-client; fi
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          q() { psql "$DB_URL" -tA -c "$1"; }
+
+          # (1) every migration recorded (63 files in supabase/migrations).
+          EXPECTED=$(ls supabase/migrations/*.sql | wc -l | tr -d ' ')
+          APPLIED=$(q "select count(*) from supabase_migrations.schema_migrations;")
+          echo "migrations applied=${APPLIED} expected=${EXPECTED}"
+          [ "${APPLIED}" -ge "${EXPECTED}" ] || { echo "::error::only ${APPLIED}/${EXPECTED} migrations recorded"; exit 1; }
+
+          # (2) RISK — direct auth.users inserts (000008 demo accounts; the GUC fix).
+          USERS=$(q "select count(*) from auth.users where email like '%@prolinegym.lb';")
+          echo "auth.users demo logins (@prolinegym.lb)=${USERS}"
+          [ "${USERS}" -eq 4 ] || { echo "::error::expected 4 demo auth.users (000008), got ${USERS} — the app.demo_password replay path regressed"; exit 1; }
+
+          # (3) RISK — storage buckets + RLS policies (000039 avatars, 000061 drafts).
+          BUCKETS=$(q "select count(*) from storage.buckets where id in ('avatars','coach-avatar-drafts');")
+          POLICIES=$(q "select count(*) from pg_policies where schemaname='storage' and tablename='objects';")
+          echo "storage buckets(avatars,coach-avatar-drafts)=${BUCKETS}  storage.objects policies=${POLICIES}"
+          [ "${BUCKETS}" -eq 2 ] || { echo "::error::expected 2 storage buckets (000039/000061), got ${BUCKETS}"; exit 1; }
+          [ "${POLICIES}" -ge 1 ] || { echo "::error::no storage.objects RLS policies applied (000039)"; exit 1; }
+
+          # (4) sanity — the migration chain's base seed (000006 proline-gym) is present.
+          GYM=$(q "select count(*) from gyms where slug='proline-gym';")
+          [ "${GYM}" -eq 1 ] || { echo "::error::base seed gym 'proline-gym' (000006) missing"; exit 1; }
+
+          echo "✅ Phase 0b: replay-check GREEN — chain replays from zero; auth.users + storage risks confirmed applied."
+
+      - name: Stop the local stack
+        if: always()
+        run: supabase stop --no-backup || true
