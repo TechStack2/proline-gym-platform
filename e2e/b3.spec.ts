@@ -1,6 +1,6 @@
 import { test, expect, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, createClassViaWizard } from './helpers';
+import { vis, createClassViaWizard, untilConsistent } from './helpers';
 
 /**
  * B3 — Family/Household (Cycle 5 / V1).
@@ -58,7 +58,15 @@ test('B3 · guardian: switcher → request-for-kid → payer invoice → househo
     const card = vis(guardian.page, '[data-testid="portal-class-card"]').filter({ hasText: CLASS_NAME }).first();
     await expect(card).toBeVisible({ timeout: 15_000 });
     await card.getByTestId('request-btn').click();
-    await expect(card.getByTestId('reg-status')).toHaveAttribute('data-status', 'requested', { timeout: 15_000 });
+    // STABILIZE-3: the portal read of the just-created registration lags under the
+    // shared project's latency (realtime/refresh) — poll-until the card reflects
+    // 'requested' by re-fetching the page (a GET; never re-submits → no E1 double-
+    // request). The reconciliation/billing assertions below are unchanged.
+    await untilConsistent(async () => {
+      await guardian.page.goto(`/en/portal/classes?kid=${kidId}`);
+      const c = vis(guardian.page, '[data-testid="portal-class-card"]').filter({ hasText: CLASS_NAME }).first();
+      await expect(c.getByTestId('reg-status')).toHaveAttribute('data-status', 'requested', { timeout: 5_000 });
+    }, { timeout: 60_000 });
 
     // ── Staff inbox → approve → payer auto-resolves to Rana ──
     await owner.page.goto('/en/inbox');

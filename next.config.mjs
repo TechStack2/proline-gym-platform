@@ -41,18 +41,20 @@ const withPWA = withPWAInit({
         networkTimeoutSeconds: 10,
       },
     },
-    // ─── Supabase REST: Network First ───
+    // ─── Supabase REST: NETWORK ONLY (STABILIZE-3 / OFF-2 prime fix) ───
+    // The Dexie mirror (SyncEngine.pullAll) is the REAL offline cache. Caching
+    // Supabase REST in the SW on top of it poisoned the OFF-2 prime: NetworkFirst
+    // tried the network for `networkTimeoutSeconds: 10` then fell back to the cache,
+    // so the slower-RLS `class_enrollments` read (vs the simple students/classes
+    // reads) timed out and returned a STALE/EMPTY cached response — the prime
+    // bulkPut nothing and the offline desk roster never mirrored (off2:66), and real
+    // offline front-desk users saw an empty roster. NetworkOnly = always hit the
+    // network when online (no stale fallback, no 10s cap); offline the app reads the
+    // Dexie mirror, never a stale SW copy of REST. (Registered before the catch-all
+    // NetworkFirst route, so it wins for Supabase REST.)
     {
       urlPattern: /^https?:\/\/.*\.supabase\.co\/rest\/.*/i,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'supabase-rest-cache',
-        expiration: {
-          maxEntries: 500,
-          maxAgeSeconds: 60 * 5, // 5 min
-        },
-        networkTimeoutSeconds: 10,
-      },
+      handler: 'NetworkOnly',
     },
     // ─── Static Assets (JS, CSS, fonts): Cache First ───
     {
