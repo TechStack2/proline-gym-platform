@@ -579,3 +579,29 @@ Verified under a **local prod build (strict CSP)** @ **390 / 1280 / 2880** and *
 - **Prod-only breakage, invisible in dev:** every fix here was silently degraded in prod (dev's CSP has `'unsafe-inline'`) — the same class of bug as the recurring sidelined hero. Only a prod-build check (or the prod-CSP e2e webServer) surfaces it.
 - **The systemic `fill` fear was contained:** only the hero used `next/image fill`. The broader risk is **dynamic inline values** (DB colors, runtime widths) that can't be static classes — widths (layout) are now bucketed; colors (cosmetic) are named exceptions pending a nonce'd-style follow-up.
 - **No CSP weakening:** every fix is at the call site. Adding `'unsafe-inline'` to `style-src` would have "fixed" all of this in one line *and* re-opened the CSS-injection surface the strict CSP exists to close. The rule stands: **layout-critical CSS is class-based, never inline.**
+
+---
+
+## Cycle 6 / ISO-DB — isolated local Supabase stack per CI run
+
+### Phase 0 — migration-replay de-risk SPIKE (investigation only; STOP before Phase 1)
+> **Branch:** `prompt-iso-db` (off `main` `67d14ab`) · **Prompt:** [`cycle-5/prompt-ISO-DB.md`](./cycle-5/prompt-ISO-DB.md). Phase 1 (CI local-stack build + `e2e.yml` rework) is **deferred** until E2E-TIERED merges; this dispatch is Phase 0 only. **No `e2e.yml` change.**
+
+**Method:** a real `supabase db reset` could not be run in this lane (no Docker/Postgres locally — only the Supabase CLI, which needs Docker). So Phase 0 is a **static replay analysis** of all 63 migrations (000001→000065) for from-zero hazards, grounded in the fact that the chain was already **VF-applied to cloud in order** (so ordering itself is proven; the only from-zero deltas are cloud-only data/objects + apply-time environment assumptions). Phase 1's first `supabase db reset` is the live confirmation.
+
+**Result: NOT clean from zero — 1 hard breakage + 1 seed-config issue; both fixed (separate reviewable commits). Everything else verified safe.**
+
+1. **BREAKAGE — `000008_demo_accounts` (FIXED, commit `32c3c07`).** It hashes `current_setting('app.demo_password')` — a GUC the header says to set out-of-band (`ALTER DATABASE … SET app.demo_password` / `set_config`) before applying. The long-lived cloud project had it set once; a clean `supabase db reset` never sets it, so `current_setting('app.demo_password')` raises **`unrecognized configuration parameter`** and aborts the entire replay at 000008. This is exactly the prompt's "VF-applied incrementally to the persistent cloud project" suspect. **Minimal fix:** default the GUC at the top of 000008 when unset (explicit override still wins); already-applied on cloud, so this only affects future from-zero replays.
+2. **SEED-CONFIG — missing `supabase/seed.sql` (FIXED, commit `254f5c8`).** `config.toml` has `[db.seed] enabled = true`, `sql_paths = ["./seed.sql"]`, but the file didn't exist → `db reset`'s seed step has a dangling path. **Minimal fix:** add a no-op `supabase/seed.sql` (e2e seeds via `seed_e2e_gym`, not this file).
+
+**Verified SAFE (no action) — the prompt's named suspects, cleared:**
+- **Demo-reseed `000058`/`000060`:** `000058` was never merged to `main` (a numbering gap), so `reseed_proline_demo()` is first defined — **self-contained** — by `000060`; it does **not** depend on 000058, and `backup_proline_demo()` appears only in comments → nothing references the missing 000058. Replay-safe.
+- **`seed_e2e_gym` / `teardown_e2e_gym` (000029) + the reseed (000060):** these are **function definitions**, only *defined* at apply time, never *executed* during reset → no cloud-state dependency on replay.
+- **Function-rewrite ordering ([[function-rewrite-reverts-later-migrations]]):** a clean in-order replay applies the **latest** definer last — confirmed correct for `request_class_registration` (→ `000065`), `publish_coach_profile` (→ `000061`), `reseed_proline_demo` (→ `000060`). The "stale body reverts later work" hazard does **not** bite a from-zero replay (it only bit when a stale body was applied out-of-band *after* newer ones).
+- **Apply-time DML / data-dependent migrations:** `000006` self-creates the `proline-gym` gym + catalog + demo classes; later apply-time data steps (`000010`/`000019`/`000026`) build on it **in order**, and `000026` is guarded (`IF gym IS NULL THEN skip`). No migration assumes cloud-only rows at apply time.
+- **Extensions:** `pgcrypto` is self-`CREATE EXTENSION IF NOT EXISTS … WITH SCHEMA extensions` before first use (000008/000029); `gen_random_uuid` is core. Provided by the local stack regardless.
+- **Numbering gaps `000028`/`000058`:** harmless — Supabase applies by version order, contiguity not required.
+
+**WATCH (low-risk; confirm on Phase-1's first real `db reset`):** direct `auth.users` INSERTs (000006/000008/000029) and `storage` buckets/policies (000039) depend on the local `gotrue`/`storage` schemas `supabase start` provisions — long-stable columns, but the exact local stack version is the live check Phase 0 couldn't run here.
+
+### ⟶ ISO-DB Phase 0: replay NOT clean from zero — 1 breakage (000008 GUC) + 1 seed-config issue, both fixed; all other suspects verified safe: **REPORT READY (Phase 1 not started)**
