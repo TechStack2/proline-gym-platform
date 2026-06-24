@@ -281,6 +281,16 @@ END $$;
 -- ============================================================
 -- DEMO STUDENTS (for testing Belt Engine)
 -- ============================================================
+-- ISO-DB Phase 0b: the demo-student INSERTs below reference current_belt_rank +
+-- belt_promotion_date, which 000002 never created and 000010 only ADDs later — a
+-- forward reference that aborts a from-zero `supabase db reset` here with 42703
+-- (the long-lived cloud DB had the columns by the time this re-ran). 000010 already
+-- ADD COLUMN IF NOT EXISTS these (its own comment notes "000006 already inserts
+-- these columns"), so creating them here first is a safe no-op there. (Order bug,
+-- not data change.)
+ALTER TABLE students ADD COLUMN IF NOT EXISTS current_belt_rank belt_rank_enum;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS belt_promotion_date DATE;
+
 INSERT INTO students (profile_id, gym_id, emergency_contact_name, emergency_contact_phone, current_belt_rank, belt_promotion_date, is_active)
 SELECT p.id, g.id, 'Ali Fakih', '+961 70 628 601', 'brown', '2026-01-15', true
 FROM profiles p, gyms g
