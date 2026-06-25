@@ -283,8 +283,13 @@ export default defineConfig({
     {
       // ML-1 membership lifecycle: tick-driven renewals/dunning/freeze — the
       // tick mutates gym-wide billing state nothing later should see…
+      // ISO-DB: ml1 RENEWS the seeded "Karim ends today" membership (FD-1 seed),
+      // which fd1 reads as its "expiring today" row. Under per-worker arbitrary
+      // order a shared slot could run ml1 first → fd1 hard-fails (the renewal
+      // persists, so retry can't recover). Depend on fd1 so fd1 always sees the
+      // pristine fixture first (re-encodes the old fd1<ml1 array order).
       name: 'ml1',
-      dependencies: ['setup'],
+      dependencies: ['setup', 'fd1'],
       testMatch: /ml1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
