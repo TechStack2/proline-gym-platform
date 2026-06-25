@@ -99,6 +99,24 @@ jobs:
       - name: Replay ALL migrations from zero (clean state; proven by db-replay-check)
         run: supabase db reset
 
+      - name: Grant API-role privileges (local-stack parity with cloud)
+        # ISO-DB: Supabase CLOUD auto-grants anon/authenticated table privileges
+        # out-of-band (platform default privileges) — they are NOT in the migrations.
+        # A from-zero LOCAL replay therefore has the schema + RLS but no API-role
+        # GRANTs, so every app read 42501s ("permission denied for table …") and the
+        # gym renders empty. Re-apply the standard Supabase grants (RLS still governs
+        # which ROWS each role sees; tables without an anon policy stay anon-invisible).
+        run: |
+          set -euo pipefail
+          : "${SUPABASE_DB_URL:?}"
+          psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+          GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, service_role;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+          SQL
+          echo "✅ API-role grants applied (anon SELECT; authenticated/service_role ALL)"
+
       - name: Capture the local stack URL + keys
         run: |
           set -euo pipefail
