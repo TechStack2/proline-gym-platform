@@ -2,7 +2,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { paidUsd, balanceUsd, localizedName, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { paidUsd, balanceUsd, localizedName, statusLabel, METHOD_LABEL, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 import { getTranslations } from 'next-intl/server'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import { PrintButton } from './print-button'
@@ -25,7 +25,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
 
   const { data: inv } = await supabase
     .from('invoices')
-    .select(`id, invoice_number, invoice_type, amount_usd, tax_amount_usd, total_usd, total_lbp,
+    .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, amount_usd, tax_amount_usd, total_usd, total_lbp,
       exchange_rate, status, due_date, paid_at, created_at, payer_profile_id,
       gyms(name_ar, name_en, name_fr),
       students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)),
@@ -81,7 +81,16 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
             </div>
           )}
           <div><span className="text-muted-foreground">{t('Status', 'الحالة')}: </span><span data-testid="receipt-status">{statusLabel(inv.status, locale)}</span></div>
+          <div><span className="text-muted-foreground">{t('Type', 'النوع')}: </span>
+            <span data-testid="receipt-invoice-type" data-type={inv.invoice_type || 'other'}
+              className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
+              {invoiceTypeLabel(inv.invoice_type, locale)}
+            </span>
+          </div>
         </div>
+        {invoiceNote(inv, locale) && (
+          <p className="mb-4 text-sm text-muted-foreground" data-testid="receipt-note">{invoiceNote(inv, locale)}</p>
+        )}
 
         <table className="mb-4 w-full text-sm">
           <tbody>
