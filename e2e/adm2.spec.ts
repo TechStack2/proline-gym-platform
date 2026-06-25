@@ -96,6 +96,10 @@ test('ADM-2 · avatar upload renders on coach detail + wizard chip + diary; memb
   test.setTimeout(240_000);
   const owner = await ctxFor(browser, 'owner');
   const guardian = await ctxFor(browser, 'parent'); // Rana
+  // DEBUG(iso-db): surface browser console + page errors + the avatar-error text.
+  owner.page.on('console', (m) => { if (m.type() === 'error') console.log('[BROWSER console.error]', m.text()); });
+  owner.page.on('pageerror', (e) => console.log('[BROWSER pageerror]', e.message));
+  owner.page.on('requestfailed', (r) => { if (/storage|object/.test(r.url())) console.log('[BROWSER requestfailed]', r.url(), r.failure()?.errorText); });
   try {
     // ── Coach photo: upload from the edit form (immediate upsert) ──
     await owner.page.goto('/en/coaches');
@@ -109,6 +113,9 @@ test('ADM-2 · avatar upload renders on coach detail + wizard chip + diary; memb
     // the user actually sees.
     await visibleShell(owner.page).locator('[data-testid="avatar-file-input"]').first()
       .setInputFiles(FIXTURE);
+    // DEBUG(iso-db): wait a beat, then dump any avatar-error the component set.
+    await owner.page.waitForTimeout(8000);
+    console.log('[DEBUG avatar-error]', JSON.stringify(await owner.page.locator('[data-testid="avatar-error"]').allTextContents()));
     await expect(vis(owner.page, '[data-testid="avatar-upload"] [data-testid="avatar-img"]').first())
       .toBeVisible({ timeout: 20_000 });
 
