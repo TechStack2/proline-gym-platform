@@ -132,8 +132,13 @@ jobs:
           GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
           GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, service_role;
           GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+          -- Storage parity (avatar uploads): same out-of-band grant gap on the
+          -- storage schema → uploads land 0 bytes / fail on local.
+          GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
+          GRANT ALL ON storage.objects, storage.buckets TO authenticated, service_role;
+          GRANT SELECT ON storage.objects, storage.buckets TO anon;
           SQL
-          echo "✅ API-role grants applied (anon SELECT; authenticated/service_role ALL)"
+          echo "✅ API-role grants applied (public + storage; RLS still governs rows)"
 
       - name: Seed one ISOLATED gym per worker slot (<base>-w0 … w<N-1>)
         run: |
