@@ -154,27 +154,6 @@ jobs:
             echo "✅ seeded ${SLUG}"
           done
 
-      - name: DEBUG — replicate the owner avatar upload via storage API (temporary)
-        run: |
-          set -uo pipefail
-          URL="${NEXT_PUBLIC_SUPABASE_URL}"; ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY}"
-          SLUG="${E2E_GYM_SLUG_BASE}-w0"
-          TOK="$(curl -sS -X POST "$URL/auth/v1/token?grant_type=password" -H "apikey: $ANON" \
-            -H "Content-Type: application/json" \
-            --data "{\"email\":\"owner+${SLUG}@e2e.local\",\"password\":\"${E2E_PASSWORD}\"}" \
-            | sed -E 's/.*"access_token":"([^"]+)".*/\1/')"
-          echo "owner token len: ${#TOK}"
-          GYM="$(curl -sS "$URL/rest/v1/gyms?slug=eq.$SLUG&select=id" -H "apikey: $ANON" -H "Authorization: Bearer $TOK" | sed -E 's/.*"id":"([0-9a-f-]+)".*/\1/')"
-          PROF="$(curl -sS "$URL/rest/v1/coaches?gym_id=eq.$GYM&select=profile_id&limit=1" -H "apikey: $ANON" -H "Authorization: Bearer $TOK" | sed -E 's/.*"profile_id":"([0-9a-f-]+)".*/\1/')"
-          echo "gym=$GYM coach_profile=$PROF"
-          printf '\xff\xd8\xff\xe0test' > /tmp/a.jpg
-          echo "── upload (x-upsert) → avatars/$GYM/$PROF.jpg ──"
-          curl -sS -w '\nHTTP %{http_code}\n' -X POST "$URL/storage/v1/object/avatars/$GYM/$PROF.jpg" \
-            -H "apikey: $ANON" -H "Authorization: Bearer $TOK" -H "x-upsert: true" \
-            -H "Content-Type: image/jpeg" --data-binary @/tmp/a.jpg
-          echo "── readback (public) ──"
-          curl -sS -o /dev/null -w 'HTTP %{http_code} bytes=%{size_download}\n' "$URL/storage/v1/object/public/avatars/$GYM/$PROF.jpg"
-
       - run: npm ci
 
       - name: Install Playwright browser (cached)

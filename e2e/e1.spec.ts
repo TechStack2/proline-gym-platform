@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, gymSlug } from './helpers';
+import { vis, gymSlug, untilConsistent } from './helpers';
 
 /**
  * E1 — summer camps: create → publish → register (guardian payer) → deposit →
@@ -33,9 +33,13 @@ async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
 }
 
 async function openFile(page: Page, name: string) {
-  await page.goto(`/en/students?search=${encodeURIComponent(name)}`);
-  await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click();
-  await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
+  // ISO-DB: under parallel-worker load the search results / click→nav can lag;
+  // re-search + click until the member file opens (idempotent read path).
+  await untilConsistent(async () => {
+    await page.goto(`/en/students?search=${encodeURIComponent(name)}`);
+    await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click();
+    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 5_000 });
+  });
 }
 
 /** Desk-register via the Member-360 camp modal; returns without asserting. */
@@ -51,11 +55,6 @@ test('E1 · publish gate → desk registration (guardian payer, snapshot) → de
   const owner = await ctxFor(browser, 'owner');
   const guardian = await ctxFor(browser, 'parent'); // Rana
   const anon = await (async () => { const ctx = await browser.newContext({ locale: 'en' }); return { ctx, page: await ctx.newPage() }; })();
-  // DEBUG(iso-db): surface payment-flow errors.
-  owner.page.on('console', (m) => { if (m.type() === 'error' && !/inline style|img-src/.test(m.text())) console.log('[E1 console.error]', m.text()); });
-  owner.page.on('pageerror', (e) => console.log('[E1 pageerror]', e.message));
-  owner.page.on('requestfailed', (r) => { if (/rest|rpc|record_payment|invoices/.test(r.url())) console.log('[E1 requestfailed]', r.url(), r.failure()?.errorText); });
-  owner.page.on('response', (r) => { if (/record_payment|rpc\/record/.test(r.url())) console.log('[E1 record_payment resp]', r.status()); });
   try {
     // ── Wizard create (staged) ──
     const today = new Date().toISOString().slice(0, 10);
@@ -121,16 +120,15 @@ test('E1 · publish gate → desk registration (guardian payer, snapshot) → de
     const invoiceNumber = (await vis(owner.page, '[data-testid="invoice-number"]').first().textContent())!.trim();
     await vis(owner.page, '[data-testid="pay-amount-usd"]').first().fill('50');
     await vis(owner.page, '[data-testid="pay-submit"]').first().click();
-    // DEBUG(iso-db): capture the post-submit state on the invoice page.
-    await owner.page.waitForTimeout(6000);
-    console.log('[E1 after pay-submit] url=', owner.page.url());
-    console.log('[E1 invoice-status on page]', JSON.stringify(await owner.page.locator('[data-testid="invoice-status"]').allTextContents().catch(() => [])));
-    console.log('[E1 toasts]', JSON.stringify(await owner.page.locator('[data-sonner-toast], [data-testid="app-toast"]').allTextContents().catch(() => [])));
-    await owner.page.goto(rosterUrl);
-    await expect(
-      vis(owner.page, '[data-testid="camp-reg-row"]').filter({ hasText: 'Omar' }).first().getByTestId('camp-pay-badge'),
-      'deposit → roster badge shows PARTIAL',
-    ).toHaveAttribute('data-paystate', 'partial', { timeout: 15_000 });
+    // ISO-DB: the payment commits async; under parallel-worker load the roster
+    // re-read can race it. Re-navigate + re-check until the badge reflects PARTIAL.
+    await untilConsistent(async () => {
+      await owner.page.goto(rosterUrl);
+      await expect(
+        vis(owner.page, '[data-testid="camp-reg-row"]').filter({ hasText: 'Omar' }).first().getByTestId('camp-pay-badge'),
+        'deposit → roster badge shows PARTIAL',
+      ).toHaveAttribute('data-paystate', 'partial', { timeout: 5_000 });
+    });
 
     // ── Guardian household billing carries the camp invoice ──
     await guardian.page.goto('/en/portal/billing');
@@ -164,10 +162,14 @@ test('E1 · capacity race-safe (3 → full, 4th blocked) → attendance → Toda
     const wiz = (tid: string) => owner.page.locator(`[data-testid="${tid}"]:visible`).first();
     await wiz('sw-name-en').fill(unique);
     await wiz('sw-phone').fill('+96170000888');
-    await wiz('wizard-next').click();
-    await wiz('wizard-next').click();
+    // ISO-DB: identity → plan → review; wait for review before submitting (under
+    // parallel-worker load the wizard transition lags; racing it left us on /add).
+    await wiz('wizard-next').click(); // → plan
+    await wiz('wizard-next').click(); // → review
+    await expect(wiz('sw-review'), 'wizard reached review').toBeVisible({ timeout: 15_000 });
     await wiz('wizard-submit').click();
-    await expect(owner.page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
+    // The create server action redirects to the new member; allow extra time under load.
+    await expect(owner.page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 30_000 });
 
     await deskRegister(owner.page, unique, 'Summer Camp');
     await expect(
