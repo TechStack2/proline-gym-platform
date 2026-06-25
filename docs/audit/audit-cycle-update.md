@@ -541,7 +541,7 @@ Public landing `#schedule` grid for **every** locale — **/ar** (RTL), **/en**,
 [`e2e/activity-loop.spec.ts`](../../e2e/activity-loop.spec.ts) (already drives a real member to `/portal/progress` under CI's prod build) now asserts the eligibility `progress-bar` renders a **non-zero width** — the old inline-width bar collapsed to 0 under the prod CSP, so this **fails on the bug, passes on the class-based fix**.
 
 ### ⟶ layout-critical inline styles eliminated under prod CSP; not weakened; guard added: **PASS**
-**CI:** targeted [run `28178851876`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28178851876) over `landing` (FacilitySection no-regression) + `activity-loop` (progress-bar prod-CSP guard). `tsc --noEmit` clean; bucketed width classes present in the prod CSS bundle.
+**CI:** targeted [run `28184700407`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28184700407) — **SUCCESS** (12 passed, ~2 min) over `landing` (FacilitySection no-regression) + `activity-loop` (progress-bar prod-CSP guard, 1.2m). `tsc --noEmit` clean; bucketed width classes present in the prod CSS bundle.
 
 ### DRAG READ
 - **Prod-only breakage, invisible in dev:** every fix here was silently degraded in prod (dev's CSP has `'unsafe-inline'`) — the same class of bug as the recurring sidelined hero. Only a prod-build check (or the prod-CSP e2e webServer) surfaces it.
