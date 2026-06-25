@@ -64,8 +64,12 @@ jobs:
       # from one CI IP would otherwise 429 the login page. NEVER set in prod.
       E2E_TEST_MODE: '1'
       # Worker slots = isolated gyms seeded below = playwright.config WORKERS. One source.
-      # ISO-DB: a single `next start` app server backs all workers; tuning the count
-      # against contention on write-heavy multi-step flows (see audit doc).
+      # ISO-DB: a single `next start` app server backs all workers. workers:4
+      # saturated it and flaked write-heavy multi-step flows (disabled submit
+      # buttons / missing success markers under slow hydration); workers:2 is the
+      # stable parallel level (125/130 green, ~26.6m vs ~43m serial). Pushing to
+      # 3–4 (the ≤15m goal) needs the single app server's contention addressed
+      # (e.g. clustering `next start`). See docs/audit Cycle 6 / ISO-DB.
       E2E_WORKERS: '2'
       NEXT_PUBLIC_DEFAULT_LOCALE: en
       NEXT_PUBLIC_SUPPORTED_LOCALES: ar,en,fr
