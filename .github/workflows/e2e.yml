@@ -143,31 +143,6 @@ jobs:
             echo "✅ seeded ${SLUG}"
           done
 
-      - name: DEBUG — verify seeded data is present + anon-readable (w0)
-        run: |
-          set -uo pipefail
-          SLUG="${E2E_GYM_SLUG_BASE}-w0"
-          echo "── DB counts (as postgres) for ${SLUG} ──"
-          psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 -v slug="${SLUG}" -tA -F'|' <<'SQL'
-          SELECT 'gym', count(*) FROM gyms WHERE slug=:'slug';
-          SELECT 'gym_is_active', count(*) FROM gyms WHERE slug=:'slug' AND is_active;
-          SELECT 'disciplines', count(*) FROM disciplines d JOIN gyms g ON g.id=d.gym_id WHERE g.slug=:'slug';
-          SELECT 'classes', count(*) FROM classes c JOIN gyms g ON g.id=c.gym_id WHERE g.slug=:'slug';
-          SELECT 'classes_on_landing', count(*) FROM classes c JOIN gyms g ON g.id=c.gym_id WHERE g.slug=:'slug' AND c.show_on_landing;
-          SELECT 'students', count(*) FROM students s JOIN gyms g ON g.id=s.gym_id WHERE g.slug=:'slug';
-          SELECT 'user_roles', count(*) FROM user_roles ur JOIN gyms g ON g.id=ur.gym_id WHERE g.slug=:'slug';
-          SQL
-          echo "── REST as anon: get_public_gym + disciplines ──"
-          GID="$(curl -sS -X POST "${NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_public_gym" \
-            -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
-            -H "Content-Type: application/json" --data "{\"p_slug\":\"${SLUG}\"}")"
-          echo "get_public_gym(anon) → ${GID}"
-          GUID="$(echo "${GID}" | sed -E 's/.*"id":"?([0-9a-f-]{36})"?.*/\1/')"
-          echo "anon disciplines for gym ${GUID}:"
-          curl -sS "${NEXT_PUBLIC_SUPABASE_URL}/rest/v1/disciplines?gym_id=eq.${GUID}&select=name_en" \
-            -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${NEXT_PUBLIC_SUPABASE_ANON_KEY}"
-          echo
-
       - run: npm ci
 
       - name: Install Playwright browser (cached)
