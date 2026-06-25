@@ -78,6 +78,25 @@ function generateNonce(): string {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// ISO-DB: e2e runs `next start` (prod CSP path) against a LOCAL Supabase stack
+// (http://127.0.0.1:54321), not *.supabase.co. The hardcoded connect-src below
+// would CSP-block the browser client → total failure. Derive the configured
+// Supabase origin from env and, when it is NOT a *.supabase.co host (i.e. the
+// local stack), additionally allow it (http + ws). Prod (cloud) is unchanged:
+// the host matches *.supabase.co so nothing is added.
+function extraSupabaseConnectSrc(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return '';
+  try {
+    const { protocol, host } = new URL(url);
+    if (host.endsWith('.supabase.co')) return ''; // covered by the wildcard below
+    const wsProto = protocol === 'https:' ? 'wss:' : 'ws:';
+    return ` ${protocol}//${host} ${wsProto}//${host}`;
+  } catch {
+    return '';
+  }
+}
+
 function buildProdCspHeader(nonce: string): string {
   return [
     "default-src 'self'",
@@ -92,7 +111,7 @@ function buildProdCspHeader(nonce: string): string {
     "worker-src 'self'",
     "img-src 'self' data: https: blob:",
     "font-src 'self'",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co${extraSupabaseConnectSrc()}`,
     // AX-3: the Facility section embeds the keyless OpenStreetMap map (the
     // operator's "view our location" block). frame-src 'self' silently REFUSED
     // it in prod → the map rendered as a grey box (CI only checked the iframe

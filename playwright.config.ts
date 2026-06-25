@@ -8,12 +8,23 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 3000;
 const baseURL = `http://localhost:${PORT}`;
 
+// ISO-DB: each worker SLOT runs against its OWN pre-seeded gym (slug `<base>-w<slot>`,
+// see e2e/roles.ts), so the suite parallelizes across workers without shared-data
+// collisions. `E2E_WORKERS` (CI) drives BOTH this worker count AND the number of
+// gyms CI pre-seeds + the storageState files auth.setup.ts writes — they must match.
+// fullyParallel stays FALSE on purpose: that keeps each spec FILE pinned to a single
+// worker (→ a single gym) with its tests in order. Splitting one file's tests across
+// workers (fullyParallel:true) would cross gyms mid-spec and break every ordered
+// create→assert flow. File-level parallelism across N workers already saturates the
+// runner's cores (the ~⅓-minutes cost win) safely.
+const WORKERS = process.env.CI ? Math.max(1, parseInt(process.env.E2E_WORKERS || '4', 10)) : 1;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: 1,
+  workers: WORKERS,
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }]]
     : [['list']],
@@ -34,25 +45,26 @@ export default defineConfig({
       name: 'owner',
       dependencies: ['setup'],
       testMatch: /owner\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+      // ISO-DB: auth is per-worker now — owner.spec declares `test.use({ authRole: 'owner' })`.
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'reception',
       dependencies: ['setup'],
       testMatch: /reception\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/reception.json' },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'coach',
       dependencies: ['setup'],
       testMatch: /coach\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/coach.json' },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'student',
       dependencies: ['setup'],
       testMatch: /student\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/student.json' },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       // Cross-portal slice: switches roles internally (opens a fresh context
@@ -125,7 +137,8 @@ export default defineConfig({
       name: 'ar-admin',
       dependencies: ['setup'],
       testMatch: /ar-admin\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+      // ISO-DB: opens its own owner context via ROLES.owner.storage (per-worker).
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       // Recurring-class registration (Prompt B2): request→approve→bill→roster +
@@ -516,7 +529,8 @@ export default defineConfig({
       name: 'pwa-install',
       dependencies: ['setup'],
       testMatch: /\/pwa-install\.spec\.ts$/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+      // ISO-DB: opens its own owner context via ROLES.owner.storage (per-worker).
+      use: { ...devices['Desktop Chrome'] },
     },
     // E2E-TIERED — the `smoke` project materializes ONLY under E2E_TIERED=1 (the
     // targeted branch-run path: `gh workflow run e2e.yml -f projects="<slice>"`).

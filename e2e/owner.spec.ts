@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { shot } from './roles';
+
+// ISO-DB: pre-auth the default page as this worker-slot's owner (per-gym session).
+test.use({ authRole: 'owner' });
 
 // Owner (staff) — must see a populated gym and be able to add a student.
 // NOTE: the dashboard layout renders content twice (responsive desktop+mobile

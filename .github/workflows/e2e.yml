@@ -1,21 +1,21 @@
 name: E2E Verification (behavior-green gate)
 
-# Builds the app and runs the Playwright harness against an EPHEMERAL per-run gym
-# (Test-Infra hardening): a fresh, fully-seeded gym is provisioned before the
-# build and torn down after, so the suite never depends on accumulated shared
-# state and the demo `proline-gym` is never touched. Uploads screenshots + the
-# HTML report as artifacts.
+# ISO-DB Phase 1 — each run boots its OWN isolated LOCAL Supabase stack on the
+# runner (Postgres + GoTrue + Storage + PostgREST via Docker), replays all
+# migrations from zero (`supabase db reset`, proven clean by db-replay-check),
+# and seeds ONE gym per worker slot. The app + Playwright point at localhost, so
+# e2e never touches the shared CLOUD project (that stays prod/VF-only). This kills
+# the cloud-latency flakes (off2/off3b/b3) at the root AND lets runs go concurrent
+# + parallel (workers = runner cores) — the #1 CI-cost lever.
 #
-# Required repo secrets:
-#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY   (public client config)
-#   SUPABASE_ACCESS_TOKEN  (Management API — provision/teardown; revoke post-demo)
-# Required repo variable: SUPABASE_PROJECT_REF (falls back to the known ref)
+# No cloud secrets are needed here: the local stack mints its own anon/service
+# keys (captured from `supabase status`). WHATSAPP runs in record mode.
 
 on:
   # E2E-TIERED — branch validation can run a FAST TARGETED subset; the push-to-main
   # union gate below always runs the FULL suite (unchanged).
   #   • Targeted:  gh workflow run e2e.yml --ref <branch> -f projects="<slice-project>"
-  #                → runs setup + smoke + <those projects> only (well under the full ~45 min).
+  #                → runs setup + smoke + <those projects> only.
   #   • Full:      gh workflow run e2e.yml --ref <branch>           (empty `projects`)
   #                → runs the FULL suite (same as push-to-main).
   workflow_dispatch:
@@ -36,36 +36,32 @@ on:
   push:
     branches: [main]
     paths-ignore:           # auditor docs land on main constantly — don't burn
-      - 'docs/**'           # an e2e-cloud slot (and queue position) on them
+      - 'docs/**'           # a runner on them
       - '**.md'
 
-# Serialize runs on the shared cloud project; the slug is unique per run/attempt
-# regardless, so overlapping runs never collide on data. Don't cancel in-progress
-# runs — let each finish so its teardown runs.
+# ISO-DB: the per-run LOCAL stack makes runs independent — the old global
+# `concurrency: e2e-cloud` serial lock (every run across every ref queued behind
+# the shared cloud project) is GONE. Different refs now run CONCURRENTLY. On a
+# non-`main` ref a newer push supersedes the in-flight run (cost); `main` is never
+# cancelled, so the union gate always finishes (incl. its stack teardown).
 concurrency:
-  group: e2e-cloud
-  cancel-in-progress: false
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      # Management API token (already a repo secret) — used by the ephemeral-gym
-      # provision/teardown steps. Revoke in the Supabase dashboard once the demo is done.
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      # ON-1: the invite/onboarding server actions call the GoTrue admin API from
-      # the webServer (next start). Server-only; never NEXT_PUBLIC_.
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       # G1: WhatsApp dispatch runs in RECORD mode under CI (no external Meta call;
-      # the outbound queue is written so routing is verifiable). The token enc key
-      # is a CI test value (record mode sends nothing); prod uses a real secret.
+      # the outbound queue is written so routing is verifiable). The enc key is a
+      # CI test value (record mode sends nothing); prod uses a real secret.
       WHATSAPP_PROVIDER_MODE: record
       WHATSAPP_TOKEN_ENC_KEY: 'ci-test-enc-key-not-a-secret'
-      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
       # Run-scoped login password (matches the seed default; a test value, not a secret).
       E2E_PASSWORD: 'E2eTestPass!23'
+      # Worker slots = isolated gyms seeded below = playwright.config WORKERS. One source.
+      E2E_WORKERS: '4'
       NEXT_PUBLIC_DEFAULT_LOCALE: en
       NEXT_PUBLIC_SUPPORTED_LOCALES: ar,en,fr
     steps:
@@ -76,42 +72,61 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Guard — Supabase env present
+      - name: Install psql client (seed via the SECURITY DEFINER fn as postgres)
         run: |
-          if [ -z "${NEXT_PUBLIC_SUPABASE_URL}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" ]; then
-            echo "::error::Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY secrets."
-            exit 1
-          fi
-          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
-            echo "::error::Missing SUPABASE_ACCESS_TOKEN secret (needed to provision the ephemeral gym)."
-            exit 1
-          fi
-          if [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
-            echo "::error::Missing SUPABASE_SERVICE_ROLE_KEY secret (ON-1 invite/onboarding actions need it)."
-            exit 1
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -y && sudo apt-get install -y postgresql-client
           fi
 
-      # ── Provision a fresh, isolated gym for THIS run (seed via Management API) ──
-      - name: Provision ephemeral e2e gym
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Cache the Playwright browser download (the ~100MB chromium) across runs.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Start the isolated local Supabase stack (Docker)
+        run: supabase start
+
+      - name: Replay ALL migrations from zero (clean state; proven by db-replay-check)
+        run: supabase db reset
+
+      - name: Capture the local stack URL + keys
         run: |
-          set -uo pipefail
-          : "${PROJECT_REF:=ufpuebfkcpohwubrutff}"
-          SLUG="e2e-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query"
-          BODY="$(jq -Rs '{query: .}' <<<"select seed_e2e_gym('${SLUG}', '${E2E_PASSWORD}');")"
-          CODE="$(curl -sS -o /tmp/seed.json -w '%{http_code}' -X POST "$API" \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" --data-binary "$BODY")"
-          jq . /tmp/seed.json 2>/dev/null || cat /tmp/seed.json
-          if [ "${CODE}" -ge 400 ]; then echo "::error::provision failed (HTTP ${CODE})"; exit 1; fi
-          echo "E2E_GYM_SLUG=${SLUG}" >> "$GITHUB_ENV"
-          echo "✅ provisioned ${SLUG}"
+          set -euo pipefail
+          supabase status -o env > /tmp/sb.env
+          set -a; . /tmp/sb.env; set +a
+          BASE="e2e-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+            echo "SUPABASE_DB_URL=${DB_URL}"
+            echo "E2E_GYM_SLUG_BASE=${BASE}"
+          } >> "$GITHUB_ENV"
+          echo "local stack ready at ${API_URL}; gym base=${BASE}; workers=${E2E_WORKERS}"
+
+      - name: Seed one ISOLATED gym per worker slot (<base>-w0 … w<N-1>)
+        run: |
+          set -euo pipefail
+          for w in $(seq 0 $((E2E_WORKERS - 1))); do
+            SLUG="${E2E_GYM_SLUG_BASE}-w${w}"
+            psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 -tAc \
+              "select seed_e2e_gym('${SLUG}', '${E2E_PASSWORD}');" >/dev/null
+            echo "✅ seeded ${SLUG}"
+          done
 
       - run: npm ci
 
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright browser (cached)
+        run: npx playwright install --with-deps chromium
 
-      - name: Build
+      - name: Build (bakes NEXT_PUBLIC_* → the local stack)
         run: npm run build
 
       - name: Run E2E harness
@@ -130,29 +145,21 @@ jobs:
             E2E_TIERED=1 npx playwright test $ARGS ${PW_ARGS}
           else
             # ── FULL union gate (push-to-main + bare dispatch): the regression guard,
-            #    every project, UNCHANGED. No E2E_TIERED → no `smoke` project added.
-            #    Optional STABILIZE-3 pw_args (e.g. an isolated --repeat-each proof);
-            #    empty on push → `npm run test:e2e --` = the full suite, unchanged. ──
+            #    every project, UNCHANGED. No E2E_TIERED → no `smoke` project added. ──
             echo "▶ FULL union gate (all projects) ${PW_ARGS}"
             npm run test:e2e -- ${PW_ARGS}
           fi
 
-      # ── FK proof: a notification to a LOGIN-LESS member persists (000032) ──────
-      # The suite's leads.spec converts a lead → a login-less member and (via the
-      # D1 retrofit) issues them an invoice → fires invoice_issued to a profile
-      # with NO auth.users row. Pre-000032 that INSERT failed FK 23503 (→auth.users)
-      # and was swallowed. Here, in ADMIN context (Management API), we (a) confirm
-      # the FK now targets `profiles`, and (b) directly INSERT a notification to a
-      # seeded login-less member and prove it PERSISTS — pre-fix this same INSERT
-      # errors 23503; post-fix it succeeds.
+      # ── FK proof (now LOCAL): a notification to a LOGIN-LESS member persists
+      #    (000032 FK → profiles). Runs against worker-slot 0's gym. Pre-000032 the
+      #    direct INSERT errors 23503 (→auth.users); post-fix it succeeds.
       - name: Verify login-less member notifications persist (FK → profiles)
+        if: ${{ inputs.projects == '' }}
         run: |
-          set -uo pipefail
-          : "${PROJECT_REF:=ufpuebfkcpohwubrutff}"
-          if [ -z "${E2E_GYM_SLUG:-}" ]; then echo "::error::no run gym slug"; exit 1; fi
-          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query"
-          SQL="$(cat <<SQL
-          WITH g AS (SELECT id FROM gyms WHERE slug = '${E2E_GYM_SLUG}'),
+          set -euo pipefail
+          SLUG="${E2E_GYM_SLUG_BASE}-w0"
+          OUT="$(psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 -v slug="${SLUG}" -tA -F'|' <<'SQL'
+          WITH g AS (SELECT id FROM gyms WHERE slug = :'slug'),
           ll AS (
             SELECT p.id FROM profiles p JOIN g ON g.id = p.gym_id
             LEFT JOIN auth.users u ON u.id = p.id
@@ -165,49 +172,42 @@ jobs:
           )
           SELECT
             (SELECT confrelid::regclass::text FROM pg_constraint
-               WHERE conname='notifications_user_id_fkey' AND conrelid='notifications'::regclass) AS fk_target,
-            (SELECT count(*) FROM ins) AS direct_insert_persisted,
+               WHERE conname='notifications_user_id_fkey' AND conrelid='notifications'::regclass),
+            (SELECT count(*) FROM ins),
             (SELECT count(*) FROM notifications n
                JOIN profiles p ON p.id = n.user_id JOIN g ON g.id = p.gym_id
                LEFT JOIN auth.users u ON u.id = p.id
                WHERE u.id IS NULL
-                 AND n.type IN ('invoice_issued','payment_received','lead_converted')) AS loginless_member_notifs;
+                 AND n.type IN ('invoice_issued','payment_received','lead_converted'));
           SQL
           )"
-          BODY="$(jq -Rs '{query: .}' <<<"$SQL")"
-          CODE="$(curl -sS -o /tmp/fk.json -w '%{http_code}' -X POST "$API" \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" --data-binary "$BODY")"
-          echo "HTTP ${CODE}"; jq . /tmp/fk.json 2>/dev/null || cat /tmp/fk.json
-          if [ "${CODE}" -ge 400 ]; then echo "::error::admin query failed (HTTP ${CODE}) — pre-fix the login-less INSERT errors 23503"; exit 1; fi
-          TARGET="$(jq -r '.[0].fk_target // empty' /tmp/fk.json 2>/dev/null)"
-          PERSISTED="$(jq -r '.[0].direct_insert_persisted // 0' /tmp/fk.json 2>/dev/null)"
-          LL="$(jq -r '.[0].loginless_member_notifs // 0' /tmp/fk.json 2>/dev/null)"
-          echo "fk_target=${TARGET} direct_insert_persisted=${PERSISTED} loginless_member_notifs=${LL}"
+          echo "fk_target|direct_insert_persisted|loginless_member_notifs = ${OUT}"
+          TARGET="$(echo "$OUT" | cut -d'|' -f1)"
+          PERSISTED="$(echo "$OUT" | cut -d'|' -f2)"
           if [ "${TARGET}" != "profiles" ]; then echo "::error::FK targets '${TARGET}' (expected profiles)"; exit 1; fi
           if [ "${PERSISTED}" != "1" ]; then echo "::error::login-less notification did NOT persist (pre-fix behavior)"; exit 1; fi
-          echo "✅ Login-less notification persistence: PASS (fk→profiles; direct insert persisted; ${LL} convert-flow login-less notif(s))"
+          echo "✅ Login-less notification persistence: PASS (fk→profiles; direct insert persisted)"
 
-      # ── REG-FIX proof: registering a member to a class SUCCEEDS even when a staff
-      #    notify recipient (a receptionist user_role) has NO profiles row. Pre-000065
-      #    the un-guarded class_requested fan-out FK-violates (23503) and rolls back
-      #    the whole registration; post-fix (valid-recipient filter + best-effort +
-      #    the BEFORE INSERT skip-orphan trigger) it succeeds. Asserts an ACTIVE
-      #    registration + an issued invoice. Acts as the owner via request.jwt.claims.
+      # ── REG-FIX proof (now LOCAL): registering a member to a class SUCCEEDS even
+      #    when a staff notify recipient (a receptionist user_role) has NO profiles
+      #    row. Pre-000065 the un-guarded class_requested fan-out FK-violates (23503)
+      #    and rolls back the whole registration; post-fix it succeeds. Slot-0 gym.
       - name: Verify class registration survives a profile-less staff notify recipient (REG-FIX)
+        if: ${{ inputs.projects == '' }}
         run: |
-          set -uo pipefail
-          : "${PROJECT_REF:=ufpuebfkcpohwubrutff}"
-          if [ -z "${E2E_GYM_SLUG:-}" ]; then echo "::error::no run gym slug"; exit 1; fi
-          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query"
-          SQL="$(cat <<SQL
-          DO \$\$
+          set -euo pipefail
+          SLUG="${E2E_GYM_SLUG_BASE}-w0"
+          {
+            echo "select set_config('e2e.slug', '${SLUG}', false);"
+            cat <<'SQL'
+          DO $$
           DECLARE
             v_gym uuid; v_owner uuid; v_disc uuid; v_coach uuid; v_student uuid;
             v_orphan uuid; v_class uuid; v_reg class_registrations; v_status text; v_inv uuid;
+            v_slug text := current_setting('e2e.slug');
           BEGIN
-            SELECT id INTO v_gym FROM gyms WHERE slug = '${E2E_GYM_SLUG}';
-            IF v_gym IS NULL THEN RAISE EXCEPTION 'run gym % not found', '${E2E_GYM_SLUG}'; END IF;
+            SELECT id INTO v_gym FROM gyms WHERE slug = v_slug;
+            IF v_gym IS NULL THEN RAISE EXCEPTION 'run gym % not found', v_slug; END IF;
             SELECT user_id INTO v_owner FROM user_roles WHERE gym_id=v_gym AND role='owner' LIMIT 1;
             SELECT id INTO v_disc FROM disciplines WHERE gym_id=v_gym ORDER BY sort_order LIMIT 1;
             SELECT id INTO v_coach FROM coaches WHERE gym_id=v_gym AND is_active=true ORDER BY created_at LIMIT 1;
@@ -226,7 +226,7 @@ jobs:
             INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
               raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token)
             VALUES ('00000000-0000-0000-0000-000000000000', v_orphan, 'authenticated', 'authenticated',
-              'regfix-orphan+${E2E_GYM_SLUG}@e2e.local',
+              'regfix-orphan+' || v_slug || '@e2e.local',
               extensions.crypt('x', extensions.gen_salt('bf')), now(),
               '{"provider":"email","providers":["email"]}', jsonb_build_object('gym_id', v_gym::text),
               now(), now(), '', '', '', '');
@@ -245,34 +245,15 @@ jobs:
             IF v_inv IS NULL OR NOT EXISTS (SELECT 1 FROM invoices WHERE id = v_inv) THEN
               RAISE EXCEPTION 'expected an issued invoice for the registration';
             END IF;
-            RAISE NOTICE 'REG-FIX proof OK: reg=% status=% invoice=% (profile-less receptionist present)', v_reg.id, v_status, v_inv;
-          END \$\$;
-          SELECT 'REGFIX_OK'::text AS proof;
+            RAISE NOTICE 'REG-FIX proof OK: reg=% status=% invoice=%', v_reg.id, v_status, v_inv;
+          END $$;
+          SELECT 'REGFIX_OK' AS proof;
           SQL
-          )"
-          BODY="$(jq -Rs '{query: .}' <<<"$SQL")"
-          CODE="$(curl -sS -o /tmp/regfix.json -w '%{http_code}' -X POST "$API" \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" --data-binary "$BODY")"
-          echo "HTTP ${CODE}"; jq . /tmp/regfix.json 2>/dev/null || cat /tmp/regfix.json
-          if [ "${CODE}" -ge 400 ]; then echo "::error::REG-FIX repro FAILED (HTTP ${CODE}) — registration rolled back on the staff-notify FK"; exit 1; fi
-          if [ "$(jq -r '.[0].proof // empty' /tmp/regfix.json 2>/dev/null)" != "REGFIX_OK" ]; then echo "::error::REG-FIX proof did not confirm"; exit 1; fi
+          } > /tmp/regfix.sql
+          OUT="$(psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 -tA -f /tmp/regfix.sql)"
+          echo "${OUT}"
+          if ! echo "${OUT}" | grep -q "REGFIX_OK"; then echo "::error::REG-FIX proof did not confirm"; exit 1; fi
           echo "✅ REG-FIX: class registration succeeds with a profile-less staff notify recipient (active reg + invoice issued)"
-
-      # ── Always tear the gym down (zero residue) ───────────────────────────────
-      - name: Teardown ephemeral e2e gym
-        if: always()
-        run: |
-          set -uo pipefail
-          : "${PROJECT_REF:=ufpuebfkcpohwubrutff}"
-          if [ -z "${E2E_GYM_SLUG:-}" ]; then echo "no slug provisioned — skipping teardown"; exit 0; fi
-          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query"
-          BODY="$(jq -Rs '{query: .}' <<<"select teardown_e2e_gym('${E2E_GYM_SLUG}');")"
-          CODE="$(curl -sS -o /tmp/teardown.json -w '%{http_code}' -X POST "$API" \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" --data-binary "$BODY")"
-          jq . /tmp/teardown.json 2>/dev/null || cat /tmp/teardown.json
-          echo "🧹 torn down ${E2E_GYM_SLUG} (HTTP ${CODE})"
 
       - name: Upload screenshots
         if: always()
@@ -289,3 +270,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
           if-no-files-found: ignore
+
+      - name: Stop the local stack
+        if: always()
+        run: supabase stop --no-backup || true

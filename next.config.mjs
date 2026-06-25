@@ -108,6 +108,22 @@ const withPWA = withPWAInit({
   ],
 });
 
+// ISO-DB: e2e serves a LOCAL Supabase stack, so avatar/storage images come from
+// http://127.0.0.1:54321, not the cloud host. next/image rejects any host not in
+// remotePatterns → broken images (e.g. the ADM-2 avatar chain). Derive the
+// configured Supabase host from env and allow it too (prod cloud unchanged).
+const supabaseRemotePattern = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return null;
+  try {
+    const { protocol, hostname, port } = new URL(url);
+    if (hostname.endsWith('.supabase.co')) return null; // already covered below
+    return { protocol: protocol.replace(':', ''), hostname, ...(port ? { port } : {}) };
+  } catch {
+    return null;
+  }
+})();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -116,6 +132,7 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'ufpuebfkcpohwubrutff.supabase.co',
       },
+      ...(supabaseRemotePattern ? [supabaseRemotePattern] : []),
     ],
   },
 

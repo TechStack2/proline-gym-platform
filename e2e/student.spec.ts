@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { shot } from './roles';
+
+// ISO-DB: pre-auth the default page as this worker-slot's student (per-gym session).
+test.use({ authRole: 'student' });
 
 // Student (member portal) — schedule, billing, PT must show their real data.
 
