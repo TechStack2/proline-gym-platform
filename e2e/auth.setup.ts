@@ -1,6 +1,11 @@
 import { test as setup, expect } from '@playwright/test';
 import { ALL_ROLES, E2E_PASSWORD, E2E_WORKERS, roleEmail, roleStorage } from './roles';
 
+// ISO-DB: the 20 logins (4 slots × 5 roles) are independent (each writes its own
+// storageState file), so fan them out across workers instead of one serial file —
+// the setup project gates every dependent project, so its wall-time matters.
+setup.describe.configure({ mode: 'parallel' });
+
 // ISO-DB: each Playwright WORKER runs against its OWN seeded gym, so we log in
 // every role on EVERY worker's gym and persist a storageState per (worker, role).
 // (Legacy single-gym: E2E_WORKERS defaults to 1 → one set of files, as before.)

@@ -75,16 +75,13 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
-      // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
-      // SEE the notification on the bell + /notifications page. Depends on `pt`.
-      // Runs IMMEDIATELY after `pt` (before leads/activity-loop/pt-delivery) so
-      // the freshly-emitted pt_approved/pt_assigned are still within the bell's
-      // "latest 5" — the other slices emit member notifications that would
-      // otherwise bury them. The functional bell renders only at the mobile
-      // breakpoint, set per-context in the spec.
+      // Notification read-path slice (Prompt F2 / Workstream B): asserts the
+      // RECIPIENT (student → pt_approved, coach → pt_assigned) SEES the
+      // notification on the RLS-scoped /notifications page. ISO-DB: self-seeds
+      // the request→approve in beforeAll (own gym), so it no longer depends on
+      // the `pt` spec's side effects — `setup` only.
       name: 'notifications',
-      dependencies: ['setup', 'pt'],
+      dependencies: ['setup'],
       testMatch: /notifications\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
