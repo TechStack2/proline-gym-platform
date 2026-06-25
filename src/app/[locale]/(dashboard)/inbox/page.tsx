@@ -150,9 +150,11 @@ export default async function InboxPage({ params: { locale } }: Props) {
   const actionable = regRequests.length + ptRequests.length
 
   return (
-    <div className={cn('space-y-6 p-4 md:p-0', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div>
-        <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+        {/* SHELL-IA: mobile shows the NativeHeader large title; the status line
+            below leads on mobile. Desktop keeps this H1 (its only title). */}
+        <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
         <p className="mt-0.5 text-sm text-gray-500" data-testid="inbox-actionable-count">
           {actionable > 0 ? t('pendingCount', { count: actionable }) : t('inboxZero')}
         </p>

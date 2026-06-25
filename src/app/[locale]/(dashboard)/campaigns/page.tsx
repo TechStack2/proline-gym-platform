@@ -29,7 +29,7 @@ export default async function CampaignsPage({ params: { locale } }: { params: { 
   })
 
   return (
-    <div className="p-4 md:p-0">
+    <div>
       <CampaignsClient rows={rows} locale={locale} />
     </div>
   )

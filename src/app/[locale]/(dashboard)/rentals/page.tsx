@@ -39,7 +39,7 @@ export default async function RentalsPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={cn('text-2xl font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
+        <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
           {t('title')}
         </h1>
         <p className="mt-1 text-sm text-gray-500">

@@ -19,6 +19,17 @@ type Props = {
   role: DashboardRole;
 };
 
+// SHELL-IA: nav i18n keys for the mobile large title, by first path segment.
+// The large title is the SINGLE page title on mobile, so it must resolve on
+// EVERY (dashboard) route — not just the 4 mobile-primary tabs (the old lookup
+// fell back to "Today" on money/team/settings/profile + every out-of-nav page).
+const TITLE_KEYS = new Set([
+  'today', 'inbox', 'students', 'schedule', 'money', 'coaches', 'settings',
+  'profile', 'belts', 'pt', 'rentals', 'camps', 'reports', 'attendance',
+  'classes', 'leads', 'payments', 'invoices', 'disciplines', 'notifications',
+  'campaigns', 'desk',
+]);
+
 export function DashboardLayoutClient({ children, locale, role }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -44,18 +55,9 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
     setMoreOpen(true);
   }, []);
 
-  const activeTab = primaryTabs.find((tab) => {
-    if (tab.key === 'more') return false;
-    const fullPath = `/${locale}${tab.path}`;
-    return (
-      pathname === fullPath ||
-      (tab.path !== DASHBOARD_BASE_PATH && pathname.startsWith(fullPath))
-    );
-  });
-
-  const headerTitle = activeTab
-    ? (t(activeTab.key as any) || activeTab.label || activeTab.key)
-    : (t('today') || 'Today');
+  // The page's own name as the mobile large title (single title per breakpoint).
+  const seg = pathname.split('/')[2] || 'today'; // [1] = locale, [2] = route segment
+  const headerTitle = t((TITLE_KEYS.has(seg) ? seg : 'today') as any);
 
   return (
     <div className={cn('flex flex-col h-screen bg-gray-50', isRTL && 'rtl')}
@@ -86,11 +88,14 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
           isActive={true}
           locale={locale}
         >
-          {/* FD-2 PWA footer fix: the mobile NativeTabBar is `fixed bottom-0`, so
+          {/* SHELL-IA: mobile horizontal edge padding owned ONCE here (px-4), so
+              pages no longer add their own `p-4` (which double-padded). Desktop
+              padding stays on the desktop shell's <main> (layout.tsx) → md:px-0.
+              FD-2 PWA footer fix: the mobile NativeTabBar is `fixed bottom-0`, so
               the last rows of every dashboard page (seen on Today/Inbox) hid
               behind it. Clear it with tab-bar height + safe-area bottom padding
               on mobile only (the md+ side-rail has no bottom bar → md:pb-0). */}
-          <div key={pathname} className="pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">{children}</div>
+          <div key={pathname} className="px-4 md:px-0 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">{children}</div>
         </PageTransition>
       </main>
 

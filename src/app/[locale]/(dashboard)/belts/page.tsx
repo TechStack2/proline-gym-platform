@@ -88,7 +88,7 @@ export default async function BeltsPage({ params }: Props) {
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
+          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
             {t('title')}
           </h1>
           <p className="mt-1 text-sm text-gray-500">

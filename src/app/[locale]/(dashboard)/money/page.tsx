@@ -47,10 +47,10 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
   )
 
   return (
-    <div className={cn('space-y-6 p-4 md:p-0', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="money-tabs">

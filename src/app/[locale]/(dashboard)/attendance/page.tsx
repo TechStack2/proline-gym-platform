@@ -117,7 +117,7 @@ export default async function AttendancePage({ params: { locale }, searchParams 
     <div className="space-y-6">
       <div className="flex items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
+          <h1 className="hidden md:block text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
           <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm">

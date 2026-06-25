@@ -119,7 +119,7 @@ export default async function AttendanceHistoryPage({ params: { locale }, search
   return (
     <div className="space-y-6 p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+        <h1 className="hidden md:block text-3xl font-bold tracking-tight">{t('title')}</h1>
         <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 

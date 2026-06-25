@@ -216,7 +216,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className={cn('text-2xl font-bold', isRTL && 'font-arabic')}>{t('title')}</h1>
+        <h1 className={cn('hidden md:block text-2xl font-bold', isRTL && 'font-arabic')}>{t('title')}</h1>
         <WorkspaceSegments
           locale={locale}
           active="schedule"

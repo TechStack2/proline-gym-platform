@@ -61,7 +61,10 @@
     "inbox": "Boîte",
     "members": "Membres",
     "money": "Finances",
-    "team": "Équipe"
+    "team": "Équipe",
+    "desk": "Réception",
+    "notifications": "Notifications",
+    "campaigns": "Campagnes"
   },
   "common": {
     "save": "Enregistrer",

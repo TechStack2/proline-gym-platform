@@ -61,7 +61,10 @@
     "inbox": "Inbox",
     "members": "Members",
     "money": "Money",
-    "team": "Team"
+    "team": "Team",
+    "desk": "Front Desk",
+    "notifications": "Notifications",
+    "campaigns": "Campaigns"
   },
   "common": {
     "save": "Save",

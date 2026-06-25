@@ -53,10 +53,12 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
   ] as const
 
   return (
-    <div className={cn('space-y-4 p-4 md:p-0', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-4', isRTL && 'rtl text-right')}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          {/* SHELL-IA: mobile shows the NativeHeader large title; the date subtitle
+              below leads on mobile. Desktop keeps this H1 (its only title). */}
+          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500" data-testid="horizon-subtitle">{subtitle}</p>
         </div>
         <Link href={`/${locale}/schedule?view=day`} data-testid="open-diary-link"
