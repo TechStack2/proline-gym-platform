@@ -506,3 +506,37 @@ Public landing `#schedule` grid for **every** locale — **/ar** (RTL), **/en**,
 - **The M/W/F hardcode was flyer-era copy, not a constraint** — the comment literally read "Flyer runs Mon / Wed / Fri." Any gym onboarding with a non-M/W/F timetable hit the same silent drop; this is the tenant-clean fix ahead of the white-label phase ([[proline-white-label-direction]]).
 - **Why e2e didn't catch it:** the run gym seeds the class on **all** days, so a M/W/F grid still rendered "Muay Thai" and the old assertion passed — the gap was a fixture that happened to cover M/W/F. The new assertion closes it by demanding a day the hardcode excluded.
 - **Column ordering is Mon→Sun**; a gym with only weekend classes renders just those columns. Time rows still group by `start–end` and sort ascending — unchanged.
+
+---
+
+## Cycle 6 / HERO-FIX — rebalance the landing hero
+
+> **Branch:** `prompt-hero-fix` (off `main` `ada47fd`) · **Prompt:** [`cycle-5/prompt-HERO-FIX.md`](./cycle-5/prompt-HERO-FIX.md). **UI-uplift, customer-facing, frontend-only. Diagnose-first** — the code is already a centered full-bleed overlay, so reproduce the owner's sidelined look at ultra-wide and find the *real* cause before touching it. **3rd recurrence** → the fix must ship a guard.
+
+### Diagnosis — reproduced at 2880px, root-caused (not guessed)
+Measured the live render at the owner's width (Chromium @ **2880×1620**), prod vs local:
+- **PROD `/en` @2880** (deployed code): hero `<section>` full-bleed (2880) ✅, but the background **`<img>` is `position:static`, w=863, anchored left** ❌, and the centered content block sits at **center 1872 — +432px right** of the viewport center (1440) ❌. That *is* the "image bounded left, text sidelined right" the owner reported.
+- **LOCAL DEV @2880** (same code): image full-bleed (2880), content centered (1440) — **correct**. The bug is **prod-only**.
+- **The differentiator = the CSP.** Prod sends `style-src 'self' 'strict-dynamic' 'nonce-…'` with **no `'unsafe-inline'`**. A nonce/`strict-dynamic` whitelists `<style>`/`<script>` *elements* — it does **not** cover inline **style attributes** (`style="…"`). `next/image fill` sets its absolute full-bleed positioning (`position:absolute;inset:0;width/height:100%`) **as an inline style attribute**, so prod strips it → the img falls back to `position:static` → it becomes an **in-flow flex child** of the `flex justify-center` hero → bounds left + shoves the centered content right. Dev only worked because the **dev** CSP includes `'unsafe-inline'`. Confirmed under a local prod build (`next start`, identical strict CSP): **14 "Refused to apply inline style" violations** on the page, and the img computed `position:static` exactly as on prod. A new face of [[prod-csp-strict-dynamic-needs-dynamic-render]].
+- **Recurrence explained:** each prior "fix" re-centered the hero *in code* using inline-style-dependent positioning (next/image `fill` / inline `style`), which always works in dev and always breaks under the prod CSP — so it kept coming back (ax3 was the 1st/2nd).
+
+### The fix (frontend-only; no CSP weakening)
+Move the load-bearing positioning **off inline styles onto CSS classes** (stylesheet rules → CSP-safe → survive in prod):
+- **Image** [`HeroSection.tsx`](../../src/components/marketing/HeroSection.tsx): `className` gains `absolute inset-0 h-full w-full` (keeps `fill` for srcset/sizes; its now-stripped inline style is harmlessly redundant). Under prod CSP the img is `position:absolute` from the **class**, full-bleed again.
+- **Glow:** the crimson radial-gradient moves from an inline `style={{background:…}}` (also CSP-stripped → invisible in prod) to a Tailwind arbitrary-value class — restoring the intended depth in prod.
+- **NOT** by adding `'unsafe-inline'` to `style-src` — that would defeat the strict CSP (a security regression). The render layer is the correct fix.
+- **CLS reserve preserved** ([[arabic-fontswap-rewrap-cls]]): the subheadline 2-line `md:min-h-[3.5rem]` is untouched.
+
+Verified under a **local prod build (strict CSP)** @ **390 / 1280 / 2880** and **/ar (RTL) @2880**: image full-bleed, content centered (offset **0**) at every width.
+
+### The guard (3rd recurrence — locked)
+[`e2e/landing.spec.ts`](../../e2e/landing.spec.ts) adds a **2880px** test asserting (a) the hero image is **full-bleed** (width ≥ viewport−2) and (b) the content block is **horizontally centered** (≤24px off center). It runs under CI's **prod webServer** (`npm run build` → `next start` → prod CSP), so it executes in the environment that *exhibits* the bug. Demonstrated **RED→GREEN**: against the old code (prod URL, same CSP) — img **863 (FAIL)**, content **off 432px (FAIL)**; against the fix — **PASS**.
+
+### ⟶ hero balanced mobile/desktop/ultra-wide; root-caused not guessed; CLS intact; guard added: **PASS**
+**CI:** targeted [run `28162500754`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28162500754) — **SUCCESS, ~3.5 min**, scoped `setup + smoke + [landing]` (12 passed). The new `LP · hero is a balanced full-bleed overlay at ultra-wide (centering guard)` passed (4.2s) **under the prod build/CSP** — the env that breaks the old code. `tsc --noEmit` clean.
+
+### DRAG READ
+- **Top-of-funnel:** the hero is the first thing an acquisition visitor sees; a sidelined hero reads as a broken gym. It was broken **in prod the whole time** (dev hid it) — the kind of defect that only a prod-CSP-aware check catches.
+- **Systemic flag — inline styles die under the prod CSP.** The same build showed **14** blocked inline styles across the page. Any component positioning/painting via `style={{…}}` (or relying on `next/image fill`'s inline style for *layout*) is silently degraded in prod. HERO-FIX fixes the hero; a sweep for other inline-style-dependent layout is the follow-on (cosmetic vs layout-breaking triage). The rule going forward: **layout-critical CSS must be class-based, never inline.**
+- **Guard runs in the right env:** because the e2e webServer is the prod build, this guard (unlike a dev-mode check) actually reproduces CSP-stripping — so it will catch the *4th* attempt to reintroduce inline-style positioning, not just this one.
+- **No CSP change:** `style-src` stays strict; the fix is purely render-path. Resisting the tempting one-line `'unsafe-inline'` is the point — that would re-open the XSS surface the strict CSP closes.
