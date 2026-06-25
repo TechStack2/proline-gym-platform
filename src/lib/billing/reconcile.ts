@@ -50,6 +50,38 @@ export function statusLabel(status: string, locale: string): string {
   return (locale === 'ar' ? ar : locale === 'fr' ? fr : en)[status] || status
 }
 
+// INV-LABEL — the invoice's product type, localized + pill-styled (display only;
+// the type is written by the issuing RPCs). Same locale-param shape as statusLabel.
+export const INVOICE_TYPE_BADGE: Record<string, string> = {
+  membership: 'bg-indigo-100 text-indigo-700',
+  class_registration: 'bg-sky-100 text-sky-700',
+  pt_package: 'bg-purple-100 text-purple-700',
+  pt_session: 'bg-fuchsia-100 text-fuchsia-700',
+  camp: 'bg-amber-100 text-amber-700',
+  rental: 'bg-teal-100 text-teal-700',
+  event: 'bg-pink-100 text-pink-700',
+  other: 'bg-gray-100 text-gray-600',
+}
+
+export function invoiceTypeLabel(type: string | null | undefined, locale: string): string {
+  const t = type || 'other'
+  const ar: Record<string, string> = { membership: 'اشتراك', class_registration: 'حصة', pt_package: 'باقة تدريب خاص', pt_session: 'حصة تدريب خاص', camp: 'مخيم', rental: 'إيجار', event: 'فعالية', other: 'أخرى' }
+  const en: Record<string, string> = { membership: 'Membership', class_registration: 'Class', pt_package: 'PT Package', pt_session: 'PT Session', camp: 'Camp', rental: 'Rental', event: 'Event', other: 'Other' }
+  const fr: Record<string, string> = { membership: 'Abonnement', class_registration: 'Cours', pt_package: 'Pack PT', pt_session: 'Séance PT', camp: 'Camp', rental: 'Location', event: 'Événement', other: 'Autre' }
+  return (locale === 'ar' ? ar : locale === 'fr' ? fr : en)[t] || en[t] || t
+}
+
+/** The locale-appropriate descriptive note (e.g. "Class: Muay Thai Beginner"),
+ *  falling back to the English note, else null (caller shows the type badge alone). */
+export function invoiceNote(
+  inv: { notes_ar?: string | null; notes_en?: string | null; notes_fr?: string | null } | null | undefined,
+  locale: string,
+): string | null {
+  if (!inv) return null
+  const n = locale === 'ar' ? inv.notes_ar : locale === 'fr' ? inv.notes_fr : inv.notes_en
+  return n || inv.notes_en || null
+}
+
 export const METHOD_LABEL: Record<string, { en: string; ar: string }> = {
   cash_usd: { en: 'Cash (USD)', ar: 'نقداً (دولار)' },
   cash_lbp: { en: 'Cash (LBP)', ar: 'نقداً (ليرة)' },

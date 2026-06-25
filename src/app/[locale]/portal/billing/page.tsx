@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
-import { balanceUsd } from '@/lib/billing/reconcile'
+import { balanceUsd, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 
 type Props = { params: { locale: string } }
 
@@ -40,7 +40,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
       const kidIds = kids.map((k) => k.id)
       const { data: hhInvoices } = await supabase
         .from('invoices')
-        .select('id, student_id, invoice_number, invoice_type, total_usd, total_lbp, status, due_date, created_at, payer_profile_id')
+        .select('id, student_id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, total_usd, total_lbp, status, due_date, created_at, payer_profile_id')
         .in('student_id', kidIds)
         .order('created_at', { ascending: false })
         .limit(60)
@@ -67,7 +67,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
   }
 
   const { data: invoices } = await supabase.from('invoices')
-    .select('id, invoice_number, invoice_type, total_usd, total_lbp, status, due_date, paid_at, created_at')
+    .select('id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, total_usd, total_lbp, status, due_date, paid_at, created_at')
     .eq('student_id', student?.id).order('created_at', { ascending: false }).limit(20)
 
   const { data: payments } = await supabase.from('payments')
@@ -124,10 +124,19 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                 ) : (
                   <ul className="space-y-1.5">
                     {rows.map((inv: any) => (
-                      <li key={inv.id} className="flex items-center justify-between text-xs" data-testid="household-invoice-row" data-status={inv.status}>
-                        <span className="font-mono text-gray-600">{inv.invoice_number}</span>
-                        <span className="text-gray-500">${Number(inv.total_usd).toFixed(2)}{inv.balance > 0 ? ` · ${t('due')} $${inv.balance.toFixed(2)}` : ''}</span>
-                        <span className={cn('rounded-full px-2 py-0.5 font-medium', statusColors[inv.status] || 'bg-gray-100 text-gray-500')}>{statusLabels[inv.status] || inv.status}</span>
+                      <li key={inv.id} className="text-xs" data-testid="household-invoice-row" data-status={inv.status}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-gray-600">{inv.invoice_number}</span>
+                            <span data-testid="household-invoice-type" data-type={inv.invoice_type || 'other'}
+                              className={cn('inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
+                              {invoiceTypeLabel(inv.invoice_type, locale)}
+                            </span>
+                          </div>
+                          <span className="text-gray-500">${Number(inv.total_usd).toFixed(2)}{inv.balance > 0 ? ` · ${t('due')} $${inv.balance.toFixed(2)}` : ''}</span>
+                          <span className={cn('rounded-full px-2 py-0.5 font-medium', statusColors[inv.status] || 'bg-gray-100 text-gray-500')}>{statusLabels[inv.status] || inv.status}</span>
+                        </div>
+                        {invoiceNote(inv, locale) && <p className="mt-0.5 text-[11px] text-gray-400" data-testid="household-invoice-note">{invoiceNote(inv, locale)}</p>}
                       </li>
                     ))}
                   </ul>
@@ -168,6 +177,15 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-700">#{inv.invoice_number?.slice(-8)}</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <span data-testid="portal-invoice-type" data-type={inv.invoice_type || 'other'}
+                          className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
+                          {invoiceTypeLabel(inv.invoice_type, locale)}
+                        </span>
+                        {invoiceNote(inv, locale) && (
+                          <span className="text-[11px] text-gray-500" data-testid="portal-invoice-note">{invoiceNote(inv, locale)}</span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500">{fmtDate(inv.created_at)}</p>
                       <Link href={`/${locale}/invoices/${inv.id}/receipt`} data-testid="portal-receipt-link"
                         className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#cd1419] hover:underline">

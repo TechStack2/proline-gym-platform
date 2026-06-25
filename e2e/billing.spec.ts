@@ -56,6 +56,12 @@ test('D1 · issue → invoice_issued + portal; partial → partial; full → pai
     await expect(vis(owner.page, '[data-testid="invoice-balance"]')).toHaveText(/111\.00/);
     await shot(owner.page, testInfo, 'billing-1-issued');
 
+    // INV-LABEL: the dashboard invoices list shows the type badge (this is a membership invoice).
+    await owner.page.goto('/en/invoices');
+    const listRow = vis(owner.page, `[data-testid="invoice-row"][data-invoice-number="${number}"]`).first();
+    await expect(listRow).toBeVisible({ timeout: 15_000 });
+    await expect(listRow.locator('[data-testid="invoice-type-badge"]'), 'dashboard list shows the type label').toHaveText(/Membership/i);
+
     // Karim sees invoice_issued + the pending invoice with its balance.
     await expectNotification(student.page, 'invoice_issued');
     await student.page.goto('/en/portal/billing');
@@ -63,6 +69,8 @@ test('D1 · issue → invoice_issued + portal; partial → partial; full → pai
     await expect(portalRow).toBeVisible({ timeout: 15_000 });
     await expect(portalRow).toHaveAttribute('data-status', 'pending');
     await expect(portalRow.locator('[data-testid="portal-invoice-balance"]')).toHaveText(/111\.00/);
+    // INV-LABEL: the portal also shows the type badge.
+    await expect(portalRow.locator('[data-testid="portal-invoice-type"]'), 'portal shows the type label').toHaveText(/Membership/i);
 
     // ── partial payment ($40) → partial, balance $71.00 ───────────────────────
     await owner.page.goto(url);
@@ -78,6 +86,8 @@ test('D1 · issue → invoice_issued + portal; partial → partial; full → pai
     await expect(vis(owner.page, '[data-testid="receipt"]')).toBeVisible({ timeout: 15_000 });
     await expect(vis(owner.page, '[data-testid="receipt-status"]')).toHaveText(/Paid/i);
     await expect(vis(owner.page, '[data-testid="receipt-balance"]')).toHaveText(/0\.00/);
+    // INV-LABEL: the receipt shows the type label.
+    await expect(vis(owner.page, '[data-testid="receipt-invoice-type"]'), 'receipt shows the type label').toHaveText(/Membership/i);
     await shot(owner.page, testInfo, 'billing-2-receipt');
 
     // Karim sees payment_received + the invoice now paid, balance $0.00.

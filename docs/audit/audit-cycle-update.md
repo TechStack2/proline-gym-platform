@@ -444,3 +444,33 @@ The `smoke` project materializes **only under `E2E_TIERED=1`** (a conditional sp
 - **Additive only:** no spec deleted or skipped; the full coverage + project count are byte-identical without `E2E_TIERED`. The smoke checks are a *subset* re-expressed as a self-contexting spec, not a re-routing of the gate.
 - **The isolated-DB / parallel-workers unlock attaches next** — the bigger win (drop `workers:1` / `fullyParallel:false`, ~45 min → minutes) needs **per-worker gym isolation** first (today the single shared ephemeral gym + serial order is load-bearing; e.g. [[e2e-karim-mutated-by-ml1]]). E2E-TIERED is the cheap interim that doesn't require that isolation. The `projects` input + `E2E_TIERED` switch compose cleanly with a future per-worker-gym change.
 - **Smoke coverage boundary:** it catches *gross* breakage (a route 500, a dead dashboard/portal/landing, a broken billing write, an /ar key gap) — it is **not** a regression guard. That's the union gate's job, and it's intact.
+
+---
+
+## Cycle 6 / INV-LABEL — surface invoice type + description
+
+> **Branch:** `prompt-inv-label` (off `main` `4edf660`) · **Prompt:** [`cycle-5/prompt-INV-LABEL.md`](./cycle-5/prompt-INV-LABEL.md). **Frontend-only display slice — no backend/RPC/migration/RLS change.** Benchmark gap (V1 "Get paid" clarity): every charge is **already** auto-labeled at issue time (`invoice_type` + localized `notes_en/ar/fr`, written by the issuing RPCs) — but the UI threw it away, so invoices read as anonymous amounts ([[strangle-validated-leaf-rot]] leaf polish; makes [[proline-monetization-model]] legible).
+
+### The gap (labels generated, never rendered)
+All three invoice surfaces fetched `invoice_type` and dropped it; **none** fetched the `notes_*` description. Fixed by rendering, not re-issuing.
+
+### The label map (shared, locale-param — matches the existing billing-label convention)
+[`src/lib/billing/reconcile.ts`](../../src/lib/billing/reconcile.ts) (which already owns `statusLabel`/`METHOD_LABEL`):
+- `invoiceTypeLabel(type, locale)` — ar/en/fr for all 8 types (`membership`→Membership/اشتراك/Abonnement, `class_registration`→Class/حصة/Cours, `pt_package`→PT Package, `pt_session`→PT Session, `camp`, `rental`, `event`, `other`).
+- `INVOICE_TYPE_BADGE` — per-type pill colors. `invoiceNote(inv, locale)` — locale `notes_{locale}` (e.g. "Class: Muay Thai Beginner"), → `notes_en` → null (then the type badge shows alone).
+
+### Surfaces touched (display only; each query now also selects `notes_en/ar/fr`)
+- **Dashboard list** [`invoices-view.tsx`](../../src/app/[locale]/(dashboard)/invoices/invoices-view.tsx): badge + note under the number (`invoice-type-badge` / `invoice-note`).
+- **Portal billing** [`portal/billing/page.tsx`](../../src/app/[locale]/portal/billing/page.tsx): member card (`portal-invoice-type`) + guardian household sub-rows (`household-invoice-type`).
+- **Receipt** [`receipt/page.tsx`](../../src/app/[locale]/(dashboard)/invoices/[id]/receipt/page.tsx): a Type-row badge (`receipt-invoice-type`) + the full note.
+
+### Verify (TARGETED e2e — E2E-TIERED `-f projects="billing"`, not the full ~45-min slot)
+`billing.spec` (D1) extended with real assertions (not snapshots) that the **type label renders** on the **dashboard list**, the **portal**, and the **receipt** for a membership invoice (`toHaveText(/Membership/i)`).
+
+### ⟶ invoice type + description shown on dashboard/portal/receipt; /ar /en /fr; no backend/RLS/billing change: **PASS**
+**CI (targeted):** [run `28150310332`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28150310332) — **SUCCESS in ~4 min** (vs the full ~45), executed **only** `setup + smoke + billing` (E2E-TIERED). `billing.spec` D1 ✓ with the new type-label assertions on the **dashboard list + portal + receipt** (`toHaveText(/Membership/i)`); smoke 5/5 ✓; 14 passed, 0 failed. Frontend-only — no migration, no VF.
+
+### DRAG READ
+- **Members & staff can finally read what each charge is for** — a class invoice reads "Class · Class: {name}", a PT one "PT Package · PT package: {name}", a membership "Membership · Membership: {name}". The monetization model (membership · class · PT · camp) is legible at every billing touchpoint instead of a wall of bare amounts.
+- **Zero backend touch:** type + notes were already written by the issuing RPCs; this is pure read-side rendering. Enriching the *notes themselves* (e.g. PT session counts) is a separate later slice.
+- **Validated targeted, not full** — per E2E-TIERED + the auditor's cost guidance; the auditor times the merge for after ISO-DB so the union gate runs on the faster CI.
