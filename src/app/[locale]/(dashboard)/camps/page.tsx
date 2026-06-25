@@ -42,9 +42,9 @@ export default async function CampsPage({ params: { locale } }: Props) {
   }
 
   return (
-    <div className={cn('space-y-6 p-4 md:p-0', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div>
-        <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+        <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
         <p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
       </div>
       <CampsBoard

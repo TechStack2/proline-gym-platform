@@ -64,7 +64,7 @@ export default async function CoachesPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={cn("text-3xl font-bold", isRTL && "text-right")}>
+        <h1 className={cn("hidden md:block text-3xl font-bold", isRTL && "text-right")}>
           {t('title')}
         </h1>
         <Link href={`/${locale}/coaches/add`}>

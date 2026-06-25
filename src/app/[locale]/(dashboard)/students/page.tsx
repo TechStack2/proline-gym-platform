@@ -43,7 +43,8 @@ export default async function StudentsPage({
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className={cn('text-3xl font-bold', isRTL && 'text-right')}>{t('title')}</h1>
+          {/* SHELL-IA: mobile shows the large title; the Active/Prospects tabs lead. */}
+          <h1 className={cn('hidden md:block text-3xl font-bold', isRTL && 'text-right')}>{t('title')}</h1>
           {Tabs}
         </div>
         <LeadsPipeline locale={locale} searchParams={searchParams} />
@@ -174,7 +175,8 @@ export default async function StudentsPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className={cn("text-3xl font-bold", isRTL && "text-right")}>
+        {/* SHELL-IA: mobile shows the large title; the Active/Prospects tabs lead. */}
+        <h1 className={cn("hidden md:block text-3xl font-bold", isRTL && "text-right")}>
           {t('title')}
         </h1>
         <div className="flex items-center gap-3">

@@ -76,3 +76,34 @@ test('add-student write path persists and the new student appears (F1 #3)', asyn
     'newly added student should appear in the list',
   ).toBeVisible({ timeout: 15_000 });
 });
+
+// SHELL-IA: one title per breakpoint. The dashboard renders content twice
+// (mobile + desktop shells). On MOBILE the NativeHeader large title is the single
+// title and the content H1 is hidden (no echo); the large title resolves to the
+// page name on EVERY route — /money used to fall back to "Today". On DESKTOP the
+// content H1 is the only title (no chrome title) → it must stay visible.
+test('SHELL-IA · mobile = one large title (no echoed H1); desktop keeps the content H1', async ({ browser }) => {
+  // ── Mobile (≤767px): exactly one visible <h1> = the large title "Money" ──
+  const mobile = await browser.newContext({ storageState: 'e2e/.auth/owner.json', viewport: { width: 390, height: 844 } });
+  const mp = await mobile.newPage();
+  try {
+    await mp.goto('/en/money');
+    const visH1 = mp.locator('h1:visible');
+    // Pre-SHELL-IA this was 2 (NativeHeader "Today" + content "Money" echo).
+    await expect(visH1, 'mobile shows exactly one title — no echoed content H1').toHaveCount(1);
+    // ...and it resolves to the page name (not the old "Today" fallback).
+    await expect(visH1.first(), 'mobile large title = the page name').toHaveText(/Money/i);
+  } finally {
+    await mobile.close();
+  }
+
+  // ── Desktop (≥768px): the content H1 is the only title → must be visible ──
+  const desktop = await browser.newContext({ storageState: 'e2e/.auth/owner.json', viewport: { width: 1280, height: 800 } });
+  const dp = await desktop.newPage();
+  try {
+    await dp.goto('/en/money');
+    await expect(dp.locator('h1:visible').first(), 'desktop is never title-less (content H1 shows)').toBeVisible();
+  } finally {
+    await desktop.close();
+  }
+});

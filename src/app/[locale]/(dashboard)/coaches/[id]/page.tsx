@@ -184,7 +184,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
   const Empty = ({ text }: { text: string }) => <p className="py-3 text-center text-sm text-gray-400">{text}</p>
 
   return (
-    <div className={cn('space-y-4 p-4 md:p-0', isRTL && 'rtl text-right')} data-testid="coach-360">
+    <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="coach-360">
       {/* ── Header: identity + specialties + contact ── */}
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">

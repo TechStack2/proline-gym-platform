@@ -90,7 +90,7 @@ export function CampaignsClient({ rows, locale }: { rows: CampaignRow[]; locale:
     <div className={cn('space-y-4', isRTL && 'rtl text-right')}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         <button type="button" data-testid="campaign-add-btn" onClick={() => setOpen(true)}

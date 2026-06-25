@@ -61,7 +61,10 @@
     "inbox": "الوارد",
     "members": "الأعضاء",
     "money": "المال",
-    "team": "الفريق"
+    "team": "الفريق",
+    "desk": "الاستقبال",
+    "notifications": "الإشعارات",
+    "campaigns": "الحملات"
   },
   "common": {
     "save": "حفظ",

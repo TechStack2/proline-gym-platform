@@ -299,7 +299,7 @@ export function OfflineDesk({ locale }: { locale: string }) {
     <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="offline-desk" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
           <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-gray-500" data-testid="desk-cached-at">
             {!online && <WifiOff className="h-3.5 w-3.5 text-amber-600" />} {cachedLabel}
           </p>

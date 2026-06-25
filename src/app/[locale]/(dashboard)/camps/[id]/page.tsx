@@ -66,7 +66,7 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
   }
 
   return (
-    <div className={cn('space-y-4 p-4 md:p-0', isRTL && 'rtl text-right')} data-testid="camp-detail">
+    <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="camp-detail">
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">

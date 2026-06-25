@@ -98,7 +98,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
       {/* Header */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
+          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
             {t('title')}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
