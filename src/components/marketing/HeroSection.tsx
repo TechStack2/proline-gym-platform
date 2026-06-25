@@ -18,7 +18,16 @@ export function HeroSection({ locale }: HeroSectionProps) {
       {/* Full-bleed gym photo (no baked-in text). Every usable source photo is
           portrait/square (the only landscape file, hero.jpg, has baked text), so
           object-cover crops it to a vertical band — see the wash below for why
-          that's fine. LCP element → priority. */}
+          that's fine. LCP element → priority.
+          HERO-FIX: the full-bleed positioning is on CLASSES (`absolute inset-0
+          h-full w-full`), NOT on next/image `fill`'s inline `style` attribute.
+          The prod CSP is `style-src 'self' 'strict-dynamic' 'nonce-…'` with no
+          'unsafe-inline' — and nonces/strict-dynamic do NOT cover inline style
+          ATTRIBUTES — so `fill`'s inline `position:absolute;inset:0` is stripped
+          in prod. Without these classes the img collapsed to `position:static`,
+          becoming an in-flow flex child of this `justify-center` section and
+          sidelining the centered content to the right (the recurring "unbalanced
+          hero"). Classes are stylesheet rules → CSP-safe → survive in prod. */}
       <Image
         src="/landing/gym-1.jpg"
         alt=""
@@ -26,7 +35,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center"
+        className="absolute inset-0 h-full w-full object-cover object-center"
       />
 
       {/* AX-3: an EVEN, horizontally-uniform brand wash. The old overlay paired a
@@ -36,11 +45,11 @@ export function HeroSection({ locale }: HeroSectionProps) {
           equally left-to-right → a balanced, text-forward hero on any source crop. */}
       <div className="absolute inset-0 bg-gradient-to-b from-secondary-950/85 via-secondary-950/88 to-secondary-950/95" />
 
-      {/* Symmetric crimson brand glow (centered → no left/right bias) for depth. */}
-      <div
-        className="absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 42%, rgba(205,20,25,0.18), transparent 70%)' }}
-      />
+      {/* Symmetric crimson brand glow (centered → no left/right bias) for depth.
+          HERO-FIX: as an arbitrary-value CLASS, not an inline `style` — the prod
+          CSP strips inline style attributes (see the image note above), which had
+          silently dropped this glow in prod too. */}
+      <div className="absolute inset-0 [background:radial-gradient(ellipse_70%_55%_at_50%_42%,rgba(205,20,25,0.18),transparent_70%)]" />
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-32 text-center">
