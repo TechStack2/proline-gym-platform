@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { shot } from './roles';
+import { ROLES, shot } from './roles';
 
 // ISO-DB: pre-auth the default page as this worker-slot's owner (per-gym session).
 test.use({ authRole: 'owner' });
@@ -87,7 +87,9 @@ test('add-student write path persists and the new student appears (F1 #3)', asyn
 // content H1 is the only title (no chrome title) → it must stay visible.
 test('SHELL-IA · mobile = one large title (no echoed H1); desktop keeps the content H1', async ({ browser }) => {
   // ── Mobile (≤767px): exactly one visible <h1> = the large title "Money" ──
-  const mobile = await browser.newContext({ storageState: 'e2e/.auth/owner.json', viewport: { width: 390, height: 844 } });
+  // ISO-DB: source the owner session from this worker-slot's per-gym storageState
+  // (ROLES.owner.storage), not a hardcoded path.
+  const mobile = await browser.newContext({ storageState: ROLES.owner.storage, viewport: { width: 390, height: 844 } });
   const mp = await mobile.newPage();
   try {
     await mp.goto('/en/money');
@@ -101,7 +103,7 @@ test('SHELL-IA · mobile = one large title (no echoed H1); desktop keeps the con
   }
 
   // ── Desktop (≥768px): the content H1 is the only title → must be visible ──
-  const desktop = await browser.newContext({ storageState: 'e2e/.auth/owner.json', viewport: { width: 1280, height: 800 } });
+  const desktop = await browser.newContext({ storageState: ROLES.owner.storage, viewport: { width: 1280, height: 800 } });
   const dp = await desktop.newPage();
   try {
     await dp.goto('/en/money');
