@@ -60,6 +60,9 @@ jobs:
       WHATSAPP_TOKEN_ENC_KEY: 'ci-test-enc-key-not-a-secret'
       # Run-scoped login password (matches the seed default; a test value, not a secret).
       E2E_PASSWORD: 'E2eTestPass!23'
+      # ISO-DB: disable the per-IP auth rate limit for this run only — 4×5 logins
+      # from one CI IP would otherwise 429 the login page. NEVER set in prod.
+      E2E_TEST_MODE: '1'
       # Worker slots = isolated gyms seeded below = playwright.config WORKERS. One source.
       E2E_WORKERS: '4'
       NEXT_PUBLIC_DEFAULT_LOCALE: en

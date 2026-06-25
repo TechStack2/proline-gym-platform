@@ -137,7 +137,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // ─── Rate Limiting for Auth Endpoints ───
-  const isAuthEndpoint = AUTH_PATTERNS.some(pattern => pattern.test(pathname));
+  // ISO-DB: the e2e suite logs in 4 worker-slots × 5 roles = 20 times from the
+  // SAME CI IP, which trips the 5/min per-IP auth limit (the login page then 429s
+  // with no form → flaky setup). Per-IP limiting is meaningless when all test
+  // traffic shares one IP, and no spec covers rate limiting. Disable it ONLY when
+  // E2E_TEST_MODE is set (the e2e CI job; never set in prod → prod is unchanged).
+  const rateLimitDisabled = process.env.E2E_TEST_MODE === '1';
+  const isAuthEndpoint =
+    !rateLimitDisabled && AUTH_PATTERNS.some(pattern => pattern.test(pathname));
   // Capture rate-limit result once to avoid double-counting (was called 3× per request)
   let rateLimitResult: { allowed: boolean; remaining: number; resetAt: number } | null = null;
 
