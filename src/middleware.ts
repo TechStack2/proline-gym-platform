@@ -78,6 +78,38 @@ function generateNonce(): string {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// ISO-DB: e2e runs `next start` (prod CSP path) against a LOCAL Supabase stack
+// (http://127.0.0.1:54321), not *.supabase.co. The hardcoded src lists below
+// would CSP-block the browser client AND storage <img> avatars → failure. Derive
+// the configured Supabase origin from env and, when it is NOT a *.supabase.co
+// host (i.e. the local stack), additionally allow it. Prod (cloud) is unchanged:
+// the host matches *.supabase.co (img-src `https:` + connect-src wildcard) so
+// nothing is added.
+function localSupabaseOrigin(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return '';
+  try {
+    const { protocol, host } = new URL(url);
+    if (host.endsWith('.supabase.co')) return ''; // already covered
+    return `${protocol}//${host}`;
+  } catch {
+    return '';
+  }
+}
+// connect-src needs the http(s) origin + the ws(s) variant (realtime).
+function extraSupabaseConnectSrc(): string {
+  const origin = localSupabaseOrigin();
+  if (!origin) return '';
+  const wsOrigin = origin.replace(/^http/, 'ws');
+  return ` ${origin} ${wsOrigin}`;
+}
+// img-src already allows `https:` (cloud avatars); add the local http origin so
+// storage <img> avatars render against the local stack (ADM-2 / coach-lp).
+function extraSupabaseImgSrc(): string {
+  const origin = localSupabaseOrigin();
+  return origin ? ` ${origin}` : '';
+}
+
 function buildProdCspHeader(nonce: string): string {
   return [
     "default-src 'self'",
@@ -90,9 +122,9 @@ function buildProdCspHeader(nonce: string): string {
     // never registered in prod → no offline ANYWHERE (this is why G2's
     // serviceWorker.ready hung). Allow same-origin workers explicitly.
     "worker-src 'self'",
-    "img-src 'self' data: https: blob:",
+    `img-src 'self' data: https: blob:${extraSupabaseImgSrc()}`,
     "font-src 'self'",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co${extraSupabaseConnectSrc()}`,
     // AX-3: the Facility section embeds the keyless OpenStreetMap map (the
     // operator's "view our location" block). frame-src 'self' silently REFUSED
     // it in prod → the map rendered as a grey box (CI only checked the iframe
@@ -118,7 +150,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // ─── Rate Limiting for Auth Endpoints ───
-  const isAuthEndpoint = AUTH_PATTERNS.some(pattern => pattern.test(pathname));
+  // ISO-DB: the e2e suite logs in 4 worker-slots × 5 roles = 20 times from the
+  // SAME CI IP, which trips the 5/min per-IP auth limit (the login page then 429s
+  // with no form → flaky setup). Per-IP limiting is meaningless when all test
+  // traffic shares one IP, and no spec covers rate limiting. Disable it ONLY when
+  // E2E_TEST_MODE is set (the e2e CI job; never set in prod → prod is unchanged).
+  const rateLimitDisabled = process.env.E2E_TEST_MODE === '1';
+  const isAuthEndpoint =
+    !rateLimitDisabled && AUTH_PATTERNS.some(pattern => pattern.test(pathname));
   // Capture rate-limit result once to avoid double-counting (was called 3× per request)
   let rateLimitResult: { allowed: boolean; remaining: number; resetAt: number } | null = null;
 

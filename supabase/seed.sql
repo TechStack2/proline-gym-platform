@@ -1,0 +1,10 @@
+-- ISO-DB Phase 0: intentional no-op seed.
+--
+-- `config.toml` has `[db.seed] enabled = true` with `sql_paths = ["./seed.sql"]`,
+-- but no seed file existed — so `supabase db reset`'s post-migration seed step had
+-- a dangling path. This empty file satisfies that path as a clean no-op.
+--
+-- The e2e harness does NOT seed via this file: each run calls `seed_e2e_gym(<slug>)`
+-- (migration 000029) against its own DB for run-scoped, isolated data. Base/demo
+-- data is created by the migration chain itself (000006 demo gym, 000008 demo
+-- logins). Keep this empty unless a deterministic local-dev seed is wanted.

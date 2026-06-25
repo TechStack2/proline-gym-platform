@@ -15,6 +15,20 @@
 -- Enable pgcrypto if not already enabled
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
+-- ISO-DB Phase 0: make this migration replay clean from ZERO (`supabase db reset`
+-- on a fresh local stack / CI). The INSERTs below hash `current_setting('app.
+-- demo_password')`, which previously had to be set out-of-band before applying
+-- (see the header) — fine for the long-lived cloud project (set once), but a
+-- from-scratch reset never sets it, so `current_setting('app.demo_password')` would
+-- raise `unrecognized configuration parameter` and break the whole replay here.
+-- Default it when unset; an explicit ALTER DATABASE / set_config still wins.
+DO $$
+BEGIN
+  IF coalesce(current_setting('app.demo_password', true), '') = '' THEN
+    PERFORM set_config('app.demo_password', 'DemoPass!23', false);
+  END IF;
+END $$;
+
 -- Insert demo users directly into auth.users
 -- Uses bcrypt hashing via extensions.crypt() and extensions.gen_salt()
 

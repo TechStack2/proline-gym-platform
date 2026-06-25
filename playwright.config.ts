@@ -8,12 +8,26 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 3000;
 const baseURL = `http://localhost:${PORT}`;
 
+// ISO-DB: each worker SLOT runs against its OWN pre-seeded gym (slug `<base>-w<slot>`,
+// see e2e/roles.ts), so the suite parallelizes across workers without shared-data
+// collisions. `E2E_WORKERS` (CI) drives BOTH this worker count AND the number of
+// gyms CI pre-seeds + the storageState files auth.setup.ts writes — they must match.
+// fullyParallel stays FALSE on purpose: that keeps each spec FILE pinned to a single
+// worker (→ a single gym) with its tests in order. Splitting one file's tests across
+// workers (fullyParallel:true) would cross gyms mid-spec and break every ordered
+// create→assert flow. File-level parallelism across N workers already saturates the
+// runner's cores (the ~⅓-minutes cost win) safely.
+const WORKERS = process.env.CI ? Math.max(1, parseInt(process.env.E2E_WORKERS || '4', 10)) : 1;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: 1,
+  // ISO-DB: the parallel local stack (workers>1 on one app server) has more
+  // contention than the old workers:1 cloud baseline → the rotating heavy specs
+  // (ml1/ax1/fd2/off3…) occasionally need a 3rd attempt to recover. retries:2.
+  retries: process.env.CI ? 2 : 0,
+  workers: WORKERS,
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }]]
     : [['list']],
@@ -34,25 +48,26 @@ export default defineConfig({
       name: 'owner',
       dependencies: ['setup'],
       testMatch: /owner\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+      // ISO-DB: auth is per-worker now — owner.spec declares `test.use({ authRole: 'owner' })`.
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'reception',
       dependencies: ['setup'],
       testMatch: /reception\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/reception.json' },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'coach',
       dependencies: ['setup'],
       testMatch: /coach\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/coach.json' },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'student',
       dependencies: ['setup'],
       testMatch: /student\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/student.json' },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       // Cross-portal slice: switches roles internally (opens a fresh context
@@ -63,16 +78,13 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // Notification read-path slice (Prompt F2 / Workstream B): logs in as the
-      // RECIPIENT (student → pt_approved, coach → pt_assigned) and asserts they
-      // SEE the notification on the bell + /notifications page. Depends on `pt`.
-      // Runs IMMEDIATELY after `pt` (before leads/activity-loop/pt-delivery) so
-      // the freshly-emitted pt_approved/pt_assigned are still within the bell's
-      // "latest 5" — the other slices emit member notifications that would
-      // otherwise bury them. The functional bell renders only at the mobile
-      // breakpoint, set per-context in the spec.
+      // Notification read-path slice (Prompt F2 / Workstream B): asserts the
+      // RECIPIENT (student → pt_approved, coach → pt_assigned) SEES the
+      // notification on the RLS-scoped /notifications page. ISO-DB: self-seeds
+      // the request→approve in beforeAll (own gym), so it no longer depends on
+      // the `pt` spec's side effects — `setup` only.
       name: 'notifications',
-      dependencies: ['setup', 'pt'],
+      dependencies: ['setup'],
       testMatch: /notifications\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
@@ -125,7 +137,8 @@ export default defineConfig({
       name: 'ar-admin',
       dependencies: ['setup'],
       testMatch: /ar-admin\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+      // ISO-DB: opens its own owner context via ROLES.owner.storage (per-worker).
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       // Recurring-class registration (Prompt B2): request→approve→bill→roster +
@@ -273,8 +286,13 @@ export default defineConfig({
     {
       // ML-1 membership lifecycle: tick-driven renewals/dunning/freeze — the
       // tick mutates gym-wide billing state nothing later should see…
+      // ISO-DB: ml1 RENEWS the seeded "Karim ends today" membership (FD-1 seed),
+      // which fd1 reads as its "expiring today" row. Under per-worker arbitrary
+      // order a shared slot could run ml1 first → fd1 hard-fails (the renewal
+      // persists, so retry can't recover). Depend on fd1 so fd1 always sees the
+      // pristine fixture first (re-encodes the old fd1<ml1 array order).
       name: 'ml1',
-      dependencies: ['setup'],
+      dependencies: ['setup', 'fd1'],
       testMatch: /ml1\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
@@ -516,7 +534,8 @@ export default defineConfig({
       name: 'pwa-install',
       dependencies: ['setup'],
       testMatch: /\/pwa-install\.spec\.ts$/,
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/owner.json' },
+      // ISO-DB: opens its own owner context via ROLES.owner.storage (per-worker).
+      use: { ...devices['Desktop Chrome'] },
     },
     // E2E-TIERED — the `smoke` project materializes ONLY under E2E_TIERED=1 (the
     // targeted branch-run path: `gh workflow run e2e.yml -f projects="<slice>"`).

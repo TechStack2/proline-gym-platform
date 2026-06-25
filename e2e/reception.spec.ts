@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { shot } from './roles';
+
+// ISO-DB: pre-auth the default page as this worker-slot's reception (per-gym session).
+test.use({ authRole: 'reception' });
 
 // Reception (staff) — same gym-scoped data as the owner.
 

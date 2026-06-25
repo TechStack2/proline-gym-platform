@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { shot } from './roles';
+
+// ISO-DB: pre-auth the default page as this worker-slot's coach (per-gym session).
+test.use({ authRole: 'coach' });
 
 // Coach (mobile app) — the home must resolve a real coach, and the roster must
 // include the enrolled student. NOTE: /coach shows TODAY's classes only, so we
