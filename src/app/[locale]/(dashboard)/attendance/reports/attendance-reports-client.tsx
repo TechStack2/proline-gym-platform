@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Download, Printer, BarChart3, PieChart } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { pctWidthClass } from '@/lib/utils/bar-width'
 
 interface Class {
   id: string
@@ -261,12 +262,14 @@ export function AttendanceReportsClient({
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            {/* CSP-SWEEP: width via a build-time class (the prod CSP
+                                strips inline style="" → 0-width bar). */}
                             <div
                               className={cn(
                                 "h-full rounded-full",
-                                rate >= 80 ? "bg-green-500" : rate >= 60 ? "bg-yellow-500" : "bg-red-500"
+                                rate >= 80 ? "bg-green-500" : rate >= 60 ? "bg-yellow-500" : "bg-red-500",
+                                pctWidthClass(rate)
                               )}
-                              style={{ width: `${rate}%` }}
                             />
                           </div>
                           <span className="text-xs font-medium">{rate}%</span>

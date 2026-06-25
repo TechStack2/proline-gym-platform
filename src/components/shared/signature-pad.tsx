@@ -82,8 +82,7 @@ export function SignaturePad({
           onPointerMove={move}
           onPointerUp={end}
           onPointerLeave={end}
-          className="h-[180px] w-full rounded-xl"
-          style={{ touchAction: 'none' }}
+          className="h-[180px] w-full rounded-xl touch-none"
         />
         {!hasInk && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-gray-400">

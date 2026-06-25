@@ -25,17 +25,16 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
                 src="https://www.openstreetmap.org/export/embed.html?bbox=35.5390%2C33.8290%2C35.5490%2C33.8390&layer=mapnik&marker=33.8340%2C35.5440"
                 width="100%"
                 height="100%"
-                style={{ border: 0 }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="PRO LINE Gym — Sky Business Center, Baabda"
                 data-testid="facility-map"
-                className="absolute inset-0"
+                className="absolute inset-0 border-0"
               />
             </div>
             {/* Address badge */}
             <div className="absolute -bottom-4 left-4 right-4 rounded-xl bg-white shadow-elevation-2 p-4"
-              style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+              dir={isRTL ? 'rtl' : 'ltr'}
             >
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50">
@@ -71,7 +70,7 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
               {t('subtitle')}
             </p>
 
-            <div className="mt-8 space-y-4" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <div className="mt-8 space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
               <a
                 href="tel:+96170628601"
                 className="flex items-center gap-3 rounded-xl border p-4 hover:border-primary-200 hover:bg-primary-50/50 transition-colors"

@@ -2,6 +2,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
+import { pctWidthClass } from '@/lib/utils/bar-width';
 import { Award, TrendingUp, CalendarCheck, Target } from 'lucide-react';
 import { computeEligibility } from '@/lib/eligibility';
 
@@ -126,11 +127,11 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
               </div>
               {el.hasNext && (
                 <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                  {/* CSP-SWEEP: width via a build-time class (pctWidthClass), not an
+                      inline style the prod CSP would strip → collapse the bar. */}
                   <div
-                    className="h-full bg-[#cd1419]"
-                    style={{
-                      width: `${Math.min(100, el.requiredClasses ? Math.round((el.attended / el.requiredClasses) * 100) : 100)}%`,
-                    }}
+                    data-testid="progress-bar"
+                    className={cn('h-full bg-[#cd1419]', pctWidthClass(el.requiredClasses ? Math.round((el.attended / el.requiredClasses) * 100) : 100))}
                   />
                 </div>
               )}

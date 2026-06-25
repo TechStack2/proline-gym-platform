@@ -220,6 +220,15 @@ test('Activity loop: enroll → attend (transition-guarded) → atomic promote �
         s.page.locator('[data-testid="progress-eligibility"]:visible').first(),
         'progress shows the "X of Y toward next belt" number',
       ).toBeVisible();
+      // CSP-SWEEP guard: the eligibility bar's width is a build-time CSS class
+      // (pctWidthClass → `w-[N%]`), NOT an inline `style={{ width }}` the prod CSP
+      // strips (which collapsed the bar to 0 in prod). Asserted via the class, not
+      // `:visible`/computed width — a just-promoted member is legitimately at 0%
+      // toward the next belt, so a 0-width bar is correct, not the bug. A future
+      // revert to `style={{ width }}` drops the `w-[..%]` class → this fails.
+      const bar = s.page.locator('[data-testid="progress-bar"]').first();
+      await expect(bar, 'progress bar in DOM (next belt exists)').toBeAttached({ timeout: 15_000 });
+      await expect(bar, 'progress bar width is class-driven (CSP-safe), not inline').toHaveClass(/w-\[\d+%\]/);
       await shot(s.page, testInfo, 'al-4-progress');
     } finally {
       await s.ctx.close();

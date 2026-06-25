@@ -73,16 +73,13 @@ export function PageTransition({
       <div
         className={cn(
           'w-full',
-          'transition-all duration-300 ease-out',
+          // CSP-SWEEP: transition timing as classes, not an inline style the prod
+          // CSP strips (preserves the custom easing; transform+opacity only).
+          'transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]',
           'opacity-0',
           isVisible && 'opacity-100',
           getTranslateClass()
         )}
-        style={{
-          transitionProperty: 'transform, opacity',
-          transitionDuration: '300ms',
-          transitionTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        }}
       >
         {children}
       </div>
