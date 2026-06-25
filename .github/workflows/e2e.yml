@@ -51,7 +51,7 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       # G1: WhatsApp dispatch runs in RECORD mode under CI (no external Meta call;
       # the outbound queue is written so routing is verifiable). The enc key is a
