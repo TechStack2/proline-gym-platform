@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Calendar, Users, Clock, MapPin, Pencil } from 'lucide-react'
+import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Calendar, Users, Clock, MapPin, Pencil, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -45,6 +45,9 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
   const [showAddModal, setShowAddModal] = useState(false)
   const [editTarget, setEditTarget] = useState<any | null>(null)
   const isRTL = locale === 'ar'
+  // CYCLE-VIZ: surface the recurring monthly product framing on the staff catalog.
+  const monthlyWord = locale === 'ar' ? 'شهري' : locale === 'fr' ? 'Mensuel' : 'Monthly'
+  const moWord = locale === 'ar' ? 'شهر' : locale === 'fr' ? 'mois' : 'mo'
 
   const filteredClasses = classes.filter(c => {
     const matchesSearch = !search || 
@@ -229,6 +232,13 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
                         <Users className="h-4 w-4 inline mr-1" />
                         {classItem.enrollments_count || 0}/{classItem.max_capacity}
                       </span>
+                      {/* CYCLE-VIZ: recurring monthly cycle + fee (catalog framing). */}
+                      {classItem.monthly_fee_usd != null && (
+                        <span data-testid="class-cycle" className="inline-flex items-center gap-1 text-xs font-medium text-primary-700">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          {monthlyWord} · ${Number(classItem.monthly_fee_usd).toFixed(2)}/{moWord}
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

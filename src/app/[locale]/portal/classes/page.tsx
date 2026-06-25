@@ -54,7 +54,7 @@ export default async function PortalClassesPage({ params: { locale }, searchPara
   const { data: regs } = student
     ? await supabase
         .from('class_registrations')
-        .select('id, class_id, status, waitlist_position, monthly_fee_usd')
+        .select('id, class_id, status, waitlist_position, monthly_fee_usd, end_date')
         .eq('student_id', student.id)
         .order('requested_at', { ascending: false })
     : { data: [] as any[] }
