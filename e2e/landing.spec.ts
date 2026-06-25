@@ -51,3 +51,49 @@ test('LP · logged-out landing renders live schedule + pricing + disciplines + b
     await ctx.close();
   }
 });
+
+/**
+ * HERO-FIX guard — the hero stays a BALANCED full-bleed overlay at ultra-wide.
+ *
+ * 3rd recurrence of the "sidelined hero". Root cause: next/image `fill` applies
+ * its absolute full-bleed positioning via an inline `style` attribute, and the
+ * prod CSP (`style-src 'self' 'strict-dynamic' 'nonce-…'`, no 'unsafe-inline' —
+ * and neither nonce nor strict-dynamic covers inline style ATTRIBUTES) strips it.
+ * The image then collapses to `position:static` → an in-flow flex child of the
+ * `justify-center` hero → it bounds to the left and shoves the centered content
+ * to the right. The fix moves the positioning onto CSS CLASSES (CSP-safe).
+ *
+ * This runs under CI's prod webServer (`next start` → prod CSP), so it reproduces
+ * the bug: the old inline-only code FAILS here; the class-based fix PASSES.
+ */
+test('LP · hero is a balanced full-bleed overlay at ultra-wide (centering guard)', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 2880, height: 1620 }, locale: 'en' });
+  const page = await ctx.newPage();
+  try {
+    await page.goto(`/en?gym=${encodeURIComponent(gymSlug())}`);
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const m = await page.evaluate(() => {
+      const hero = document.querySelector('h1')?.closest('section');
+      const img = hero?.querySelector('img[aria-hidden]') || hero?.querySelector('img');
+      const content = document.querySelector('h1')?.closest('div'); // centered content block
+      const r = (el: Element | null | undefined) => {
+        if (!el) return null;
+        const b = el.getBoundingClientRect();
+        return { x: b.x, w: b.width, cx: b.x + b.width / 2 };
+      };
+      return { vw: window.innerWidth, img: r(img), content: r(content) };
+    });
+
+    // Image is full-bleed (covers the section edge-to-edge), not a left-bounded band.
+    expect(m.img, 'hero background image present').not.toBeNull();
+    expect(m.img!.w, `hero image must be full-bleed at ${m.vw}px (sidelined bug → ~863px)`).toBeGreaterThanOrEqual(m.vw - 2);
+
+    // Content block is horizontally centered on the page (not sidelined to one side).
+    expect(m.content, 'hero content block present').not.toBeNull();
+    const offset = Math.abs(m.content!.cx - m.vw / 2);
+    expect(offset, `hero content must be centered, not sidelined (off by ${Math.round(offset)}px)`).toBeLessThanOrEqual(24);
+  } finally {
+    await ctx.close();
+  }
+});
