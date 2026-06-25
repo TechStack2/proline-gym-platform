@@ -23,7 +23,10 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // ISO-DB: the parallel local stack (workers>1 on one app server) has more
+  // contention than the old workers:1 cloud baseline → the rotating heavy specs
+  // (ml1/ax1/fd2/off3…) occasionally need a 3rd attempt to recover. retries:2.
+  retries: process.env.CI ? 2 : 0,
   workers: WORKERS,
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }]]

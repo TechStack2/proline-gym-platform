@@ -31,15 +31,19 @@ test('AR · classes list renders coach name + counts; class detail shows enrolle
   const { ctx, page } = await ownerPage(browser);
   try {
     await page.goto('/en/classes');
-    await expect(vis(page, '[data-testid="class-card"]').first()).toBeVisible({ timeout: 15_000 });
+    // ISO-DB: scope to the SEEDED class (cap 20, coach Sami) — under per-worker
+    // co-location other specs add classes (e.g. cap-10), so a bare `.first()` is
+    // ambiguous. "Muay Thai Beginner" is the seeded, rostered (Karim+Omar) class.
+    const seeded = vis(page, '[data-testid="class-card"]').filter({ hasText: 'Muay Thai Beginner' }).first();
+    await expect(seeded).toBeVisible({ timeout: 15_000 });
     // Coach NAME (via profiles) — not blank.
-    await expect(vis(page, '[data-testid="class-coach"]').first()).toContainText('Sami');
+    await expect(seeded.locator('[data-testid="class-coach"]')).toContainText('Sami');
     // Enrollment count is a real number out of capacity (n/20), not undefined/NaN.
-    await expect(vis(page, '[data-testid="class-count"]').first()).toContainText(/\d+\/20/);
+    await expect(seeded.locator('[data-testid="class-count"]')).toContainText(/\d+\/20/);
     await expectNoMissingMessage(page);
 
     // Open the seeded class → detail.
-    await vis(page, '[data-testid="class-card"]').filter({ hasText: 'Muay Thai' }).first().click();
+    await seeded.click();
     await expect(page).toHaveURL(/\/classes\/[0-9a-f-]{36}/, { timeout: 15_000 });
     await expect(vis(page, '[data-testid="detail-coach"]')).toContainText('Sami');
     // Enrolled student NAMES render (seed enrolls Karim + Omar).
