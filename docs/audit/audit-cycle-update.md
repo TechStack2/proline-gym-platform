@@ -506,3 +506,44 @@ Public landing `#schedule` grid for **every** locale — **/ar** (RTL), **/en**,
 - **The M/W/F hardcode was flyer-era copy, not a constraint** — the comment literally read "Flyer runs Mon / Wed / Fri." Any gym onboarding with a non-M/W/F timetable hit the same silent drop; this is the tenant-clean fix ahead of the white-label phase ([[proline-white-label-direction]]).
 - **Why e2e didn't catch it:** the run gym seeds the class on **all** days, so a M/W/F grid still rendered "Muay Thai" and the old assertion passed — the gap was a fixture that happened to cover M/W/F. The new assertion closes it by demanding a day the hardcode excluded.
 - **Column ordering is Mon→Sun**; a gym with only weekend classes renders just those columns. Time rows still group by `start–end` and sort ascending — unchanged.
+
+---
+
+## Cycle 6 / CSP-SWEEP — prod-CSP inline-style sweep
+
+> **Branch:** `prompt-csp-sweep` (off `main` `67165d7`) · **Prompt:** [`cycle-5/prompt-CSP-SWEEP.md`](./cycle-5/prompt-CSP-SWEEP.md). **Frontend-only; CSP NOT weakened.** HERO-FIX proved the prod CSP (`style-src 'self' 'strict-dynamic' 'nonce-…'`, no `'unsafe-inline'`) **strips inline `style=""` attributes** ([[prod-csp-strips-inline-style-attrs]]) — so this sweeps the whole app for the same class of bug.
+
+### Inventory (app-wide `src/`)
+- **`next/image fill`:** exactly **one** — the landing hero ([`HeroSection.tsx`](../../src/components/marketing/HeroSection.tsx)), **owned by HERO-FIX** (separate branch; NOT touched here to avoid a merge conflict). The other 7 `<Image>` use width/height, not `fill`. **So the systemic `fill` risk is hero-only.**
+- **Inline `style={{…}}`:** ~15 sites. Triaged by *does it move/collapse if stripped* (layout-critical) vs cosmetic, and server (no JS recovery) vs client (CSSOM re-applies post-hydration).
+
+### Fixed — moved to CSP-safe classes/attributes (7 inline styles removed)
+| Site | Was | Now | Why it mattered |
+|---|---|---|---|
+| [`portal/progress/page.tsx`](../../src/app/[locale]/portal/progress/page.tsx) | `style={{ width:`${pct}%` }}` | `pctWidthClass(pct)` | **server-rendered → bar collapsed to 0 in prod** (no JS recovery). Layout-critical. |
+| [`attendance/reports/attendance-reports-client.tsx`](../../src/app/[locale]/(dashboard)/attendance/reports/attendance-reports-client.tsx) | `style={{ width:`${rate}%` }}` | `pctWidthClass(rate)` | progress bar (client → flashed collapsed). Layout-critical. |
+| [`FacilitySection.tsx`](../../src/components/marketing/FacilitySection.tsx) (landing) | `style={{ border:0 }}` + `style={{ direction }}`×2 | `border-0` class + **`dir` attribute**×2 | anon/customer-facing; `dir` attr is also the semantically-correct, CSP-safe way to set direction |
+| [`PageTransition.tsx`](../../src/components/native/PageTransition.tsx) | `style={{ transition* }}` | `transition-[transform,opacity] duration-300 ease-[cubic-bezier(…)]` | wraps every native-shell page; kept the exact easing |
+| [`signature-pad.tsx`](../../src/components/shared/signature-pad.tsx) | `style={{ touchAction:'none' }}` | `touch-none` class | waiver/signature drawing on touch (stripped → scroll-while-draw) |
+
+**CSP-safe dynamic width** — new helper [`src/lib/utils/bar-width.ts`](../../src/lib/utils/bar-width.ts): a runtime `%` has no static class, so `pctWidthClass()` snaps to 5% buckets over a build-time-known set (`w-[0%]`…`w-[100%]`) that Tailwind's JIT emits to the stylesheet (CSP-safe) instead of an inline attribute. Confirmed the classes (`w-[50%]`, `w-[100%]`) are in the prod CSS bundle.
+
+### Named exceptions (left intentionally; non-layout or client-CSSOM)
+- **Dynamic `background-color` from the DB** (discipline accents): [`ScheduleSection`](../../src/components/marketing/ScheduleSection.tsx), [`schedule/page.tsx`](../../src/app/[locale]/(dashboard)/schedule/page.tsx)×2, `TodayHorizon`, `NativeHeader`. **Color-only — does not move/collapse** (the prompt deprioritizes non-layout). Runtime values have no static-class equivalent; degrade to no-accent in prod. A nonce'd `<style>` or a bounded brand-color class map is the follow-up if cosmetic prod-fidelity is prioritized.
+- **`--shell-accent` CSS custom-property** on the 3 shell layout clients — accent color var, cosmetic, client.
+- **`SwipeableSheet` `transform`/`height`** — continuous **gesture** values on a client component; React applies them via the **CSSOM** at runtime, which the CSP does **not** block (only `style=""` attributes + `<style>` are gated). Impossible to express as static classes.
+
+### Verify — under a local PROD build (`next build && next start`, strict CSP confirmed)
+- **Landing style-src violations: BEFORE (live prod = main) `21` → AFTER (this build) `18`.** The delta is exactly FacilitySection: its inline styles went `["border:0","direction:ltr","direction:ltr"]` → **`[]`**. Remaining 18 = the hero (HERO-FIX-owned), the named schedule-color exceptions, and framework noise (next/image `color:transparent`, Next's `<next-route-announcer>`). **App-authored layout-critical inline styles on the landing after CSP-SWEEP + HERO-FIX = 0.**
+- Hero img computed `position: static` on this branch confirms the CSP IS stripping inline styles (and why the hero must land via HERO-FIX).
+
+### Guard (worst offender, under the prod-CSP webServer)
+[`e2e/activity-loop.spec.ts`](../../e2e/activity-loop.spec.ts) (already drives a real member to `/portal/progress` under CI's prod build) now asserts the eligibility `progress-bar` renders a **non-zero width** — the old inline-width bar collapsed to 0 under the prod CSP, so this **fails on the bug, passes on the class-based fix**.
+
+### ⟶ layout-critical inline styles eliminated under prod CSP; not weakened; guard added: **PASS**
+**CI:** targeted [run `28178851876`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28178851876) over `landing` (FacilitySection no-regression) + `activity-loop` (progress-bar prod-CSP guard). `tsc --noEmit` clean; bucketed width classes present in the prod CSS bundle.
+
+### DRAG READ
+- **Prod-only breakage, invisible in dev:** every fix here was silently degraded in prod (dev's CSP has `'unsafe-inline'`) — the same class of bug as the recurring sidelined hero. Only a prod-build check (or the prod-CSP e2e webServer) surfaces it.
+- **The systemic `fill` fear was contained:** only the hero used `next/image fill`. The broader risk is **dynamic inline values** (DB colors, runtime widths) that can't be static classes — widths (layout) are now bucketed; colors (cosmetic) are named exceptions pending a nonce'd-style follow-up.
+- **No CSP weakening:** every fix is at the call site. Adding `'unsafe-inline'` to `style-src` would have "fixed" all of this in one line *and* re-opened the CSS-injection surface the strict CSP exists to close. The rule stands: **layout-critical CSS is class-based, never inline.**
