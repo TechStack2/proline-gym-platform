@@ -51,6 +51,11 @@ test('E1 · publish gate → desk registration (guardian payer, snapshot) → de
   const owner = await ctxFor(browser, 'owner');
   const guardian = await ctxFor(browser, 'parent'); // Rana
   const anon = await (async () => { const ctx = await browser.newContext({ locale: 'en' }); return { ctx, page: await ctx.newPage() }; })();
+  // DEBUG(iso-db): surface payment-flow errors.
+  owner.page.on('console', (m) => { if (m.type() === 'error' && !/inline style|img-src/.test(m.text())) console.log('[E1 console.error]', m.text()); });
+  owner.page.on('pageerror', (e) => console.log('[E1 pageerror]', e.message));
+  owner.page.on('requestfailed', (r) => { if (/rest|rpc|record_payment|invoices/.test(r.url())) console.log('[E1 requestfailed]', r.url(), r.failure()?.errorText); });
+  owner.page.on('response', (r) => { if (/record_payment|rpc\/record/.test(r.url())) console.log('[E1 record_payment resp]', r.status()); });
   try {
     // ── Wizard create (staged) ──
     const today = new Date().toISOString().slice(0, 10);
@@ -116,6 +121,11 @@ test('E1 · publish gate → desk registration (guardian payer, snapshot) → de
     const invoiceNumber = (await vis(owner.page, '[data-testid="invoice-number"]').first().textContent())!.trim();
     await vis(owner.page, '[data-testid="pay-amount-usd"]').first().fill('50');
     await vis(owner.page, '[data-testid="pay-submit"]').first().click();
+    // DEBUG(iso-db): capture the post-submit state on the invoice page.
+    await owner.page.waitForTimeout(6000);
+    console.log('[E1 after pay-submit] url=', owner.page.url());
+    console.log('[E1 invoice-status on page]', JSON.stringify(await owner.page.locator('[data-testid="invoice-status"]').allTextContents().catch(() => [])));
+    console.log('[E1 toasts]', JSON.stringify(await owner.page.locator('[data-sonner-toast], [data-testid="app-toast"]').allTextContents().catch(() => [])));
     await owner.page.goto(rosterUrl);
     await expect(
       vis(owner.page, '[data-testid="camp-reg-row"]').filter({ hasText: 'Omar' }).first().getByTestId('camp-pay-badge'),

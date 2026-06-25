@@ -79,22 +79,35 @@ function generateNonce(): string {
 }
 
 // ISO-DB: e2e runs `next start` (prod CSP path) against a LOCAL Supabase stack
-// (http://127.0.0.1:54321), not *.supabase.co. The hardcoded connect-src below
-// would CSP-block the browser client → total failure. Derive the configured
-// Supabase origin from env and, when it is NOT a *.supabase.co host (i.e. the
-// local stack), additionally allow it (http + ws). Prod (cloud) is unchanged:
-// the host matches *.supabase.co so nothing is added.
-function extraSupabaseConnectSrc(): string {
+// (http://127.0.0.1:54321), not *.supabase.co. The hardcoded src lists below
+// would CSP-block the browser client AND storage <img> avatars → failure. Derive
+// the configured Supabase origin from env and, when it is NOT a *.supabase.co
+// host (i.e. the local stack), additionally allow it. Prod (cloud) is unchanged:
+// the host matches *.supabase.co (img-src `https:` + connect-src wildcard) so
+// nothing is added.
+function localSupabaseOrigin(): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) return '';
   try {
     const { protocol, host } = new URL(url);
-    if (host.endsWith('.supabase.co')) return ''; // covered by the wildcard below
-    const wsProto = protocol === 'https:' ? 'wss:' : 'ws:';
-    return ` ${protocol}//${host} ${wsProto}//${host}`;
+    if (host.endsWith('.supabase.co')) return ''; // already covered
+    return `${protocol}//${host}`;
   } catch {
     return '';
   }
+}
+// connect-src needs the http(s) origin + the ws(s) variant (realtime).
+function extraSupabaseConnectSrc(): string {
+  const origin = localSupabaseOrigin();
+  if (!origin) return '';
+  const wsOrigin = origin.replace(/^http/, 'ws');
+  return ` ${origin} ${wsOrigin}`;
+}
+// img-src already allows `https:` (cloud avatars); add the local http origin so
+// storage <img> avatars render against the local stack (ADM-2 / coach-lp).
+function extraSupabaseImgSrc(): string {
+  const origin = localSupabaseOrigin();
+  return origin ? ` ${origin}` : '';
 }
 
 function buildProdCspHeader(nonce: string): string {
@@ -109,7 +122,7 @@ function buildProdCspHeader(nonce: string): string {
     // never registered in prod → no offline ANYWHERE (this is why G2's
     // serviceWorker.ready hung). Allow same-origin workers explicitly.
     "worker-src 'self'",
-    "img-src 'self' data: https: blob:",
+    `img-src 'self' data: https: blob:${extraSupabaseImgSrc()}`,
     "font-src 'self'",
     `connect-src 'self' https://*.supabase.co wss://*.supabase.co${extraSupabaseConnectSrc()}`,
     // AX-3: the Facility section embeds the keyless OpenStreetMap map (the
