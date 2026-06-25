@@ -52,7 +52,7 @@ test('PAUSE-CARD · frozen member surfaces on Today + one-tap Resume (en + /ar)'
 
     // ── 3. Today's Paused card lists the member + resume date + days held ──
     await owner.page.goto('/en/today');
-    const pausedCard = vis(owner.page, '[data-testid="paused"]').first();
+    const pausedCard = vis(owner.page, '[data-testid="card-paused"]').first();
     await expect(pausedCard, 'the Paused card renders on Today').toBeVisible({ timeout: 15_000 });
     const row = vis(owner.page, '[data-testid="paused-row"]').filter({ hasText: MEMBER }).first();
     await expect(row, 'the paused member appears on the Paused card').toBeVisible({ timeout: 15_000 });
@@ -63,7 +63,7 @@ test('PAUSE-CARD · frozen member surfaces on Today + one-tap Resume (en + /ar)'
     const ar = await ownerCtx(browser, 'ar');
     try {
       await ar.page.goto('/ar/today');
-      await expect(vis(ar.page, '[data-testid="paused"]').first(), 'Paused card renders under /ar').toBeVisible({ timeout: 15_000 });
+      await expect(vis(ar.page, '[data-testid="card-paused"]').first(), 'Paused card renders under /ar').toBeVisible({ timeout: 15_000 });
       await expect(
         vis(ar.page, '[data-testid="paused-row"]').filter({ hasText: MEMBER }).first(),
         'the paused member appears on the /ar Paused card',
