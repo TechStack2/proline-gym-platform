@@ -692,13 +692,17 @@
     },
     "schedule": {
       "title": "Weekly Schedule",
-      "subtitle": "Train Monday, Wednesday & Friday — Kids, Juniors, Ladies & Adults",
+      "subtitle": "Classes through the week — Kids, Juniors, Ladies & Adults",
       "empty": "The schedule will be published soon.",
       "time": "Time",
       "days": {
         "mon": "Monday",
+        "tue": "Tuesday",
         "wed": "Wednesday",
-        "fri": "Friday"
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
       }
     },
     "affiliations": {

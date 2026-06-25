@@ -26,10 +26,16 @@ test('LP · logged-out landing renders live schedule + pricing + disciplines + b
     // Disciplines — seeded Muay Thai is gym-scoped + active (anon-readable).
     await expect(page.locator('#disciplines')).toContainText(/Muay Thai/i);
 
-    // Schedule — the seeded class runs Mon/Wed/Fri → the weekly grid renders (not the empty state).
+    // Schedule — the run gym seeds the class on EVERY weekday, so the grid renders a
+    // column for each day the gym actually schedules (LANDING-CLASSES: data-driven
+    // columns, not a hardcoded Mon/Wed/Fri subset). The class name shows anon.
     const schedule = page.locator('#schedule');
     await expect(schedule.locator('table')).toBeVisible();
     await expect(schedule).toContainText(/Muay Thai/i);
+    // Days beyond Mon/Wed/Fri must render — guards the day-filter regression that
+    // silently dropped Tue/Thu/Sat classes from the public schedule on prod.
+    await expect(schedule).toContainText(/Tuesday/i);
+    await expect(schedule).toContainText(/Saturday/i);
 
     // Pricing — seeded membership plans render from the DB (not just a static stub).
     await expect(page.locator('[data-testid="pricing-plans"]')).toBeVisible();

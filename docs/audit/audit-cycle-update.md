@@ -474,3 +474,35 @@ All three invoice surfaces fetched `invoice_type` and dropped it; **none** fetch
 - **Members & staff can finally read what each charge is for** — a class invoice reads "Class · Class: {name}", a PT one "PT Package · PT package: {name}", a membership "Membership · Membership: {name}". The monetization model (membership · class · PT · camp) is legible at every billing touchpoint instead of a wall of bare amounts.
 - **Zero backend touch:** type + notes were already written by the issuing RPCs; this is pure read-side rendering. Enriching the *notes themselves* (e.g. PT session counts) is a separate later slice.
 - **Validated targeted, not full** — per E2E-TIERED + the auditor's cost guidance; the auditor times the merge for after ISO-DB so the union gate runs on the faster CI.
+
+## Cycle 6 / LANDING-CLASSES — public landing shows the class schedule
+
+> **Branch:** `prompt-landing-classes` (off `main` `89a168d`) · **Prompt:** [`cycle-5/prompt-LANDING-CLASSES.md`](./cycle-5/prompt-LANDING-CLASSES.md). **Diagnose-first; render-path fix; frontend-only, no RLS/migration.** The schedule section was wired + anon-legal yet the owner's classes didn't show on the live landing — root-cause *why*, then the smallest fix.
+
+### Diagnosis — root-caused, not guessed
+Ran the **exact** anon path against the live `proline-gym` (anon key, read-only), then compared the served prod HTML:
+- **`get_public_gym('proline-gym')`** (anon) resolves the gym `b737047f…` — **gym resolution fine**.
+- The **exact `ScheduleSection` query** (anon): `classes?…&gym_id=eq.<gym>&is_active=eq.true` with embedded `class_schedules` returns **all 6 classes, `is_active=true`** — identical to the service-role read. **Anon RLS is fine** (000035 `class_schedules_public_read` / `classes_public_read`); **not** an empty query.
+- The live **prod `/en` HTML** (HTTP 200) renders the `#schedule` `<table>` (not the empty state) — but only **2 of 6** class names appear: **Muay Thai Pro** + **Kickboxing**. Missing from the grid: **MMA Fundamentals** (Sat), **Boxing Basics** (Tue/Thu), **Muay Thai Beginner** (Tue/Thu), **Open Mat** (Sat).
+- The 2 shown are exactly the classes with a **Mon/Wed/Fri** slot. **Root cause:** [`ScheduleSection.tsx`](../../src/components/marketing/ScheduleSection.tsx) hardcoded `DAYS=[Mon,Wed,Fri]` and `continue`d past every other `day_of_week`. The live gym runs classes across the **full week**, so two-thirds of its classes were silently dropped from the public schedule.
+- **Ruled out:** CSP/static-render ([[prod-csp-strict-dynamic-needs-dynamic-render]]) — `ScheduleSection` is a **server component** on a `force-dynamic` page (server-rendered HTML, no client fetch / nonce). RLS — anon reads all 6. Empty query — data present + active.
+
+### The fix (render-path, frontend-only)
+- **Data-driven columns:** the grid now derives its day columns from the days the gym **actually** schedules (`activeDow` collected during the slot pass, intersected with a full Mon→Sun `WEEK`), instead of a hardcoded subset. The non-M/W/F `continue` is gone; slot cells are keyed by the real `day_of_week`. Empty-gym behavior (no classes → empty state) is unchanged.
+- **i18n:** added `tue/thu/sat/sun` day labels to `landing.schedule.days` in **en/ar/fr**, and replaced the now-false "Train Mon/Wed/Fri" subtitle with a day-agnostic line (all three locales).
+- **No** RLS change, **no** migration, **no** query change to the catalog policies. 5 files: the component, 3 message files, the landing spec.
+
+### Surfaces
+Public landing `#schedule` grid for **every** locale — **/ar** (RTL), **/en**, **/fr** — and **every** gym (the default `proline-gym` and any `?gym=<slug>` tenant). Each renders one column per scheduled day with the localized day label; all of the gym's active classes appear.
+
+### e2e (discriminating, not a snapshot)
+[`e2e/landing.spec.ts`](../../e2e/landing.spec.ts) now asserts the anon schedule renders **day columns beyond Mon/Wed/Fri** — `Tuesday` + `Saturday` — alongside the existing class-name + table assertions. The run gym (000029) seeds its class **every** weekday, so the old M/W/F-only grid would render no Tuesday/Saturday header → this assertion **fails on the bug, passes on the fix**.
+
+### ⟶ public landing renders classes anon, /ar + /en (+/fr), root-caused not guessed, no RLS change: **PASS**
+**CI:** **targeted** [run `28153598144`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28153598144) — **SUCCESS, ~3 min**. Scoped `setup + smoke + [landing]` (11 passed); `[landing]` green **with** the new Tuesday/Saturday day-header assertions, proving the data-driven columns render anon. `tsc --noEmit` clean; all three message JSONs valid.
+
+### DRAG READ
+- **Prod impact on merge+deploy:** the live data already has all 6 classes spread across the week (proven via the anon query above) and the current prod HTML shows only the 2 M/W/F ones — so the moment this lands and Railway redeploys, the public schedule fills in **MMA Fundamentals / Boxing Basics / Muay Thai Beginner / Open Mat** with no data or RLS change. The fix is purely on the render path.
+- **The M/W/F hardcode was flyer-era copy, not a constraint** — the comment literally read "Flyer runs Mon / Wed / Fri." Any gym onboarding with a non-M/W/F timetable hit the same silent drop; this is the tenant-clean fix ahead of the white-label phase ([[proline-white-label-direction]]).
+- **Why e2e didn't catch it:** the run gym seeds the class on **all** days, so a M/W/F grid still rendered "Muay Thai" and the old assertion passed — the gap was a fixture that happened to cover M/W/F. The new assertion closes it by demanding a day the hardcode excluded.
+- **Column ordering is Mon→Sun**; a gym with only weekend classes renders just those columns. Time rows still group by `start–end` and sort ascending — unchanged.

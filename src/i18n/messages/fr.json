@@ -692,13 +692,17 @@
     },
     "schedule": {
       "title": "Programme Hebdomadaire",
-      "subtitle": "Entraînez-vous lundi, mercredi & vendredi — Enfants, Juniors, Femmes & Adultes",
+      "subtitle": "Des cours toute la semaine — Enfants, Juniors, Femmes & Adultes",
       "empty": "Le programme sera publié bientôt.",
       "time": "Heure",
       "days": {
         "mon": "Lundi",
+        "tue": "Mardi",
         "wed": "Mercredi",
-        "fri": "Vendredi"
+        "thu": "Jeudi",
+        "fri": "Vendredi",
+        "sat": "Samedi",
+        "sun": "Dimanche"
       }
     },
     "affiliations": {

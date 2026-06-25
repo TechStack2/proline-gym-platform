@@ -9,11 +9,18 @@ type ScheduleSectionProps = {
   gymSlug?: string;
 };
 
-// Flyer runs Mon / Wed / Fri. day_of_week: 0=Sun … 6=Sat.
-const DAYS = [
+// Full weekly order (Mon→Sun). day_of_week: 0=Sun … 6=Sat.
+// The rendered columns are derived from the days this gym actually schedules
+// (computed `DAYS` below) — never a hardcoded subset, or classes on the other
+// days get silently dropped from the public schedule.
+const WEEK = [
   { dow: 1, key: 'mon' },
+  { dow: 2, key: 'tue' },
   { dow: 3, key: 'wed' },
+  { dow: 4, key: 'thu' },
   { dow: 5, key: 'fri' },
+  { dow: 6, key: 'sat' },
+  { dow: 0, key: 'sun' },
 ] as const;
 
 type Cell = { name: string; color: string | null };
@@ -35,6 +42,7 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
 
   const rows: Row[] = [];
+  const activeDow = new Set<number>();
 
   if (gym) {
     const supabase = await createClient();
@@ -53,18 +61,22 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
       const name = localizedName(c, locale);
       for (const s of (c as any).schedules || []) {
         if (s.is_active === false) continue;
-        if (!DAYS.some((d) => d.dow === s.day_of_week)) continue;
+        if (s.day_of_week == null) continue;
+        activeDow.add(s.day_of_week);
         const key = `${s.start_time}-${s.end_time}`;
         let row = slotMap.get(key);
         if (!row) {
-          row = { start: s.start_time, end: s.end_time, cells: { 1: [], 3: [], 5: [] } };
+          row = { start: s.start_time, end: s.end_time, cells: {} };
           slotMap.set(key, row);
         }
-        row.cells[s.day_of_week].push({ name, color: c.color ?? null });
+        (row.cells[s.day_of_week] ??= []).push({ name, color: c.color ?? null });
       }
     }
     rows.push(...[...slotMap.values()].sort((a, b) => a.start.localeCompare(b.start)));
   }
+
+  // Columns = the days this gym actually schedules, in week order (Mon→Sun).
+  const DAYS = WEEK.filter((d) => activeDow.has(d.dow));
 
   return (
     <section id="schedule" className="bg-secondary-950 py-20 lg:py-28">
@@ -109,7 +121,7 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
                       {hhmm(row.start)}–{hhmm(row.end)}
                     </td>
                     {DAYS.map((d) => {
-                      const cells = row.cells[d.dow];
+                      const cells = row.cells[d.dow] ?? [];
                       return (
                         <td key={d.dow} className="align-top">
                           {cells.length === 0 ? (
