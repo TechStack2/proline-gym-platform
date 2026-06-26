@@ -691,3 +691,27 @@ A registration's cycle is already in the data: `class_registrations.end_date` (0
 - **Monetization legible at the point of decision:** a member browsing now reads "Monthly" (a recurring commitment, not a one-off), and a registered member sees exactly *when it renews* — closing the gap between the [[proline-monetization-model]] and what the UI communicated.
 - **Zero backend touch:** the renewal date was always in `end_date`; this is pure read-side rendering. The request→approve→bill flow and the cycle length are unchanged.
 - **Consistency across shells:** the same recurring framing now appears member-side (portal) and staff-side (catalog), so "this is a monthly product" reads the same to both audiences.
+
+## Cycle 6 / PAUSE-CARD — paused memberships on Today
+
+> **Branch:** `prompt-pause-card` (off `main` `5f9eae6`, which already carries the merged ISO-DB local-stack CI) · **Prompt:** [`cycle-5/prompt-PAUSE-CARD.md`](./cycle-5/prompt-PAUSE-CARD.md). **Frontend-only — NO schema/RPC change.** Benchmark gap (operational visibility): membership freeze is fully built (000047 freeze/unfreeze RPCs, calculated value-hold, auto-unfreeze, bounds, "frozen" badge, e2e-tested by `ml1`) but **paused members were invisible at a glance** — the only missing piece was a monitoring card.
+
+### Recon — the freeze infra already shipped; only the Today card was absent
+`freeze_membership`/`unfreeze_membership` (000047) set `student_memberships.status='paused'` + `pause_start_date`/`pause_end_date` (and extend `end_date` by the frozen days; early-unfreeze restores pro-rata). The Resume path already existed: `unfreezeMembership` server action → `revalidatePath('/today')` ([`src/lib/lifecycle/actions.ts`](../../src/lib/lifecycle/actions.ts)). The gap was purely that `TodayHorizon`'s membership queries were `status IN ('active','lapsed')` — **paused was nowhere on Today**.
+
+### Build (display + one-tap Resume; reuse only)
+- **Query** ([`TodayHorizon.tsx`](../../src/app/[locale]/(dashboard)/today/_components/TodayHorizon.tsx)): a gym-scoped, RLS-respecting `student_memberships` read where `status='paused'` (member + `pause_start_date`/`pause_end_date`), with `daysHeld = pause_end - pause_start`. Added alongside the existing horizon queries.
+- **Card**: a "Paused / on hold" `ActionCard` (icon `PauseCircle`) mirroring the **Chase** card — each row = member name + **"resumes {pause_end_date}"** (`paused-resumes`) + **"{days} days held"** (`paused-days`); count in the header; ✓-collapse empty state. Placed after Chase.
+- **One-tap Resume**: a new `ResumeRowButton` ([`lifecycle-buttons.tsx`](../../src/components/dashboard/lifecycle-buttons.tsx)) reusing the **existing** `unfreezeMembership` action (early-unfreeze restores pro-rata) → toast + `router.refresh()`; the row leaves the card. **No new RPC, no migration.**
+- **Localized** `/ar`+`/en`+`/fr` (`today.cards.paused`/`nonePaused`/`resumesOn`/`daysHeld` + `lifecycle.resumeShort`/`resumed`; all three locales, parity-checked).
+
+### Verify (TARGETED — `-f projects="pause-card"`, isolated own-fixture spec)
+[`pause-card.spec.ts`](../../e2e/pause-card.spec.ts) creates its **own** member + membership (via the add-student wizard's plan step — never touches the seeded Karim that `ml1` freezes, so it's collision-free), freezes it (member-360 `ms-freeze-*`), then asserts it on Today's Paused card with the **resume date + "14 days held"**, renders the card **localized under /ar** (member visible, no `MISSING_MESSAGE`), and one-tap **Resume** removes the member from the card + clears the frozen state on the member file.
+
+### ⟶ Today surfaces currently-paused members + one-tap Resume; reuses existing freeze RPCs; no schema change; /ar+/en: **PASS**
+**CI (targeted):** [run `28205505051`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28205505051) — **SUCCESS** (`pause-card` ✓ 23.7s; 16 passed) on the per-run local Supabase stack. tsc clean; no migration, no VF.
+
+### DRAG READ
+- **The cheapest slices are the ones where the engine already exists.** Freeze was fully built + value-held; the entire deliverable was one server query + one card + one button reusing the existing action — zero backend risk, no RLS touched. The "monitored pause" the owner asked for was 90% already shipping, invisible.
+- **Isolation by construction beats ordering hacks.** Rather than freeze the seeded Karim (which `ml1` also freezes → the documented per-worker co-location landmine), the spec mints its own member+membership — fully self-sufficient, green in both the targeted slice and the future union gate without a dependency edge.
+- **ActionCard's derived testid is the one gotcha:** the card root is `card-<testid>` (and `card-empty-<testid>` when collapsed), not the raw `testid` — the rows/inner ids use the raw name. First run tripped on it; worth remembering for every future Today dock.

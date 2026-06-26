@@ -322,6 +322,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PAUSE-CARD: Today surfaces currently-paused memberships + one-tap Resume.
+      // Creates its OWN member + membership + freeze (never touches the seeded
+      // Karim that ml1 freezes), so it is fully isolated.
+      name: 'pause-card',
+      dependencies: ['setup'],
+      testMatch: /pause-card\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GRW-1 growth funnel: creates a campaign + anon captures + converts a lead.
       name: 'grw1',
       dependencies: ['setup'],

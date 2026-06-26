@@ -8,13 +8,13 @@ import { getDailyTally } from '@/lib/billing/daily-tally'
 import { METHOD_LABEL, balanceUsd } from '@/lib/billing/reconcile'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { getRenewalsDue } from '@/lib/pt/refill'
-import { RenewRowButton } from '@/components/dashboard/lifecycle-buttons'
+import { RenewRowButton, ResumeRowButton } from '@/components/dashboard/lifecycle-buttons'
 import { membershipState } from '@/lib/lifecycle/status'
 import { getWinbackQueue } from '@/lib/finances/winback'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import {
   DollarSign, ClipboardList, Dumbbell, CalendarDays,
-  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent, Flame, Heart, CalendarClock,
+  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent, Flame, Heart, CalendarClock, PauseCircle,
 } from 'lucide-react'
 
 /**
@@ -173,6 +173,24 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     .map((m) => ({ ...m, state: membershipState(m, gymPolicyRow ?? {}) }))
     .filter((m) => m.state === 'overdue' || m.state === 'lapsed')
 
+  // ── PAUSE-CARD: currently-paused (frozen) memberships — gym-scoped, RLS-respecting.
+  //    Reuses the existing freeze infra (status='paused', pause_end_date); one-tap
+  //    Resume calls the existing unfreeze_membership action. No schema/RPC change.
+  const { data: pausedRaw } = await supabase
+    .from('student_memberships')
+    .select(`id, pause_start_date, pause_end_date, status,
+      students!inner (id, gym_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
+    .eq('students.gym_id', gymId)
+    .eq('status', 'paused')
+    .order('pause_end_date')
+    .limit(30)
+  const paused = ((pausedRaw ?? []) as any[]).map((m) => {
+    const start = m.pause_start_date ? new Date(m.pause_start_date) : null
+    const end = m.pause_end_date ? new Date(m.pause_end_date) : null
+    const daysHeld = start && end ? Math.max(0, Math.round((end.getTime() - start.getTime()) / 864e5)) : 0
+    return { ...m, daysHeld }
+  })
+
   // ── FIN-1: win-back due — queued followups due today + fresh lapses ──
   const winbackQueue = await getWinbackQueue(supabase, gymId, locale)
   const winbackDue = winbackQueue.filter((w) =>
@@ -314,6 +332,34 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                   {t(`cards.${m.state}` as any)}
                 </span>
                 {' · '}{fmtDate(m.end_date)}
+              </p>
+            </ActionRow>
+          )
+        })}
+      </ActionCard>
+
+      {/* ── Card: Paused / on-hold memberships (PAUSE-CARD) — one-tap Resume ── */}
+      <ActionCard icon={PauseCircle} title={t('cards.paused')} count={paused.length}
+        emptyText={t('cards.nonePaused')} testid="paused" isRTL={isRTL}>
+        {paused.map((m: any) => {
+          const st = one(m.students)
+          const profP = one(st?.profiles)
+          return (
+            <ActionRow key={m.id} href={`/${locale}/students/${st?.id}`} testid="paused-row"
+              action={
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <ResumeRowButton membershipId={m.id} studentId={st?.id} />
+                  {tel(profP?.phone, 'paused-call')}
+                </span>
+              }>
+              <p className="truncate text-sm font-semibold text-gray-900">{localizedName(profP, locale)}</p>
+              <p className="text-xs text-gray-500">
+                {m.pause_end_date && (
+                  <span className="font-medium text-amber-600" data-testid="paused-resumes">
+                    {t('cards.resumesOn', { date: fmtDate(m.pause_end_date) })}
+                  </span>
+                )}
+                {m.daysHeld ? <span data-testid="paused-days"> · {t('cards.daysHeld', { days: m.daysHeld })}</span> : null}
               </p>
             </ActionRow>
           )
