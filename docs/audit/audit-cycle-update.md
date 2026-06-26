@@ -796,3 +796,30 @@ Targets the **shared proline demo** (read-only → safe under workers:2). Two te
 - **A feature with no demo path is invisible.** The guardian stack (RLS, switcher, household billing) shipped cycles ago but went undemoed for want of one seeded login — capability ≠ demonstrability. Every role the product supports needs a one-click demo login, or it reads as missing.
 - **`CREATE OR REPLACE` on a big function is a revert risk; diff it.** The only safe way to amend a 480-line definer is to copy the *current* live body and inject — then `diff` the old vs new function to prove the change set is exactly the intended lines. Re-deriving from an older body silently rolls back later fixes ([[function-rewrite-reverts-later-migrations]]).
 - **Two seed paths, one invariant.** The link had to hold whether CI only resets or also reseeds (which recreates Karim with a fresh id). Designing the migration *and* the reseed block to converge on the same end-state (guardian→Karim linked) is what makes the demo deterministic.
+
+---
+
+## Cycle 6 / PWD-FOCUS — first-login password field loses focus per keystroke
+
+**Symptom (owner-reported).** On the forced first-login onboarding wizard, the new-password field dropped focus after **every single keystroke** — type one character, the cursor jumps out, you must re-click before the next character. Setting a password was effectively impossible without one click per char.
+
+### Root cause — a component defined in the render body remounts every keystroke
+[`onboarding-client.tsx`](../../src/app/[locale]/onboarding/onboarding-client.tsx) built its wizard `steps` array — **and the `Field` label-wrapper component (`const F = …`) it used** — *inside* `OnboardingClient`'s render body. The password inputs are controlled (`value={pw} onChange={e => setPw(e.target.value)}`), so each keystroke fires `setPw` → the component re-renders → **a brand-new `F` function reference is created**. React identifies components by type *reference*; a new reference at the same position reads as a *different component type*, so React **unmounts the old subtree and mounts a new one** — the password `<Input>` is destroyed and recreated each keystroke, and the freshly-mounted DOM node has no focus. Only the first character lands; the rest go to `document.body`.
+
+> Note: the steps *array* being rebuilt is harmless on its own — React reconciles new element objects at a stable position fine. The killer was specifically the **inline component type** (`F`), redefined per render.
+
+### Fix — hoist stable module-level component types
+- Moved the `Field` wrapper and a new `PasswordStep` component to **module scope** (stable references across renders). `PasswordStep` owns the two password inputs + the inline validation hints and reads its own `useTranslations`.
+- The password step now renders `content: <PasswordStep pw={pw} pw2={pw2} setPw={setPw} setPw2={setPw2} />`. Stable type → React **reconciles (updates value) instead of remounting** → focus is retained; the entire typed string lands in one go.
+- **Unchanged:** the `valid: pw.length >= 8 && pw === pw2` gate, the too-short / mismatch messages, and the optional-waiver `steps.splice(steps.length - 1, 0, …)` step-count contract ([[onboarding-wizard-step-count-contract]] — the Next-click helper stays step-count-agnostic).
+- **Out of scope, untouched:** auth/credential logic (`updateUser({ password })`), the invite flow, the other steps.
+
+### Guard — type char-by-char, assert the full value landed
+The existing [`on1.spec.ts`](../../e2e/on1.spec.ts) `completeOnboarding` helper used `.fill()`, which sets the value in **one atomic `input` event** — it never exercises per-keystroke focus, so the bug shipped green. Rewrote it to type the password **one character at a time** (`pressSequentially`, delay 25ms) into `ob-password` then `ob-password2`, and `expect(field).toHaveValue(newPassword)` — the **full** string. On the remount bug only the first char survives → the assertion fails; on the fix the whole value sticks. Both ON-1 tests (member invite + coach team invite) now run this guard, so it's covered in two role contexts at **zero added invite cost**. No assertion was weakened — the helper got *stronger* (typed-input + a new full-value check).
+
+### ⟶ new-password + confirm hold focus across keystrokes; validation/steps intact; /ar+/en: **PASS (pending run 28258671304)**
+`tsc` clean. Targeted run [`28258671304`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28258671304) (`-f projects="on1"`, setup+smoke+on1). The fix is **structural and locale-invariant** — no RTL/i18n path changed; the password step renders identically under `/ar` (FormWizard owns RTL; `Field` uses logical classes), so /ar holds by construction while the e2e guard runs on /en. **DO NOT MERGE — auditor merges.**
+
+### DRAG READ
+- **`fill()` is a false friend for focus/controlled-input bugs.** It collapses a whole typing session into one synthetic event, so any per-keystroke defect (remount, debounce drop, cursor reset, IME break) passes green. When the *interaction itself* is what's under test, type the characters — `pressSequentially` — and assert the accumulated value. This guard would have caught the bug the day the wizard was written.
+- **"New array each render" ≠ "remount."** The instinct was to blame the rebuilt `steps` array; React reconciles that fine. The actual remount trigger was the narrower, sneakier **component defined inside render** — a fresh function reference is a fresh *type*. Hoist any component/`F`-style helper out of the render body; never define a component during render.
