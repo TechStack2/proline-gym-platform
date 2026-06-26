@@ -98,6 +98,9 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
 
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
+      {/* PORTAL-SHELL: billing leads with the balance on mobile (chrome owns the
+          title); a desktop-only H1 keeps desktop from being title-less. */}
+      <h1 data-testid="portal-page-title" className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
       {household && (
         <div className="space-y-3" data-testid="household-billing">
           <div className="rounded-2xl bg-white p-4 shadow-sm">

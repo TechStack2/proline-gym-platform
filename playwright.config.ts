@@ -458,6 +458,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PORTAL-SHELL: responsive single title on the portal (SHELL-IA echo
+      // follow-up) — one title per breakpoint (mobile chrome large title / desktop
+      // content H1, never title-less), /ar clean. Opens its own student contexts
+      // at two viewports; read-only.
+      name: 'portal-shell',
+      dependencies: ['setup'],
+      testMatch: /portal-shell\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // COACH-LP grandiose coach showcase on the landing + coach-edit→admin-publish:
       // coach (coach@) self-edits → PENDING draft → owner publishes in Coach-360 →
       // the coach appears on the anon landing; coming-soon treatment; RLS leak guard

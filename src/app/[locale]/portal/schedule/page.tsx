@@ -84,7 +84,8 @@ export default async function PortalSchedulePage({ params: { locale } }: Props) 
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
-      <h2 className="text-lg font-bold text-gray-900">
+      {/* PORTAL-SHELL: echoes the mobile chrome large title → desktop-only. */}
+      <h2 className="hidden md:block text-lg font-bold text-gray-900">
         {t('title')}
       </h2>
 

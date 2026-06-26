@@ -141,7 +141,7 @@ export default async function PortalPtPage({ params }: Props) {
   return (
     <div className="p-4 space-y-4">
       <div>
-        <h1 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
+        <h1 className={cn('hidden md:block text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
           {t('pt_title')}
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">{t('pt_request_subtitle')}</p>
