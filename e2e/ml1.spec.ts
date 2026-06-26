@@ -27,22 +27,28 @@ async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
   return { ctx, page: await ctx.newPage() };
 }
 
+// v2.1: under full-gate saturation `goto`'s default 'load' wait stalls on slow
+// resources; settle on DOM-ready (the SSR'd member cards/invoices are already in
+// the markup) so each re-read samples FAST → the untilConsistent budget buys many
+// attempts and catches the moment the tick's write becomes readable.
+const nav = (page: Page, url: string) => page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+
 async function openFile(page: Page, name: string) {
   // ISO-DB v2: under FULL-suite load the search results / click→nav can lag well
   // past 40s; re-search + click until the member file opens (idempotent read path).
   await untilConsistent(async () => {
-    await page.goto(`/en/students?search=${encodeURIComponent(name)}`);
+    await nav(page, `/en/students?search=${encodeURIComponent(name)}`);
     await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click();
-    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 10_000 });
-  }, { timeout: 60_000 });
+    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
+  }, { timeout: 90_000 });
 }
 
 async function runTick(page: Page) {
-  await page.goto('/en/money');
+  await nav(page, '/en/money');
   await vis(page, '[data-testid="process-renewals-now"]').first().click();
   const toast = page.locator('[data-testid="app-toast"]').filter({ hasText: /issued/i }).first();
   // The renewal sweep runs server-side; under full load it + the toast lag.
-  await expect(toast).toBeVisible({ timeout: 40_000 });
+  await expect(toast).toBeVisible({ timeout: 60_000 });
   return (await toast.textContent()) ?? '';
 }
 
@@ -56,9 +62,9 @@ const addDays = (days: number) => {
 };
 
 test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; payment extends; plan change carries new price', async ({ browser }) => {
-  // v2: full-suite saturation pushes the post-tick renders past 40s, so the
-  // untilConsistent waits below run to 90–120s; raise the test ceiling to match.
-  test.setTimeout(720_000);
+  // v2.1: the heaviest full-suite runs push the tick's read-after-write past 90s
+  // (run 28262907011), so the heavy reads run to 180s; raise the ceiling to match.
+  test.setTimeout(1_080_000);
   const owner = await ctxFor(browser, 'owner');
   const student = await ctxFor(browser, 'student'); // Karim
   try {
@@ -77,7 +83,7 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     // are visible (no weakening; we wait for consistency, we don't assert less).
     let periodBefore = '';
     await untilConsistent(async () => {
-      await owner.page.goto(karimUrl);
+      await nav(owner.page, karimUrl);
       const expCard = vis(owner.page, '[data-testid="membership-card"][data-state="expiring"]').first();
       await expect(expCard, 'ending-today membership reads EXPIRING').toBeVisible({ timeout: 20_000 });
       await expect(expCard.getByTestId('membership-renewal-open'), 'renewal invoice open on the card').toBeVisible({ timeout: 20_000 });
@@ -90,25 +96,25 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
       // (b) the period text is read only AFTER the card is asserted visible above,
       // and the whole block re-runs on a transient "context destroyed" nav race.
       periodBefore = (await expCard.getByTestId('membership-period').textContent())!.trim();
-    }, { timeout: 90_000 });
+    }, { timeout: 180_000 });
 
     // Member nudge + Today renew action + portal banner (each re-read until the
     // tick's effect is visible under load).
-    await expectNotification(student.page, 'renewal_due', { timeout: 40_000 });
+    await expectNotification(student.page, 'renewal_due', { timeout: 60_000 });
     await untilConsistent(async () => {
-      await owner.page.goto('/en/today');
+      await nav(owner.page, '/en/today');
       await expect(
         vis(owner.page, '[data-testid="expiring-row"]').filter({ hasText: 'Karim' }).first().getByTestId('expiring-renew'),
         'Expiring card gains the one-tap Renew',
-      ).toBeVisible({ timeout: 15_000 });
-    }, { timeout: 90_000 });
+      ).toBeVisible({ timeout: 20_000 });
+    }, { timeout: 120_000 });
     await untilConsistent(async () => {
-      await student.page.goto('/en/portal');
+      await nav(student.page, '/en/portal');
       await expect(
         vis(student.page, '[data-testid="portal-lifecycle-banner"]').first(),
         'portal shows the renew-at-the-desk banner',
-      ).toBeVisible({ timeout: 15_000 });
-    }, { timeout: 90_000 });
+      ).toBeVisible({ timeout: 20_000 });
+    }, { timeout: 120_000 });
 
     // ── Idempotency: the second tick issues NOTHING new ──
     const second = await runTick(owner.page);
@@ -117,20 +123,20 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     expect(second).toMatch(/0 suspended/);
 
     // ── Activation: pay the renewal → period extends by the plan duration ──
-    await owner.page.goto(karimUrl);
+    await nav(owner.page, karimUrl);
     await vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
       .filter({ hasText: '$55.50' }).first().locator('a').first().click();
-    await expect(owner.page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 20_000 });
+    await expect(owner.page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 30_000 });
     await vis(owner.page, '[data-testid="pay-submit"]').first().click(); // full balance prefilled
     // The payment commits async; re-read the member file until the period reflects
     // the +30d extension (replaces a fixed 1.5s wait that lost the race under load).
     await untilConsistent(async () => {
-      await owner.page.goto(karimUrl);
+      await nav(owner.page, karimUrl);
       await expect(
         vis(owner.page, '[data-testid="membership-period"]').filter({ hasText: addDays(30) }).first(),
         'payment extended the period by the plan duration (+30d)',
       ).toBeVisible({ timeout: 20_000 });
-    }, { timeout: 90_000 });
+    }, { timeout: 120_000 });
     expect(periodBefore).not.toContain(addDays(30));
 
     // ── Plan change (next cycle, no proration) → renew-now carries NEW price ──
@@ -140,18 +146,18 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     await owner.page.locator('[data-testid="ms-plan-chip"]').nth(1).click(); // the $130 plan
     await owner.page.getByTestId('ms-plan-submit').click();
     await expect(activeCard.getByTestId('membership-pending-plan'), 'pending next-cycle change recorded')
-      .toBeVisible({ timeout: 45_000 }); // multi-step write under full load
+      .toBeVisible({ timeout: 60_000 }); // multi-step write under full load
     await activeCard.getByTestId('ms-renew-now').click();
     // The renew-now write commits async; re-read until the NEW-price invoice shows.
     // The most-saturated read (after pay + plan-change + renew-now) → longest budget.
     await untilConsistent(async () => {
-      await owner.page.goto(karimUrl);
+      await nav(owner.page, karimUrl);
       await expect(
         vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
           .filter({ hasText: '$144.30' }).first(),
         'the next renewal carries the NEW plan price (130 × 1.11 TVA)',
       ).toBeVisible({ timeout: 20_000 });
-    }, { timeout: 120_000 });
+    }, { timeout: 180_000 });
   } finally {
     await owner.ctx.close();
     await student.ctx.close();
@@ -160,7 +166,7 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
 
 test('ML-1 · lapse → chase + check-in warning + reinstate; suspended seat frees → waitlist promotion; bounded freeze', async ({ browser }) => {
   // v2: post-tick reads also ride out full-suite render lag (15s→40s).
-  test.setTimeout(600_000);
+  test.setTimeout(720_000);
   const owner = await ctxFor(browser, 'owner');
   try {
     // ── Omar lapsed (the first tick in test 1 flipped him) ──
@@ -180,11 +186,11 @@ test('ML-1 · lapse → chase + check-in warning + reinstate; suspended seat fre
     ).toBeVisible({ timeout: 40_000 });
 
     // ── Chase list + check-in warning ──
-    await owner.page.goto('/en/today');
+    await nav(owner.page, '/en/today');
     const chaseRow = vis(owner.page, '[data-testid="chase-row"]').filter({ hasText: 'Omar' }).first();
     await expect(chaseRow, 'lapsed member lands on the chase list').toBeVisible({ timeout: 40_000 });
     await expect(chaseRow.getByTestId('chase-pay')).toBeVisible();
-    await owner.page.goto('/en/attendance');
+    await nav(owner.page, '/en/attendance');
     await expect(
       vis(owner.page, '[data-testid="checkin-warning"]').first(),
       'check-in shows the non-blocking lapsed warning',
