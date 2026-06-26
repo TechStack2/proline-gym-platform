@@ -400,9 +400,9 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
-      {/* Header */}
+      {/* Header — PORTAL/COACH-SHELL: echoes the mobile chrome large title → desktop-only. */}
       <div>
-        <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
+        <h2 data-testid="coach-page-title" className={cn('hidden md:block text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
           {msg('coach.attendance.title')}
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">{msg('coach.attendance.subtitle')}</p>

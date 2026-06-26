@@ -468,6 +468,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // COACH-SHELL: same responsive single-title fix on the coach shell (the
+      // PORTAL-SHELL follow-up) — one title per breakpoint, /ar clean. Opens its
+      // own coach contexts at two viewports; read-only.
+      name: 'coach-shell',
+      dependencies: ['setup'],
+      testMatch: /coach-shell\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // COACH-LP grandiose coach showcase on the landing + coach-edit→admin-publish:
       // coach (coach@) self-edits → PENDING draft → owner publishes in Coach-360 →
       // the coach appears on the anon landing; coming-soon treatment; RLS leak guard

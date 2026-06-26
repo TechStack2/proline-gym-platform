@@ -43,6 +43,7 @@ export function CoachLayoutClient({ children, locale }: Props) {
         title={headerTitle}
         locale={locale}
         variant="large"
+        titleMobileOnly
         role="coach"
         shell="coach"
         rightActions={

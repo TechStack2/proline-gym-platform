@@ -49,7 +49,8 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
 
   return (
     <div className="p-4 space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
-      <h1 className={cn('text-xl font-bold text-gray-900 flex items-center gap-2', isRTL && 'font-arabic')}>
+      {/* COACH-SHELL: echoes the mobile chrome large title → desktop-only (md:flex keeps the icon row). */}
+      <h1 data-testid="coach-page-title" className={cn('hidden md:flex text-xl font-bold text-gray-900 items-center gap-2', isRTL && 'font-arabic')}>
         <CalendarClock className="h-5 w-5 text-primary-600" />
         {tc('title')}
       </h1>

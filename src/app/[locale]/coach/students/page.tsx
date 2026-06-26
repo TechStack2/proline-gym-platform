@@ -231,9 +231,9 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
-      {/* Header */}
+      {/* Header — COACH-SHELL: echoes the mobile chrome large title → desktop-only. */}
       <div>
-        <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
+        <h2 data-testid="coach-page-title" className={cn('hidden md:block text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
           {msg('coach.students.title')}
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">{msg('coach.students.subtitle')}</p>
