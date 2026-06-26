@@ -2,14 +2,15 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, Clock, DollarSign, Loader2 } from 'lucide-react'
+import { Calendar, Clock, DollarSign, Loader2, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { dateLocale } from '@/lib/utils/locale-format'
 import { requestClassRegistration, cancelMyRegistration } from './actions'
 
 const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DAYS_AR = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
 
-type Reg = { id: string; status: string; waitlist_position: number | null }
+type Reg = { id: string; status: string; waitlist_position: number | null; end_date: string | null }
 type ClassItem = {
   id: string; name: string; coachName: string
   monthly_fee_usd: number | null; monthly_fee_lbp: number | null
@@ -21,6 +22,11 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
   const isRTL = locale === 'ar'
   const t = (en: string, ar: string) => (isRTL ? ar : en)
   const DAYS = isRTL ? DAYS_AR : DAYS_EN
+  // CYCLE-VIZ: recurring-monthly framing, computed from the registration's
+  // end_date (000034: end_date = start_date + 1 month). No backend change.
+  const monthlyWord = locale === 'ar' ? 'شهري' : locale === 'fr' ? 'Mensuel' : 'Monthly'
+  const renewsWord = locale === 'ar' ? 'يتجدد' : locale === 'fr' ? 'renouvelé le' : 'renews'
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -83,6 +89,13 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
                     </span>
                   ))}
                 </div>
+                {/* CYCLE-VIZ: the recurring monthly cycle — "Monthly · renews {date}"
+                    when registered (from end_date), "Monthly" in the catalog. */}
+                <span data-testid="class-cycle" data-renews={reg?.end_date ?? undefined}
+                  className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">
+                  <RefreshCw className="h-3 w-3" aria-hidden />
+                  {reg?.end_date ? `${monthlyWord} · ${renewsWord} ${fmtDate(reg.end_date)}` : monthlyWord}
+                </span>
               </div>
               <div className="text-right">
                 {c.monthly_fee_usd != null && (

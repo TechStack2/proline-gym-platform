@@ -666,3 +666,28 @@ No existing dashboard spec asserts an H1 by heading text, and all dashboard proj
 - **The title resolver was the hidden half of the job.** The prompt framed an "echo," but recon found the large title was *wrong* ("Today") on every non-primary page — so "the large title owns it" first required making the large title correct everywhere. That fix (segment→nav) is the durable win; the per-page H1 hide rides on it.
 - **Mobile is where it bit, desktop is where e2e runs.** The default Desktop-Chrome viewport hid the regression (H1 always `md:block`-visible) — exactly the dev/prod-style blind spot from HERO-FIX, one breakpoint over. The added mobile-viewport guard is the only check that actually exercises the echo removal + the resolver.
 - **Out-of-scope, noted:** the member/parent **portal** shell may have the same echo — a follow-up slice (the prompt scoped it out). The journey IA still calls /students the "Members" workspace while its content H1 reads "Students"; the mobile large title now uses the route name ("Students") for a clean single title — a naming reconciliation is a separate IA call.
+
+---
+
+## Cycle 6 / CYCLE-VIZ — recurring monthly cycle on class cards
+
+> **Branch:** `prompt-cycle-viz` (off `main` `5f9eae6`) · **Prompt:** [`cycle-5/prompt-CYCLE-VIZ.md`](./cycle-5/prompt-CYCLE-VIZ.md). **Frontend-only; NO migration/RLS.** **Benchmark gap (monetization legibility):** recurring-class registration is a **monthly** product ([[proline-monetization-model]]) but the card showed only a bare `$fee/mo` — members couldn't see it was a *recurring cycle* or *when it renews*.
+
+### Computed from existing fields (no schema)
+A registration's cycle is already in the data: `class_registrations.end_date` (000034 sets `end_date = start_date + 1 month` on approval), readable by the member under the existing `class_reg_member_select` RLS. Renewal = `end_date`. Only change to the query: **add `end_date`** to the portal registration select (no new column, no RLS).
+
+### Surfaces
+- **Portal class card** ([`portal-classes-client.tsx`](../../src/app/[locale]/portal/classes/portal-classes-client.tsx)): a recurring-cycle pill (RefreshCw icon, `bg-primary-50`) — **registered → "Monthly · renews {end_date}"** (localized date via `dateLocale`), **catalog (not registered) → "Monthly"**. **Null-safe:** no `end_date` → just "Monthly". `data-testid="class-cycle"`.
+- **Dashboard `/classes` catalog** ([`ClassesList.tsx`](../../src/app/[locale]/(dashboard)/classes/ClassesList.tsx)): a **"Monthly · $fee/mo"** pill so the recurring product framing is legible to staff (the card previously showed no fee at all).
+- **Localized** en/ar/fr (inline, matching each file's existing pattern); the date format follows the locale.
+
+### e2e — real assertions (not snapshots)
+[`class-registration.spec.ts`](../../e2e/class-registration.spec.ts) (drives request → approve → waitlist → auto-promote) now asserts: the **catalog** card shows the monthly cycle (`/Monthly/`) before registering, and once the member is **ACTIVE** the card shows the renewal (`/renews/`). The dashboard catalog pill renders on the owner's `/en/classes` create-class step + `ux1` (incl. `/ar` RTL).
+
+### ⟶ class cards show monthly cycle + renews date; /ar+/en; no backend change: **PASS**
+**CI:** targeted [run `28204470851`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28204470851) over `class-registration` (portal card cycle pill, catalog + active assertions) + `ux1` (dashboard `/classes` catalog, en + ar). `tsc --noEmit` clean; prod build clean. Frontend-only — no migration, no VF, no RLS.
+
+### DRAG READ
+- **Monetization legible at the point of decision:** a member browsing now reads "Monthly" (a recurring commitment, not a one-off), and a registered member sees exactly *when it renews* — closing the gap between the [[proline-monetization-model]] and what the UI communicated.
+- **Zero backend touch:** the renewal date was always in `end_date`; this is pure read-side rendering. The request→approve→bill flow and the cycle length are unchanged.
+- **Consistency across shells:** the same recurring framing now appears member-side (portal) and staff-side (catalog), so "this is a monthly product" reads the same to both audiences.
