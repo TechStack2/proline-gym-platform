@@ -715,3 +715,35 @@ A registration's cycle is already in the data: `class_registrations.end_date` (0
 - **The cheapest slices are the ones where the engine already exists.** Freeze was fully built + value-held; the entire deliverable was one server query + one card + one button reusing the existing action — zero backend risk, no RLS touched. The "monitored pause" the owner asked for was 90% already shipping, invisible.
 - **Isolation by construction beats ordering hacks.** Rather than freeze the seeded Karim (which `ml1` also freezes → the documented per-worker co-location landmine), the spec mints its own member+membership — fully self-sufficient, green in both the targeted slice and the future union gate without a dependency edge.
 - **ActionCard's derived testid is the one gotcha:** the card root is `card-<testid>` (and `card-empty-<testid>` when collapsed), not the raw `testid` — the rows/inner ids use the raw name. First run tripped on it; worth remembering for every future Today dock.
+
+---
+
+## Cycle 6 / ML1-RESILIENCE — pin the workers:2 renewal-pricing contention flake
+
+> **Branch:** `prompt-ml1-resilience` (off `main` `14c3a5e`) · Test-stability only — **no product change, no assertion weakened, no global timeout/retries raise.** `ml1:53` (the renewal-pricing multi-step) was a persistent **workers:2 contention** flake: it passes at low load but fails ~half the local-stack gates and exhausts `retries:2`. Same class as the e1 camps flake — the multi-step writes (tick→EXPIRING, the $55.50 renewal invoice, payment→period-extension, plan-change→$144.30) race the saturated single `next start` app server.
+
+### The e1-style fix — wait for consistency, never assert less
+Applied the documented [`untilConsistent`](../../e2e/helpers.ts) pattern ([ISO-DB §](#cycle-6--iso-db--isolated-local-supabase-stack-per-ci-run); e1 precedent) to [`ml1.spec.ts`](../../e2e/ml1.spec.ts):
+- **Resilient `openFile`** — re-search + click until the member file opens (matches e1), so the search/nav lag under load stops being a flake source.
+- **Capture the member-file URL once, then re-read it inside `untilConsistent`** until each post-write fact is visible: EXPIRING card + open-renewal + **$55.50** plan-price invoice (one loop); the Today expiring-row Renew; the portal banner; the **+30d** period extension; the **$144.30** new-plan-price renewal.
+- **Deleted the fixed `await waitForTimeout(1500)`** before the period read — the exact wait that lost the race under load — replaced by the `untilConsistent` re-read.
+- One multi-step write timeout bumped (pending-plan 15s→20s).
+- **Every `expect()` is byte-identical** (same selector, same matcher) — only wrapped in a re-read loop with a short inner timeout so retries cycle. Verified: all 9 original assertion messages still present; zero assertions removed/loosened.
+
+### Proof — `--repeat-each` is invalid for ml1 (single-shot state), so 3 contended runs instead
+The requested `--repeat-each=3` ([run `28233481327`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28233481327)) **failed 2/16 — but on STATE ACCUMULATION, not the timing flake.** ml1 is a single-shot stateful spec (its `fd1` dependency seeds "Karim ending-today / Omar lapsed" **once per gym**); `repeat0` of both tests passed, then `repeat2` failed because the prior iteration *renewed Karim / reinstated Omar* → no EXPIRING / no LAPSED card. With `fullyParallel:false` all repeats share one per-worker gym, so `--repeat-each` can never be green for ml1. **The fix is sound; the proof mechanism had to change.**
+
+The valid proof for a stateful spec = **separate runs on a fresh db-reset gym, each under real workers:2 contention** (an isolated ml1 run is too low-load to exercise the flake — it passes even unfixed). Ran ml1 alongside a load set (`pt1 pt2 g1 fd2`) so the other worker saturates the app server during ml1:
+
+| Proof run | ml1:tick→new-price | ml1:lapse→freeze | Result |
+|---|---|---|---|
+| 1 — [`28234541816`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28234541816) | ✓ 38.3s | ✓ 28.4s | **29 passed, 0 failed** |
+| 2 — [`28235856931`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28235856931) | ✓ 34.9s | ✓ 26.3s | **29 passed, 0 failed** |
+| 3 — [`28240907935`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28240907935) | ✓ 36.3s | ✓ 26.9s | **29 passed, 0 failed** |
+
+### ⟶ ml1 stable under workers:2 contention; e1-style waits; no assertion weakened: **PASS**
+**3 consecutive greens under contention** (each fresh gym), `tsc` clean. Auditor merges to restore the green gate.
+
+### DRAG READ
+- **"Run isolated first" surfaced the real shape again.** The `--repeat-each=3` red looked like the fix failing; the trace showed it was the seed being consumed on iteration 2 — a property of ml1, not of the fix. A single-shot stateful spec proves stability across **fresh-gym runs**, not in-gym repeats.
+- **The flake needs load to reproduce** (single `next start` bottleneck — the [ISO-DB ceiling](#cycle-6--iso-db--isolated-local-supabase-stack-per-ci-run)), so the proof had to be *contended* — isolated ml1 is a false green. The `untilConsistent` re-reads + the deleted fixed wait close the read-after-write window; the product is untouched.
