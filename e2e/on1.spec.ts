@@ -33,8 +33,19 @@ async function signIn(page: Page, login: string, password: string) {
 async function completeOnboarding(page: Page, newPassword: string) {
   await expect(page, 'forced to onboarding').toHaveURL(/\/onboarding/, { timeout: 20_000 })
   const w = (tid: string) => page.locator(`[data-testid="${tid}"]:visible`).first()
-  await w('ob-password').fill(newPassword)
-  await w('ob-password2').fill(newPassword)
+  // PWD-FOCUS guard: type the password ONE CHARACTER AT A TIME (pressSequentially,
+  // not fill). A regression where the password <Input> is rebuilt every render —
+  // losing focus after a single keystroke — would let only the first character
+  // land; assert the FULL value stuck in each field. fill() masks this (one atomic
+  // input event), which is why the original bug shipped green.
+  const pwField = w('ob-password')
+  await pwField.click()
+  await pwField.pressSequentially(newPassword, { delay: 25 })
+  await expect(pwField, 'new-password holds focus across keystrokes — full value lands').toHaveValue(newPassword)
+  const pw2Field = w('ob-password2')
+  await pw2Field.click()
+  await pw2Field.pressSequentially(newPassword, { delay: 25 })
+  await expect(pw2Field, 'confirm-password holds focus across keystrokes — full value lands').toHaveValue(newPassword)
   // Advance through all intermediate steps to the last (F3 added an OPTIONAL
   // waiver step for members with their own student → the wizard length varies;
   // members get it, coaches don't). Step-count-agnostic: click Next until Submit.
