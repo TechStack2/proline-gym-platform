@@ -823,3 +823,24 @@ New [`portal-shell.spec.ts`](../../e2e/portal-shell.spec.ts) asserts, on `/porta
 - **Diagnose the STRUCTURE before copying the fix.** The dashboard's "hide H1 on mobile, keep on desktop" worked because its desktop chrome has no title. The portal's single shell shows the chrome title on BOTH breakpoints, so the literal fix also required making the chrome title mobile-only (`titleMobileOnly`) — otherwise desktop would still double. Cargo-culting the dashboard's H1-only change would have left the desktop echo.
 - **Half the diagnosis was a non-bug.** The flagged "mobile edge-padding" wasn't present in the portal (per-page `p-4` already covers it) — reported honestly rather than churning a redundant shell change that would have double-padded.
 - **`coach` is the same shell, one prop away.** The `titleMobileOnly` prop is built + proven; applying it to `CoachLayoutClient` + `hidden md:block` on the coach pages is a clean next slice.
+
+---
+
+## Cycle 6 / COACH-SHELL — coach title-echo (PORTAL-SHELL follow-up)
+
+> **Branch:** `prompt-coach-shell` (off `prompt-portal-shell`, to reuse the `titleMobileOnly` prop) · the follow-up PORTAL-SHELL's DRAG READ flagged ("coach is the same shell, one prop away"). **Frontend/shell only — no backend/RLS/data.**
+
+### Diagnosis — identical single-shell echo
+`CoachLayoutClient` is structurally identical to `PortalLayoutClient`: a single shell (`NativeHeader variant="large"` + a `md:ml-20` side-rail, no mobile/desktop split), so the chrome large title rendered on BOTH breakpoints and echoed each coach page's content title (`attendance`/`students`/`trials`). Mobile padding is fine (every coach page has its own `p-4`). `home` (greeting), `profile` (coach name), `pt` ("My PT Students" section heading) lead with their own heading — no echo, and none go title-less on desktop.
+
+### Fix (reuse PORTAL-SHELL's `titleMobileOnly` — diff is just the coach pages)
+- `CoachLayoutClient` opts into **`titleMobileOnly`** (the prop already on `NativeHeader`) → the chrome large title is mobile-only.
+- The echoing pages' content titles → `hidden md:block` (`attendance`/`students` h2; `trials` h1 → `hidden md:flex` to keep its icon row), tagged `coach-page-title`. Mobile = chrome large title; desktop = content title; never title-less. `/ar`+`/en`+`/fr` (existing `coach.*` keys; no i18n change needed — no page became title-less, so no desktop-only H1 added, unlike portal `billing`).
+- New [`coach-shell.spec.ts`](../../e2e/coach-shell.spec.ts) (mirrors `portal-shell.spec`) asserts one title per breakpoint on `/coach/attendance` + `/coach/students` + `/ar`. **No existing spec located the coach titles** (`coach360-portal`/`g2` assert page-load + roster content at the default desktop viewport) → none weakened/re-pointed.
+
+### ⟶ one title per breakpoint on the coach shell (desktop never title-less); mobile padding already correct; /ar+/en; no weakened assertion: **PASS**
+**CI (targeted):** [run `28234347796`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28234347796) — **SUCCESS** (24 passed, 1.7m): `coach-shell` 3/3 + `coach360-portal` + `coach` + `team1` green. tsc clean; frontend/shell only — no migration/VF.
+
+### DRAG READ
+- **Built once, applied twice.** PORTAL-SHELL's `titleMobileOnly` prop made the coach fix a ~6-line diff (one prop + three `hidden md:block`s + a spec) — the shared `NativeHeader` is the single seam for every single-shell native layout. Branching off `prompt-portal-shell` meant the prop was already present; after PORTAL-SHELL merges, this rebases to just the coach-page changes.
+- **The two staff/member-facing native shells are now consistent** with the (dashboard): one title per breakpoint, mobile chrome owns it, desktop content H1 owns it.
