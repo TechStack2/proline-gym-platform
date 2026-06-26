@@ -742,7 +742,12 @@ The valid proof for a stateful spec = **separate runs on a fresh db-reset gym, e
 | 3 — [`28240907935`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28240907935) | ✓ 36.3s | ✓ 26.9s | **29 passed, 0 failed** |
 
 ### ⟶ ml1 stable under workers:2 contention; e1-style waits; no assertion weakened: **PASS**
-**3 consecutive greens under contention** (each fresh gym), `tsc` clean. Auditor merges to restore the green gate.
+**3 consecutive greens under contention** (each fresh gym), `tsc` clean.
+
+### v2 — the FULL gate exposed what the subset proof missed
+The v1 fix merged (`d256e55`) but the **full 54-project post-merge gate still hard-failed `ml1:57`** ([run `28253092777`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28253092777)): `untilConsistent` timed out at **40s** because the full gate's contention far exceeds the 5-project proof's load (+ a nav-context race). **v2** (`08fa5cc`) raised the `untilConsistent` timeouts (40s→90s) for the post-tick reads and sequenced the navigation before the boundingBox/asserts — still **zero assertions weakened**. **Proven on the FULL gate, not a subset:** 2 consecutive full-suite greens, ml1 2✓/0✘, 0 hard reds — [`28257711601`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28257711601) + [`28259483600`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28259483600) (137 passed each).
+
+### ⟶ ml1 stable under the FULL workers:2 gate; e1-style waits + raised timeouts; no assertion weakened: **PASS (v2)**
 
 ### DRAG READ
 - **"Run isolated first" surfaced the real shape again.** The `--repeat-each=3` red looked like the fix failing; the trace showed it was the seed being consumed on iteration 2 — a property of ml1, not of the fix. A single-shot stateful spec proves stability across **fresh-gym runs**, not in-gym repeats.
