@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, expectNotification } from './helpers';
+import { vis, expectNotification, untilConsistent } from './helpers';
 
 /**
  * ML-1 — membership lifecycle: auto-renew → dunning → lapse → reinstate +
@@ -28,9 +28,13 @@ async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
 }
 
 async function openFile(page: Page, name: string) {
-  await page.goto(`/en/students?search=${encodeURIComponent(name)}`);
-  await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click();
-  await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
+  // ISO-DB: under parallel-worker load the search results / click→nav can lag;
+  // re-search + click until the member file opens (idempotent read path).
+  await untilConsistent(async () => {
+    await page.goto(`/en/students?search=${encodeURIComponent(name)}`);
+    await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click();
+    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 5_000 });
+  });
 }
 
 async function runTick(page: Page) {
@@ -59,32 +63,47 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     await runTick(owner.page); // retry-tolerant: the issuance proof is the
     // invoice + the open-renewal card below, not the toast count
 
-    // Karim: the ending-today card shows the open renewal.
+    // Open Karim's file once (resilient) + capture its URL for cheap re-reads.
     await openFile(owner.page, 'Karim');
-    const expCard = vis(owner.page, '[data-testid="membership-card"][data-state="expiring"]').first();
-    await expect(expCard, 'ending-today membership reads EXPIRING').toBeVisible({ timeout: 15_000 });
-    await expect(expCard.getByTestId('membership-renewal-open'), 'renewal invoice open on the card').toBeVisible();
-    const periodBefore = (await expCard.getByTestId('membership-period').textContent())!.trim();
+    const karimUrl = owner.page.url();
 
-    // The renewal invoice carries the PLAN price ($50 + 11% TVA = $55.50).
-    await expect(
-      vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
-        .filter({ hasText: '$55.50' }).first(),
-      'renewal invoice at the plan price',
-    ).toBeVisible({ timeout: 15_000 });
+    // ISO-DB resilience: the tick commits async, so under parallel-worker load the
+    // EXPIRING card, the open-renewal, and the $55.50 plan-price invoice can each
+    // lag a one-shot read. Re-read the member file until ALL are consistent — every
+    // assertion is UNCHANGED, just retried (short inner timeout) until the writes
+    // are visible (no weakening; we wait for consistency, we don't assert less).
+    let periodBefore = '';
+    await untilConsistent(async () => {
+      await owner.page.goto(karimUrl);
+      const expCard = vis(owner.page, '[data-testid="membership-card"][data-state="expiring"]').first();
+      await expect(expCard, 'ending-today membership reads EXPIRING').toBeVisible({ timeout: 5_000 });
+      await expect(expCard.getByTestId('membership-renewal-open'), 'renewal invoice open on the card').toBeVisible({ timeout: 5_000 });
+      // The renewal invoice carries the PLAN price ($50 + 11% TVA = $55.50).
+      await expect(
+        vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
+          .filter({ hasText: '$55.50' }).first(),
+        'renewal invoice at the plan price',
+      ).toBeVisible({ timeout: 5_000 });
+      periodBefore = (await expCard.getByTestId('membership-period').textContent())!.trim();
+    });
 
-    // Member nudge + Today renew action + portal banner.
+    // Member nudge + Today renew action + portal banner (each re-read until the
+    // tick's effect is visible under load).
     await expectNotification(student.page, 'renewal_due');
-    await owner.page.goto('/en/today');
-    await expect(
-      vis(owner.page, '[data-testid="expiring-row"]').filter({ hasText: 'Karim' }).first().getByTestId('expiring-renew'),
-      'Expiring card gains the one-tap Renew',
-    ).toBeVisible({ timeout: 15_000 });
-    await student.page.goto('/en/portal');
-    await expect(
-      vis(student.page, '[data-testid="portal-lifecycle-banner"]').first(),
-      'portal shows the renew-at-the-desk banner',
-    ).toBeVisible({ timeout: 15_000 });
+    await untilConsistent(async () => {
+      await owner.page.goto('/en/today');
+      await expect(
+        vis(owner.page, '[data-testid="expiring-row"]').filter({ hasText: 'Karim' }).first().getByTestId('expiring-renew'),
+        'Expiring card gains the one-tap Renew',
+      ).toBeVisible({ timeout: 5_000 });
+    });
+    await untilConsistent(async () => {
+      await student.page.goto('/en/portal');
+      await expect(
+        vis(student.page, '[data-testid="portal-lifecycle-banner"]').first(),
+        'portal shows the renew-at-the-desk banner',
+      ).toBeVisible({ timeout: 5_000 });
+    });
 
     // ── Idempotency: the second tick issues NOTHING new ──
     const second = await runTick(owner.page);
@@ -93,17 +112,20 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     expect(second).toMatch(/0 suspended/);
 
     // ── Activation: pay the renewal → period extends by the plan duration ──
-    await openFile(owner.page, 'Karim');
+    await owner.page.goto(karimUrl);
     await vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
       .filter({ hasText: '$55.50' }).first().locator('a').first().click();
     await expect(owner.page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 15_000 });
     await vis(owner.page, '[data-testid="pay-submit"]').first().click(); // full balance prefilled
-    await owner.page.waitForTimeout(1500);
-    await openFile(owner.page, 'Karim');
-    await expect(
-      vis(owner.page, '[data-testid="membership-period"]').filter({ hasText: addDays(30) }).first(),
-      'payment extended the period by the plan duration (+30d)',
-    ).toBeVisible({ timeout: 15_000 });
+    // The payment commits async; re-read the member file until the period reflects
+    // the +30d extension (replaces a fixed 1.5s wait that lost the race under load).
+    await untilConsistent(async () => {
+      await owner.page.goto(karimUrl);
+      await expect(
+        vis(owner.page, '[data-testid="membership-period"]').filter({ hasText: addDays(30) }).first(),
+        'payment extended the period by the plan duration (+30d)',
+      ).toBeVisible({ timeout: 5_000 });
+    });
     expect(periodBefore).not.toContain(addDays(30));
 
     // ── Plan change (next cycle, no proration) → renew-now carries NEW price ──
@@ -113,13 +135,17 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     await owner.page.locator('[data-testid="ms-plan-chip"]').nth(1).click(); // the $130 plan
     await owner.page.getByTestId('ms-plan-submit').click();
     await expect(activeCard.getByTestId('membership-pending-plan'), 'pending next-cycle change recorded')
-      .toBeVisible({ timeout: 15_000 });
+      .toBeVisible({ timeout: 20_000 }); // multi-step write: a touch longer under load
     await activeCard.getByTestId('ms-renew-now').click();
-    await expect(
-      vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
-        .filter({ hasText: '$144.30' }).first(),
-      'the next renewal carries the NEW plan price (130 × 1.11 TVA)',
-    ).toBeVisible({ timeout: 20_000 });
+    // The renew-now write commits async; re-read until the NEW-price invoice shows.
+    await untilConsistent(async () => {
+      await owner.page.goto(karimUrl);
+      await expect(
+        vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
+          .filter({ hasText: '$144.30' }).first(),
+        'the next renewal carries the NEW plan price (130 × 1.11 TVA)',
+      ).toBeVisible({ timeout: 5_000 });
+    });
   } finally {
     await owner.ctx.close();
     await student.ctx.close();
