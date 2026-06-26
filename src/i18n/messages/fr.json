@@ -2326,6 +2326,7 @@
     "enrolledClasses": "Inscrits"
   },
   "portalBilling": {
+    "title": "Facturation",
     "household": "Factures du foyer",
     "outstanding": "Total dû",
     "payAtDesk": "Paiement à la réception : espèces (USD/LBP) · OMT · Whish",

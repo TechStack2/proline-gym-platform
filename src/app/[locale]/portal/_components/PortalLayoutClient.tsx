@@ -45,6 +45,7 @@ export function PortalLayoutClient({ children, locale }: Props) {
         locale={locale}
         shell="portal"
         variant="large"
+        titleMobileOnly
         rightActions={
           <div className="flex items-center gap-2">
             <HeaderAvatar />

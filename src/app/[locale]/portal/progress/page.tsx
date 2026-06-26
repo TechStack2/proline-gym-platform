@@ -80,7 +80,9 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
   return (
     <div className={cn('p-4 space-y-5', isRTL && 'rtl')} data-testid="portal-progress">
       <div className="pt-2">
-        <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+        {/* PORTAL-SHELL: title echoes the mobile chrome large title → desktop-only;
+            mobile leads with the subtitle (chrome owns the title). */}
+        <h1 data-testid="portal-page-title" className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 

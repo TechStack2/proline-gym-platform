@@ -14,6 +14,15 @@ export type NativeHeaderProps = {
   rightActions?: React.ReactNode;
   onBack?: () => void;
   variant?: 'large' | 'compact';
+  /**
+   * PORTAL-SHELL: in single-shell layouts (portal/coach) the NativeHeader renders
+   * on BOTH breakpoints, so its large title echoes the desktop content H1. Set
+   * this so the chrome title is MOBILE-ONLY (large + collapsed title `md:hidden`),
+   * letting the page's `hidden md:block` H1 own the desktop title — matching the
+   * (dashboard) shell (whose NativeHeader already lives in a `md:hidden` shell, so
+   * this is a no-op there). Default keeps the title at all breakpoints.
+   */
+  titleMobileOnly?: boolean;
 };
 
 // design-system.md "Per-shell accents": staff=brand red, coach=gold-on-black,
@@ -52,6 +61,7 @@ export function NativeHeader({
   rightActions,
   onBack,
   variant = 'large',
+  titleMobileOnly = false,
 }: NativeHeaderProps) {
   const tCommon = useTranslations('common');
   const isRTL = locale === 'ar';
@@ -124,7 +134,8 @@ export function NativeHeader({
               className={cn(
                 'text-lg font-semibold text-[#252525] truncate',
                 'transition-opacity duration-200',
-                isCollapsed ? 'opacity-100' : 'opacity-0'
+                isCollapsed ? 'opacity-100' : 'opacity-0',
+                titleMobileOnly && 'md:hidden'
               )}
             >
               {title}
@@ -165,10 +176,12 @@ export function NativeHeader({
       <div
         className={cn(
           'px-4 pb-3',
-          variant === 'large' ? 'block' : 'hidden'
+          variant === 'large' ? 'block' : 'hidden',
+          titleMobileOnly && 'md:hidden'
         )}
       >
         <h1
+          data-testid="native-large-title"
           className={cn(
             'text-3xl font-bold text-[#252525] leading-tight',
             'transition-all duration-200',
