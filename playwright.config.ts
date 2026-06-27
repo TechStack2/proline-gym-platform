@@ -345,6 +345,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DEMO-GUARDIAN: the 5th demo login (guardian@prolinegym.lb). Login-page
+      // entry (5 accounts, EN+AR) + a fresh sign-in proving the kid-switcher
+      // shows the linked hero (Karim). Read-only against the SHARED proline demo
+      // (its own anon→login contexts, no storageState).
+      name: 'demo-guardian',
+      dependencies: ['setup'],
+      testMatch: /demo-guardian\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // G1 WhatsApp channel: flips the gym's WhatsApp config to active and
       // records outbound rows; mutates gym config nothing later should read.
       name: 'g1',

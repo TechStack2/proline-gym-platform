@@ -16,25 +16,39 @@ const DEMO_ACCOUNTS = [
     email: 'owner@prolinegym.lb',
     label: 'Owner — Staff Dashboard',
     labelAr: 'المالك — لوحة التحكم',
+    labelFr: 'Propriétaire — Tableau de bord',
     role: 'owner',
   },
   {
     email: 'coach@prolinegym.lb',
     label: 'Coach — Mobile App',
     labelAr: 'مدرب — تطبيق الجوال',
+    labelFr: 'Coach — Application mobile',
     role: 'coach',
   },
   {
     email: 'reception@prolinegym.lb',
     label: 'Receptionist — Staff Dashboard',
     labelAr: 'استقبال — لوحة التحكم',
+    labelFr: 'Réception — Tableau de bord',
     role: 'receptionist',
   },
   {
     email: 'student@prolinegym.lb',
     label: 'Student — Member Portal',
     labelAr: 'طالب — بوابة الأعضاء',
+    labelFr: 'Étudiant — Portail membre',
     role: 'student',
+  },
+  {
+    // DEMO-GUARDIAN: the 5th account — a parent linked to the hero student
+    // (Karim) so the kid-switcher + household billing can be demoed. Seeded by
+    // migration 000066 (auth user + parent role + guardians + guardian_students).
+    email: 'guardian@prolinegym.lb',
+    label: 'Guardian — Parent Portal',
+    labelAr: 'ولي الأمر — بوابة الوالدين',
+    labelFr: 'Tuteur — Portail parent',
+    role: 'parent',
   },
 ];
 
@@ -234,6 +248,8 @@ export default function LoginPage({ params }: Props) {
               <button
                 key={acct.email}
                 type="button"
+                data-testid="demo-account"
+                data-email={acct.email}
                 onClick={() => fillDemoAccount(acct.email)}
                 className={cn(
                   'flex items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-all',
@@ -243,7 +259,7 @@ export default function LoginPage({ params }: Props) {
                 )}
               >
                 <span className="font-medium">
-                  {isRTL ? acct.labelAr : acct.label}
+                  {locale === 'ar' ? acct.labelAr : locale === 'fr' ? acct.labelFr : acct.label}
                 </span>
                 <span className={cn(
                   'text-[10px] px-1.5 py-0.5 rounded font-mono',
