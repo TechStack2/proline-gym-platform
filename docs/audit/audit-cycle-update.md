@@ -765,3 +765,34 @@ The v1 fix merged (`d256e55`) but the **full 54-project post-merge gate still ha
 5. **P0/P1 one-offs** — `action-card.tsx:38-42 vs 57-59` duplicate empty-state render; `Sidebar.tsx:91` hardcoded "PRO LINE Gym" brand (should be gym-from-context, white-label-relevant).
 
 ### ⟶ UI-AUDIT delivered; slices queued post-chain; Arabic-first themes (I18N-AR + RTL-LOGICAL) recommended first: **PASS**
+
+---
+
+## Cycle 6 / DEMO-GUARDIAN — guardian demo login (5th account)
+
+**Owner-reported.** The demo login page offered only **4** quick-logins (owner/coach/reception/student). The guardian feature is fully built — `guardians` + `guardian_students`, the kid-switcher, household billing, `is_guardian_of` RLS — but had **no demo account**, so the parent journey couldn't be demoed. Add a 5th.
+
+### Build
+1. **Login page — 5th account.** [`login/page.tsx`](../../src/app/[locale]/auth/login/page.tsx): added `guardian@prolinegym.lb` — **EN** "Guardian — Parent Portal" / **AR** "ولي الأمر — بوابة الوالدين" / **FR** "Tuteur — Portail parent" (`role: 'parent'`). The button render now resolves the **FR** label on `/fr` too (all 5 accounts gained `labelFr`; `/fr` previously fell back to the English label — a real i18n gap, fixed in passing so the new FR label actually renders). Each demo button carries `data-testid="demo-account"` + `data-email` for a stable e2e selector.
+2. **New additive migration — [`000066_demo_guardian_seed.sql`](../../supabase/migrations/000066_demo_guardian_seed.sql)** (forward-only, idempotent, **did NOT touch 000008**):
+   - creates the `guardian@prolinegym.lb` auth user **idempotently** (same bcrypt / `app.demo_password` pattern as the 4 logins in 000008; `raw_user_meta_data.gym_id` set so `handle_new_user` files the auto-created profile under proline);
+   - upserts the profile (demo identity **Samer Mourad** — the hero's surname, a believable parent), `user_roles('parent')`, a `guardians` row (guarded — no UNIQUE on `profile_id`), and a `guardian_students` link to the **hero student Karim** (profile = the `student@` login; Karim exists from-zero via 000017, reused as member #1 by the reseed).
+3. **Reseed parity.** Same migration **`CREATE OR REPLACE`s `reseed_proline_demo()`** with the **full current 000060 body** + a re-link block before the coach-showcase. The WIPE drops `guardian_students` but **preserves** the guardian profile + `guardians` row (the profiles-delete already excludes `guardians.profile_id`); the block re-creates the `guardians` row defensively and re-links it to the new `v_students[1]` (Karim) so the demo guardian survives every reseed. A `demo_guardian_linked` readiness flag was added to the return so the auditor can confirm post-reseed. **`diff` 000060→000066 = ONLY the two DECLARE vars + the re-link block + the readiness key** (no other line changed → no later amendment reverted; see [[function-rewrite-reverts-later-migrations]]).
+4. **No RLS change** — `is_guardian_of` / `students_guardian` already exist (000037/000038); this only seeds data.
+
+### Why the link works both with and without a reseed
+- **No-reseed path** (CI `supabase db reset` only): 000017 creates Karim's student row → 000066 links `guardian@` to it. Link valid.
+- **Reseed path**: the WIPE deletes Karim's old student row (CASCADE-drops the 000066 link) and recreates Karim as member #1 → the reseed-parity block re-links to the **new** student id. Link valid.
+
+### Guard — new `demo-guardian` e2e project ([`demo-guardian.spec.ts`](../../e2e/demo-guardian.spec.ts))
+Targets the **shared proline demo** (read-only → safe under workers:2). Two tests:
+1. **Login page** (`/en` + `/ar`, no auth): exactly **5** `demo-account` buttons; the Guardian one is present with its EN label and (on `/ar`) the Arabic label; clicking it fills `guardian@prolinegym.lb` + the UI demo password.
+2. **End-to-end**: sign in as `guardian@prolinegym.lb` (password = `process.env.DEMO_PASSWORD || 'DemoPass!23'`, the 000008 from-zero default) → `/portal` redirects to `?kid=<Karim>` (pure guardian, no own membership) → the **kid-switcher** renders with exactly **one** kid chip = **Karim**, `kid-name`=Karim, `kid-dashboard` visible; repeated on `/ar` (Karim's Arabic name كريم). *(The "Me" chip only appears when the guardian is also a member — a pure guardian sees just the linked kid, so the verify's "Me + Karim" resolves to the Karim chip.)*
+
+### ⟶ guardian demo login → kid-switcher for the hero student; additive/replay-clean; reseed re-links; /ar+/en: **PASS (pending run 28274183424)**
+`tsc` clean. Targeted run [`28274183424`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28274183424) (`-f projects="demo-guardian"`; the run's from-zero `supabase db reset` also proves the migration replays clean in the chain). **The auditor must VF-apply 000066 to cloud** (Verify-Foundation, expect HTTP 201) so the live demo gets the guardian login — DO NOT self-apply. **DO NOT merge — auditor merges.**
+
+### DRAG READ
+- **A feature with no demo path is invisible.** The guardian stack (RLS, switcher, household billing) shipped cycles ago but went undemoed for want of one seeded login — capability ≠ demonstrability. Every role the product supports needs a one-click demo login, or it reads as missing.
+- **`CREATE OR REPLACE` on a big function is a revert risk; diff it.** The only safe way to amend a 480-line definer is to copy the *current* live body and inject — then `diff` the old vs new function to prove the change set is exactly the intended lines. Re-deriving from an older body silently rolls back later fixes ([[function-rewrite-reverts-later-migrations]]).
+- **Two seed paths, one invariant.** The link had to hold whether CI only resets or also reseeds (which recreates Karim with a fresh id). Designing the migration *and* the reseed block to converge on the same end-state (guardian→Karim linked) is what makes the demo deterministic.
