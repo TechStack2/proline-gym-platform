@@ -752,3 +752,16 @@ The v1 fix merged (`d256e55`) but the **full 54-project post-merge gate still ha
 ### DRAG READ
 - **"Run isolated first" surfaced the real shape again.** The `--repeat-each=3` red looked like the fix failing; the trace showed it was the seed being consumed on iteration 2 — a property of ml1, not of the fix. A single-shot stateful spec proves stability across **fresh-gym runs**, not in-gym repeats.
 - **The flake needs load to reproduce** (single `next start` bottleneck — the [ISO-DB ceiling](#cycle-6--iso-db--isolated-local-supabase-stack-per-ci-run)), so the proof had to be *contended* — isolated ml1 is a false green. The `untilConsistent` re-reads + the deleted fixed wait close the read-after-write window; the product is untouched.
+
+## Cycle 6 / UI-AUDIT — remaining UI/UX polish catalogue (post-chain workstream)
+
+> Read-only auditor sweep of every shell (dashboard/portal/coach/landing/auth), EXCLUDING the shipped/in-flight Cycle-6 items. Output → systemic slices, queued AFTER the held chain (ml1-v3 → PORTAL/COACH → PWD-FOCUS → DEMO-GUARDIAN → INVITE-PHONE-UX). Detailed file:line findings captured in the auditing session.
+
+### 5 systemic themes → proposed slices (priority: Arabic-first first)
+1. **I18N-AR (HIGH — Arabic-first)** — hardcoded English UI text leaks into `/ar`: day-name arrays + status filters (`ClassesList.tsx:35,162-164`), role/status labels, button strings (`invoices-view.tsx:94`). → move to i18n keys. ~12 locations.
+2. **RTL-LOGICAL (HIGH — Arabic-first)** — conditional `mr-/ml-/left-/right-` + manual icon rotation instead of CSS logical props (`start`/`end`, `gap-`): `offline-desk.tsx:332` search icon, `TodayHorizon.tsx:241` badge, `invoices-view.tsx:136-173` `<th> text-left`, `PortalLayoutClient.tsx:62`. → logical-property sweep. ~25 instances.
+3. **STATES (MEDIUM — UX)** — missing/weak empty/error/overdue states: leads overdue follow-up has no indicator (`leads-client.tsx:86-104`); students error = plain red text (`students/page.tsx:172`); portal scan-bar status no icon (`portal/page.tsx:239-257`). → shared empty/error pattern + overdue highlight.
+4. **DESIGN-TOKENS (MEDIUM — consistency/DRY)** — hardcoded colors (`#cd1419` etc.) instead of primary tokens (15+ files: portal kid-switcher `page.tsx:225-236`, `TodayHorizon:241`, `payments-view:75`); + DRY the duplicated `statusColors/Labels/Icons` maps (billing/portal/invoices/payments) → a shared `status-ui` module.
+5. **P0/P1 one-offs** — `action-card.tsx:38-42 vs 57-59` duplicate empty-state render; `Sidebar.tsx:91` hardcoded "PRO LINE Gym" brand (should be gym-from-context, white-label-relevant).
+
+### ⟶ UI-AUDIT delivered; slices queued post-chain; Arabic-first themes (I18N-AR + RTL-LOGICAL) recommended first: **PASS**
