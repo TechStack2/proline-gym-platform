@@ -1,5 +1,4 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
 import { ROLES } from './roles';
 import { vis, expectNotification, untilConsistent, gymSlug } from './helpers';
 
@@ -66,9 +65,15 @@ test.beforeEach(async ({}, testInfo) => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return; // local dev without the service key → no-op
-  const admin = createClient(url, key, { auth: { persistSession: false } });
-  const { error } = await admin.rpc('reset_ml1_e2e', { p_slug: gymSlug() });
-  if (error) throw new Error(`reset_ml1_e2e(${gymSlug()}) failed: ${error.message}`);
+  // Plain POST to the PostgREST RPC (the service key authenticates as service_role).
+  // NOT @supabase/supabase-js — its createClient inits a Realtime/WebSocket client
+  // that throws on the CI's Node 20 ("no native WebSocket"). A direct fetch avoids it.
+  const res = await fetch(`${url}/rest/v1/rpc/reset_ml1_e2e`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_slug: gymSlug() }),
+  });
+  if (!res.ok) throw new Error(`reset_ml1_e2e(${gymSlug()}) failed: ${res.status} ${await res.text()}`);
 });
 
 test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; payment extends; plan change carries new price', async ({ browser }) => {
