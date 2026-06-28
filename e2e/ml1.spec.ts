@@ -33,8 +33,8 @@ async function openFile(page: Page, name: string) {
   await untilConsistent(async () => {
     await page.goto(`/en/students?search=${encodeURIComponent(name)}`);
     await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click();
-    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 8_000 });
-  }, { timeout: 45_000 });
+    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 10_000 });
+  }, { timeout: 60_000 });
 }
 
 async function runTick(page: Page) {
@@ -42,7 +42,7 @@ async function runTick(page: Page) {
   await vis(page, '[data-testid="process-renewals-now"]').first().click();
   const toast = page.locator('[data-testid="app-toast"]').filter({ hasText: /issued/i }).first();
   try {
-    await expect(toast).toBeVisible({ timeout: 30_000 });
+    await expect(toast).toBeVisible({ timeout: 45_000 });
   } catch (e) {
     // DIAGNOSTIC: surface whatever toast DID appear (e.g. an error toast) so a
     // targeted run reveals why the tick produced no "issued" summary.
@@ -84,9 +84,11 @@ test.beforeEach(async ({}, testInfo) => {
 });
 
 test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; payment extends; plan change carries new price', async ({ browser }) => {
-  // v3: budgets dialed back DOWN — the beforeEach reseed lets retries:2 recover any
-  // single-attempt saturation flake, so each attempt stays short (no 3-min dead waits).
-  test.setTimeout(300_000);
+  // v3: the beforeEach reseed makes retries:2 RECOVER any single-attempt flake (clean
+  // state each attempt). Budgets ride out TYPICAL full-gate saturation in one attempt
+  // — esp. the most-saturated $144.30 read (after pay+plan-change+renew-now), the one
+  // read that consistently needs >50s under load; the reset covers the rare miss.
+  test.setTimeout(480_000);
   const owner = await ctxFor(browser, 'owner');
   const student = await ctxFor(browser, 'student'); // Karim
   try {
@@ -107,18 +109,18 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     await untilConsistent(async () => {
       await owner.page.goto(karimUrl);
       const expCard = vis(owner.page, '[data-testid="membership-card"][data-state="expiring"]').first();
-      await expect(expCard, 'ending-today membership reads EXPIRING').toBeVisible({ timeout: 12_000 });
-      await expect(expCard.getByTestId('membership-renewal-open'), 'renewal invoice open on the card').toBeVisible({ timeout: 12_000 });
+      await expect(expCard, 'ending-today membership reads EXPIRING').toBeVisible({ timeout: 15_000 });
+      await expect(expCard.getByTestId('membership-renewal-open'), 'renewal invoice open on the card').toBeVisible({ timeout: 15_000 });
       // The renewal invoice carries the PLAN price ($50 + 11% TVA = $55.50).
       await expect(
         vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
           .filter({ hasText: '$55.50' }).first(),
         'renewal invoice at the plan price',
-      ).toBeVisible({ timeout: 12_000 });
+      ).toBeVisible({ timeout: 15_000 });
       // (b) the period text is read only AFTER the card is asserted visible above,
       // and the whole block re-runs on a transient "context destroyed" nav race.
       periodBefore = (await expCard.getByTestId('membership-period').textContent())!.trim();
-    }, { timeout: 50_000 });
+    }, { timeout: 75_000 });
 
     // Member nudge + Today renew action + portal banner (each re-read until the
     // tick's effect is visible under load).
@@ -157,8 +159,8 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
       await expect(
         vis(owner.page, '[data-testid="membership-period"]').filter({ hasText: addDays(30) }).first(),
         'payment extended the period by the plan duration (+30d)',
-      ).toBeVisible({ timeout: 12_000 });
-    }, { timeout: 50_000 });
+      ).toBeVisible({ timeout: 15_000 });
+    }, { timeout: 75_000 });
     expect(periodBefore).not.toContain(addDays(30));
 
     // ── Plan change (next cycle, no proration) → renew-now carries NEW price ──
@@ -168,7 +170,7 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     await owner.page.locator('[data-testid="ms-plan-chip"]').nth(1).click(); // the $130 plan
     await owner.page.getByTestId('ms-plan-submit').click();
     await expect(activeCard.getByTestId('membership-pending-plan'), 'pending next-cycle change recorded')
-      .toBeVisible({ timeout: 30_000 });
+      .toBeVisible({ timeout: 45_000 });
     await activeCard.getByTestId('ms-renew-now').click();
     // The renew-now write commits async; re-read until the NEW-price invoice shows.
     await untilConsistent(async () => {
@@ -177,8 +179,8 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
         vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
           .filter({ hasText: '$144.30' }).first(),
         'the next renewal carries the NEW plan price (130 × 1.11 TVA)',
-      ).toBeVisible({ timeout: 12_000 });
-    }, { timeout: 50_000 });
+      ).toBeVisible({ timeout: 20_000 });
+    }, { timeout: 120_000 }); // the most-saturated read (3 writes deep) — the one that flaked at 50s
   } finally {
     await owner.ctx.close();
     await student.ctx.close();
