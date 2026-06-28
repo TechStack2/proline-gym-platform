@@ -65,17 +65,15 @@ BEGIN
     DELETE FROM class_registrations WHERE class_id = v_cls;
   END IF;
 
-  -- ── Re-seed (forceful, NOT idempotent-skip) — exactly 000040 + 000048 ──
-  -- Karim: membership ENDING TODAY (the clean renewal/idempotency fixture) + the
-  -- FD-1 open invoice DUE TODAY (canonical issuance, for seed fidelity).
+  -- ── Re-seed (forceful, NOT idempotent-skip) — the membership rows from 000040 + 000048 ──
+  -- Karim: membership ENDING TODAY (the clean renewal/idempotency fixture). The
+  -- FD-1 due-today $45 invoice is intentionally NOT re-issued: ml1 never asserts it,
+  -- and re-calling _system_issue_invoice after deleting the seed invoices collides
+  -- on the gym's invoice-number sequence (23505 duplicate_invoice_number). The
+  -- ending-today membership is all the lifecycle tick needs to issue the renewal.
   IF v_karim IS NOT NULL AND v_plan IS NOT NULL THEN
     INSERT INTO student_memberships (student_id, plan_id, start_date, end_date, status)
     VALUES (v_karim, v_plan, CURRENT_DATE - 30, CURRENT_DATE, 'active');
-    PERFORM _system_issue_invoice(
-      v_gym, v_karim, 'membership'::invoice_type_enum,
-      45, 0, NULL, NULL, NULL, CURRENT_DATE,
-      'FD-1 seed — due today', 'بذرة FD-1 — تستحق اليوم', 'Seed FD-1 — échéance aujourd''hui',
-      NULL);
   END IF;
 
   -- Omar: membership ENDED -15d, still active → the tick's lapse fixture.
