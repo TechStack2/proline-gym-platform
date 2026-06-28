@@ -41,7 +41,14 @@ async function runTick(page: Page) {
   await page.goto('/en/money');
   await vis(page, '[data-testid="process-renewals-now"]').first().click();
   const toast = page.locator('[data-testid="app-toast"]').filter({ hasText: /issued/i }).first();
-  await expect(toast).toBeVisible({ timeout: 30_000 });
+  try {
+    await expect(toast).toBeVisible({ timeout: 30_000 });
+  } catch (e) {
+    // DIAGNOSTIC: surface whatever toast DID appear (e.g. an error toast) so a
+    // targeted run reveals why the tick produced no "issued" summary.
+    const seen = await page.locator('[data-testid="app-toast"]').allTextContents().catch(() => []);
+    throw new Error(`runTick: no "issued" toast within 30s. Toasts seen: ${JSON.stringify(seen)}`);
+  }
   return (await toast.textContent()) ?? '';
 }
 
