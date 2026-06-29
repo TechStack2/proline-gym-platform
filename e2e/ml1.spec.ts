@@ -61,7 +61,7 @@ const addDays = (days: number) => {
   return base.toLocaleDateString('en-US', { timeZone: 'UTC' });
 };
 
-// Retry-safety (000066): restore the three ML-1 actors to their SEED state before
+// Retry-safety (000067): restore the three ML-1 actors to their SEED state before
 // EACH attempt of the flaky tick test, via the SERVICE ROLE (a direct DB write
 // that bypasses the saturated app server, so it's fast under full-gate load). The
 // test is single-shot stateful — attempt 1 renews Karim — so without this reset

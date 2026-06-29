@@ -1,5 +1,5 @@
 -- ============================================================
--- 000066: ML-1 RETRY-SAFE RESEED — e2e-only, service-role (test stability)
+-- 000067: ML-1 RETRY-SAFE RESEED — e2e-only, service-role (test stability)
 -- PRO LINE Gym Platform
 --
 -- WHY. ml1.spec's first test is SINGLE-SHOT STATEFUL: it consumes Karim's
