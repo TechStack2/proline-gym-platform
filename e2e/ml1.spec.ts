@@ -167,7 +167,11 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     const activeCard = vis(owner.page, '[data-testid="membership-card"]')
       .filter({ has: owner.page.locator(`[data-testid="membership-period"]:has-text("${addDays(30)}")`) }).first();
     await activeCard.getByTestId('ms-change-plan-open').click();
-    await owner.page.locator('[data-testid="ms-plan-chip"]').nth(1).click(); // the $130 plan
+    // Pick the $130 Quarterly plan BY PRICE, not by position. Other specs sharing this
+    // worker-gym add plans (e.g. ux2 creates a $70 tier), and the chips are price-ordered,
+    // so a positional nth(1) can land on the wrong plan → renews at $77.70 instead of the
+    // asserted $144.30. Selecting by the chip's own price text is order-independent.
+    await owner.page.locator('[data-testid="ms-plan-chip"]').filter({ hasText: '$130' }).first().click();
     await owner.page.getByTestId('ms-plan-submit').click();
     await expect(activeCard.getByTestId('membership-pending-plan'), 'pending next-cycle change recorded')
       .toBeVisible({ timeout: 45_000 });
