@@ -10,7 +10,7 @@ const https = require('https');
 
 // === CONFIGURATION ===
 const SUPABASE_URL = 'https://ufpuebfkcpohwubrutff.supabase.co';
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmcHVlYmZrY3BvaHd1YnJ1dGZmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDczODgzMSwiZXhwIjoyMDk2MzE0ODMxfQ.FsHn89d8A_RQs1NH3CXh5vuN7pjutITKuMpny499IUk';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // SECURITY: read from env, never hardcode (rotated 2026-06-29)
 const GYM_ID = 'b737047f-e1dc-4c23-a11f-9eb9187d242a';
 
 const TEST_PASSWORD = 'ProlineTest2024!';
