@@ -20,6 +20,40 @@ import { signWaiver } from '@/lib/waivers/actions'
 import { CalendarDays, CreditCard, Dumbbell, ClipboardList } from 'lucide-react'
 import { completeOnboarding } from './actions'
 
+// PWD-FOCUS: these MUST be module-level (stable component types). When they lived
+// inside OnboardingClient's render body, every keystroke → setPw → re-render →
+// a NEW `Field`/step function reference → React saw a different component TYPE at
+// the same position → it remounted the subtree (incl. the password <Input>) → the
+// field lost focus after one character. Hoisting them keeps the type stable, so
+// React reconciles (updates) the existing inputs and focus is preserved.
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+    {children}
+  </div>
+)
+
+function PasswordStep({
+  pw, pw2, setPw, setPw2,
+}: {
+  pw: string; pw2: string; setPw: (v: string) => void; setPw2: (v: string) => void
+}) {
+  const t = useTranslations('onboarding')
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-500">{t('passwordHint')}</p>
+      <Field label={t('newPassword')}>
+        <Input type="password" data-testid="ob-password" value={pw} onChange={(e) => setPw(e.target.value)} dir="ltr" autoComplete="new-password" />
+      </Field>
+      <Field label={t('confirmPassword')}>
+        <Input type="password" data-testid="ob-password2" value={pw2} onChange={(e) => setPw2(e.target.value)} dir="ltr" autoComplete="new-password" />
+      </Field>
+      {pw.length > 0 && pw.length < 8 && <p className="text-xs text-amber-600">{t('passwordTooShort')}</p>}
+      {pw2.length > 0 && pw !== pw2 && <p className="text-xs text-red-600">{t('passwordMismatch')}</p>}
+    </div>
+  )
+}
+
 export function OnboardingClient({
   locale, role, userId, gymId, firstName, avatarUrl, waiver,
 }: {
@@ -74,31 +108,14 @@ export function OnboardingClient({
       ? [{ icon: CalendarDays, key: 'memberSchedule' }, { icon: Dumbbell, key: 'memberPt' }, { icon: CreditCard, key: 'memberBilling' }]
       : [{ icon: CalendarDays, key: 'staffToday' }, { icon: ClipboardList, key: 'staffInbox' }, { icon: CreditCard, key: 'staffMoney' }]
 
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
-      {children}
-    </div>
-  )
-
   const steps = [
     {
       key: 'password',
       title: t('stepPassword'),
       valid: pw.length >= 8 && pw === pw2,
-      content: (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-500">{t('passwordHint')}</p>
-          <F label={t('newPassword')}>
-            <Input type="password" data-testid="ob-password" value={pw} onChange={(e) => setPw(e.target.value)} dir="ltr" autoComplete="new-password" />
-          </F>
-          <F label={t('confirmPassword')}>
-            <Input type="password" data-testid="ob-password2" value={pw2} onChange={(e) => setPw2(e.target.value)} dir="ltr" autoComplete="new-password" />
-          </F>
-          {pw.length > 0 && pw.length < 8 && <p className="text-xs text-amber-600">{t('passwordTooShort')}</p>}
-          {pw2.length > 0 && pw !== pw2 && <p className="text-xs text-red-600">{t('passwordMismatch')}</p>}
-        </div>
-      ),
+      // PWD-FOCUS: render via the module-level <PasswordStep> (stable type) so the
+      // password inputs are reconciled, not remounted, on each keystroke.
+      content: <PasswordStep pw={pw} pw2={pw2} setPw={setPw} setPw2={setPw2} />,
     },
     {
       key: 'language',
