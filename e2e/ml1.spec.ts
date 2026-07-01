@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, expectNotification, untilConsistent } from './helpers';
+import { vis, expectNotification, untilConsistent, gymSlug } from './helpers';
 
 /**
  * ML-1 — membership lifecycle: auto-renew → dunning → lapse → reinstate +
@@ -28,8 +28,8 @@ async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
 }
 
 async function openFile(page: Page, name: string) {
-  // ISO-DB v2: under FULL-suite load the search results / click→nav can lag well
-  // past 40s; re-search + click until the member file opens (idempotent read path).
+  // v3: modest budget — the per-attempt reseed makes retries:2 recover, so reads
+  // fail FAST and a clean retry carries the tail (no multi-minute dead attempts).
   await untilConsistent(async () => {
     await page.goto(`/en/students?search=${encodeURIComponent(name)}`);
     await vis(page, '[data-testid="student-card"]').filter({ hasText: name }).first().click();
@@ -41,8 +41,14 @@ async function runTick(page: Page) {
   await page.goto('/en/money');
   await vis(page, '[data-testid="process-renewals-now"]').first().click();
   const toast = page.locator('[data-testid="app-toast"]').filter({ hasText: /issued/i }).first();
-  // The renewal sweep runs server-side; under full load it + the toast lag.
-  await expect(toast).toBeVisible({ timeout: 40_000 });
+  try {
+    await expect(toast).toBeVisible({ timeout: 45_000 });
+  } catch (e) {
+    // DIAGNOSTIC: surface whatever toast DID appear (e.g. an error toast) so a
+    // targeted run reveals why the tick produced no "issued" summary.
+    const seen = await page.locator('[data-testid="app-toast"]').allTextContents().catch(() => []);
+    throw new Error(`runTick: no "issued" toast within 30s. Toasts seen: ${JSON.stringify(seen)}`);
+  }
   return (await toast.textContent()) ?? '';
 }
 
@@ -55,10 +61,34 @@ const addDays = (days: number) => {
   return base.toLocaleDateString('en-US', { timeZone: 'UTC' });
 };
 
+// Retry-safety (000067): restore the three ML-1 actors to their SEED state before
+// EACH attempt of the flaky tick test, via the SERVICE ROLE (a direct DB write
+// that bypasses the saturated app server, so it's fast under full-gate load). The
+// test is single-shot stateful — attempt 1 renews Karim — so without this reset
+// `retries:2` cannot recover a single-attempt saturation flake. Test 2 deliberately
+// runs on test 1's POST-tick state (Omar already lapsed), so it is NOT reset.
+test.beforeEach(async ({}, testInfo) => {
+  if (!testInfo.title.includes('tick issues')) return;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return; // local dev without the service key → no-op
+  // Plain POST to the PostgREST RPC (the service key authenticates as service_role).
+  // NOT @supabase/supabase-js — its createClient inits a Realtime/WebSocket client
+  // that throws on the CI's Node 20 ("no native WebSocket"). A direct fetch avoids it.
+  const res = await fetch(`${url}/rest/v1/rpc/reset_ml1_e2e`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_slug: gymSlug() }),
+  });
+  if (!res.ok) throw new Error(`reset_ml1_e2e(${gymSlug()}) failed: ${res.status} ${await res.text()}`);
+});
+
 test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; payment extends; plan change carries new price', async ({ browser }) => {
-  // v2: full-suite saturation pushes the post-tick renders past 40s, so the
-  // untilConsistent waits below run to 90–120s; raise the test ceiling to match.
-  test.setTimeout(720_000);
+  // v3: the beforeEach reseed makes retries:2 RECOVER any single-attempt flake (clean
+  // state each attempt). Budgets ride out TYPICAL full-gate saturation in one attempt
+  // — esp. the most-saturated $144.30 read (after pay+plan-change+renew-now), the one
+  // read that consistently needs >50s under load; the reset covers the rare miss.
+  test.setTimeout(480_000);
   const owner = await ctxFor(browser, 'owner');
   const student = await ctxFor(browser, 'student'); // Karim
   try {
@@ -79,36 +109,36 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     await untilConsistent(async () => {
       await owner.page.goto(karimUrl);
       const expCard = vis(owner.page, '[data-testid="membership-card"][data-state="expiring"]').first();
-      await expect(expCard, 'ending-today membership reads EXPIRING').toBeVisible({ timeout: 20_000 });
-      await expect(expCard.getByTestId('membership-renewal-open'), 'renewal invoice open on the card').toBeVisible({ timeout: 20_000 });
+      await expect(expCard, 'ending-today membership reads EXPIRING').toBeVisible({ timeout: 15_000 });
+      await expect(expCard.getByTestId('membership-renewal-open'), 'renewal invoice open on the card').toBeVisible({ timeout: 15_000 });
       // The renewal invoice carries the PLAN price ($50 + 11% TVA = $55.50).
       await expect(
         vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
           .filter({ hasText: '$55.50' }).first(),
         'renewal invoice at the plan price',
-      ).toBeVisible({ timeout: 20_000 });
+      ).toBeVisible({ timeout: 15_000 });
       // (b) the period text is read only AFTER the card is asserted visible above,
       // and the whole block re-runs on a transient "context destroyed" nav race.
       periodBefore = (await expCard.getByTestId('membership-period').textContent())!.trim();
-    }, { timeout: 90_000 });
+    }, { timeout: 75_000 });
 
     // Member nudge + Today renew action + portal banner (each re-read until the
     // tick's effect is visible under load).
-    await expectNotification(student.page, 'renewal_due', { timeout: 40_000 });
+    await expectNotification(student.page, 'renewal_due', { timeout: 30_000 });
     await untilConsistent(async () => {
       await owner.page.goto('/en/today');
       await expect(
         vis(owner.page, '[data-testid="expiring-row"]').filter({ hasText: 'Karim' }).first().getByTestId('expiring-renew'),
         'Expiring card gains the one-tap Renew',
-      ).toBeVisible({ timeout: 15_000 });
-    }, { timeout: 90_000 });
+      ).toBeVisible({ timeout: 10_000 });
+    }, { timeout: 40_000 });
     await untilConsistent(async () => {
       await student.page.goto('/en/portal');
       await expect(
         vis(student.page, '[data-testid="portal-lifecycle-banner"]').first(),
         'portal shows the renew-at-the-desk banner',
-      ).toBeVisible({ timeout: 15_000 });
-    }, { timeout: 90_000 });
+      ).toBeVisible({ timeout: 10_000 });
+    }, { timeout: 40_000 });
 
     // ── Idempotency: the second tick issues NOTHING new ──
     const second = await runTick(owner.page);
@@ -120,7 +150,7 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     await owner.page.goto(karimUrl);
     await vis(owner.page, '[data-testid="member-invoice-row"][data-status="pending"][data-type="membership"]')
       .filter({ hasText: '$55.50' }).first().locator('a').first().click();
-    await expect(owner.page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 20_000 });
+    await expect(owner.page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 15_000 });
     await vis(owner.page, '[data-testid="pay-submit"]').first().click(); // full balance prefilled
     // The payment commits async; re-read the member file until the period reflects
     // the +30d extension (replaces a fixed 1.5s wait that lost the race under load).
@@ -129,21 +159,24 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
       await expect(
         vis(owner.page, '[data-testid="membership-period"]').filter({ hasText: addDays(30) }).first(),
         'payment extended the period by the plan duration (+30d)',
-      ).toBeVisible({ timeout: 20_000 });
-    }, { timeout: 90_000 });
+      ).toBeVisible({ timeout: 15_000 });
+    }, { timeout: 75_000 });
     expect(periodBefore).not.toContain(addDays(30));
 
     // ── Plan change (next cycle, no proration) → renew-now carries NEW price ──
     const activeCard = vis(owner.page, '[data-testid="membership-card"]')
       .filter({ has: owner.page.locator(`[data-testid="membership-period"]:has-text("${addDays(30)}")`) }).first();
     await activeCard.getByTestId('ms-change-plan-open').click();
-    await owner.page.locator('[data-testid="ms-plan-chip"]').nth(1).click(); // the $130 plan
+    // Pick the $130 Quarterly plan BY PRICE, not by position. Other specs sharing this
+    // worker-gym add plans (e.g. ux2 creates a $70 tier), and the chips are price-ordered,
+    // so a positional nth(1) can land on the wrong plan → renews at $77.70 instead of the
+    // asserted $144.30. Selecting by the chip's own price text is order-independent.
+    await owner.page.locator('[data-testid="ms-plan-chip"]').filter({ hasText: '$130' }).first().click();
     await owner.page.getByTestId('ms-plan-submit').click();
     await expect(activeCard.getByTestId('membership-pending-plan'), 'pending next-cycle change recorded')
-      .toBeVisible({ timeout: 45_000 }); // multi-step write under full load
+      .toBeVisible({ timeout: 45_000 });
     await activeCard.getByTestId('ms-renew-now').click();
     // The renew-now write commits async; re-read until the NEW-price invoice shows.
-    // The most-saturated read (after pay + plan-change + renew-now) → longest budget.
     await untilConsistent(async () => {
       await owner.page.goto(karimUrl);
       await expect(
@@ -151,7 +184,7 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
           .filter({ hasText: '$144.30' }).first(),
         'the next renewal carries the NEW plan price (130 × 1.11 TVA)',
       ).toBeVisible({ timeout: 20_000 });
-    }, { timeout: 120_000 });
+    }, { timeout: 120_000 }); // the most-saturated read (3 writes deep) — the one that flaked at 50s
   } finally {
     await owner.ctx.close();
     await student.ctx.close();
