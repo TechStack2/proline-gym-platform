@@ -82,9 +82,14 @@ export function NativeTabBar({
             (pathname === fullPath ||
               (tab.path !== basePath && pathname.startsWith(fullPath)));
 
+          // PWA-MOBILE-UX #2: on Pro-Max-class widths (≥420px — 14/15/16 Pro Max is
+          // ~430 CSS px, Plus ~428) each flex-1 tab is much wider, so the fixed
+          // 22px icon / 10px label looked tiny. Scale both up at that breakpoint
+          // (the bar stays md:hidden, so this only affects phones). Safe-area kept
+          // by the nav's pb-[env(safe-area-inset-bottom)].
           const tabClassName = cn(
-            'flex flex-1 flex-col items-center justify-center gap-1',
-            'py-2 px-1 min-h-[44px] min-w-[44px]',
+            'flex flex-1 flex-col items-center justify-center gap-1 min-[420px]:gap-1.5',
+            'py-2 min-[420px]:py-2.5 px-1 min-h-[44px] min-[420px]:min-h-[52px] min-w-[44px]',
             'text-xs font-medium transition-colors duration-200',
             'touch-manipulation select-none',
             isActive
@@ -108,7 +113,7 @@ export function NativeTabBar({
                     animatingTab === tab.key && 'animate-tab-bounce'
                   )}
                 >
-                  <Icon className="h-[22px] w-[22px]" aria-hidden="true" />
+                  <Icon className="h-[22px] w-[22px] min-[420px]:h-[27px] min-[420px]:w-[27px]" aria-hidden="true" />
                 </div>
                 {variant === 'default' && (
                   <span className="text-[0.625rem] leading-none truncate max-w-full">
@@ -135,7 +140,7 @@ export function NativeTabBar({
                   animatingTab === tab.key && 'animate-tab-bounce'
                 )}
               >
-                <Icon className="h-[22px] w-[22px]" aria-hidden="true" />
+                <Icon className="h-[22px] w-[22px] min-[420px]:h-[27px] min-[420px]:w-[27px]" aria-hidden="true" />
                 {tab.badge !== undefined && tab.badge > 0 && (
                   <span className="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[#cd1419] text-white text-[10px] font-bold leading-none">
                     {tab.badge > 99 ? '99+' : tab.badge}
@@ -144,7 +149,7 @@ export function NativeTabBar({
               </div>
 
               {variant === 'default' && (
-                <span className="text-[0.625rem] leading-none truncate max-w-full">
+                <span className="text-[0.625rem] min-[420px]:text-[0.8125rem] leading-none truncate max-w-full">
                   {(t(tab.key as any) as any) || tab.label || tab.key}
                 </span>
               )}

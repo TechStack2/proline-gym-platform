@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { SwipeableSheet } from '@/components/native';
 import type { DashboardRole } from './DashboardTabConfig';
 import { getDashboardTabs } from './DashboardTabConfig';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -25,9 +26,13 @@ export function MoreMenuSheet({ isOpen, onClose, locale, role }: Props) {
       onClose={onClose}
       title={t('more') || 'More'}
       locale={locale}
-      snapPoints={[50, 85]}
+      // PWA-MOBILE-UX #3: open taller so the secondary items aren't below the fold
+      // (owners have ~8-12 more-items; the old 50vh hid the tail). The sheet content
+      // still scrolls (overflow-y-auto) for the longest lists.
+      snapPoints={[78, 94]}
     >
-      <div className={cn('space-y-1 px-1', isRTL && 'rtl')}>
+      {/* Bottom padding clears the home indicator so the LAST item is never clipped. */}
+      <div className={cn('space-y-1 px-1 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]', isRTL && 'rtl')}>
         {moreItems.map((item) => {
           const Icon = item.icon;
           const fullPath = `/${locale}${item.path}`;
@@ -63,6 +68,17 @@ export function MoreMenuSheet({ isOpen, onClose, locale, role }: Props) {
             </Link>
           );
         })}
+
+        {/* PWA-MOBILE-UX #3: the language switcher lives in the mobile menu too, so
+            it's easy to find after login (the header switcher is easy to miss). */}
+        <div className="mt-3 border-t pt-3" data-testid="more-language">
+          <p className={cn('px-4 pb-2 text-xs font-medium uppercase tracking-wide text-gray-400', isRTL && 'text-right')}>
+            {locale === 'ar' ? 'اللغة' : locale === 'fr' ? 'Langue' : 'Language'}
+          </p>
+          <div className="px-3">
+            <LanguageSwitcher locale={locale} variant="inline" />
+          </div>
+        </div>
       </div>
     </SwipeableSheet>
   );

@@ -180,6 +180,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PWA-MOBILE-UX: installed-mobile-PWA shell polish — NativeTabBar items scale
+      // up on Pro-Max widths (#2); language switcher in Settings + the mobile More
+      // menu, tail not clipped (#3). Opens its own Pro-Max-viewport owner context.
+      name: 'pwa-mobile-ux',
+      dependencies: ['setup'],
+      testMatch: /pwa-mobile-ux\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it
