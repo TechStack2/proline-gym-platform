@@ -2326,6 +2326,7 @@
     "enrolledClasses": "Enrolled"
   },
   "portalBilling": {
+    "title": "Billing",
     "household": "Household billing",
     "outstanding": "Outstanding total",
     "payAtDesk": "Pay at the front desk: cash (USD/LBP) · OMT · Whish",
