@@ -85,6 +85,17 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
           'desk renders offline from the SW-cached shell').toBeVisible({ timeout: 10_000 })
       }, { timeout: 60_000 })
 
+      // ── OFF-RESILIENCE: wait for offline to COMMIT in React before the gated read ──
+      // useOnline() (use-online.ts) defaults online=true and flips to false only in a
+      // post-mount effect, so the offline-only "needs-connection" affordance
+      // (offline-desk:379, `online ? open-file : needs-connection`) isn't rendered until
+      // that commit — which under workers:2 contention can lag past the default 10s
+      // expect timeout (the off2:99 flake). desk-sync-now is disabled ⟺ !online (syncing
+      // is false here — the prime settled), so it is the desk's deterministic offline
+      // signal. Await it, don't just widen the timeout — this removes the race, not the check.
+      await expect(vis(page, '[data-testid="desk-sync-now"]').first(),
+        'offline committed (sync-now disabled) before reading the online-gated card').toBeDisabled({ timeout: 30_000 })
+
       // ── Member find → basics, FROM THE DEXIE CACHE ──
       await vis(page, '[data-testid="desk-search"]').first().fill('Karim')
       await vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first().click()
