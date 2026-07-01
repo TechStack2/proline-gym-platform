@@ -33,6 +33,17 @@ on:
         type: string
         required: false
         default: ''
+      # CI-LOCAL: opt-in self-hosted runner. INERT by default — 'hosted' keeps the
+      # unchanged GitHub ubuntu-latest path; 'self' targets a 'self-hosted'-labelled
+      # runner (e.g. the owner's Mac). SELF-HOST ON PRIVATE REPOS ONLY — a public-repo
+      # self-hosted runner lets fork PRs run arbitrary code on your machine. See
+      # docs/ci/self-hosted-runner.md before using.
+      runner:
+        description: 'Runner: hosted (GitHub ubuntu-latest, default) | self (opt-in self-hosted; PRIVATE repos only)'
+        type: choice
+        options: [hosted, self]
+        required: false
+        default: hosted
   push:
     branches: [main]
     paths-ignore:           # auditor docs land on main constantly — don't burn
@@ -50,7 +61,10 @@ concurrency:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    # CI-LOCAL: default ubuntu-latest (UNCHANGED). The `runner` dispatch input can
+    # opt into a self-hosted runner; on `push` (the union gate) inputs.runner is
+    # empty → the expression resolves to ubuntu-latest, so the default is inert.
+    runs-on: ${{ (inputs.runner == 'self' && 'self-hosted') || 'ubuntu-latest' }}
     timeout-minutes: 45
     env:
       # G1: WhatsApp dispatch runs in RECORD mode under CI (no external Meta call;
