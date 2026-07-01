@@ -8,6 +8,8 @@ import { WhatsAppSettings } from './_components/whatsapp-settings';
 import { getWhatsAppStatus } from './_components/whatsapp-actions';
 import { WaiverSettings } from './_components/waiver-settings';
 import { getWaiverTemplate } from './_components/waiver-actions';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import { Languages } from 'lucide-react';
 import Link from 'next/link';
 
 type Props = { params: { locale: string }; searchParams?: { tab?: string } };
@@ -82,6 +84,20 @@ export default async function SettingsPage({ params, searchParams }: Props) {
           {locale === 'ar' ? 'التقارير' : locale === 'fr' ? 'Rapports' : 'Reports'}
         </Link>
       </div>
+
+      {/* PWA-MOBILE-UX #3: the language switcher lives in Settings too (the header
+          switcher is easy to miss after login, especially on mobile). Reuses the
+          inline LanguageSwitcher (ar/en/fr) — client component, own boundary. */}
+      <section data-testid="settings-language" className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <h2 className={cn('mb-1 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+          <Languages className="h-4 w-4 text-primary-600" />
+          {locale === 'ar' ? 'اللغة' : locale === 'fr' ? 'Langue' : 'Language'}
+        </h2>
+        <p className="mb-3 text-xs text-gray-500">
+          {locale === 'ar' ? 'اختر لغة الواجهة' : locale === 'fr' ? "Choisissez la langue de l'interface" : 'Choose the interface language'}
+        </p>
+        <LanguageSwitcher locale={locale} variant="inline" />
+      </section>
 
       <Suspense
         fallback={
