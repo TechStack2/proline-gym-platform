@@ -160,6 +160,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PWA-SESSION: a relaunched installed PWA (manifest start_url '/') with a
+      // valid session must land on the user's HOME, not the marketing landing.
+      // Re-enters the landing root with each role's storageState (== the persisted
+      // session) and asserts the entry-redirect. Its own storageState contexts.
+      name: 'pwa-session',
+      dependencies: ['setup'],
+      testMatch: /pwa-session\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it
