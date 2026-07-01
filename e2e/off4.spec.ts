@@ -96,6 +96,18 @@ test.describe('OFF-4 · reconciliation & conflict resolution', () => {
         await page.reload()
         await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 10_000 })
       }, { timeout: 60_000 })
+      // OFF-RESILIENCE: force the app to COMMIT offline before the offline record. A
+      // SW-served reload can mount with navigator.onLine reading TRUE under ctx.setOffline,
+      // and useOnline() only flips on the 'offline' EVENT (missed before mount) → `online`
+      // stays true and the recorder (offline-desk passes online={online}) would write THROUGH
+      // instead of queuing (no pay-saved-offline). Re-fire the offline event until online
+      // commits false (sync-now disabled ⟺ !online, syncing idle). Idempotent → deterministic
+      // (reconnect's own 'online' event restores online=true later).
+      await untilConsistent(async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+        await expect(vis(page, '[data-testid="desk-sync-now"]').first(),
+          'offline committed (sync-now disabled) before the offline record path').toBeDisabled({ timeout: 2_000 })
+      }, { timeout: 30_000, intervals: [500, 1_000, 2_000] })
       await searchOpenKarim(page, 'Karim')
       for (let i = 0; i < 2; i++) {
         await invRow().getByTestId('desk-record-payment').click()
@@ -107,6 +119,10 @@ test.describe('OFF-4 · reconciliation & conflict resolution', () => {
       // RECONNECT → flush → one settles, the other becomes a reviewable conflict.
       await ctx.setOffline(false)
       await untilConsistent(async () => {
+        // OFF-RESILIENCE: re-fire 'online' so useOnline restores online=true after the
+        // SW-served page missed ctx.setOffline(false)'s event — else desk-sync-pending
+        // stays disabled and the flush never runs (the off4:82 reconnect flake). Idempotent.
+        await page.evaluate(() => window.dispatchEvent(new Event('online')))
         const btn = vis(page, '[data-testid="desk-sync-pending"]').first()
         if (await btn.isEnabled().catch(() => false)) await btn.click().catch(() => {})
         await expect(vis(page, '[data-testid="desk-conflict-row"]').first()).toBeVisible({ timeout: 5_000 })
@@ -188,6 +204,18 @@ test.describe('OFF-4 · reconciliation & conflict resolution', () => {
         await page.reload()
         await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 10_000 })
       }, { timeout: 60_000 })
+      // OFF-RESILIENCE: force the app to COMMIT offline before the offline record. A
+      // SW-served reload can mount with navigator.onLine reading TRUE under ctx.setOffline,
+      // and useOnline() only flips on the 'offline' EVENT (missed before mount) → `online`
+      // stays true and the recorder (offline-desk passes online={online}) would write THROUGH
+      // instead of queuing (no pay-saved-offline). Re-fire the offline event until online
+      // commits false (sync-now disabled ⟺ !online, syncing idle). Idempotent → deterministic
+      // (reconnect's own 'online' event restores online=true later).
+      await untilConsistent(async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+        await expect(vis(page, '[data-testid="desk-sync-now"]').first(),
+          'offline committed (sync-now disabled) before the offline record path').toBeDisabled({ timeout: 2_000 })
+      }, { timeout: 30_000, intervals: [500, 1_000, 2_000] })
       await searchOpenKarim(page, 'Karim')
       await invRow(page).getByTestId('desk-record-payment').click()
       await invRow(page).getByTestId('pay-submit').click()
@@ -204,6 +232,10 @@ test.describe('OFF-4 · reconciliation & conflict resolution', () => {
       // Reconnect on the cold page → flush → settles.
       await ctx.setOffline(false)
       await untilConsistent(async () => {
+        // OFF-RESILIENCE: re-fire 'online' so useOnline restores online=true on the cold
+        // page after reconnect (the SW-served page can miss the event) — else the flush
+        // never runs. Idempotent.
+        await page2.evaluate(() => window.dispatchEvent(new Event('online')))
         const btn = vis(page2, '[data-testid="desk-sync-pending"]').first()
         if (await btn.isEnabled().catch(() => false)) await btn.click().catch(() => {})
         await expect(vis(page2, '[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 5_000 })
