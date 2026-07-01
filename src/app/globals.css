@@ -105,6 +105,30 @@
     font-family: var(--font-latin);
   }
 
+  /* ─── AR-TYPE — Arabic typography fidelity (dabbira-validated model) ───
+     proline loads IBM Plex Sans Arabic but at a Latin weight/scale, so Arabic
+     reads faint + cramped. Match dabbira: medium body weight, looser line-heights,
+     a bumped per-script size ramp, and zero tracking. Scoped to [dir="rtl"] only
+     → /en + /fr Latin is untouched by construction. */
+  [dir="rtl"] body {
+    letter-spacing: 0;
+    line-height: 1.7;
+    font-weight: 500; /* Arabic body medium — reads warmer/clearer than 400 */
+  }
+  /* Per-script size ramp (~1.15× Latin). Tailwind v3 utilities are hardcoded, so
+     override text-* under RTL — [dir="rtl"] .text-* (0,1,1) beats .text-* (0,1,0). */
+  [dir="rtl"] .text-xs   { font-size: 0.8125rem; line-height: 1.6; }  /* 13px */
+  [dir="rtl"] .text-sm   { font-size: 0.9375rem; line-height: 1.65; } /* 15px */
+  [dir="rtl"] .text-base { font-size: 1rem;      line-height: 1.7; }  /* 16px body */
+  [dir="rtl"] .text-lg   { font-size: 1.1875rem; line-height: 1.55; } /* 19px */
+  [dir="rtl"] .text-xl   { font-size: 1.375rem;  line-height: 1.5; }  /* 22px */
+  [dir="rtl"] .text-2xl  { font-size: 1.625rem;  line-height: 1.45; } /* 26px */
+  [dir="rtl"] .text-3xl  { font-size: 2rem;      line-height: 1.4; }  /* 32px */
+  /* NEVER track Arabic: neutralize tracking-* + tight headings under RTL (audit A2).
+     Each selector repeats [dir="rtl"] so LTR (en/fr) headings are NOT affected. */
+  [dir="rtl"] [class*="tracking-"],
+  [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4 { letter-spacing: 0 !important; }
+
   /* RTL-aware icon flipping */
   [dir="rtl"] .icon-rtl-flip {
     transform: scaleX(-1);
