@@ -121,6 +121,18 @@ function getCoachName(c: PtCoach): string {
   return u.first_name_en || u.first_name_ar || '';
 }
 
+// INTAKE-FOCUS: the shared modal backdrop lives at MODULE SCOPE (stable type ref).
+// Inside the render body it got a new identity each keystroke → React remounted the
+// modal subtree (create/edit-package inputs) and dropped the cursor. Props-only —
+// hoists cleanly. Same class of fix as add-student-wizard's field wrapper.
+const ModalBackdrop = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
+  <ModalPortal>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      {children}
+    </div>
+  </ModalPortal>
+);
+
 export function PTPackagesClient({ packages: initialPkgs, students, coaches, assignments: initialAssignments, pendingRequests: initialPending, locale, gymId }: Props) {
   const t = useTranslations('pt');
   const router = useRouter();
@@ -473,15 +485,6 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
         </div>
       </div>
     </>
-  );
-
-  // ── Shared Modal wrapper ───────────────────────────────────────
-  const ModalBackdrop = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
-    <ModalPortal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      {children}
-    </div>
-    </ModalPortal>
   );
 
   // ── Render ─────────────────────────────────────────────────────

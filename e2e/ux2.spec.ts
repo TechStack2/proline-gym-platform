@@ -73,7 +73,16 @@ test('UX-2 · mobile Settings nav + wizard convention (student w/ guardian, lead
     const GUARDIAN = `UX2 Guardian ${RUN}`;
     await owner.page.goto('/en/students/add');
     const w = (tid: string) => owner.page.locator(`[data-testid="${tid}"]:visible`).first();
-    await w('sw-name-en').fill(KID);
+    // INTAKE-FOCUS guard: type CHAR-BY-CHAR. The field wrapper (F) used to be defined
+    // inside the wizard's render body, so every keystroke gave it a new type identity,
+    // React remounted the <Input>, and the cursor dropped out (only the last char
+    // survived). pressSequentially exercises exactly that; toHaveValue(full string)
+    // proves the module-scope hoist retains focus. Covers an LTR + an RTL field.
+    const KID_AR = 'كريم الأمين';
+    await w('sw-name-en').pressSequentially(KID, { delay: 25 });
+    await expect(w('sw-name-en'), 'name-en retains focus typing char-by-char').toHaveValue(KID);
+    await w('sw-name-ar').pressSequentially(KID_AR, { delay: 25 });
+    await expect(w('sw-name-ar'), 'RTL name-ar retains focus typing char-by-char').toHaveValue(KID_AR);
     await w('sw-phone').fill(`+96176${RUN}`);
     await w('sw-dob').fill('2015-05-10'); // minor → guardian step appears
     await w('wizard-next').click();
