@@ -18,8 +18,11 @@ const latin = Inter({ subsets: ['latin'], variable: '--font-latin', display: 'sw
 // matching x-height/weight. next/font self-hosts + injects a size-adjusted
 // local fallback automatically (adjustFontFallback), so swap causes no CLS.
 const arabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  weight: ['400', '500', '700'],
+  // AR-TYPE: 'latin' subset so Western numerals + embedded Latin (brand, codes)
+  // render in the same superfamily inside the Arabic UI; weight 600 added so
+  // font-semibold resolves to a real weight (not faux-bold). dabbira-validated.
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-arabic',
   display: 'swap',
 });

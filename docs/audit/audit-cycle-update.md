@@ -871,3 +871,25 @@ New [`portal-shell.spec.ts`](../../e2e/portal-shell.spec.ts) asserts, on `/porta
 ### DRAG READ
 - **Built once, applied twice.** PORTAL-SHELL's `titleMobileOnly` prop made the coach fix a ~6-line diff (one prop + three `hidden md:block`s + a spec) — the shared `NativeHeader` is the single seam for every single-shell native layout. Branching off `prompt-portal-shell` meant the prop was already present; after PORTAL-SHELL merges, this rebases to just the coach-page changes.
 - **The two staff/member-facing native shells are now consistent** with the (dashboard): one title per breakpoint, mobile chrome owns it, desktop content H1 owns it.
+
+## Cycle 6 / AR-TYPE — Arabic typography (dabbira-validated)
+
+> **Branch:** `prompt-ar-type` off `main` (`4925d61`) · owner-directed reuse of the Arabic-first setup proven in the sibling `dabbira` project. **Frontend/CSS only — no backend/RLS/data/migration.**
+
+### Diagnosis — right font, Latin dressing
+proline already loads **IBM Plex Sans Arabic** (the face `dabbira` validated over Tajawal/Cairo), but wore it in Latin clothes: `subsets:['arabic']` only, weights `400/500/700`, and **no** per-script size / line-height / tracking rules — so Arabic read **faint** (weight 400), **cramped** (the `text-*` utilities' ~1.25 line-heights), and **tracked** (`tracking-*` degrades connected letterforms). `/en`+`/fr` were fine.
+
+### Fix (dabbira's model, adapted to proline's Tailwind **v3**)
+Reused dabbira's font config (`layout.tsx:25-29`), per-script scale (`globals.css:306-323`), rulebook (`design/system/rtl-arabic.md` §1/§7):
+- **Font** ([`src/app/[locale]/layout.tsx`](../../src/app/[locale]/layout.tsx)): `subsets:['arabic','latin']` + weights `400/500/600/700` (latin → Western numerals/embedded Latin in the same superfamily; 600 → real `font-semibold`, not faux-bold). `display:'swap'` + `--font-arabic` kept.
+- **Per-script scale + body** ([`src/app/globals.css`](../../src/app/globals.css)), all scoped `[dir="rtl"]`: body **weight 500 / line-height 1.7 / letter-spacing 0**; size ramp **13/15/16/19/22/26/32px**, looser line-heights (1.6→1.4). dabbira re-points Tailwind-**v4** `--text-*` vars; proline is **v3** (hardcoded utilities), so the equivalent **overrides `text-*` under `[dir="rtl"]`** — `[dir="rtl"] .text-*` (specificity 0,1,1) beats the base utility (0,1,0), no per-component branching, and `/en`+`/fr` (dir=ltr) untouched by construction.
+- **No Arabic tracking**: `[dir="rtl"] [class*="tracking-"]` + `[dir="rtl"] h1..h4 { letter-spacing:0 !important }` — each selector **re-scoped to `[dir="rtl"]`** (the shorthand `[dir=rtl] h1,h2,h3,h4` would have leaked to `/en` h2–h4; dabbira repeats the scope, so I did too).
+
+### ⟶ Arabic reads at 500/1.7/no-tracking per dabbira; /en+/fr unchanged; no hero CLS regression: **PASS**
+**CI (targeted):** [run `28520756900`](https://github.com/TechStack2/proline-gym-platform/actions/runs/28520756900) — **SUCCESS** (21 passed, 38.5s): **`ax1`** (`/ar` renders Arabic on every shell + brand font **without layout shift** — the hero CLS re-check) green **15.4s**; `landing` (hero centering + live render) 2/2; `ar-admin` (Arabic classes/search/payments) 3/3. Local `next build` clean (149/149 static). tsc clean; frontend/CSS only — no migration/VF.
+
+### DRAG READ
+- **v4→v3 port, not copy-paste.** dabbira's scale re-points `--text-*` theme vars (Tailwind v4 reads them); proline v3 utilities are hardcoded, so the faithful equivalent is `[dir="rtl"] .text-*` overrides. Same visual result, different mechanism — a straight copy of dabbira's `[dir=rtl]{ --text-*: … }` block would have been **inert** here. Any future dabbira→proline port must account for the v4/v3 gap.
+- **One trade-off vs v4:** the `[dir="rtl"] .text-*` line-height override also beats explicit `leading-*` in RTL (specificity), whereas v4's var-repoint lets `leading-*` win. For Arabic that's **desirable** (tight leading is the rulebook's anti-pattern), but note it if an RTL surface ever wants intentionally-tight leading.
+- **Latent tracking risk on merge:** proline's custom `display-lg`/`display-md` fontSizes carry negative `letterSpacing` (−0.02/−0.01em). The `[dir=rtl] h1..h4` rule neutralizes them on heading *elements*, but a `text-display-*` on a **non-heading** Arabic node would still track — a candidate for the next AR pass.
+- **The rest of AR is scoped out (by the prompt):** AR-BIDI (`<bdi>`/`dir=auto` for prices/phones/codes), RTL-LOGICAL (physical→logical utility migration + retire the flip block), I18N-AR (string leaks), `DirectionProvider` wiring for Base UI. `rtl-arabic.md` §2–§8 is the map.
