@@ -324,6 +324,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // RLS-ISOLATION — cross-tenant read isolation on audit_logs + pt_sessions.
+      // API-only (the `request` fixture + a real GoTrue login): provisions marker
+      // rows in this worker's gym + the demo gym and proves gym A can't read gym
+      // B's rows. Anchored testMatch ($) to avoid substring collisions.
+      name: 'rls',
+      dependencies: ['setup'],
+      testMatch: /rls-isolation\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // FIN-1 horizons + owner finances + win-back: it pays the Horizon invoice
       // and reinstates the Dropped member (its own isolated fixtures).
       name: 'fin1',
