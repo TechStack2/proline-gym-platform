@@ -71,14 +71,14 @@ BEGIN
   RETURN QUERY
   SELECT
     i.id,
-    p.phone,
+    p.phone::text,                                              -- phone is VARCHAR(50); RETURN QUERY is strict → cast to TEXT
     NULLIF(trim(COALESCE(p.first_name_en, '') || ' ' || COALESCE(p.last_name_en, '')), ''),
-    COALESCE(p.locale, 'en'),
+    COALESCE(p.locale, 'en')::text,                             -- locale is VARCHAR(5) → cast to TEXT
     nd.nudge,
     'dun_' || i.id::text || '_' || nd.nudge,
     i.total_usd,
     i.due_date,
-    ri.product_type
+    ri.product_type::text
   FROM renewal_invoices ri
   JOIN invoices  i ON i.id = ri.invoice_id
   JOIN students  s ON s.id = i.student_id
