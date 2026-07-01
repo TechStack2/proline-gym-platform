@@ -72,6 +72,31 @@ export async function updateSession(request: NextRequest) {
     pathname.includes(path)
   );
 
+  // ── PWA-SESSION: authenticated user entering at the landing ROOT → HOME ──────
+  // The PWA manifest start_url is '/', so a relaunched installed app opens '/' →
+  // '/{locale}' (the public marketing landing). The Supabase session IS restored
+  // across a standalone relaunch (cookie-backed), but nothing redirected an
+  // authenticated visitor off the landing — so the installed app "reopened on the
+  // marketing page" instead of the user's home. Send an authenticated visitor at
+  // the landing root to their role home (member/parent → /portal, coach → /coach,
+  // staff → /dashboard). Only the bare root or '/{locale}' matches; deeper real
+  // pages, /auth/*, and /onboarding are handled above/below (no loop — the targets
+  // are never landing roots). The forced-change gate above already took priority.
+  if (user) {
+    const segments = pathname.split('/').filter(Boolean);
+    const atLandingRoot =
+      segments.length === 0 ||
+      (segments.length === 1 && ['ar', 'en', 'fr'].includes(segments[0]));
+    if (atLandingRoot) {
+      const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+      const role = (roleData?.role || 'owner') as PortalRole;
+      const locale = segments[0] ?? getPreferredLocale(request);
+      const url = request.nextUrl.clone();
+      url.pathname = `/${locale}${ROLE_PORTAL_MAP[role]}`;
+      return NextResponse.redirect(url);
+    }
+  }
+
   // If user is not authenticated and trying to access a protected route
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
