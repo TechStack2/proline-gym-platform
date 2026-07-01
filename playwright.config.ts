@@ -170,6 +170,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // NO-MEMBERSHIP: membership is a per-gym OPTIONAL product. Seeds its OWN
+      // isolated gym with membership DISABLED (service-role seed) and proves the
+      // disabled gym shows classes+PT + hides every membership surface — so the
+      // per-worker gyms (ml1/pause-card/billing) stay membership-ENABLED.
+      name: 'no-membership',
+      dependencies: ['setup'],
+      testMatch: /no-membership\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it

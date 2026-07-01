@@ -6,6 +6,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { METHOD_LABEL } from '@/lib/billing/reconcile'
 import { getRevenueByMonth, getCollectionsByMethod, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
 import { getChurnByMonth } from '@/lib/finances/winback'
+import { getEnabledProducts } from '@/lib/gym/products'
 
 /**
  * FIN-1 owner dashboard (Money → Overview). Tables + numbers only (no chart
@@ -18,12 +19,16 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
   const t = await getTranslations('ownerFinances')
   const supabase = await createClient()
 
-  const [revenue, methods, aging, churn] = await Promise.all([
+  const [revenue, methods, aging, churn, products] = await Promise.all([
     getRevenueByMonth(supabase, gymId, 6),
     getCollectionsByMethod(supabase, gymId),
     getOutstandingAging(supabase, gymId),
     getChurnByMonth(supabase, gymId, 6),
+    getEnabledProducts(supabase, gymId),
   ])
+  // NO-MEMBERSHIP: drop the membership revenue column + the membership-churn
+  // (lapsed) column when the gym doesn't sell membership.
+  const revProducts = products.membership ? PRODUCTS : PRODUCTS.filter((p) => p !== 'membership')
 
   const monthLabel = (mk: string) =>
     new Date(`${mk}-01T12:00:00Z`).toLocaleDateString(dateLocale(locale), { month: 'short', year: '2-digit' })
@@ -44,7 +49,7 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
             <thead>
               <tr className="border-b text-gray-500">
                 <th className="p-2 text-start font-medium">{t('month')}</th>
-                {PRODUCTS.map((p) => <th key={p} className="p-2 text-end font-medium">{productLabel(p)}</th>)}
+                {revProducts.map((p) => <th key={p} className="p-2 text-end font-medium">{productLabel(p)}</th>)}
                 <th className="p-2 text-end font-medium">{t('total')}</th>
               </tr>
             </thead>
@@ -52,7 +57,7 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
               {revenue.map((row) => (
                 <tr key={row.month} className="border-b last:border-0" data-testid="revenue-row" data-month={row.month}>
                   <td className="p-2 font-medium text-gray-700">{monthLabel(row.month)}</td>
-                  {PRODUCTS.map((p) => (
+                  {revProducts.map((p) => (
                     <td key={p} className="p-2 text-end text-gray-600" data-product={p}>
                       {row.byProduct[p] > 0 ? usd(row.byProduct[p]) : <span className="text-gray-300">—</span>}
                     </td>
@@ -110,7 +115,7 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
             <thead>
               <tr className="border-b text-gray-500">
                 <th className="p-2 text-start font-medium">{t('month')}</th>
-                <th className="p-2 text-end font-medium">{t('churn.lapsed')}</th>
+                {products.membership && <th className="p-2 text-end font-medium">{t('churn.lapsed')}</th>}
                 <th className="p-2 text-end font-medium">{t('churn.cancelled')}</th>
                 <th className="p-2 text-end font-medium">{t('churn.suspended')}</th>
                 <th className="p-2 text-end font-medium">{t('total')}</th>
@@ -122,7 +127,7 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
                 return (
                   <tr key={row.month} className="border-b last:border-0" data-testid="churn-row" data-month={row.month}>
                     <td className="p-2 font-medium text-gray-700">{monthLabel(row.month)}</td>
-                    <td className="p-2 text-end text-gray-600" data-testid="churn-lapsed">{row.lapsed || <span className="text-gray-300">—</span>}</td>
+                    {products.membership && <td className="p-2 text-end text-gray-600" data-testid="churn-lapsed">{row.lapsed || <span className="text-gray-300">—</span>}</td>}
                     <td className="p-2 text-end text-gray-600">{row.cancelled || <span className="text-gray-300">—</span>}</td>
                     <td className="p-2 text-end text-gray-600">{row.suspended || <span className="text-gray-300">—</span>}</td>
                     <td className="p-2 text-end font-bold text-gray-900">{total || <span className="text-gray-300">—</span>}</td>

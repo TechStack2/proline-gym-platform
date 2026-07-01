@@ -12,6 +12,7 @@ import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-detail
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
+import { getEnabledProducts } from '@/lib/gym/products'
 
 type Props = { params: { locale: string }; searchParams?: { kid?: string } }
 
@@ -203,10 +204,14 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
     late: 'bg-yellow-100 text-yellow-700', excused: 'bg-blue-100 text-blue-700'
   }
 
+  // NO-MEMBERSHIP: hide the member's membership surfaces (banner, scan tile, card)
+  // on gyms that don't sell membership.
+  const enabledProducts = await getEnabledProducts(supabase, student?.gym_id)
+
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
     {/* ML-1: lifecycle banner — renew at the desk (no self-service) */}
-    {['expiring', 'overdue', 'lapsed', 'frozen'].includes(msState) && (
+    {enabledProducts.membership && ['expiring', 'overdue', 'lapsed', 'frozen'].includes(msState) && (
       <div data-testid="portal-lifecycle-banner" data-state={msState}
         className={cn('rounded-2xl p-3 text-sm font-medium',
           msState === 'frozen' ? 'bg-blue-50 text-blue-700' : msState === 'expiring' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700')}>
@@ -239,7 +244,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: t('classes'), value: enrolledCount || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'text-green-600' : 'text-red-600', bg: membership?.status === 'active' ? 'bg-green-50' : 'bg-red-50' },
+          // NO-MEMBERSHIP: the membership tile only shows when the gym sells it.
+          ...(enabledProducts.membership ? [{ label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'text-green-600' : 'text-red-600', bg: membership?.status === 'active' ? 'bg-green-50' : 'bg-red-50' }] : []),
           { label: t('belt'), value: beltLabelVal || '—', icon: Award, color: 'text-violet-600', bg: 'bg-violet-50' },
           { label: t('balance'), value: balanceDue > 0 ? `$${balanceDue}` : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'text-red-600' : 'text-emerald-600', bg: balanceDue > 0 ? 'bg-red-50' : 'bg-emerald-50' },
         ].map((s, i) => {
@@ -264,7 +270,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           <TrendingUp className="h-4 w-4 text-[#cd1419]" />{t('myStatus')}
         </h2>
 
-        {/* 1 · Membership → drills to billing (renewal) */}
+        {/* 1 · Membership → drills to billing (renewal) — NO-MEMBERSHIP: hidden off */}
+        {enabledProducts.membership && (
         <PortalCard data-testid="card-membership">
           <PortalCardTitle icon={CreditCard}
             right={<Link href={`/${locale}/portal/billing`} data-testid="membership-open" className="text-xs font-medium text-[#cd1419]">{t('view')}</Link>}>
@@ -280,6 +287,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
             </span>
           </div>
         </PortalCard>
+        )}
 
         {/* 2 · Billing → open-invoice rows reconcile to the balance → billing */}
         <ActionCard
