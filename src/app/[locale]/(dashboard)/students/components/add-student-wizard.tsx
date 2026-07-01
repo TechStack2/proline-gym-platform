@@ -19,6 +19,17 @@ import { Search } from 'lucide-react'
 
 type Plan = { id: string; name: string; price: number; durationDays: number }
 
+// INTAKE-FOCUS: the labelled-field wrapper lives at MODULE SCOPE (stable type ref).
+// Defined inside the render body, its identity changed on every keystroke → React
+// treated <F> as a new component type and REMOUNTED the <Input> children → the cursor
+// jumped out per character. Same fix as onboarding-client.tsx's module-level Field.
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+    {children}
+  </div>
+)
+
 export function AddStudentWizard({ gymId, plans, locale }: {
   gymId: string
   plans: Plan[]
@@ -138,13 +149,6 @@ export function AddStudentWizard({ gymId, plans, locale }: {
       setBusy(false)
     }
   }
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
-      {children}
-    </div>
-  )
 
   const steps = [
     {
