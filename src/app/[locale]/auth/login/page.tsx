@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
+import { signInWithPhone } from '@/lib/auth/actions';
 import { cn } from '@/lib/utils';
 import { Mail, Lock, Eye, EyeOff, Users, LogIn, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -76,14 +77,28 @@ export default function LoginPage({ params }: Props) {
 
     setLoading(true);
 
-    // ON-1: staff use email; invited members/coaches are PHONE-credentialed.
-    // Detect a phone shape and sign in accordingly.
+    // INVITE-PHONE-UX (Option B): staff sign in with email; invited members sign in
+    // with their PHONE. The Supabase phone provider is disabled, so a phone-shaped
+    // input goes through a SERVER ACTION that resolves phone → the hidden synthetic
+    // email + signs in server-side (setting the session cookies), returning only a
+    // generic ok/fail (no account-existence enumeration).
     const id = email.trim();
     const isPhone = /^\+?[0-9][0-9\s-]{5,}$/.test(id);
-    const { error: loginError } = await supabase.auth.signInWithPassword(
-      isPhone ? { phone: id.replace(/[\s-]/g, ''), password } : { email: id, password },
-    );
+    if (isPhone) {
+      const res = await signInWithPhone(id, password);
+      if (!res.ok) {
+        setError(t('loginError'));
+        setLoading(false);
+        return;
+      }
+      // Cookies were set server-side — refresh so the browser client adopts the
+      // session, then land on /dashboard (role routing takes over from there).
+      router.push('/dashboard');
+      router.refresh();
+      return;
+    }
 
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email: id, password });
     if (loginError) {
       setError(loginError.message);
       setLoading(false);

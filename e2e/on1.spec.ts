@@ -70,7 +70,11 @@ test('ON-1 · member invite → onboarding → portal (identity intact) + wa.me 
     await expect(vis(owner.page, '[data-testid="invite-result"]').first(), 'invite returns credentials').toBeVisible({ timeout: 20_000 })
     login = (await vis(owner.page, '[data-testid="invite-login"]').first().textContent())!.trim()
     temp = (await vis(owner.page, '[data-testid="invite-temp-pw"]').first().textContent())!.trim()
-    expect(login).toContain('@')
+    // INVITE-PHONE-UX (Option B): the invite now surfaces the member's PHONE as the login
+    // (the synthetic email stays hidden). Signing in with it below exercises the server-side
+    // phone→email resolver end-to-end — a stronger check than the old synthetic-email assert.
+    expect(login, 'invite surfaces the phone as the login').toMatch(/^\+?[0-9][0-9\s-]{5,}$/)
+    expect(login, 'no synthetic email surfaced to staff').not.toContain('@')
     expect(temp.length).toBeGreaterThan(6)
     // wa.me share link present, prefilled with the temp password.
     const wa = await vis(owner.page, '[data-testid="invite-wa-link"]').first().getAttribute('href')

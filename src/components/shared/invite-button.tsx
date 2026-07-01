@@ -41,7 +41,9 @@ export function InviteButton({ kind, id, name, locale }: Props) {
   // Localized wa.me message: login + temp + "change it on first login".
   const waLink = (() => {
     if (!result) return ''
-    const msg = t('waMessage', { login: result.login, temp: result.tempPassword })
+    // INVITE-PHONE-UX: the member logs in with their PHONE — share that, not the
+    // hidden synthetic email (result.login stays internal-only).
+    const msg = t('waMessage', { login: result.waPhone, temp: result.tempPassword })
     const digits = result.waPhone.replace(/\D/g, '') // the member's real phone
     return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`
   })()
@@ -62,7 +64,8 @@ export function InviteButton({ kind, id, name, locale }: Props) {
           <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-gray-50 p-3">
             <div className="min-w-0">
               <p className="text-2xs uppercase tracking-wider text-gray-400">{t('login')}</p>
-              <p className="text-sm font-medium text-gray-800" data-testid="invite-login" dir="ltr">{result.login}</p>
+              {/* INVITE-PHONE-UX: show the PHONE as the login (the synthetic email stays hidden). */}
+              <p className="text-sm font-medium text-gray-800" data-testid="invite-login" dir="ltr">{result.waPhone}</p>
               <p className="mt-1 text-2xs uppercase tracking-wider text-gray-400">{t('tempPassword')}</p>
               <p className="font-mono text-sm font-bold text-gray-900" data-testid="invite-temp-pw" dir="ltr">{result.tempPassword}</p>
             </div>
