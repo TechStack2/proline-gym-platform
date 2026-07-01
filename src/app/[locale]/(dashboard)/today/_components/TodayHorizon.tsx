@@ -11,6 +11,7 @@ import { getRenewalsDue } from '@/lib/pt/refill'
 import { RenewRowButton, ResumeRowButton } from '@/components/dashboard/lifecycle-buttons'
 import { membershipState } from '@/lib/lifecycle/status'
 import { getWinbackQueue } from '@/lib/finances/winback'
+import { getEnabledProducts } from '@/lib/gym/products'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import {
   DollarSign, ClipboardList, Dumbbell, CalendarDays,
@@ -29,6 +30,8 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const t = await getTranslations('today')
   const tw = await getTranslations('whatsapp')
   const supabase = await createClient()
+  // NO-MEMBERSHIP: hide the membership horizon cards on gyms that don't sell it.
+  const products = await getEnabledProducts(supabase, gymId)
 
   const now = new Date()
   const dow = now.getDay() // 0=Sunday … 6=Saturday (class_schedules convention)
@@ -278,6 +281,9 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
         )}
       </ActionCard>
 
+      {/* ── Membership horizon cards (NO-MEMBERSHIP: hidden when the gym doesn't
+             sell membership — Proline is classes + PT only) ── */}
+      {products.membership && (<>
       {/* ── Card 3: Expiring memberships (ends today) ── */}
       <ActionCard icon={AlarmClock} title={t('cards.expiring')} count={(expiring ?? []).length}
         emptyText={t('cards.noneExpiring')} testid="expiring" isRTL={isRTL}>
@@ -365,6 +371,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           )
         })}
       </ActionCard>
+      </>)}
 
       {/* ── Card: Win-back due (FIN-1) ── */}
       <ActionCard icon={Heart} title={t('cards.winbackDue')} count={winbackDue.length}

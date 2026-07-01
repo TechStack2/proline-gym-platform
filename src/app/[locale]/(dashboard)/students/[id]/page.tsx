@@ -17,6 +17,7 @@ import { MemberActions, type OpenInvoice, type PickableCamp, type PickableClass 
 import { InviteButton } from '@/components/shared/invite-button'
 import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel-client'
 import { MembershipCard, type MembershipCardData, type PlanOption } from './membership-card'
+import { getEnabledProducts } from '@/lib/gym/products'
 import { registrationState } from '@/lib/lifecycle/status'
 import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
 import { getWaiverContext } from '@/lib/waivers/server'
@@ -171,6 +172,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   // ADM-2: promote-from-the-member-file inputs — active disciplines, their
   // ladders, and active coaches (the RPC requires a coach).
   const gymIdForPromote = (student as any).gym_id
+  // NO-MEMBERSHIP: hide the membership panel on gyms that don't sell membership.
+  const enabledProducts = await getEnabledProducts(supabase, gymIdForPromote)
   const [{ data: promoDisciplines }, { data: promoCoachRows }] = await Promise.all([
     supabase.from('disciplines').select('id, name_ar, name_en, name_fr')
       .eq('gym_id', gymIdForPromote).eq('is_active', true).order('sort_order'),
@@ -481,7 +484,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* ── 1. Membership ── */}
+        {/* ── 1. Membership (NO-MEMBERSHIP: hidden when the gym doesn't sell it) ── */}
+        {enabledProducts.membership && (
         <Panel icon={CreditCard} title={t('membership')} testid="panel-membership">
           {/* ML-1: the D2 docking slot is live — read-time states + actions */}
           {membershipCards.length === 0 ? <Empty text={t('noMembership')} /> : (
@@ -500,6 +504,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
             </div>
           )}
         </Panel>
+        )}
 
         {/* ── 2. Class registrations ── */}
         <Panel icon={CalendarDays} title={t('registrations')} testid="panel-registrations">

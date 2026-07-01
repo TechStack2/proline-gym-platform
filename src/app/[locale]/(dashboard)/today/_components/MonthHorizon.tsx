@@ -7,6 +7,7 @@ import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { DrillDetails } from '@/components/dashboard/drill-details'
 import { horizonEndDate } from '@/lib/finances/horizon'
 import { getRevenueByMonth, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
+import { getEnabledProducts } from '@/lib/gym/products'
 import {
   getMemberMovement, getMonthExtras, getRenewalsInWindow, getRevenueRowsThisMonth, getConvertedLeadsThisMonth,
 } from '@/lib/finances/horizon-cards'
@@ -41,13 +42,15 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
     getRenewalsInWindow(supabase, gymId, locale, dayStart, monthEnd),
     getMonthExtras(supabase, gymId, locale, now),
   ])
+  // NO-MEMBERSHIP: drop the membership revenue line when the gym doesn't sell it.
+  const products = await getEnabledProducts(supabase, gymId)
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
   const pct = (n: number) => Math.round(n)
   const blank = { byProduct: { membership: 0, class: 0, pt: 0, camp: 0, other: 0 }, total: 0, month: '' }
   const cur = revenue[0] ?? blank
   const last = revenue[1] ?? blank
-  const revProducts = PRODUCTS.filter((p) => (cur.byProduct[p] ?? 0) > 0)
+  const revProducts = PRODUCTS.filter((p) => (cur.byProduct[p] ?? 0) > 0 && (products.membership || p !== 'membership'))
   const revDelta = cur.total - last.total
   const agingTotal = aging.reduce((s, b) => s + b.usd, 0)
   const agingOpen = aging.filter((b) => b.count > 0)

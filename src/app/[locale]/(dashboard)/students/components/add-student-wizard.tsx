@@ -30,10 +30,12 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
   </div>
 )
 
-export function AddStudentWizard({ gymId, plans, locale }: {
+export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = true }: {
   gymId: string
   plans: Plan[]
   locale: string
+  // NO-MEMBERSHIP: omit the (optional) Plan step on gyms that don't sell membership.
+  membershipEnabled?: boolean
 }) {
   const t = useTranslations('studentWizard')
   const router = useRouter()
@@ -202,7 +204,7 @@ export function AddStudentWizard({ gymId, plans, locale }: {
         </div>
       ),
     }] : []),
-    {
+    ...(membershipEnabled ? [{
       key: 'plan',
       title: t('plan'),
       content: (
@@ -225,7 +227,7 @@ export function AddStudentWizard({ gymId, plans, locale }: {
           </div>
         </div>
       ),
-    },
+    }] : []),
     {
       key: 'review',
       title: t('review'),

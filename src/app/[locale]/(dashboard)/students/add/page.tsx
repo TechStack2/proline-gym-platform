@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { AddStudentWizard } from '../components/add-student-wizard'
+import { getEnabledProducts } from '@/lib/gym/products'
 
 /**
  * Add student (UX-2): the prototype StudentForm page became the FormWizard
@@ -28,6 +29,9 @@ export default async function AddStudentPage({
 
   const lname = (r: any) => ((locale === 'ar' ? r?.name_ar : locale === 'fr' ? r?.name_fr : r?.name_en) || r?.name_en || '')
 
+  // NO-MEMBERSHIP: drop the wizard's optional Plan step when membership is off.
+  const products = await getEnabledProducts(supabase, gymId)
+
   return (
     <AddStudentWizard
       gymId={gymId}
@@ -35,6 +39,7 @@ export default async function AddStudentPage({
         id: p.id, name: lname(p), price: Number(p.price_usd), durationDays: p.duration_days,
       }))}
       locale={locale}
+      membershipEnabled={products.membership}
     />
   )
 }
