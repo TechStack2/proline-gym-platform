@@ -14,7 +14,11 @@ import { toE164Digits } from './link'
  */
 export async function dispatchWhatsApp(
   gymId: string, toPhone: string | null | undefined, template: string, body: string,
-): Promise<{ dispatched: boolean; status?: 'sent' | 'failed' }> {
+  // DUNNING-AUTO: when set, stamps the outbound row's dedup_key (partial-unique) so
+  // the same reminder is never queued twice. The auto-dun reader already excludes
+  // sent keys; this is the atomic backstop against a concurrent double-send.
+  dedupKey?: string,
+): Promise<{ dispatched: boolean; status?: 'sent' | 'failed'; deduped?: boolean }> {
   try {
     if (!toPhone) return { dispatched: false }
     const admin = createAdminClient()
@@ -26,10 +30,14 @@ export async function dispatchWhatsApp(
       return { dispatched: false } // inactive gym → no-op
     }
     const toDigits = toE164Digits(toPhone, cfg.default_country_code ?? '961')
-    const { data: row } = await admin
+    const { data: row, error: insErr } = await admin
       .from('outbound_messages')
-      .insert({ gym_id: gymId, to_phone: toDigits, body, template, status: 'queued' })
+      .insert({ gym_id: gymId, to_phone: toDigits, body, template, status: 'queued', dedup_key: dedupKey ?? null })
       .select('id').single()
+    // A dedup_key collision (23505 on the partial-unique index) means this exact
+    // reminder was already queued by a concurrent run → skip, don't double-send.
+    if (insErr) return { dispatched: false, deduped: !!dedupKey }
+    if (!row) return { dispatched: false }
 
     let token = ''
     try { token = decryptToken(cfg.access_token) } catch { /* unreadable ciphertext */ }

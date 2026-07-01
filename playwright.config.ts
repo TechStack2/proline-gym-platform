@@ -189,6 +189,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DUNNING-AUTO: auto WhatsApp renewal reminders (opt-in, deduped, record
+      // mode). Seeds its OWN isolated opted-in + opted-out gyms (service-role seed)
+      // and drives POST /api/dunning/run — one reminder, no duplicate, zero when
+      // opted out. Own fresh owner contexts.
+      name: 'dunning-auto',
+      dependencies: ['setup'],
+      testMatch: /dunning-auto\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it
