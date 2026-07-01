@@ -96,13 +96,18 @@ test.describe('OFF-4 · reconciliation & conflict resolution', () => {
         await page.reload()
         await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 10_000 })
       }, { timeout: 60_000 })
-      // OFF-RESILIENCE: wait for offline to COMMIT in React before the offline record.
-      // The record path keys on the same lagged useOnline() state (offline-desk passes
-      // online={online} to the recorder), so submitting before the post-mount effect
-      // flips online=false would write THROUGH instead of queuing (no pay-saved-offline).
-      // desk-sync-now is disabled ⟺ !online (syncing idle here) — the deterministic signal.
-      await expect(vis(page, '[data-testid="desk-sync-now"]').first(),
-        'offline committed (sync-now disabled) before the offline record path').toBeDisabled({ timeout: 30_000 })
+      // OFF-RESILIENCE: force the app to COMMIT offline before the offline record. A
+      // SW-served reload can mount with navigator.onLine reading TRUE under ctx.setOffline,
+      // and useOnline() only flips on the 'offline' EVENT (missed before mount) → `online`
+      // stays true and the recorder (offline-desk passes online={online}) would write THROUGH
+      // instead of queuing (no pay-saved-offline). Re-fire the offline event until online
+      // commits false (sync-now disabled ⟺ !online, syncing idle). Idempotent → deterministic
+      // (reconnect's own 'online' event restores online=true later).
+      await untilConsistent(async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+        await expect(vis(page, '[data-testid="desk-sync-now"]').first(),
+          'offline committed (sync-now disabled) before the offline record path').toBeDisabled({ timeout: 2_000 })
+      }, { timeout: 30_000, intervals: [500, 1_000, 2_000] })
       await searchOpenKarim(page, 'Karim')
       for (let i = 0; i < 2; i++) {
         await invRow().getByTestId('desk-record-payment').click()
@@ -195,13 +200,18 @@ test.describe('OFF-4 · reconciliation & conflict resolution', () => {
         await page.reload()
         await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 10_000 })
       }, { timeout: 60_000 })
-      // OFF-RESILIENCE: wait for offline to COMMIT in React before the offline record.
-      // The record path keys on the same lagged useOnline() state (offline-desk passes
-      // online={online} to the recorder), so submitting before the post-mount effect
-      // flips online=false would write THROUGH instead of queuing (no pay-saved-offline).
-      // desk-sync-now is disabled ⟺ !online (syncing idle here) — the deterministic signal.
-      await expect(vis(page, '[data-testid="desk-sync-now"]').first(),
-        'offline committed (sync-now disabled) before the offline record path').toBeDisabled({ timeout: 30_000 })
+      // OFF-RESILIENCE: force the app to COMMIT offline before the offline record. A
+      // SW-served reload can mount with navigator.onLine reading TRUE under ctx.setOffline,
+      // and useOnline() only flips on the 'offline' EVENT (missed before mount) → `online`
+      // stays true and the recorder (offline-desk passes online={online}) would write THROUGH
+      // instead of queuing (no pay-saved-offline). Re-fire the offline event until online
+      // commits false (sync-now disabled ⟺ !online, syncing idle). Idempotent → deterministic
+      // (reconnect's own 'online' event restores online=true later).
+      await untilConsistent(async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+        await expect(vis(page, '[data-testid="desk-sync-now"]').first(),
+          'offline committed (sync-now disabled) before the offline record path').toBeDisabled({ timeout: 2_000 })
+      }, { timeout: 30_000, intervals: [500, 1_000, 2_000] })
       await searchOpenKarim(page, 'Karim')
       await invRow(page).getByTestId('desk-record-payment').click()
       await invRow(page).getByTestId('pay-submit').click()
