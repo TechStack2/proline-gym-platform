@@ -31,6 +31,23 @@ export function safeBrandColor(c: string | null | undefined): string {
 }
 
 /**
+ * WL-DOMAIN-ROUTING: map a request Host → the mapped gym's slug (or null when the
+ * host isn't a custom domain → the caller falls back to ?gym / DEFAULT_GYM_SLUG).
+ * Normalizes the host (lowercase, strip port); the domain is matched anon-safely
+ * via the definer RPC (returns only a slug). Cached per-request.
+ */
+export const getGymSlugByDomain = cache(
+  async (host: string | null | undefined): Promise<string | null> => {
+    if (!host) return null;
+    const domain = host.trim().toLowerCase().split(':')[0]; // drop any :port
+    if (!domain) return null;
+    const supabase = await createClient();
+    const { data } = await supabase.rpc('get_gym_slug_by_domain', { p_domain: domain });
+    return (typeof data === 'string' && data) ? data : null;
+  }
+);
+
+/**
  * Resolve the active landing gym by slug. Cached per-request (React cache) so the
  * Disciplines / Pricing / Schedule sections can each call it without N round-trips.
  * Returns null when the gym is missing or inactive — callers render a graceful empty state.

@@ -208,6 +208,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // WL-DOMAIN-ROUTING: the app resolves the gym by request Host (gym_domains).
+      // A mapped custom domain (mocked via x-forwarded-host) renders that gym's
+      // branded landing; ?gym= still works; an unmapped host → the default gym.
+      name: 'wl-domain-routing',
+      dependencies: ['setup'],
+      testMatch: /wl-domain-routing\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it

@@ -74,6 +74,27 @@ export default function LoginPage({ params }: Props) {
     try { setShowDemo(new URLSearchParams(window.location.search).get('demo') === '1'); } catch { /* noop */ }
   }, []);
 
+  // WL-DOMAIN-ROUTING: brand the login entry from the request Host. Resolved
+  // client-side (same idiom as showDemo above) so the auth-critical form is
+  // untouched: on a mapped custom domain, swap the logo + name to that gym's;
+  // otherwise the built-in Proline default stands (no flash for the vendor domain).
+  const [brand, setBrand] = useState<{ logoUrl?: string; name?: string }>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: slug } = await supabase.rpc('get_gym_slug_by_domain', { p_domain: window.location.host });
+        if (!slug || typeof slug !== 'string') return; // vendor/Railway domain → default branding
+        const { data } = await supabase.rpc('get_public_gym', { p_slug: slug });
+        const g = Array.isArray(data) ? data[0] : data;
+        if (g) setBrand({
+          logoUrl: g.logo_url || undefined,
+          name: (locale === 'ar' ? g.name_ar : locale === 'fr' ? g.name_fr : g.name_en) || undefined,
+        });
+      } catch { /* keep the default branding */ }
+    })();
+  }, [locale, supabase]);
+  const brandName = brand.name || 'PRO LINE Gym';
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -138,16 +159,16 @@ export default function LoginPage({ params }: Props) {
         <div className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl shadow-lg ring-2 ring-primary-200/50">
             <Image
-              src="/logo.jpg"
-              alt="PRO LINE Gym"
+              src={brand.logoUrl || '/logo.jpg'}
+              alt={brandName}
               width={80}
               height={80}
               className="h-full w-full object-cover"
               priority
             />
           </div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
-            PRO LINE Gym
+          <h1 data-testid="login-brand-name" className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
+            {brandName}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             {t('signInPlatform')}

@@ -1,6 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
-import { getLandingGym, DEFAULT_GYM_SLUG, safeBrandColor } from '@/lib/marketing/gym';
+import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG, safeBrandColor } from '@/lib/marketing/gym';
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { AffiliationsSection } from '@/components/marketing/AffiliationsSection';
 import { DisciplinesSection } from '@/components/marketing/DisciplinesSection';
@@ -32,7 +33,14 @@ type Props = {
  */
 export default async function LandingPage({ params: { locale }, searchParams }: Props) {
   setRequestLocale(locale); // pages render independently of layouts — both need it
-  const gymSlug = searchParams?.gym;
+
+  // WL-DOMAIN-ROUTING: which gym is this request for? ?gym= (explicit; CI + preview)
+  // WINS, then the request Host (a mapped custom domain), then DEFAULT_GYM_SLUG (the
+  // vendor/Railway domain → the demo — nothing regresses). Reads the proxied host
+  // (x-forwarded-host, set by Cloudflare/Railway/Vercel) then the raw Host.
+  const hdrs = headers();
+  const domainSlug = await getGymSlugByDomain(hdrs.get('x-forwarded-host') || hdrs.get('host'));
+  const gymSlug = searchParams?.gym || domainSlug || undefined;
 
   // GRW-1: gym's active disciplines (anon-readable, 000035) → trial-capture
   // interest chips. One fetch here keeps the chips id-accurate for the RPC.
