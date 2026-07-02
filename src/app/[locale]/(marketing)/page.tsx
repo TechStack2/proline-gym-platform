@@ -1,6 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
-import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
+import { getLandingGym, DEFAULT_GYM_SLUG, safeBrandColor } from '@/lib/marketing/gym';
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { AffiliationsSection } from '@/components/marketing/AffiliationsSection';
 import { DisciplinesSection } from '@/components/marketing/DisciplinesSection';
@@ -51,9 +51,22 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
     name: (locale === 'ar' ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en,
   }));
 
+  // WL-LANDING: resolve the gym's branding (name/logo/hero/color/tagline). Each
+  // falls back to the built-in Proline default when the gym leaves it unset, so
+  // the demo renders exactly as before and any gym renders its own look.
+  const pick = (ar?: string | null, en?: string | null, fr?: string | null) =>
+    (locale === 'ar' ? ar : locale === 'fr' ? fr : en) || en || undefined;
+  const branding = {
+    name: gym ? (pick(gym.name_ar, gym.name_en, gym.name_fr) || undefined) : undefined,
+    logoUrl: gym?.logo_url || undefined,
+    heroImageUrl: gym?.hero_image_url || undefined,
+    brandColor: safeBrandColor(gym?.brand_color),
+    tagline: gym ? pick(gym.tagline_ar, gym.tagline_en, gym.tagline_fr) : undefined,
+  };
+
   return (
     <>
-      <HeroSection locale={locale} />
+      <HeroSection locale={locale} branding={branding} />
       <AffiliationsSection locale={locale} />
       <DisciplinesSection locale={locale} gymSlug={sectionSlug} />
       <ScheduleSection locale={locale} gymSlug={sectionSlug} />

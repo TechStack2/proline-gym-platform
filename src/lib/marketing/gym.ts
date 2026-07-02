@@ -13,7 +13,22 @@ export type LandingGym = {
   name_ar: string;
   name_en: string;
   name_fr: string;
+  // WL-LANDING: per-gym branding (all nullable → the template falls back to the
+  // built-in Proline default when unset, so nothing regresses).
+  logo_url: string | null;
+  brand_color: string | null;
+  hero_image_url: string | null;
+  tagline_ar: string | null;
+  tagline_en: string | null;
+  tagline_fr: string | null;
 };
+
+/** A valid 6-digit hex brand color, or the default crimson when unset/invalid.
+ *  (Validated because it flows into an SVG attribute — only trust a real hex.) */
+export const DEFAULT_BRAND_COLOR = '#cd1419';
+export function safeBrandColor(c: string | null | undefined): string {
+  return c && /^#[0-9a-fA-F]{6}$/.test(c) ? c : DEFAULT_BRAND_COLOR;
+}
 
 /**
  * Resolve the active landing gym by slug. Cached per-request (React cache) so the

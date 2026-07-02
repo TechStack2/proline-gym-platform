@@ -4,14 +4,31 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Phone, MessageCircle } from 'lucide-react';
 
-type HeroSectionProps = {
-  locale: string;
+// WL-LANDING: the resolved gym's branding. Every field is optional → the template
+// falls back to the built-in Proline default, so the demo is byte-identical.
+export type HeroBranding = {
+  name?: string;
+  logoUrl?: string;
+  heroImageUrl?: string;
+  brandColor: string;   // always a safe hex (default crimson when the gym is unset)
+  tagline?: string;
 };
 
-export function HeroSection({ locale }: HeroSectionProps) {
+type HeroSectionProps = {
+  locale: string;
+  branding?: HeroBranding;
+};
+
+const DEFAULT_BRANDING: HeroBranding = { brandColor: '#cd1419' };
+
+export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSectionProps) {
   // AX-1: copy now flows through next-intl (the isRTL?ar:en bypass dropped fr).
   const t = useTranslations('landing.hero');
   const isRTL = locale === 'ar';
+  const logoSrc = branding.logoUrl || '/logo.jpg';
+  const heroSrc = branding.heroImageUrl || '/landing/gym-1.jpg';
+  const brandName = branding.name || 'PRO LINE Gym';
+  const tagline = branding.tagline || t('tagline');
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -29,7 +46,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
           sidelining the centered content to the right (the recurring "unbalanced
           hero"). Classes are stylesheet rules → CSP-safe → survive in prod. */}
       <Image
-        src="/landing/gym-1.jpg"
+        src={heroSrc}
         alt=""
         aria-hidden
         fill
@@ -45,19 +62,35 @@ export function HeroSection({ locale }: HeroSectionProps) {
           equally left-to-right → a balanced, text-forward hero on any source crop. */}
       <div className="absolute inset-0 bg-gradient-to-b from-secondary-950/85 via-secondary-950/88 to-secondary-950/95" />
 
-      {/* Symmetric crimson brand glow (centered → no left/right bias) for depth.
-          HERO-FIX: as an arbitrary-value CLASS, not an inline `style` — the prod
-          CSP strips inline style attributes (see the image note above), which had
-          silently dropped this glow in prod too. */}
-      <div className="absolute inset-0 [background:radial-gradient(ellipse_70%_55%_at_50%_42%,rgba(205,20,25,0.18),transparent_70%)]" />
+      {/* WL-LANDING: symmetric brand glow in the RESOLVED gym's brand color. Rendered
+          as an inline SVG radial gradient — `stop-color` is an SVG PRESENTATION
+          ATTRIBUTE (not the HTML `style` attribute), so the prod CSP
+          `style-src … no-unsafe-inline` does NOT strip it (unlike an inline
+          `style={{background}}`), and no per-request nonce is needed. Defaults to
+          crimson (#cd1419) when the gym leaves brand_color unset. */}
+      <svg
+        aria-hidden
+        data-testid="hero-brand-glow"
+        data-brand-color={branding.brandColor}
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+      >
+        <defs>
+          <radialGradient id="wl-hero-glow" cx="50%" cy="42%" r="60%">
+            <stop offset="0%" stopColor={branding.brandColor} stopOpacity={0.18} />
+            <stop offset="70%" stopColor={branding.brandColor} stopOpacity={0} />
+          </radialGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#wl-hero-glow)" />
+      </svg>
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-32 text-center">
-        {/* Logo */}
-        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl shadow-2xl ring-2 ring-white/20">
+        {/* Logo — the resolved gym's logo (default: /logo.jpg) */}
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl shadow-2xl ring-2 ring-white/20">
           <Image
-            src="/logo.jpg"
-            alt="PRO LINE Gym"
+            src={logoSrc}
+            alt={brandName}
             width={96}
             height={96}
             className="h-full w-full object-cover"
@@ -65,9 +98,14 @@ export function HeroSection({ locale }: HeroSectionProps) {
           />
         </div>
 
-        {/* Tagline */}
+        {/* WL-LANDING: the resolved gym's NAME (was implicit in the logo alt only) */}
+        <p data-testid="hero-gym-name" className={cn('mb-3 text-2xl font-bold text-white', isRTL && 'font-arabic')}>
+          {brandName}
+        </p>
+
+        {/* Tagline — the gym's tagline, else the default copy */}
         <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary-400">
-          {t('tagline')}
+          {tagline}
         </p>
 
         {/* Headline */}
