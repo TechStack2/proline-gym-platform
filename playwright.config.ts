@@ -199,6 +199,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // WL-LANDING: the public landing renders the RESOLVED gym's branding (name +
+      // brand color, logo/hero/tagline) — set gym renders its look, unset = the
+      // Proline default. Seeds its OWN isolated gyms; loads anon via ?gym=<slug>.
+      name: 'wl-landing',
+      dependencies: ['setup'],
+      testMatch: /wl-landing\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it
