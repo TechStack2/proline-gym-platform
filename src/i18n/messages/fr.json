@@ -2483,7 +2483,7 @@
     "copy": "Copier",
     "copied": "Copié",
     "shareWhatsapp": "Partager sur WhatsApp",
-    "waMessage": "Bienvenue chez PRO LINE Gym ! Connectez-vous avec {login} et le mot de passe temporaire {temp}. Veuillez le changer à votre première connexion.",
+    "waMessage": "Bienvenue chez PRO LINE Gym ! Connectez-vous sur {url} avec {login} et le mot de passe temporaire {temp}. Veuillez le changer à votre première connexion.",
     "err": {
       "forbidden": "Seul le personnel peut inviter.",
       "target_not_found": "Membre introuvable.",

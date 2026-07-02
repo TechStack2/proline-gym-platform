@@ -80,6 +80,8 @@ test('ON-1 · member invite → onboarding → portal (identity intact) + wa.me 
     const wa = await vis(owner.page, '[data-testid="invite-wa-link"]').first().getAttribute('href')
     expect(wa, 'wa.me deep-link present').toContain('wa.me/')
     expect(decodeURIComponent(wa!), 'message carries the temp password').toContain(temp)
+    // INVITE-MSG-URL: the message includes a tappable login URL (app origin + /auth/login).
+    expect(decodeURIComponent(wa!), 'message carries the login URL').toContain('/auth/login')
   } finally {
     await owner.ctx.close()
   }
