@@ -44,6 +44,63 @@ const STATUS_STYLE: Record<string, string> = {
   no_show: 'bg-red-100 text-red-700',
 };
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
+const SessionItem = ({ s, busy, run, t, locale }: {
+  s: SessionRow;
+  busy: string | null;
+  run: (key: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => Promise<void>;
+  t: ReturnType<typeof useTranslations<'pt'>>;
+  locale: string;
+}) => (
+  <div data-testid="pt-session-row" data-session-id={s.session_id} data-assignment-id={s.assignment_id ?? ''} data-status={s.status} data-remaining={s.sessions_remaining ?? ''} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
+    <div className="flex items-center justify-between">
+      <p className="text-xs text-gray-600">
+        {new Date(s.scheduled_at).toLocaleDateString(dateLocale(locale))}
+        {s.sessions_remaining != null ? ` · ${t('sessions_remaining', { remaining: s.sessions_remaining, total: s.sessions_total ?? 0 })}` : ''}
+      </p>
+      <span className={cn('shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium', STATUS_STYLE[s.status])}>
+        {t(`session_status.${s.status}` as Parameters<typeof t>[0])}
+      </span>
+    </div>
+    {(s.status === 'scheduled' || s.status === 'completed') && (
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          data-testid="pt-complete"
+          disabled={busy !== null}
+          onClick={() => run(`cmp-${s.session_id}`, () => completePtSession({ sessionId: s.session_id }), t('session_completed'))}
+          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          {s.status === 'completed' ? t('session_status.completed') : t('complete')}
+        </button>
+        {s.status === 'scheduled' && (
+          <>
+            <button
+              type="button"
+              data-testid="pt-noshow"
+              disabled={busy !== null}
+              onClick={() => run(`ns-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'no_show' }), t('session_no_show'))}
+              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-red-50 text-red-700 border border-red-200 px-2 py-1.5 text-xs font-medium disabled:opacity-50"
+            >
+              <XCircle className="h-3.5 w-3.5" />{t('no_show')}
+            </button>
+            <button
+              type="button"
+              data-testid="pt-cancel"
+              disabled={busy !== null}
+              onClick={() => run(`cn-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'cancelled' }), t('session_cancelled'))}
+              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-50"
+            >
+              <Ban className="h-3.5 w-3.5" />{t('cancel')}
+            </button>
+          </>
+        )}
+      </div>
+    )}
+  </div>
+);
+
 export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
   const t = useTranslations('pt');
   const router = useRouter();
@@ -99,56 +156,6 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
     if (res.ok) { toast.success(okMsg); router.refresh(); }
     else toast.error(res.error || t('log_session_error'));
   };
-
-  const SessionItem = ({ s }: { s: SessionRow }) => (
-    <div data-testid="pt-session-row" data-session-id={s.session_id} data-assignment-id={s.assignment_id ?? ''} data-status={s.status} data-remaining={s.sessions_remaining ?? ''} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-600">
-          {new Date(s.scheduled_at).toLocaleDateString(dateLocale(locale))}
-          {s.sessions_remaining != null ? ` · ${t('sessions_remaining', { remaining: s.sessions_remaining, total: s.sessions_total ?? 0 })}` : ''}
-        </p>
-        <span className={cn('shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium', STATUS_STYLE[s.status])}>
-          {t(`session_status.${s.status}` as Parameters<typeof t>[0])}
-        </span>
-      </div>
-      {(s.status === 'scheduled' || s.status === 'completed') && (
-        <div className="flex gap-1.5">
-          <button
-            type="button"
-            data-testid="pt-complete"
-            disabled={busy !== null}
-            onClick={() => run(`cmp-${s.session_id}`, () => completePtSession({ sessionId: s.session_id }), t('session_completed'))}
-            className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            {s.status === 'completed' ? t('session_status.completed') : t('complete')}
-          </button>
-          {s.status === 'scheduled' && (
-            <>
-              <button
-                type="button"
-                data-testid="pt-noshow"
-                disabled={busy !== null}
-                onClick={() => run(`ns-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'no_show' }), t('session_no_show'))}
-                className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-red-50 text-red-700 border border-red-200 px-2 py-1.5 text-xs font-medium disabled:opacity-50"
-              >
-                <XCircle className="h-3.5 w-3.5" />{t('no_show')}
-              </button>
-              <button
-                type="button"
-                data-testid="pt-cancel"
-                disabled={busy !== null}
-                onClick={() => run(`cn-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'cancelled' }), t('session_cancelled'))}
-                className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-50"
-              >
-                <Ban className="h-3.5 w-3.5" />{t('cancel')}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className={cn('p-4 space-y-5', isRTL && 'rtl')}>
@@ -209,7 +216,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
               {(sessionsByAssignment.get(r.assignment_id) ?? []).length > 0 && (
                 <div className="mt-2 space-y-1.5 border-t pt-2">
                   {(sessionsByAssignment.get(r.assignment_id) ?? []).map((sRow) => (
-                    <SessionItem key={sRow.session_id} s={sRow} />
+                    <SessionItem key={sRow.session_id} s={sRow} busy={busy} run={run} t={t} locale={locale} />
                   ))}
                 </div>
               )}
@@ -230,7 +237,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
                   {list[0].student_name} <span className="text-xs font-normal text-gray-500">· {pkg(list[0])}</span>
                 </p>
                 <div className="space-y-1.5">
-                  {list.map((sRow) => <SessionItem key={sRow.session_id} s={sRow} />)}
+                  {list.map((sRow) => <SessionItem key={sRow.session_id} s={sRow} busy={busy} run={run} t={t} locale={locale} />)}
                 </div>
               </div>
             ))}
@@ -238,7 +245,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
               <div className="rounded-xl bg-amber-50/60 p-3 border border-amber-100" data-testid="pt-coach-unlinked">
                 <p className="mb-1.5 text-xs font-medium text-amber-700">{t('unlinked_sessions')}</p>
                 <div className="space-y-1.5">
-                  {unlinkedSessions.map((sRow) => <SessionItem key={sRow.session_id} s={sRow} />)}
+                  {unlinkedSessions.map((sRow) => <SessionItem key={sRow.session_id} s={sRow} busy={busy} run={run} t={t} locale={locale} />)}
                 </div>
               </div>
             )}

@@ -31,6 +31,14 @@ export type PlanRow = {
 
 const DURATION_PRESETS = [30, 90, 180, 365]
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was remounting its subtree each render.
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+    {children}
+  </div>
+)
+
 export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId: string; locale: string }) {
   const t = useTranslations('settings.planManager')
   const router = useRouter()
@@ -82,13 +90,6 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
     setBusy(false)
     router.refresh()
   }
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
-      {children}
-    </div>
-  )
 
   const steps = [
     {

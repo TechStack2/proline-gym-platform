@@ -56,6 +56,17 @@ interface CoachFormProps {
 
 const SEP = ' · '
 
+// FORM-FOCUS-SWEEP: the labelled-field wrapper lives at MODULE SCOPE (stable type ref).
+// Defined inside the render body it got a new identity each keystroke → React remounted
+// the <Input>/<Textarea> children → the cursor jumped out (the coach-edit phone-focus bug).
+// Own props only, so it hoists cleanly. Same fix as onboarding-client.tsx's Field.
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+    {children}
+  </div>
+)
+
 export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) {
   const router = useRouter()
   const t = useTranslations('coaches.form')
@@ -150,13 +161,6 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
       setLoading(false)
     }
   }
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
-      {children}
-    </div>
-  )
 
   const dName = (d: DisciplineRow) => (isRTL ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en
 

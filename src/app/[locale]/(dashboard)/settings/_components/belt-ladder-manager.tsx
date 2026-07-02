@@ -46,6 +46,14 @@ function rows(val: BeltRow[] | BeltRow | undefined): BeltRow[] {
   return Array.isArray(val) ? val : val ? [val] : []
 }
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was remounting its subtree each render.
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+    {children}
+  </div>
+)
+
 export function BeltLadderManager({ disciplines, locale }: { disciplines: DisciplineRow[]; locale: string }) {
   const t = useTranslations('settings.beltLadder')
   const router = useRouter()
@@ -137,13 +145,6 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
       const supabase = createClient()
       return supabase.from('belt_hierarchies').update({ is_active: isActive }).eq('id', id)
     })
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
-      {children}
-    </div>
-  )
 
   const steps = [
     // Rank step only when ADDING (rank is the row's enum identity — not editable).

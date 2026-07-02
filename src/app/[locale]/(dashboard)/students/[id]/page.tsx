@@ -28,6 +28,18 @@ export const dynamic = 'force-dynamic'
 
 type Props = { params: { locale: string; id: string }; searchParams: { pay?: string; sellpt?: string } }
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
+const Panel = ({ isRTL, icon: Icon, title, testid, id: anchorId, children }: { isRTL: boolean; icon: any; title: string; testid: string; id?: string; children: React.ReactNode }) => (
+  <section id={anchorId} className="scroll-mt-4 rounded-2xl border bg-white p-4 shadow-sm" data-testid={testid}>
+    <h2 className={cn('mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+      <Icon className="h-4 w-4 text-primary-600" /> {title}
+    </h2>
+    {children}
+  </section>
+)
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
+const Empty = ({ text }: { text: string }) => <p className="py-3 text-center text-sm text-gray-400">{text}</p>
+
 /**
  * Member-360 (IA-2) — THE member file. Replaces the husk that passed
  * memberships={[]} / beltProgressions={[]} hardcoded (and ordered attendance by
@@ -392,16 +404,6 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     suspended: 'bg-red-50 text-red-600',
   }
 
-  const Panel = ({ icon: Icon, title, testid, id: anchorId, children }: { icon: any; title: string; testid: string; id?: string; children: React.ReactNode }) => (
-    <section id={anchorId} className="scroll-mt-4 rounded-2xl border bg-white p-4 shadow-sm" data-testid={testid}>
-      <h2 className={cn('mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-        <Icon className="h-4 w-4 text-primary-600" /> {title}
-      </h2>
-      {children}
-    </section>
-  )
-  const Empty = ({ text }: { text: string }) => <p className="py-3 text-center text-sm text-gray-400">{text}</p>
-
   return (
     <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="member-360">
       {/* ── Header: identity + belt + guardians ── */}
@@ -486,7 +488,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── 1. Membership (NO-MEMBERSHIP: hidden when the gym doesn't sell it) ── */}
         {enabledProducts.membership && (
-        <Panel icon={CreditCard} title={t('membership')} testid="panel-membership">
+        <Panel isRTL={isRTL} icon={CreditCard} title={t('membership')} testid="panel-membership">
           {/* ML-1: the D2 docking slot is live — read-time states + actions */}
           {membershipCards.length === 0 ? <Empty text={t('noMembership')} /> : (
             <div className="space-y-3">
@@ -507,7 +509,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
         )}
 
         {/* ── 2. Class registrations ── */}
-        <Panel icon={CalendarDays} title={t('registrations')} testid="panel-registrations">
+        <Panel isRTL={isRTL} icon={CalendarDays} title={t('registrations')} testid="panel-registrations">
           {(registrations ?? []).length === 0 ? <Empty text={t('noRegistrations')} /> : (
             <ul className="space-y-2">
               {(registrations ?? []).map((r: any) => (
@@ -555,7 +557,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
         {/* ── 3. PT ── the file's own PT cockpit (the header pill anchors here).
             DOCKING SLOT: PT-1 “sell package” + PT-2 “book session” actions mount
             in this panel (per the approved PT-360 §3.1 package cards). */}
-        <Panel icon={Dumbbell} title={t('pt')} testid="panel-pt" id="panel-pt">
+        <Panel isRTL={isRTL} icon={Dumbbell} title={t('pt')} testid="panel-pt" id="panel-pt">
           {/* PT-1 package-first: cards with sessions NESTED (the flat
               recent-sessions list died here); sell + extend actions inside. */}
           <MemberPtPanel
@@ -570,7 +572,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
         </Panel>
 
         {/* ── 4. Billing ── */}
-        <Panel icon={DollarSign} title={t('billing')} testid="panel-billing">
+        <Panel isRTL={isRTL} icon={DollarSign} title={t('billing')} testid="panel-billing">
           {(invoices ?? []).length === 0 ? <Empty text={t('noInvoices')} /> : (
             <ul className="space-y-2">
               {(invoices ?? []).map((inv: any) => {
@@ -615,7 +617,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
         </Panel>
 
         {/* ── 5. Attendance ── */}
-        <Panel icon={ClipboardList} title={`${t('attendance')} · ${t('last30', { count: attendance30 ?? 0 })}`} testid="panel-attendance">
+        <Panel isRTL={isRTL} icon={ClipboardList} title={`${t('attendance')} · ${t('last30', { count: attendance30 ?? 0 })}`} testid="panel-attendance">
           {(attendance ?? []).length === 0 ? <Empty text={t('noAttendance')} /> : (
             <ul className="space-y-1">
               {(attendance ?? []).map((a: any) => (
@@ -629,7 +631,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
         </Panel>
 
         {/* ── 6. Belt progress ── */}
-        <Panel icon={Award} title={t('beltProgress')} testid="panel-belts">
+        <Panel isRTL={isRTL} icon={Award} title={t('beltProgress')} testid="panel-belts">
           <p className="mb-2 text-sm text-gray-700 capitalize">
             {t('currentRank')}: <span className="font-semibold">{beltLabel(student.current_belt_rank)}</span>
           </p>

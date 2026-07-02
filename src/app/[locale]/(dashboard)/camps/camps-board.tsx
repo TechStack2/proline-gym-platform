@@ -39,6 +39,14 @@ const STATUS_TONE: Record<string, string> = {
   cancelled: 'bg-red-50 text-red-500',
 }
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+    {children}
+  </div>
+)
+
 export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
   camps: CampRow[]
   confirmed: Record<string, number>
@@ -121,13 +129,6 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
     if (error) toast({ title: t('saveFailed'), description: error.message, variant: 'destructive' })
     else router.refresh()
   }
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
-      {children}
-    </div>
-  )
 
   return (
     <div className="space-y-4">

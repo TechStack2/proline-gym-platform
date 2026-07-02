@@ -21,6 +21,14 @@ const TONE: Record<string, string> = {
   not_configured: 'bg-gray-100 text-gray-500',
 }
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was remounting its subtree each render.
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+    {children}
+  </div>
+)
+
 export function WhatsAppSettings({ initial, locale }: { initial: WhatsAppStatus; locale: string }) {
   const t = useTranslations('whatsappSettings')
   const isRTL = locale === 'ar'
@@ -49,13 +57,6 @@ export function WhatsAppSettings({ initial, locale }: { initial: WhatsAppStatus;
     setBusy(false)
     setTestResult(res.ok ? (res.dispatched ? t('testSent') : t('testInactive')) : t('testFailed'))
   }
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
-      {children}
-    </div>
-  )
 
   return (
     <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'rtl text-right')} data-testid="whatsapp-settings">

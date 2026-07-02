@@ -18,6 +18,11 @@ import { FileSignature, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { saveWaiverTemplate, type WaiverTemplate } from './waiver-actions'
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was remounting its subtree each render.
+const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div><label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>{children}</div>
+)
+
 export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; locale: string }) {
   const t = useTranslations('waiverSettings')
   const isRTL = locale === 'ar'
@@ -48,10 +53,6 @@ export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; l
       router.refresh()
     }
   }
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div><label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>{children}</div>
-  )
 
   const steps = [
     {

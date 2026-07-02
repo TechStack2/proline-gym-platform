@@ -22,6 +22,21 @@ type Props = { params: { locale: string; id: string }; searchParams: { sched?: s
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
 const hhmm = (v: string | null) => (v || '').slice(0, 5)
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
+const Panel = ({ isRTL, icon: Icon, title, testid, id: anchorId, action, children }: { isRTL: boolean; icon: any; title: string; testid: string; id?: string; action?: React.ReactNode; children: React.ReactNode }) => (
+  <section id={anchorId} className="scroll-mt-4 rounded-2xl border bg-white p-4 shadow-sm" data-testid={testid}>
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <h2 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+        <Icon className="h-4 w-4 text-primary-600" /> {title}
+      </h2>
+      {action}
+    </div>
+    {children}
+  </section>
+)
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
+const Empty = ({ text }: { text: string }) => <p className="py-3 text-center text-sm text-gray-400">{text}</p>
+
 /**
  * Coach 360 (TEAM-1) — THE coach file, the mirror of Member-360. Every panel
  * reads live data through existing tables/RLS; every action delegates to an
@@ -170,19 +185,6 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
   const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(locale), { hour: '2-digit', minute: '2-digit' })
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(dateLocale(locale), { weekday: 'short', day: 'numeric', month: 'short' })
 
-  const Panel = ({ icon: Icon, title, testid, id: anchorId, action, children }: { icon: any; title: string; testid: string; id?: string; action?: React.ReactNode; children: React.ReactNode }) => (
-    <section id={anchorId} className="scroll-mt-4 rounded-2xl border bg-white p-4 shadow-sm" data-testid={testid}>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-          <Icon className="h-4 w-4 text-primary-600" /> {title}
-        </h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
-  const Empty = ({ text }: { text: string }) => <p className="py-3 text-center text-sm text-gray-400">{text}</p>
-
   return (
     <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="coach-360">
       {/* ── Header: identity + specialties + contact ── */}
@@ -262,6 +264,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── 1. Schedule (classes + PT, day/week toggle) ── */}
         <Panel
+          isRTL={isRTL}
           icon={CalendarDays}
           title={t('schedule')}
           testid="panel-coach-schedule"
@@ -312,7 +315,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
         </Panel>
 
         {/* ── 2. Load / utilization ── */}
-        <Panel icon={Gauge} title={t('load')} testid="panel-coach-load">
+        <Panel isRTL={isRTL} icon={Gauge} title={t('load')} testid="panel-coach-load">
           <div className="grid grid-cols-2 gap-3" data-testid="coach-load-grid">
             <div className="rounded-xl bg-gray-50 p-3">
               <p className="text-2xl font-bold text-gray-900" data-testid="load-classes">{activeClassCount}</p>
@@ -345,7 +348,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
         </section>
 
         {/* ── 4. Roster — class members + PT clients, each → Member-360 ── */}
-        <Panel icon={Users} title={`${t('roster')} · ${classMembers.length + ptClients.length}`} testid="panel-coach-roster">
+        <Panel isRTL={isRTL} icon={Users} title={`${t('roster')} · ${classMembers.length + ptClients.length}`} testid="panel-coach-roster">
           <div className="space-y-3">
             <div>
               <p className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-500"><CalendarCheck className="h-3 w-3" /> {t('classMembers')}</p>
