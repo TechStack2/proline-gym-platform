@@ -38,12 +38,16 @@ export function InviteButton({ kind, id, name, locale }: Props) {
     try { await navigator.clipboard.writeText(result.tempPassword); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { /* noop */ }
   }
 
-  // Localized wa.me message: login + temp + "change it on first login".
+  // Localized wa.me message: login URL + login + temp + "change it on first login".
   const waLink = (() => {
     if (!result) return ''
+    // INVITE-MSG-URL: include a tappable LOGIN URL. Prefer the configured app origin
+    // (NEXT_PUBLIC_SITE_URL); else the actual runtime origin — never a hardcode.
+    const appOrigin = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+    const loginUrl = `${appOrigin}/${locale}/auth/login`
     // INVITE-PHONE-UX: the member logs in with their PHONE — share that, not the
     // hidden synthetic email (result.login stays internal-only).
-    const msg = t('waMessage', { login: result.waPhone, temp: result.tempPassword })
+    const msg = t('waMessage', { url: loginUrl, login: result.waPhone, temp: result.tempPassword })
     const digits = result.waPhone.replace(/\D/g, '') // the member's real phone
     return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`
   })()
