@@ -32,7 +32,9 @@ async function sql(path: string, body: unknown) {
 
 test.beforeAll(async () => {
   if (!URL || !KEY) throw new Error('GO-LIVE-GUARDS needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL')
-  const gymId = (await sql('rpc/seed_e2e_gym', { p_slug: SLUG, p_password: PASSWORD })) as string
+  // seed_e2e_gym itself has no service_role PostgREST grant (CI seeds via psql);
+  // use the granted WL wrapper (000072) — null brand/name = a plain seeded gym.
+  const gymId = (await sql('rpc/seed_e2e_wl_gym', { p_slug: SLUG, p_brand_color: null, p_name: null, p_password: PASSWORD })) as string
   // Owner-decided model for THIS gym only: configured prices are final → rate 0.
   const res = await fetch(`${URL}/rest/v1/gyms?id=eq.${gymId}`, {
     method: 'PATCH',
