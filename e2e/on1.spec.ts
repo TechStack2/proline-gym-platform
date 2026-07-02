@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
 import { ROLES } from './roles'
-import { vis } from './helpers'
+import { vis, untilConsistent } from './helpers'
 
 /**
  * ON-1 — portal/app invites (Option B identity adoption). Drives the dedicated
@@ -23,10 +23,25 @@ async function freshCtx(browser: Browser) {
 }
 
 async function signIn(page: Page, login: string, password: string) {
-  await page.goto('/en/auth/login')
-  await page.locator('#email').fill(login)
-  await page.locator('#password').fill(password)
-  await page.locator('button[type="submit"]').click()
+  // ON1-RESILIENCE: the invite's GoTrue admin createUser + the phone→email resolver
+  // are server-side async — the just-created account isn't always resolvable the
+  // instant we proceed, so an immediate login hits the create-then-login race and
+  // fails (stays on /auth/login), and the test then races the redirect. POLL the
+  // WHOLE sign-in (ml1/off2 untilConsistent style): re-attempt until it actually
+  // SETTLES OFF the login page — i.e. the account propagated, login succeeded, and
+  // the redirect settled — instead of racing. No assertion is weakened: login MUST
+  // succeed within the window; a genuinely-broken login still fails (throws at 60s).
+  await untilConsistent(async () => {
+    await page.goto('/en/auth/login')
+    await page.locator('#email').fill(login)
+    await page.locator('#password').fill(password)
+    await page.locator('button[type="submit"]').click()
+    // Settled = left the login page (the app pushes to /dashboard; role routing /
+    // the onboarding gate take over). A still-propagating account stays on
+    // /auth/login (error) → this fails → untilConsistent re-attempts.
+    await expect(page, 'sign-in settles off the login page (account propagated)')
+      .not.toHaveURL(/\/auth\/login/, { timeout: 8_000 })
+  }, { timeout: 60_000, intervals: [1_000, 2_000, 3_000, 5_000] })
 }
 
 /** Drive the onboarding wizard to completion (password → lang → avatar → finish). */
