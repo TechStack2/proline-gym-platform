@@ -1,0 +1,33 @@
+name: Lint — no unstable nested components
+
+# FORM-FOCUS-SWEEP: a standalone, ISOLATED guard (does NOT touch the e2e gate, so it can't
+# destabilize it) that fails if any component is defined inside a render body
+# (react/no-unstable-nested-components) — the recurring per-keystroke input-focus-loss bug
+# (a nested component gets a new type each render → React remounts it → the cursor drops).
+# Focused grep so it fails ONLY on that rule, not on the repo's other pre-existing
+# next-lint findings (the eslint config is .eslintrc.json).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  no-unstable-nested-components:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Guard react/no-unstable-nested-components
+        run: |
+          out="$(npx next lint --dir src --format compact 2>&1 || true)"
+          if echo "$out" | grep -q "no-unstable-nested-components"; then
+            echo "::error::A component is defined inside a render body — React remounts it every render, so inputs lose focus per keystroke. Hoist it to MODULE SCOPE (pass data as props). Offending locations:"
+            echo "$out" | grep "no-unstable-nested-components"
+            exit 1
+          fi
+          echo "✓ no unstable nested components"

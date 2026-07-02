@@ -104,6 +104,18 @@ test('ADM-2 · avatar upload renders on coach detail + wizard chip + diary; memb
     const coachDetailUrl = owner.page.url();
     await vis(owner.page, '[data-testid="coach-edit-btn"]').first().click();
     await expect(owner.page).toHaveURL(/\/edit/, { timeout: 15_000 });
+
+    // FORM-FOCUS-SWEEP guard: the coach EDIT form's field wrapper used to be DEFINED IN THE
+    // render body → each keystroke gave it a new type, React remounted the <Input>, and the
+    // cursor jumped out (the reported coach-phone focus bug). Type CHAR-BY-CHAR into the phone;
+    // toHaveValue(the full string) proves the module-scope hoist keeps focus. No submit — a
+    // pure focus check (the avatar upsert below is independent of this field).
+    const coachPhone = vis(owner.page, '[data-testid="coach-phone"]').first();
+    const NEW_PHONE = '+9613445566';
+    await coachPhone.click();
+    await coachPhone.fill('');
+    await coachPhone.pressSequentially(NEW_PHONE, { delay: 25 });
+    await expect(coachPhone, 'coach-edit phone retains focus while typing char-by-char').toHaveValue(NEW_PHONE);
     // The form is a PAGE (double-shell renders two copies). The file inputs are
     // CSS-hidden by design, so scope to the VISIBLE shell to drive the instance
     // the user actually sees.

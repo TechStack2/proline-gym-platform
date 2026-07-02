@@ -21,6 +21,20 @@ type Props = {
   searchParams: { tab?: string; search?: string; status?: string; method?: string; from?: string; to?: string; aging?: string }
 }
 
+// FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
+const TabLink = ({ locale, tab, k, label, icon: Icon }: { locale: string; tab: string; k: string; label: string; icon: any }) => (
+  <Link
+    href={`/${locale}/money${k === 'overview' ? '' : `?tab=${k}`}`}
+    data-testid={`money-tab-${k}`}
+    className={cn(
+      'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+      tab === k ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+    )}
+  >
+    <Icon className="h-4 w-4" /> {label}
+  </Link>
+)
+
 /**
  * /money — ONE ledger (IA-2). The issue → settle → reconcile workflow (D1) was
  * split across two sibling tabs; this unifies it: Overview (the cash drawer —
@@ -33,19 +47,6 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
   const t = await getTranslations('money')
   const tab = ['invoices', 'payments', 'winback'].includes(searchParams.tab ?? '') ? searchParams.tab! : 'overview'
 
-  const TabLink = ({ k, label, icon: Icon }: { k: string; label: string; icon: any }) => (
-    <Link
-      href={`/${locale}/money${k === 'overview' ? '' : `?tab=${k}`}`}
-      data-testid={`money-tab-${k}`}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
-        tab === k ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-      )}
-    >
-      <Icon className="h-4 w-4" /> {label}
-    </Link>
-  )
-
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -54,10 +55,10 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
           <p className="mt-0.5 text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="money-tabs">
-          <TabLink k="overview" label={t('overview')} icon={DollarSign} />
-          <TabLink k="invoices" label={t('invoices')} icon={FileText} />
-          <TabLink k="payments" label={t('payments')} icon={Banknote} />
-          <TabLink k="winback" label={t('winback')} icon={Heart} />
+          <TabLink locale={locale} tab={tab} k="overview" label={t('overview')} icon={DollarSign} />
+          <TabLink locale={locale} tab={tab} k="invoices" label={t('invoices')} icon={FileText} />
+          <TabLink locale={locale} tab={tab} k="payments" label={t('payments')} icon={Banknote} />
+          <TabLink locale={locale} tab={tab} k="winback" label={t('winback')} icon={Heart} />
         </div>
       </div>
 
