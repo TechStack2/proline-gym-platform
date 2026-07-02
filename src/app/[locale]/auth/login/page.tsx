@@ -229,7 +229,7 @@ export default function LoginPage({ params }: Props) {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="ProlineDemo2024!"
+                placeholder="••••••••"
                 disabled={loading}
                 className={cn(
                   'w-full rounded-xl border border-gray-200 py-3 text-base',
