@@ -30,12 +30,17 @@ async function signIn(page: Page, login: string, password: string) {
   await page.waitForURL((u) => !u.pathname.endsWith('/auth/login'), { timeout: 20_000 })
 }
 
-test('DEMO-GUARDIAN · login page lists 5 demo accounts incl. Guardian (EN + AR), click fills creds', async ({ browser }) => {
-  // EN — 5 accounts, the Guardian one present + clickable.
+test('DEMO-GUARDIAN · demo accounts gated behind ?demo=1 (hidden by default) incl. Guardian (EN + AR), click fills creds', async ({ browser }) => {
+  // hide-demo (go-live): Proline's real login is clean; the demo buttons surface ONLY with ?demo=1.
   const en = await freshCtx(browser, 'en')
   try {
+    // DEFAULT (no ?demo) → demo-account buttons ABSENT (clean prod login).
     await en.page.goto('/en/auth/login')
-    await expect(en.page.locator('[data-testid="demo-account"]'), 'all 5 demo logins render')
+    await expect(en.page.locator('[data-testid="demo-account"]'),
+      'demo accounts hidden by default (go-live clean login)').toHaveCount(0)
+    // SHOWCASE (?demo=1) → all 5 demo logins render, the Guardian one present + clickable.
+    await en.page.goto('/en/auth/login?demo=1')
+    await expect(en.page.locator('[data-testid="demo-account"]'), 'all 5 demo logins render with ?demo=1')
       .toHaveCount(5)
     const guardian = en.page.locator('[data-testid="demo-account"][data-email="guardian@prolinegym.lb"]')
     await expect(guardian, 'the guardian demo account is listed').toBeVisible()
@@ -51,7 +56,7 @@ test('DEMO-GUARDIAN · login page lists 5 demo accounts incl. Guardian (EN + AR)
   // AR — the Arabic label renders (RTL login page).
   const ar = await freshCtx(browser, 'ar')
   try {
-    await ar.page.goto('/ar/auth/login')
+    await ar.page.goto('/ar/auth/login?demo=1')
     await expect(ar.page.locator('[data-testid="demo-account"][data-email="guardian@prolinegym.lb"]'))
       .toContainText('ولي الأمر — بوابة الوالدين')
   } finally {
