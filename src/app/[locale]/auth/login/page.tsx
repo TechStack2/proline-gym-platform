@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
 import { signInWithPhone } from '@/lib/auth/actions';
@@ -65,6 +65,14 @@ export default function LoginPage({ params }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // hide-demo (go-live): the demo-account buttons are OFF by default so Proline's real
+  // login is clean. The SAME deployment's demo showcase surfaces them with `?demo=1` for
+  // sales pitches. Read client-side (no Suspense needed; the default render stays clean —
+  // showDemo starts false, so prod never flashes the buttons).
+  const [showDemo, setShowDemo] = useState(false);
+  useEffect(() => {
+    try { setShowDemo(new URLSearchParams(window.location.search).get('demo') === '1'); } catch { /* noop */ }
+  }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,7 +255,8 @@ export default function LoginPage({ params }: Props) {
           </button>
         </form>
 
-        {/* Demo Accounts Quick Select */}
+        {/* Demo Accounts Quick Select — hide-demo: OFF by default; shown only with ?demo=1 */}
+        {showDemo && (
         <div className="mt-6 border-t border-gray-100 pt-5">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100">
@@ -290,6 +299,7 @@ export default function LoginPage({ params }: Props) {
             <code className="rounded bg-gray-100 px-1 py-0.5 text-[10px] font-mono text-gray-600">ProlineDemo2024!</code>
           </p>
         </div>
+        )}
 
         {/* Language switcher */}
         <div className="mt-5 flex justify-center gap-1">
