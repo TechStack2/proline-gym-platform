@@ -42,6 +42,8 @@ test.beforeAll(async () => {
     body: JSON.stringify({ tax_rate: 0 }),
   })
   if (!res.ok) throw new Error(`set tax_rate=0 failed: ${res.status} ${await res.text()}`)
+  // A lead for GLG #1 (seed_e2e_gym seeds none) — 'new' status → the interactive select renders.
+  await sql('leads', { gym_id: gymId, first_name: 'GLG', last_name: 'Lead', phone: '+96171009900', source: 'walk_in', status: 'new' })
 })
 
 async function ownerCtx(browser: Browser) {
