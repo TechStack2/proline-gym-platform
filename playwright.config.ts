@@ -481,6 +481,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // INVOICE-SEQ: numbering is race-safe (000076 advisory lock) — two
+      // SIMULTANEOUS issuances both succeed with distinct sequential numbers
+      // (pre-fix: one 23505s). Node-side (service-role PostgREST, no browser);
+      // cancels its $1 fixtures (never deletes — COUNT-based numbering).
+      name: 'invoice-seq',
+      dependencies: ['setup'],
+      testMatch: /invoice-seq\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // G1 WhatsApp channel: flips the gym's WhatsApp config to active and
       // records outbound rows; mutates gym config nothing later should read.
       name: 'g1',
