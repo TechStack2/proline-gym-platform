@@ -41,7 +41,11 @@ async function signIn(page: Page, login: string, password: string) {
     // /auth/login (error) → this fails → untilConsistent re-attempts.
     await expect(page, 'sign-in settles off the login page (account propagated)')
       .not.toHaveURL(/\/auth\/login/, { timeout: 8_000 })
-  }, { timeout: 60_000, intervals: [1_000, 2_000, 3_000, 5_000] })
+    // LOGIN-LIMITER-aware backoff: the per-identifier limit is 5 attempts/min on
+    // this phone. Each failing cycle here costs ~8s (the wait above) + the interval,
+    // so [3,5,8,12]s keeps the loop ≤5 attempts in any 60s window — the retry can
+    // never self-doom on the limiter, and a success resets the window anyway.
+  }, { timeout: 60_000, intervals: [3_000, 5_000, 8_000, 12_000] })
 }
 
 /** Drive the onboarding wizard to completion (password → lang → avatar → finish). */

@@ -23,6 +23,7 @@
     "codeSent": "Code de vérification envoyé à votre téléphone",
     "loginSuccess": "Connexion réussie",
     "loginError": "Une erreur s'est produite lors de la connexion",
+    "tooManyAttempts": "Trop de tentatives — attendez une minute puis réessayez",
     "backToLogin": "Retour à la connexion",
     "emailLabel": "Adresse Email",
     "passwordLabel": "Mot de Passe",
