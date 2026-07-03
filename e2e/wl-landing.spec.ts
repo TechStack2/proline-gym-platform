@@ -161,8 +161,12 @@ test('LANDING-CONTENT · a gym with seeded champion/gallery/affiliation rows ren
     await expect(page.getByText('WL Champ Alpha'), 'a seeded champion caption renders').toBeVisible()
     await expect(page.getByText('WL Champ Beta')).toBeVisible()
     // Gallery: exactly the 3 seeded tiles (the rows branch), not the built-in 6.
+    // The gallery is a pure photo mosaic (no visible captions, byte-identical to
+    // the built-in) → the seeded caption flows to the tile image's alt; assert it
+    // there (proves the gym's ROW data reached the tile, not just any 3 photos).
     await expect(page.locator('#gallery [data-testid="landing-gallery-tile"]'), 'the gym gallery rows render').toHaveCount(3)
-    await expect(page.getByText('WL Mat One'), 'a seeded gallery caption renders').toBeVisible()
+    await expect(page.locator('#gallery [data-testid="landing-gallery-tile"]').first().locator('img'),
+      'the first gallery tile carries the seeded caption as its alt').toHaveAttribute('alt', 'WL Mat One')
     // Affiliations: exactly the 2 seeded slots (the rows branch), not the built-in 4.
     await expect(page.locator('#affiliations [data-testid="affiliation-slot"]'), 'the gym affiliation rows render').toHaveCount(2)
     await expect(page.getByText('WL Federation One'), 'a seeded affiliation caption renders').toBeVisible()
