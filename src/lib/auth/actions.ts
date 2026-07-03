@@ -46,6 +46,9 @@ export async function signInWithPhone(
   if (!phone || !password) return { ok: false }
 
   // Per-identifier limit BEFORE any GoTrue work (cheap rejection under attack).
+  // Counts ONE attempt per signInWithPhone CALL (not per candidate below) — the
+  // limiter and the multi-candidate resolution are orthogonal: limit → resolve →
+  // attempt-each.
   const limit = envLimit('AUTH_RATE_LIMIT_PER_ID', 5)
   const windowMs = envLimit('AUTH_RATE_LIMIT_WINDOW_MS', 60 * 1000)
   const idKey = `id:${clientIp()}:${phone}`
@@ -53,20 +56,29 @@ export async function signInWithPhone(
   const gate = checkRateLimit(idLimitStore, idKey, limit, windowMs)
   if (!gate.allowed) return { ok: false, rateLimited: true }
 
-  // Resolve phone → profile id (service role; bypasses RLS; server-only, never returned).
+  // Resolve phone → profile ids (service role; bypasses RLS; server-only, never
+  // returned). STAFF-INVITE root-cause fix: a phone is NOT globally unique across
+  // gyms (multi-tenant — and the e2e worker gyms share fixture phones), so the old
+  // `limit(1)` picked an ARBITRARY match; the wrong twin's synthetic email made the
+  // login fail even with the right password (the true on1:60 flake). Try each
+  // candidate (bounded) — only the credentialed profile's password verifies.
   const admin = createAdminClient()
-  const { data: prof } = await admin
-    .from('profiles').select('id').eq('phone', phone).limit(1).maybeSingle()
+  const { data: profs } = await admin
+    .from('profiles').select('id').eq('phone', phone).order('created_at', { ascending: true }).limit(5)
 
-  // ALWAYS attempt a sign-in — the resolved synthetic email when the phone matches,
-  // else a syntactically-valid but non-existent one — so an unknown phone and a wrong
-  // password are indistinguishable (same generic result, timing, and GoTrue rate limit).
-  const email = prof?.id
-    ? `m-${prof.id}@members.proline.lb`
-    : `m-none-${phone.replace(/[^0-9]/g, '')}@members.proline.lb`
+  // ALWAYS attempt a sign-in — the resolved synthetic email(s) when the phone
+  // matches, else a syntactically-valid but non-existent one — so an unknown phone
+  // and a wrong password stay indistinguishable (same generic result).
+  const candidates = (profs ?? []).map((p) => `m-${p.id}@members.proline.lb`)
+  if (candidates.length === 0) candidates.push(`m-none-${phone.replace(/[^0-9]/g, '')}@members.proline.lb`)
 
   const supabase = await createClient() // SSR client → writes the session cookies on success
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (!error) resetRateLimit(idLimitStore, idKey) // success ends the failed-attempt window
-  return { ok: !error }
+  for (const email of candidates) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (!error) {
+      resetRateLimit(idLimitStore, idKey) // success ends the failed-attempt window
+      return { ok: true }
+    }
+  }
+  return { ok: false }
 }
