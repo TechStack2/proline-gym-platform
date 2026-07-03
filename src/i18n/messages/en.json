@@ -23,6 +23,7 @@
     "codeSent": "Verification code sent to your phone",
     "loginSuccess": "Login successful",
     "loginError": "An error occurred during login",
+    "tooManyAttempts": "Too many attempts — please wait a minute and try again",
     "backToLogin": "Back to Login",
     "emailLabel": "Email Address",
     "passwordLabel": "Password",

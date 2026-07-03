@@ -5,46 +5,33 @@ import { routing } from '@/i18n/routing';
 
 const intlMiddleware = createMiddleware(routing);
 
-// ─── Rate Limiter (in-memory, per-IP) ───
+// ─── Rate Limiter (in-memory, per-IP flood BACKSTOP) ───
 // Production-grade alternative: use @upstash/ratelimit with Redis
 // For MVP this in-memory store works within the 1-year free tier constraints
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+//
+// LOGIN-LIMITER: this layer is a pathname-level counter — it counts EVERY request
+// to the auth pages (GET navigations + server-action POSTs) and never sees the
+// submitted identifier. The old 5/min-per-IP here was a PRODUCT bug: a gym's
+// members share NAT wifi (one IP), so 5 login attempts/min locked out the whole
+// building at check-in. Brute-force-per-ACCOUNT protection now lives where the
+// identifier is known — the per-(IP+identifier) limit inside the phone sign-in
+// server action (src/lib/auth/actions.ts) + GoTrue's own limits on the direct
+// email path. This layer stays as a much higher pure-IP FLOOD backstop.
+import { createRateLimitStore, checkRateLimit, cleanupRateLimitStore, envLimit } from '@/lib/auth/rate-limit';
 
-const rateLimitStore = new Map<string, RateLimitEntry>();
+const rateLimitStore = createRateLimitStore();
 
 // Cleanup stale entries every 5 minutes
 const CLEANUP_INTERVAL = 5 * 60 * 1000;
 let lastCleanup = Date.now();
 
-function cleanupRateLimitStore() {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
-  lastCleanup = now;
-  for (const [key, entry] of rateLimitStore) {
-    if (now > entry.resetAt) {
-      rateLimitStore.delete(key);
-    }
-  }
-}
-
 function rateLimit(ip: string, limit: number, windowMs: number): { allowed: boolean; remaining: number; resetAt: number } {
-  cleanupRateLimitStore();
   const now = Date.now();
-  const key = `rl:${ip}`;
-  const entry = rateLimitStore.get(key);
-
-  if (!entry || now > entry.resetAt) {
-    const newEntry: RateLimitEntry = { count: 1, resetAt: now + windowMs };
-    rateLimitStore.set(key, newEntry);
-    return { allowed: true, remaining: limit - 1, resetAt: newEntry.resetAt };
+  if (now - lastCleanup >= CLEANUP_INTERVAL) {
+    lastCleanup = now;
+    cleanupRateLimitStore(rateLimitStore, now);
   }
-
-  entry.count += 1;
-  const remaining = Math.max(0, limit - entry.count);
-  return { allowed: entry.count <= limit, remaining, resetAt: entry.resetAt };
+  return checkRateLimit(rateLimitStore, `rl:${ip}`, limit, windowMs, now);
 }
 
 function getClientIp(request: NextRequest): string {
@@ -56,10 +43,14 @@ function getClientIp(request: NextRequest): string {
   return '127.0.0.1';
 }
 
-// ─── Auth Rate Limit Config ───
+// ─── Auth Rate Limit Config (env-overridable; see LOGIN-LIMITER note above) ───
+// AUTH_RATE_LIMIT_PER_IP: pure-IP flood ceiling on the auth pages. Default 30/min —
+//   high enough for a shared gym-wifi NAT IP at check-in time, low enough to blunt
+//   a single-IP flood. (Was a hardcoded 5/min — the lockout bug.)
+// AUTH_RATE_LIMIT_WINDOW_MS: the counting window (default 60s).
 const AUTH_RATE_LIMIT = {
-  windowMs: 60 * 1000,       // 1 minute
-  maxAttempts: 5,            // 5 requests per minute
+  windowMs: envLimit('AUTH_RATE_LIMIT_WINDOW_MS', 60 * 1000),
+  maxAttempts: envLimit('AUTH_RATE_LIMIT_PER_IP', 30),
 };
 
 const AUTH_PATTERNS = [

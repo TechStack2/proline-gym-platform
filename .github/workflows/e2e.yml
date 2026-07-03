@@ -77,6 +77,11 @@ jobs:
       # ISO-DB: disable the per-IP auth rate limit for this run only — 4×5 logins
       # from one CI IP would otherwise 429 the login page. NEVER set in prod.
       E2E_TEST_MODE: '1'
+      # LOGIN-LIMITER: high pure-IP ceiling for the harness (belt-and-suspenders with
+      # E2E_TEST_MODE above — all suite traffic shares the runner IP; GoTrue-limit
+      # bypass precedent). The per-IDENTIFIER limit is deliberately NOT raised, so
+      # login-limiter.spec exercises the real 5/min-per-account posture.
+      AUTH_RATE_LIMIT_PER_IP: '1000'
       # Worker slots = isolated gyms seeded below = playwright.config WORKERS. One source.
       # ISO-DB: a single `next start` app server backs all workers. workers:4
       # saturated it and flaked write-heavy multi-step flows (disabled submit

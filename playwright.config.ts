@@ -450,6 +450,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // LOGIN-LIMITER: the auth limiter is per-(IP+identifier), not per-IP — one
+      // noisy account can't lock out a gym's shared NAT wifi. Anon contexts; uses
+      // fixture phones (no accounts needed — the limiter keys on the SUBMITTED
+      // identifier). Runs with the DEFAULT per-id limit (e2e.yml only raises the
+      // per-IP ceiling), so it exercises the real posture.
+      name: 'login-limiter',
+      dependencies: ['setup'],
+      testMatch: /login-limiter\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // G1 WhatsApp channel: flips the gym's WhatsApp config to active and
       // records outbound rows; mutates gym config nothing later should read.
       name: 'g1',

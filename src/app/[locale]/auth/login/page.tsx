@@ -116,7 +116,10 @@ export default function LoginPage({ params }: Props) {
     if (isPhone) {
       const res = await signInWithPhone(id, password);
       if (!res.ok) {
-        setError(t('loginError'));
+        // LOGIN-LIMITER: too-many-attempts is surfaced distinctly (standard UX; it
+        // fires on the SUBMITTED identifier whether or not an account exists, so it
+        // leaks nothing). Everything else stays the one generic failure.
+        setError(res.rateLimited ? t('tooManyAttempts') : t('loginError'));
         setLoading(false);
         return;
       }
