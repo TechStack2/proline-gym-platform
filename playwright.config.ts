@@ -441,6 +441,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DOUBLE-SHELL: the staff dashboard mounts every page ONCE (single responsive
+      // shell). Asserts DOM-wide COUNTS (one main, one mounted bell, one
+      // #pay-amount-usd on invoice detail) on desktop AND mobile viewports.
+      name: 'double-shell',
+      dependencies: ['setup'],
+      testMatch: /double-shell\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // G1 WhatsApp channel: flips the gym's WhatsApp config to active and
       // records outbound rows; mutates gym config nothing later should read.
       name: 'g1',

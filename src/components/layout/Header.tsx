@@ -13,6 +13,10 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 type HeaderProps = {
   locale: string;
   role?: string;
+  /** DOUBLE-SHELL: the single shell mounts ONE NotificationBell (it polls + holds a
+   *  realtime channel — CSS-hiding does not stop that). The layout client passes
+   *  false below md so only the mobile header's bell is mounted there. */
+  showBell?: boolean;
 };
 
 const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
@@ -25,7 +29,7 @@ const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
   external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي', fr: 'Entraîneur ext.' },
 };
 
-export function Header({ locale, role }: HeaderProps) {
+export function Header({ locale, role, showBell = true }: HeaderProps) {
   const t = useTranslations();
   const router = useRouter();
   const supabase = createClient();
@@ -75,7 +79,7 @@ export function Header({ locale, role }: HeaderProps) {
         <LanguageSwitcher locale={locale} />
         
         {/* Real recipient-scoped bell (IA-1) — was a decorative stub. */}
-        <NotificationBell locale={locale} />
+        {showBell && <NotificationBell locale={locale} />}
 
         <button
           onClick={handleLogout}

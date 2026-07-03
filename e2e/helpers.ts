@@ -16,9 +16,14 @@ export function runId(): string {
 }
 
 /**
- * Scope a selector to the VISIBLE copy. The `(dashboard)` layout/page-transition
- * renders content twice (one hidden), which breaks a naive `.first()`. Use this
- * instead of remembering to append `:visible` in every spec.
+ * Scope a selector to the VISIBLE copy.
+ *
+ * DOUBLE-SHELL update: the staff `(dashboard)` now mounts children ONCE (single
+ * responsive shell), so for dashboard PAGE content `:visible` is a harmless no-op
+ * rather than the old double-mount disambiguator. KEPT because (a) shell CHROME
+ * still has CSS-hidden responsive copies (mobile vs desktop headers), and
+ * (b) specs also target transient UI (closed modals/sheets) where visible-scoping
+ * still matters. No assertion is weakened by keeping it.
  */
 export function vis(page: Page, selector: string): Locator {
   return page.locator(`${selector}:visible`);
