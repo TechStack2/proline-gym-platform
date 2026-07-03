@@ -13,6 +13,7 @@ import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
 import { getEnabledProducts } from '@/lib/gym/products'
+import { outstandingUsd, paidByInvoice, balanceUsd, OPEN_INVOICE_STATUSES } from '@/lib/billing/reconcile'
 
 type Props = { params: { locale: string }; searchParams?: { kid?: string } }
 
@@ -121,15 +122,27 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
     .order('attendance_date', { ascending: false })
     .limit(5)
 
+  // PORTAL-BALANCE: the home tile computes through the SAME shared helper as
+  // portal/billing (one source of truth). The old inline version omitted
+  // 'partial' invoices AND summed raw totals without netting payments — a
+  // part-paid member saw "$0 / settled" here but a real balance on billing.
   const { data: pendingInvoices } = await supabase
     .from('invoices')
     .select('id, invoice_number, total_usd, status, created_at')
     .eq('student_id', student?.id)
-    .in('status', ['pending', 'overdue'])
+    .in('status', [...OPEN_INVOICE_STATUSES])
     .order('created_at', { ascending: false })
 
   const openInvoices = (pendingInvoices ?? []) as any[]
-  const balanceDue = openInvoices.reduce((sum, inv) => sum + (inv.total_usd || 0), 0) || 0
+  const { data: invoicePayments } = openInvoices.length
+    ? await supabase
+        .from('payments')
+        .select('invoice_id, amount_usd')
+        .in('invoice_id', openInvoices.map((i) => i.id))
+    : { data: [] as any[] }
+  const balanceDue = outstandingUsd(openInvoices, invoicePayments)
+  const paidHome = paidByInvoice(invoicePayments)
+  const invNetBalance = (inv: any) => balanceUsd(inv.total_usd, [{ amount_usd: paidHome.get(inv.id) ?? 0 }])
 
   // ── IA-2 self-view: PT remaining + next class / next PT (own rows via RLS) ──
   const { data: ptActive } = await supabase
@@ -247,7 +260,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           // NO-MEMBERSHIP: the membership tile only shows when the gym sells it.
           ...(enabledProducts.membership ? [{ label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'text-green-600' : 'text-red-600', bg: membership?.status === 'active' ? 'bg-green-50' : 'bg-red-50' }] : []),
           { label: t('belt'), value: beltLabelVal || '—', icon: Award, color: 'text-violet-600', bg: 'bg-violet-50' },
-          { label: t('balance'), value: balanceDue > 0 ? `$${balanceDue}` : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'text-red-600' : 'text-emerald-600', bg: balanceDue > 0 ? 'bg-red-50' : 'bg-emerald-50' },
+          { label: t('balance'), value: balanceDue > 0 ? `$${balanceDue.toFixed(2)}` : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'text-red-600' : 'text-emerald-600', bg: balanceDue > 0 ? 'bg-red-50' : 'bg-emerald-50' },
         ].map((s, i) => {
           const Icon = s.icon
           return (
@@ -292,7 +305,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         {/* 2 · Billing → open-invoice rows reconcile to the balance → billing */}
         <ActionCard
           icon={Wallet} title={t('billing')} count={openInvoices.length}
-          badge={balanceDue > 0 ? `$${balanceDue}` : t('allSettled')}
+          badge={balanceDue > 0 ? `$${balanceDue.toFixed(2)}` : t('allSettled')}
           emptyText={t('allSettled')} testid="billing" isRTL={isRTL}
           footer={<Link href={`/${locale}/portal/billing`} data-testid="billing-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#cd1419]">{t('billing')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
         >
@@ -300,13 +313,15 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
             testid="billing-drill" rowTestid="billing-row" isRTL={isRTL}
             summary={<span className="flex items-center justify-between gap-2 text-sm">
               <span className="font-medium text-gray-700">{t('outstanding')}</span>
-              <span data-testid="billing-balance" className="font-bold text-gray-900">${balanceDue}</span>
+              <span data-testid="billing-balance" className="font-bold text-gray-900">${balanceDue.toFixed(2)}</span>
             </span>}
             rows={openInvoices.map((inv): DrillRow => ({
               href: `/${locale}/portal/billing`,
               left: inv.invoice_number || t('invoice'),
-              right: <span className="font-medium">${inv.total_usd}</span>,
-              value: inv.total_usd,
+              // PORTAL-BALANCE: each row shows its NET remaining balance (a
+              // part-paid invoice's row must reconcile to the summary above).
+              right: <span className="font-medium">${invNetBalance(inv).toFixed(2)}</span>,
+              value: invNetBalance(inv),
             }))}
           />
         </ActionCard>
