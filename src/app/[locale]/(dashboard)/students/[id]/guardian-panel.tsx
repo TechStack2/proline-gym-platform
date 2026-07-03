@@ -87,7 +87,8 @@ export function GuardianPanel({
       setOpen(false); setPhone(''); setSearched(false); setMatch(null); setNewFirst(''); setNewLast('')
       router.refresh()
     } catch (e: any) {
-      setError(e?.message || t('linkFailed'))
+      console.error('[guardian-panel]', e) // raw error: console only (ERROR-HARDEN)
+      setError(t('linkFailed'))
     } finally {
       setBusy(false)
     }
@@ -110,7 +111,8 @@ export function GuardianPanel({
       if (pErr) throw pErr
       await linkProfile(prof.id)
     } catch (e: any) {
-      setError(e?.message || t('linkFailed'))
+      console.error('[guardian-panel]', e) // raw error: console only (ERROR-HARDEN)
+      setError(t('linkFailed'))
       setBusy(false)
     }
   }

@@ -104,7 +104,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
       ? await supabase.from('camps').update(payload).eq('id', editing.id)
       : await supabase.from('camps').insert({ ...payload, gym_id: gymId, status: 'open', show_on_landing: false })
     setBusy(false)
-    if (res.error) { toast({ title: t('saveFailed'), description: res.error.message, variant: 'destructive' }); return }
+    if (res.error) { console.error('[camps-board]', res.error); toast({ title: t('saveFailed'), variant: 'destructive' }); return } // ERROR-HARDEN
     toast({ title: t(editing ? 'updated' : 'created'), variant: 'success' })
     setWizardOpen(false)
     router.refresh()
@@ -114,7 +114,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
     setBusy(true)
     const { error } = await createClient().from('camps').update({ show_on_landing: !c.show_on_landing }).eq('id', c.id)
     setBusy(false)
-    if (error) toast({ title: t('saveFailed'), description: error.message, variant: 'destructive' })
+    if (error) { console.error('[camps-board]', error); toast({ title: t('saveFailed'), variant: 'destructive' }) } // ERROR-HARDEN
     else router.refresh()
   }
 
@@ -126,7 +126,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
     const { error } = await createClient().from('camps')
       .update({ status: 'cancelled', show_on_landing: false }).eq('id', c.id)
     setBusy(false)
-    if (error) toast({ title: t('saveFailed'), description: error.message, variant: 'destructive' })
+    if (error) { console.error('[camps-board]', error); toast({ title: t('saveFailed'), variant: 'destructive' }) } // ERROR-HARDEN
     else router.refresh()
   }
 

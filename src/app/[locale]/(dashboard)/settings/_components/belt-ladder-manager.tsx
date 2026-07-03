@@ -56,6 +56,7 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
 
 export function BeltLadderManager({ disciplines, locale }: { disciplines: DisciplineRow[]; locale: string }) {
   const t = useTranslations('settings.beltLadder')
+  const tc = useTranslations('common')
   const router = useRouter()
   const isRTL = locale === 'ar'
 
@@ -88,7 +89,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
     setError('')
     const { error: err } = await fn()
     setBusy(false)
-    if (err) setError(err.message)
+    if (err) { console.error('[belt-ladder-manager]', err); setError(tc('genericError')) } // ERROR-HARDEN: no raw pg errors
     else router.refresh()
   }
 

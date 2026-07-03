@@ -28,6 +28,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale 
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('ptBooking.editor')
+  const tc = useTranslations('common')
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [day, setDay] = useState(2) // Tue
@@ -46,7 +47,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale 
     setBusy(true)
     const { error } = await fn()
     setBusy(false)
-    if (error) toast.error(error.message)
+    if (error) { console.error('[availability-editor]', error); toast.error(tc('genericError')) } // ERROR-HARDEN
     else router.refresh()
   }
 

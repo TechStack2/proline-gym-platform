@@ -68,6 +68,7 @@
     "campaigns": "Campagnes"
   },
   "common": {
+    "genericError": "Une erreur est survenue. Veuillez réessayer.",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "delete": "Supprimer",
@@ -2532,7 +2533,7 @@
     "passwordHint": "Choisissez un mot de passe connu de vous seul.",
     "newPassword": "Nouveau mot de passe",
     "confirmPassword": "Confirmer le mot de passe",
-    "passwordTooShort": "Au moins 8 caractères.",
+    "passwordTooShort": "Au moins 10 caractères.",
     "passwordMismatch": "Les mots de passe ne correspondent pas.",
     "stepLanguage": "Langue",
     "languageHint": "Choisissez votre langue préférée.",

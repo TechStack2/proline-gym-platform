@@ -48,7 +48,7 @@ function PasswordStep({
       <Field label={t('confirmPassword')}>
         <Input type="password" data-testid="ob-password2" value={pw2} onChange={(e) => setPw2(e.target.value)} dir="ltr" autoComplete="new-password" />
       </Field>
-      {pw.length > 0 && pw.length < 8 && <p className="text-xs text-amber-600">{t('passwordTooShort')}</p>}
+      {pw.length > 0 && pw.length < 10 && <p className="text-xs text-amber-600">{t('passwordTooShort')}</p>}
       {pw2.length > 0 && pw !== pw2 && <p className="text-xs text-red-600">{t('passwordMismatch')}</p>}
     </div>
   )
@@ -66,6 +66,7 @@ export function OnboardingClient({
   const isRTL = locale === 'ar'
 
   const tw = useTranslations('waiver')
+  const tc = useTranslations('common')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [lang, setLang] = useState(locale)
@@ -84,7 +85,7 @@ export function OnboardingClient({
     setError('')
     // 1. The user changes their OWN password (clears the temp credential).
     const { error: pErr } = await supabase.auth.updateUser({ password: pw })
-    if (pErr) { setBusy(false); setError(pErr.message); return }
+    if (pErr) { console.error('[onboarding] password change failed:', pErr); setBusy(false); setError(tc('genericError')); return } // ERROR-HARDEN
     // 2. Language preference (self-update, RLS).
     if (lang !== locale || lang) {
       await supabase.from('profiles').update({ locale: lang }).eq('id', userId)
@@ -112,7 +113,9 @@ export function OnboardingClient({
     {
       key: 'password',
       title: t('stepPassword'),
-      valid: pw.length >= 8 && pw === pw2,
+      // ERROR-HARDEN #4: app-side minimum 10 chars (the cloud GoTrue policy is a
+      // dashboard setting the auditor aligns; this enforces it in the product).
+      valid: pw.length >= 10 && pw === pw2,
       // PWD-FOCUS: render via the module-level <PasswordStep> (stable type) so the
       // password inputs are reconciled, not remounted, on each keystroke.
       content: <PasswordStep pw={pw} pw2={pw2} setPw={setPw} setPw2={setPw2} />,

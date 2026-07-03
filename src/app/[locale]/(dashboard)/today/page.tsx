@@ -12,7 +12,7 @@ import { UserPlus, Users, DollarSign } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: { locale: string }; searchParams: { h?: string } }
+type Props = { params: { locale: string }; searchParams: { h?: string; __err?: string } }
 
 /**
  * /today — Gym 360 Pro front desk. The horizon switcher swaps the entire CARD
@@ -22,6 +22,11 @@ type Props = { params: { locale: string }; searchParams: { h?: string } }
  * quick actions) is shared here. Read-time only — zero schema.
  */
 export default async function TodayPage({ params: { locale }, searchParams }: Props) {
+  // ERROR-HARDEN guard hook: a deterministic server throw for the e2e error-
+  // boundary proof. E2E_TEST_MODE is CI-only (never set in prod) → inert in prod.
+  if (process.env.E2E_TEST_MODE === '1' && searchParams?.__err === '1') {
+    throw new Error('e2e forced segment error (raw internals — must never render)')
+  }
   const isRTL = locale === 'ar'
   const t = await getTranslations('today')
   const supabase = await createClient()

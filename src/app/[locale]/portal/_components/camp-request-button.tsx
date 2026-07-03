@@ -19,6 +19,7 @@ export function CampRequestButton({ campId, studentId, actingFor, locale }: {
   locale: string
 }) {
   const t = useTranslations('campsPortal')
+  const tc = useTranslations('common')
   const router = useRouter()
   const [busy, setBusy] = useState(false)
 
@@ -29,7 +30,7 @@ export function CampRequestButton({ campId, studentId, actingFor, locale }: {
       p_student_id: studentId,
     })
     setBusy(false)
-    if (error) toast.error(error.message)
+    if (error) { console.error('[camp-request]', error); toast.error(tc('genericError')) } // ERROR-HARDEN
     else {
       toast.success(t('requested'))
       router.refresh()
