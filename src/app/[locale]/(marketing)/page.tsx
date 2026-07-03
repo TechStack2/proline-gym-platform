@@ -1,7 +1,9 @@
 import { setRequestLocale } from 'next-intl/server';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
-import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG, safeBrandColor } from '@/lib/marketing/gym';
+import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
+import { LandingNav } from '@/components/layout/LandingNav';
+import { LandingFooter } from '@/components/layout/LandingFooter';
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { AffiliationsSection } from '@/components/marketing/AffiliationsSection';
 import { DisciplinesSection } from '@/components/marketing/DisciplinesSection';
@@ -72,9 +74,23 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
     tagline: gym ? pick(gym.tagline_ar, gym.tagline_en, gym.tagline_fr) : undefined,
   };
 
+  // PROLINE-LANDING-DATA: contact/social identity + address from the SAME
+  // resolved gym (fallback = the built-in Proline defaults when NULL). The
+  // Nav/Footer render here (not the layout) because only the page can resolve
+  // ?gym= — one gym, one identity, every landing surface.
+  const contact = resolveLandingContact(gym);
+  const address = gym ? pick(gym.address_ar, gym.address_en, gym.address_fr) : undefined;
+  const heroBranding = {
+    ...branding,
+    contactWhatsapp: contact.whatsapp,
+    instagramHandle: contact.instagram,
+    instagramFollowers: contact.instagramFollowers,
+  };
+
   return (
     <>
-      <HeroSection locale={locale} branding={branding} />
+      <LandingNav locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} />
+      <HeroSection locale={locale} branding={heroBranding} />
       <AffiliationsSection locale={locale} />
       <DisciplinesSection locale={locale} gymSlug={sectionSlug} />
       <ScheduleSection locale={locale} gymSlug={sectionSlug} />
@@ -85,8 +101,9 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
       <PricingSection locale={locale} gymSlug={sectionSlug} />
       <PtSection locale={locale} gymSlug={sectionSlug} />
       <CampsSection locale={locale} gymSlug={sectionSlug} />
-      <FacilitySection locale={locale} />
+      <FacilitySection locale={locale} contact={contact} />
       <TrialCTASection locale={locale} gymSlug={sectionSlug} disciplines={captureDisciplines} />
+      <LandingFooter locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} address={address} contact={contact} />
     </>
   );
 }

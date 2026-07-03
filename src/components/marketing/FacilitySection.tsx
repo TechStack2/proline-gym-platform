@@ -1,14 +1,21 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { MapPin, Phone, Mail, Instagram } from 'lucide-react';
+import { DEFAULT_CONTACT, type LandingContact } from '@/lib/marketing/contact';
 
 type FacilitySectionProps = {
   locale: string;
+  // PROLINE-LANDING-DATA: the resolved gym's public contact (fallback = Proline defaults).
+  contact?: LandingContact;
 };
 
-export function FacilitySection({ locale }: FacilitySectionProps) {
+export function FacilitySection({ locale, contact = DEFAULT_CONTACT }: FacilitySectionProps) {
   const t = useTranslations('landing.facility');
   const isRTL = locale === 'ar';
+  // Map: derive the OSM bbox (±0.005°) + marker from the gym's coordinates.
+  const { mapLat, mapLng } = contact;
+  const bbox = `${(mapLng - 0.005).toFixed(4)}%2C${(mapLat - 0.005).toFixed(4)}%2C${(mapLng + 0.005).toFixed(4)}%2C${(mapLat + 0.005).toFixed(4)}`;
+  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${mapLat.toFixed(4)}%2C${mapLng.toFixed(4)}`;
 
   return (
     <section id="facility" className="py-20 lg:py-28 bg-white">
@@ -22,7 +29,7 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
                   Center, Baabda. A Google Maps API key, if supplied later, is a
                   trivial swap. */}
               <iframe
-                src="https://www.openstreetmap.org/export/embed.html?bbox=35.5390%2C33.8290%2C35.5490%2C33.8390&layer=mapnik&marker=33.8340%2C35.5440"
+                src={mapSrc}
                 width="100%"
                 height="100%"
                 loading="lazy"
@@ -72,36 +79,39 @@ export function FacilitySection({ locale }: FacilitySectionProps) {
 
             <div className="mt-8 space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
               <a
-                href="tel:+96170628601"
+                href={`tel:${contact.phone.replace(/\s/g, '')}`}
+                data-testid="facility-phone"
                 className="flex items-center gap-3 rounded-xl border p-4 hover:border-primary-200 hover:bg-primary-50/50 transition-colors"
               >
                 <Phone className="h-5 w-5 text-primary-600 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-secondary-900" dir="ltr">+961 70 628 601</p>
+                  <p className="text-sm font-medium text-secondary-900" dir="ltr">{contact.phone}</p>
                   <p className="text-xs text-gray-500">{t('callUs')}</p>
                 </div>
               </a>
 
               <a
-                href="mailto:alifakih998@gmail.com"
+                href={`mailto:${contact.email}`}
+                data-testid="facility-email"
                 className="flex items-center gap-3 rounded-xl border p-4 hover:border-primary-200 hover:bg-primary-50/50 transition-colors"
               >
                 <Mail className="h-5 w-5 text-primary-600 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-secondary-900">alifakih998@gmail.com</p>
+                  <p className="text-sm font-medium text-secondary-900">{contact.email}</p>
                   <p className="text-xs text-gray-500">{t('email')}</p>
                 </div>
               </a>
 
               <a
-                href="https://instagram.com/prolinegym.lb"
+                href={`https://instagram.com/${contact.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-testid="facility-ig"
                 className="flex items-center gap-3 rounded-xl border p-4 hover:border-primary-200 hover:bg-primary-50/50 transition-colors"
               >
                 <Instagram className="h-5 w-5 text-primary-600 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-secondary-900">@prolinegym.lb</p>
+                  <p className="text-sm font-medium text-secondary-900">@{contact.instagram}</p>
                   <p className="text-xs text-gray-500">
                     {t('igStats')}
                   </p>

@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { LandingNav } from '@/components/layout/LandingNav';
-import { LandingFooter } from '@/components/layout/LandingFooter';
 import { getLandingGym } from '@/lib/marketing/gym';
 import { SITE_URL, THEME_COLOR, OG_IMAGE_PATH, buildGymJsonLd } from '@/lib/seo';
 
@@ -95,9 +93,11 @@ export default async function MarketingLayout({ children, params }: Props) {
         data-testid="landing-jsonld"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LandingNav locale={locale} />
+      {/* PROLINE-LANDING-DATA: LandingNav/LandingFooter moved into page.tsx —
+          layouts cannot read searchParams, so only the page can resolve the gym
+          the request is actually for (?gym= || custom domain || default) and
+          render the chrome with THAT gym's identity. */}
       <main className="flex-1">{children}</main>
-      <LandingFooter locale={locale} />
     </div>
   );
 }

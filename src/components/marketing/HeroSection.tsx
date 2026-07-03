@@ -12,6 +12,10 @@ export type HeroBranding = {
   heroImageUrl?: string;
   brandColor: string;   // always a safe hex (default crimson when the gym is unset)
   tagline?: string;
+  // PROLINE-LANDING-DATA: contact CTAs from data (fallback = Proline defaults).
+  contactWhatsapp?: string;          // wa.me digits
+  instagramHandle?: string;          // no @
+  instagramFollowers?: number | null; // null/undefined → the follower segment is dropped
 };
 
 type HeroSectionProps = {
@@ -29,6 +33,9 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSection
   const heroSrc = branding.heroImageUrl || '/landing/gym-1.jpg';
   const brandName = branding.name || 'PRO LINE Gym';
   const tagline = branding.tagline || t('tagline');
+  const waDigits = (branding.contactWhatsapp || '96170628601').replace(/\D/g, '');
+  const igHandle = (branding.instagramHandle || 'prolinegym.lb').replace(/^@/, '');
+  const igFollowers = branding.instagramFollowers ?? null;
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -142,9 +149,10 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSection
             {t('ctaTrial')}
           </Link>
           <a
-            href="https://wa.me/96170628601"
+            href={`https://wa.me/${waDigits}`}
             target="_blank"
             rel="noopener noreferrer"
+            data-testid="hero-wa-cta"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 px-8 py-4 text-base font-semibold text-white hover:bg-white/10 hover:border-white/50 transition-all"
           >
             <MessageCircle className="h-5 w-5" />
@@ -152,19 +160,25 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSection
           </a>
         </div>
 
-        {/* Instagram handle */}
+        {/* Instagram handle (per-gym; the follower segment renders only when the
+            gym has a count set — new gyms shouldn't show Proline's social proof) */}
         <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400">
           <span>📸</span>
           <a
-            href="https://instagram.com/prolinegym.lb"
+            href={`https://instagram.com/${igHandle}`}
             target="_blank"
             rel="noopener noreferrer"
+            data-testid="hero-ig"
             className="hover:text-primary-400 transition-colors"
           >
-            @prolinegym.lb
+            @{igHandle}
           </a>
-          <span className="text-gray-600">•</span>
-          <span>2,760 {t('followers')}</span>
+          {igFollowers != null && (
+            <>
+              <span className="text-gray-600">•</span>
+              <span data-testid="hero-ig-followers">{igFollowers.toLocaleString('en-US')} {t('followers')}</span>
+            </>
+          )}
         </div>
       </div>
 
