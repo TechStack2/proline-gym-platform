@@ -217,6 +217,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
+      // status select never offers 'converted'; the default login leaks no demo
+      // password. Seeds its OWN isolated gym (tax_rate=0 via service role).
+      name: 'go-live-guards',
+      dependencies: ['setup'],
+      testMatch: /go-live-guards\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it

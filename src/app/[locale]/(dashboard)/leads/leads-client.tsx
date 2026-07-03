@@ -157,10 +157,19 @@ export function LeadsClient({
   // ── Status change (optimistic, single .update) ──
   const handleStatusChange = useCallback(
     async (leadId: string, newStatus: LeadStatus) => {
+      // GO-LIVE-GUARDS: 'converted' is NOT settable here — conversion happens ONLY
+      // via the ConvertModal/convertLead path (creates the member + invoice). The
+      // select no longer offers it; this guards any other caller.
+      if (newStatus === 'converted') {
+        toast.error(t('toast.status_error'));
+        return;
+      }
       const statusPayload = {
         id: leadId,
         status: newStatus,
-        converted_at: newStatus === 'converted' ? new Date().toISOString() : undefined,
+        // converted_at is stamped ONLY by the convertLead path (the guard above
+        // makes 'converted' unreachable here).
+        converted_at: undefined,
       };
       const parsed = leadStatusUpdateSchema.safeParse(statusPayload);
       if (!parsed.success) {
@@ -313,20 +322,33 @@ export function LeadsClient({
                       </span>
                     </div>
                   </div>
-                  <select
-                    className={cn(
-                      'text-xs px-2 py-1 rounded-full border font-medium',
-                      statusColors[lead.status] || 'bg-gray-100',
-                    )}
-                    value={lead.status}
-                    onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
-                  >
-                    {LEAD_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {statusDisplay(s)}
-                      </option>
-                    ))}
-                  </select>
+                  {/* GO-LIVE-GUARDS: converted is a TERMINAL, machine-set state — the
+                      ConvertModal/convertLead path (member + invoice) is the only way
+                      in. A converted lead shows a non-interactive badge; the select
+                      never offers 'converted' (no phantom-convert without a member). */}
+                  {lead.status === 'converted' ? (
+                    <span
+                      data-testid="lead-converted-badge"
+                      className={cn('text-xs px-2 py-1 rounded-full border font-medium', statusColors.converted || 'bg-gray-100')}
+                    >
+                      {statusDisplay('converted')}
+                    </span>
+                  ) : (
+                    <select
+                      className={cn(
+                        'text-xs px-2 py-1 rounded-full border font-medium',
+                        statusColors[lead.status] || 'bg-gray-100',
+                      )}
+                      value={lead.status}
+                      onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
+                    >
+                      {LEAD_STATUSES.filter((s) => s !== 'converted').map((s) => (
+                        <option key={s} value={s}>
+                          {statusDisplay(s)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {(() => {
