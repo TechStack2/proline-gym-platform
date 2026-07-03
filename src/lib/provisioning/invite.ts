@@ -57,6 +57,20 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
     if (!c) return { ok: false, error: 'target_not_found' }
     profileId = c.profile_id; gymId = c.gym_id; role = 'coach'
   } else {
+    // STAFF-INVITE hardening — RUNTIME allowlist. The TS union is compile-time
+    // only: a crafted POST to this server action can carry ANY string as `role`
+    // (e.g. 'owner'), so validate against the explicit set of invitable roles.
+    // 'owner' is NEVER settable via invite.
+    const INVITABLE_ROLES = ['coach', 'head_coach', 'receptionist', 'parent', 'student'] as const
+    if (!INVITABLE_ROLES.includes(input.role as (typeof INVITABLE_ROLES)[number])) {
+      return { ok: false, error: 'forbidden' }
+    }
+    // Granting a STAFF role (receptionist/head_coach) is an owner/head_coach-only
+    // power — a receptionist must not mint staff logins.
+    if ((input.role === 'receptionist' || input.role === 'head_coach') &&
+        !['owner', 'head_coach'].includes(callerRole.role)) {
+      return { ok: false, error: 'forbidden' }
+    }
     const { data: p } = await supabase.from('profiles').select('gym_id').eq('id', input.profileId).maybeSingle()
     if (!p) return { ok: false, error: 'target_not_found' }
     profileId = input.profileId; gymId = p.gym_id; role = input.role

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { CoachList } from './components/coach-list'
 import { CoachFilters } from './components/coach-filters'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
+import { InviteStaffButton } from '@/components/shared/invite-staff-button'
 
 export default async function CoachesPage({
   params: { locale },
@@ -24,6 +25,12 @@ export default async function CoachesPage({
   const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   const gymId = me?.gym_id
   if (!gymId) return null
+
+  // STAFF-INVITE: minting staff logins is owner/head_coach-only (the server action
+  // re-gates; this only gates the surface).
+  const { data: roleRow } = await supabase
+    .from('user_roles').select('role').eq('user_id', user.id).limit(1).maybeSingle()
+  const canInviteStaff = ['owner', 'head_coach'].includes((roleRow as any)?.role ?? '')
 
   let query = supabase
     .from('coaches')
@@ -67,12 +74,16 @@ export default async function CoachesPage({
         <h1 className={cn("hidden md:block text-3xl font-bold", isRTL && "text-right")}>
           {t('title')}
         </h1>
-        <Link href={`/${locale}/coaches/add`}>
-          <Button>
-            <Plus className="w-4 h-4 ml-2" />
-            {t('add_coach')}
-          </Button>
-        </Link>
+        <div className="flex items-start gap-2">
+          {/* STAFF-INVITE: create + invite a staff login (receptionist/head-coach/coach). */}
+          {canInviteStaff && <InviteStaffButton locale={locale} gymId={gymId} />}
+          <Link href={`/${locale}/coaches/add`}>
+            <Button>
+              <Plus className="w-4 h-4 ml-2" />
+              {t('add_coach')}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <CoachFilters locale={locale} isRTL={isRTL} />

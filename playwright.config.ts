@@ -226,6 +226,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // STAFF-INVITE: owner mints a receptionist login from the team page → she
+      // logs in by phone → onboarding → staff dashboard; a phone-less coach shows
+      // the inline add-a-phone prompt. Owner ctx + a fresh login ctx; mutates only
+      // run-scoped rows (a new staff profile + a phone-less coach).
+      name: 'staff-invite',
+      dependencies: ['setup'],
+      testMatch: /staff-invite\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it

@@ -22,7 +22,7 @@ import { toast } from 'sonner'
 
 export function CoachActions({
   coachId, coachName, locale, isActive, canDeactivate,
-  activeClassCount, activePtCount, assignments,
+  activeClassCount, activePtCount, assignments, phone,
 }: {
   coachId: string
   coachName: string
@@ -33,6 +33,8 @@ export function CoachActions({
   activeClassCount: number
   activePtCount: number
   assignments: DiaryAssignment[]
+  /** STAFF-INVITE: the coach's phone — empty → the inline "add a phone" prompt. */
+  phone: string | null
 }) {
   const t = useTranslations('coach360')
   const ta = useTranslations('coaches.admin')
@@ -80,8 +82,10 @@ export function CoachActions({
         </div>
       )}
 
-      {/* ON-1: invite this coach to the app (team invite — elevated scope). */}
-      <InviteButton kind="coach" id={coachId} name={coachName} locale={locale} />
+      {/* ON-1: invite this coach to the app (team invite — elevated scope).
+          STAFF-INVITE: no phone → the inline add-a-phone prompt (no dead-end click). */}
+      <InviteButton kind="coach" id={coachId} name={coachName} locale={locale}
+        phone={phone} editHref={`/${locale}/coaches/${coachId}/edit`} />
 
       {/* DEACTIVATE — owner/head_coach only; reception gets no control. */}
       {canDeactivate && (

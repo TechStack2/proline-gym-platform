@@ -233,6 +233,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
             activeClassCount={activeClassCount}
             activePtCount={activePtCount}
             assignments={bookableAssignments}
+            phone={prof?.phone ?? null}
           />
         </div>
       </div>
