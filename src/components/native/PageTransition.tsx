@@ -8,6 +8,12 @@ export type PageTransitionProps = {
   direction: 'forward' | 'back';
   isActive: boolean;
   locale?: string;
+  /** DOUBLE-SHELL: render as a static passthrough at md+ (no transform/transition).
+   *  The slide keeps a persistent `translate-x-0`, and ANY transform makes this div
+   *  a containing block for position:fixed descendants — mis-centering inline fixed
+   *  modals. The desktop dashboard never had the transition (it lived only in the
+   *  md:hidden mobile shell), so the collapsed single shell must not add it there. */
+  desktopStatic?: boolean;
 };
 
 export function PageTransition({
@@ -15,6 +21,7 @@ export function PageTransition({
   direction,
   isActive,
   locale = 'en',
+  desktopStatic = false,
 }: PageTransitionProps) {
   const isRTL = locale === 'ar';
   const [isVisible, setIsVisible] = useState(false);
@@ -69,7 +76,7 @@ export function PageTransition({
   };
 
   return (
-    <div className="w-full overflow-hidden">
+    <div className={cn('w-full overflow-hidden', desktopStatic && 'md:overflow-visible')}>
       <div
         className={cn(
           'w-full',
@@ -78,7 +85,10 @@ export function PageTransition({
           'transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]',
           'opacity-0',
           isVisible && 'opacity-100',
-          getTranslateClass()
+          getTranslateClass(),
+          // DOUBLE-SHELL: at md+ the wrapper is inert — no transform (no fixed-modal
+          // containing block), no fade (desktop never had one).
+          desktopStatic && 'md:transform-none md:opacity-100 md:transition-none'
         )}
       >
         {children}
