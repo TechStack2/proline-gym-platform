@@ -217,6 +217,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PWA-IDENTITY: the dynamic /manifest.webmanifest resolves the gym by Host
+      // (gym_domains) → a mapped domain's install carries THAT gym's name/color/
+      // icon; an unmapped/vendor host → today's default manifest. Anon route.
+      name: 'pwa-manifest',
+      dependencies: ['setup'],
+      testMatch: /pwa-manifest\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).
