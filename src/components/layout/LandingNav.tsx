@@ -10,9 +10,14 @@ import { Menu, X } from 'lucide-react';
 
 type LandingNavProps = {
   locale: string;
+  // PROLINE-LANDING-DATA: the resolved gym's identity (fallback = Proline default).
+  gymName?: string;
+  logoUrl?: string;
 };
 
-export function LandingNav({ locale }: LandingNavProps) {
+export function LandingNav({ locale, gymName, logoUrl }: LandingNavProps) {
+  const brandName = gymName || 'PRO LINE Gym';
+  const logoSrc = logoUrl || '/logo.jpg';
   const t = useTranslations('landing');
   const isRTL = locale === 'ar';
   const [scrolled, setScrolled] = useState(false);
@@ -46,8 +51,8 @@ export function LandingNav({ locale }: LandingNavProps) {
           <Link href={`/${locale}`} className="flex items-center gap-2.5">
             <div className="relative h-9 w-9 overflow-hidden rounded-lg shadow-sm">
               <Image
-                src="/logo.jpg"
-                alt="PRO LINE Gym"
+                src={logoSrc}
+                alt={brandName}
                 width={36}
                 height={36}
                 className="h-full w-full object-cover"
@@ -55,13 +60,14 @@ export function LandingNav({ locale }: LandingNavProps) {
               />
             </div>
             <span
+              data-testid="landing-nav-name"
               className={cn(
                 'text-lg font-bold tracking-tight transition-colors',
                 scrolled ? 'text-secondary-900' : 'text-white',
                 isRTL && 'font-arabic'
               )}
             >
-              PRO LINE Gym
+              {brandName}
             </span>
           </Link>
 

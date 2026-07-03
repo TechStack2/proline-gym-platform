@@ -5,14 +5,24 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Instagram, Facebook, MessageCircle } from 'lucide-react';
+import { DEFAULT_CONTACT, type LandingContact } from '@/lib/marketing/contact';
 
 type LandingFooterProps = {
   locale: string;
+  // PROLINE-LANDING-DATA: the resolved gym's identity + public contact
+  // (every fallback = the built-in Proline default, so unset gyms look as today).
+  gymName?: string;
+  logoUrl?: string;
+  address?: string;
+  contact?: LandingContact;
 };
 
-export function LandingFooter({ locale }: LandingFooterProps) {
+export function LandingFooter({ locale, gymName, logoUrl, address, contact = DEFAULT_CONTACT }: LandingFooterProps) {
   const t = useTranslations('landing');
   const isRTL = locale === 'ar';
+  const brandName = gymName || 'PRO LINE Gym';
+  const logoSrc = logoUrl || '/logo.jpg';
+  const addressLine = address || 'Sky Business Center, Baabda';
 
   return (
     <footer className="bg-secondary-950 text-gray-300">
@@ -22,10 +32,10 @@ export function LandingFooter({ locale }: LandingFooterProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
               <div className="relative h-8 w-8 overflow-hidden rounded-lg">
-                <Image src="/logo.jpg" alt="PRO LINE Gym" width={32} height={32} className="h-full w-full object-cover" />
+                <Image src={logoSrc} alt={brandName} width={32} height={32} className="h-full w-full object-cover" />
               </div>
-              <span className={cn('text-lg font-bold text-white', isRTL && 'font-arabic')}>
-                PRO LINE Gym
+              <span data-testid="footer-brand-name" className={cn('text-lg font-bold text-white', isRTL && 'font-arabic')}>
+                {brandName}
               </span>
             </div>
             <p className="text-sm text-gray-400">
@@ -33,27 +43,30 @@ export function LandingFooter({ locale }: LandingFooterProps) {
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a
-                href="https://instagram.com/prolinegym.lb"
+                href={`https://instagram.com/${contact.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-testid="footer-ig"
                 className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram className="h-5 w-5" />
               </a>
               <a
-                href="https://facebook.com/prolinegym.lb"
+                href={`https://facebook.com/${contact.facebook}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-testid="footer-fb"
                 className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook className="h-5 w-5" />
               </a>
               <a
-                href="https://wa.me/96170628601"
+                href={`https://wa.me/${contact.whatsapp}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-testid="footer-wa"
                 className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                 aria-label="WhatsApp"
               >
@@ -77,17 +90,17 @@ export function LandingFooter({ locale }: LandingFooterProps) {
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">{t('footer.contact') || 'Contact'}</h4>
             <ul className="space-y-2.5">
-              <li className="text-sm text-gray-400">
-                Sky Business Center, Baabda
+              <li className="text-sm text-gray-400" data-testid="footer-address">
+                {addressLine}
               </li>
               <li>
-                <a href="tel:+96170628601" dir="ltr" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  +961 70 628 601
+                <a href={`tel:${contact.phone.replace(/\s/g, '')}`} dir="ltr" data-testid="footer-phone" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  {contact.phone}
                 </a>
               </li>
               <li>
-                <a href="mailto:alifakih998@gmail.com" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  alifakih998@gmail.com
+                <a href={`mailto:${contact.email}`} data-testid="footer-email" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  {contact.email}
                 </a>
               </li>
             </ul>
@@ -113,7 +126,7 @@ export function LandingFooter({ locale }: LandingFooterProps) {
         {/* Bottom bar */}
         <div className="mt-10 pt-6 border-t border-white/10 text-center">
           <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} PRO LINE Gym. {t('footer.rights') || 'All rights reserved.'} {t('footer.fakih') || 'By Fakih Brothers.'}
+            &copy; {new Date().getFullYear()} {brandName}. {t('footer.rights') || 'All rights reserved.'} {t('footer.fakih') || 'By Fakih Brothers.'}
           </p>
         </div>
       </div>

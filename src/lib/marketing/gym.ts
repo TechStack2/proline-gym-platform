@@ -21,7 +21,24 @@ export type LandingGym = {
   tagline_ar: string | null;
   tagline_en: string | null;
   tagline_fr: string | null;
+  // PROLINE-LANDING-DATA (000078): public contact/social identity + address.
+  address_ar: string | null;
+  address_en: string | null;
+  address_fr: string | null;
+  contact_whatsapp: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  instagram_handle: string | null;
+  instagram_followers: number | null;
+  facebook_handle: string | null;
+  map_lat: number | null;
+  map_lng: number | null;
 };
+
+// PROLINE-LANDING-DATA: the contact primitives live in the CLIENT-SAFE
+// ./contact module (LandingNav/LandingFooter are 'use client' and must not pull
+// this module's next/headers graph). Re-exported here for server callers.
+export { DEFAULT_CONTACT, resolveLandingContact, type LandingContact } from './contact';
 
 /** A valid 6-digit hex brand color, or the default crimson when unset/invalid.
  *  (Validated because it flows into an SVG attribute — only trust a real hex.) */
