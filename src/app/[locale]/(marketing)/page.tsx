@@ -91,12 +91,12 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
     <>
       <LandingNav locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} />
       <HeroSection locale={locale} branding={heroBranding} />
-      <AffiliationsSection locale={locale} />
+      <AffiliationsSection locale={locale} gymSlug={sectionSlug} />
       <DisciplinesSection locale={locale} gymSlug={sectionSlug} />
       <ScheduleSection locale={locale} gymSlug={sectionSlug} />
-      <ChampionsSection locale={locale} />
+      <ChampionsSection locale={locale} gymSlug={sectionSlug} />
       <CoachesSection locale={locale} gymSlug={sectionSlug} />
-      <GallerySection locale={locale} />
+      <GallerySection locale={locale} gymSlug={sectionSlug} />
       <WhySection locale={locale} />
       <PricingSection locale={locale} gymSlug={sectionSlug} />
       <PtSection locale={locale} gymSlug={sectionSlug} />
