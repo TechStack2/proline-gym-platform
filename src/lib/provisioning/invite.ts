@@ -13,13 +13,18 @@
 import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { gymDisplayName } from '@/lib/whatsapp/identity'
 
 type InviteInput =
   | { studentId: string }
   | { coachId: string }
   | { profileId: string; role: 'student' | 'parent' | 'coach' | 'head_coach' | 'receptionist' }
 
-type InviteOk = { ok: true; tempPassword: string; login: string; waPhone: string; role: string }
+// WL-IDENTITY: the invite message greets the member with the CALLER's gym name
+// (localized), not a hardcoded "PRO LINE". The invite is staff-side so the gym is
+// known; the surface (buildWaLink) picks by the staff's locale.
+type GymName = { ar: string; en: string; fr: string }
+type InviteOk = { ok: true; tempPassword: string; login: string; waPhone: string; role: string; gymName: GymName }
 type InviteErr = { ok: false; error: string }
 
 const STAFF_ROLES = ['owner', 'head_coach', 'receptionist']
@@ -78,6 +83,12 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
   if (!profileId || !gymId) return { ok: false, error: 'target_not_found' }
   if (gymId !== callerGym) return { ok: false, error: 'cross_gym' } // belt + suspenders over RLS
 
+  // WL-IDENTITY: the caller's gym name (localized) for the invite greeting.
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle()
+  const gymName: GymName = {
+    ar: gymDisplayName(gymRow, 'ar'), en: gymDisplayName(gymRow, 'en'), fr: gymDisplayName(gymRow, 'fr'),
+  }
+
   const { data: prof } = await supabase.from('profiles').select('phone').eq('id', profileId).maybeSingle()
   const phone = (prof?.phone ?? '').trim()
   if (!phone) return { ok: false, error: 'no_phone' }
@@ -134,5 +145,5 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
   if (inv) await admin.from('account_invites').update(invPayload).eq('id', inv.id)
   else await admin.from('account_invites').insert(invPayload)
 
-  return { ok: true, tempPassword: temp, login, waPhone: phone, role }
+  return { ok: true, tempPassword: temp, login, waPhone: phone, role, gymName }
 }

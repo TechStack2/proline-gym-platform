@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
 import { Send, Copy, Check, MessageCircle, KeyRound, Phone } from 'lucide-react'
 import { inviteToPortal } from '@/lib/provisioning/invite'
 
-export type InviteResult = { tempPassword: string; login: string; waPhone: string }
+export type InviteResult = { tempPassword: string; login: string; waPhone: string; gymName: { ar: string; en: string; fr: string } }
 
 /** Localized wa.me deep-link: login URL + phone login + temp password. */
 export function buildWaLink(
@@ -30,9 +30,11 @@ export function buildWaLink(
   // (NEXT_PUBLIC_SITE_URL); else the actual runtime origin — never a hardcode.
   const appOrigin = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
   const loginUrl = `${appOrigin}/${locale}/auth/login`
+  // WL-IDENTITY: greet with the caller's gym name (localized), not "PRO LINE".
+  const gym = locale === 'ar' ? result.gymName.ar : locale === 'fr' ? result.gymName.fr : result.gymName.en
   // INVITE-PHONE-UX: the member logs in with their PHONE — share that, not the
   // hidden synthetic email (result.login stays internal-only).
-  const msg = t('waMessage', { url: loginUrl, login: result.waPhone, temp: result.tempPassword })
+  const msg = t('waMessage', { gym, url: loginUrl, login: result.waPhone, temp: result.tempPassword })
   const digits = result.waPhone.replace(/\D/g, '') // the member's real phone
   return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`
 }
@@ -88,7 +90,7 @@ export function InviteButton({ kind, id, locale, phone, editHref }: Props) {
     setBusy(true); setError('')
     const res = await inviteToPortal(kind === 'student' ? { studentId: id } : { coachId: id })
     setBusy(false)
-    if (res.ok) setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone })
+    if (res.ok) setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName })
     else setError(t(`err.${res.error}` as Parameters<typeof t>[0]) || res.error)
   }
 

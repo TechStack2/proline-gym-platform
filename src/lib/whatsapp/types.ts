@@ -109,9 +109,14 @@ export interface WhatsAppSendResponse {
 // ─── Template Definitions ────────────────────────────────────────────
 
 /**
- * All WhatsApp Cloud API templates for PRO LINE Gym.
- * These must be registered with Meta Business Manager.
- * Each template has tri-lingual variants (AR/EN/FR).
+ * All WhatsApp Cloud API templates. These must be registered with Meta Business
+ * Manager. Each template has tri-lingual variants (AR/EN/FR).
+ *
+ * WL-IDENTITY: the footer strings below are the DEFAULT (Proline) footers. Per-gym
+ * registration must source the footer from the gym identity via
+ * `whatsappFooter(gym, locale, { withPhone })` (src/lib/whatsapp/identity.ts) so a
+ * white-label tenant's members see THAT gym's name/phone. Unset fields fall back
+ * to these defaults, so the demo registers byte-identically.
  */
 export const WHATSAPP_TEMPLATES: Record<string, Omit<WhatsAppTemplate, 'id' | 'status' | 'created_at' | 'updated_at'>> = {
   // ── Payment Reminder ────────────────────────────────────────────
