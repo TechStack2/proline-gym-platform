@@ -57,6 +57,12 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
     if (!c) return { ok: false, error: 'target_not_found' }
     profileId = c.profile_id; gymId = c.gym_id; role = 'coach'
   } else {
+    // STAFF-INVITE: granting a STAFF role (receptionist/head_coach) is an
+    // owner/head_coach-only power — a receptionist must not mint staff logins.
+    if ((input.role === 'receptionist' || input.role === 'head_coach') &&
+        !['owner', 'head_coach'].includes(callerRole.role)) {
+      return { ok: false, error: 'forbidden' }
+    }
     const { data: p } = await supabase.from('profiles').select('gym_id').eq('id', input.profileId).maybeSingle()
     if (!p) return { ok: false, error: 'target_not_found' }
     profileId = input.profileId; gymId = p.gym_id; role = input.role

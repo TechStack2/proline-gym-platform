@@ -2504,6 +2504,17 @@
     "copied": "Copied",
     "shareWhatsapp": "Share on WhatsApp",
     "waMessage": "Welcome to PRO LINE Gym! Log in at {url} with {login} and temporary password {temp}. Please change it on your first login.",
+    "inviteStaff": "Invite staff",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phoneRequired": "Phone (required — it is the login)",
+    "needsPhone": "Add a phone to invite.",
+    "addPhone": "Add phone",
+    "role": {
+      "receptionist": "Receptionist",
+      "head_coach": "Head coach",
+      "coach": "Coach"
+    },
     "err": {
       "forbidden": "Only staff can invite.",
       "target_not_found": "Member not found.",

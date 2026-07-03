@@ -2504,6 +2504,17 @@
     "copied": "Copié",
     "shareWhatsapp": "Partager sur WhatsApp",
     "waMessage": "Bienvenue chez PRO LINE Gym ! Connectez-vous sur {url} avec {login} et le mot de passe temporaire {temp}. Veuillez le changer à votre première connexion.",
+    "inviteStaff": "Inviter un membre du personnel",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "phoneRequired": "Téléphone (requis — c'est l'identifiant)",
+    "needsPhone": "Ajoutez un téléphone pour inviter.",
+    "addPhone": "Ajouter un téléphone",
+    "role": {
+      "receptionist": "Réception",
+      "head_coach": "Entraîneur principal",
+      "coach": "Entraîneur"
+    },
     "err": {
       "forbidden": "Seul le personnel peut inviter.",
       "target_not_found": "Membre introuvable.",
