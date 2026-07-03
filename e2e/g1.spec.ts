@@ -1,6 +1,6 @@
 import { test, expect, type Browser } from '@playwright/test'
 import { ROLES } from './roles'
-import { vis } from './helpers'
+import { vis, gymSlug } from './helpers'
 
 /**
  * G1 — WhatsApp channel. Two proofs:
@@ -19,6 +19,29 @@ async function ownerCtx(browser: Browser, locale = 'en') {
   const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale })
   return { ctx, page: await ctx.newPage() }
 }
+
+// CI-HYGIENE (the f3 non-idempotent-retry lesson): g1's second test FLIPS the
+// gym's WhatsApp state (not_configured → active) mid-test, so a flaky attempt 1
+// left flipped state and every retry failed DETERMINISTICALLY at the
+// "not-configured → no dispatch" step. Reset the config to the known baseline
+// (row deleted = not_configured) at test START — beforeEach re-runs on every
+// retry, so each attempt starts clean. Service-role delete on THIS worker's gym
+// only. No assertion changes.
+test.beforeEach(async () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return // legacy/local single-gym runs without a service key
+  const gymRes = await fetch(`${url}/rest/v1/gyms?slug=eq.${encodeURIComponent(gymSlug())}&select=id`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  })
+  const gymId = ((await gymRes.json()) as Array<{ id: string }>)[0]?.id
+  if (!gymId) return
+  const del = await fetch(`${url}/rest/v1/gym_whatsapp_config?gym_id=eq.${gymId}`, {
+    method: 'DELETE',
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  })
+  if (!del.ok) throw new Error(`g1 baseline reset failed: ${del.status} ${await del.text()}`)
+})
 
 test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backend', async ({ browser }) => {
   test.setTimeout(120_000)
