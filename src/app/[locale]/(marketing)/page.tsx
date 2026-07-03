@@ -1,7 +1,9 @@
+import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
+import { getLandingMeta } from '@/lib/marketing/seo';
 import { LandingNav } from '@/components/layout/LandingNav';
 import { LandingFooter } from '@/components/layout/LandingFooter';
 import { HeroSection } from '@/components/marketing/HeroSection';
@@ -27,6 +29,27 @@ type Props = {
   searchParams?: { gym?: string };
 };
 
+// SEO-PER-GYM: the request's gym slug — ?gym= (CI/preview) WINS, then a mapped
+// custom domain (proxied Host), then undefined → the default demo gym downstream.
+// Shared by generateMetadata (the <head>) and the body so both resolve the SAME gym.
+async function resolveRequestSlug(searchParams?: { gym?: string }): Promise<string | undefined> {
+  const hdrs = headers();
+  const domainSlug = await getGymSlugByDomain(hdrs.get('x-forwarded-host') || hdrs.get('host'));
+  return searchParams?.gym || domainSlug || undefined;
+}
+
+/**
+ * SEO-PER-GYM: per-gym <head> (title/description/OG + JSON-LD name/address/phone/IG).
+ * Lives on the PAGE, not the layout, because only a page can read searchParams —
+ * so the share/search identity follows the resolved gym. The default gym keeps
+ * today's curated `seo` copy byte-identically (see getLandingMeta).
+ */
+export async function generateMetadata({ params: { locale }, searchParams }: Props): Promise<Metadata> {
+  const gymSlug = await resolveRequestSlug(searchParams);
+  const { metadata } = await getLandingMeta(locale, gymSlug);
+  return metadata;
+}
+
 /**
  * Public landing (Cycle 5 / V1 / LP). Renders the brand + the gym's live catalog
  * to LOGGED-OUT visitors via the anon public-read policies (000035): disciplines,
@@ -38,11 +61,9 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
 
   // WL-DOMAIN-ROUTING: which gym is this request for? ?gym= (explicit; CI + preview)
   // WINS, then the request Host (a mapped custom domain), then DEFAULT_GYM_SLUG (the
-  // vendor/Railway domain → the demo — nothing regresses). Reads the proxied host
-  // (x-forwarded-host, set by Cloudflare/Railway/Vercel) then the raw Host.
-  const hdrs = headers();
-  const domainSlug = await getGymSlugByDomain(hdrs.get('x-forwarded-host') || hdrs.get('host'));
-  const gymSlug = searchParams?.gym || domainSlug || undefined;
+  // vendor/Railway domain → the demo — nothing regresses). Same resolution as the
+  // <head> (generateMetadata) so the metadata + JSON-LD match the rendered gym.
+  const gymSlug = await resolveRequestSlug(searchParams);
 
   // GRW-1: gym's active disciplines (anon-readable, 000035) → trial-capture
   // interest chips. One fetch here keeps the chips id-accurate for the RPC.
@@ -87,8 +108,18 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
     instagramFollowers: contact.instagramFollowers,
   };
 
+  // SEO-PER-GYM: JSON-LD for the RESOLVED gym (moved out of the layout, which
+  // can't read ?gym=). ld+json is a data block — not subject to the strict-dynamic
+  // script-src CSP — so no per-request nonce is required.
+  const { jsonLd } = await getLandingMeta(locale, gymSlug);
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        data-testid="landing-jsonld"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <LandingNav locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} />
       <HeroSection locale={locale} branding={heroBranding} />
       <AffiliationsSection locale={locale} gymSlug={sectionSlug} />

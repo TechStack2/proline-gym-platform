@@ -33,10 +33,15 @@ type JsonLdInput = {
   name: string;
   locale: string;
   description: string;
-  /** Localized address parts from the `seo` namespace. */
+  /** Localized address parts from the `seo` namespace (or a gym's address_*). */
   streetAddress: string;
   addressLocality: string;
   addressCountry: string; // ISO-3166-1 alpha-2, e.g. 'LB'
+  // SEO-PER-GYM: per-gym overrides. Each defaults to the Proline constant, so the
+  // demo (and any gym that leaves the field NULL) renders byte-identically.
+  telephone?: string;
+  image?: string;
+  sameAs?: string[];
 };
 
 /**
@@ -50,6 +55,9 @@ export function buildGymJsonLd({
   streetAddress,
   addressLocality,
   addressCountry,
+  telephone = PUBLIC_PHONE,
+  image = `${SITE_URL}${OG_IMAGE_PATH}`,
+  sameAs = [INSTAGRAM_URL],
 }: JsonLdInput) {
   return {
     '@context': 'https://schema.org',
@@ -57,14 +65,14 @@ export function buildGymJsonLd({
     name,
     description,
     url: `${SITE_URL}/${locale}`,
-    image: `${SITE_URL}${OG_IMAGE_PATH}`,
-    telephone: PUBLIC_PHONE,
+    image,
+    telephone,
     address: {
       '@type': 'PostalAddress',
       streetAddress,
       addressLocality,
       addressCountry,
     },
-    sameAs: [INSTAGRAM_URL],
+    sameAs,
   };
 }
