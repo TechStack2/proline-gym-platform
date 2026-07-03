@@ -52,11 +52,43 @@ async function setContact(slug: string) {
   if (!res.ok) throw new Error(`contact patch(${slug}) failed: ${res.status} ${await res.text()}`)
 }
 
+// LANDING-CONTENT (000079): the SET gym gets its OWN champion / gallery /
+// affiliation images; the guard proves those three sections render THESE rows
+// (not Proline's built-in /landing/* set), while the UNSET gym — with zero rows —
+// keeps today's built-in sections byte-identically. Fixed row UUIDs + upsert
+// (Prefer: ignore-duplicates on the PK) make the seed idempotent AND race-safe:
+// wl-landing.spec runs under BOTH the `landing` (unanchored testMatch) and
+// `wl-landing` projects, whose beforeAll's can hit this SHARED gym concurrently.
+const LANDING_ROWS = [
+  { id: 'a0000000-0000-4000-8000-000000000001', section: 'champions',    image_url: '/landing/champions-1.jpg',      caption_en: 'WL Champ Alpha',     sort_order: 0 },
+  { id: 'a0000000-0000-4000-8000-000000000002', section: 'champions',    image_url: '/landing/champions-2.jpg',      caption_en: 'WL Champ Beta',      sort_order: 1 },
+  { id: 'b0000000-0000-4000-8000-000000000001', section: 'gallery',      image_url: '/landing/gym-1.jpg',            caption_en: 'WL Mat One',         sort_order: 0 },
+  { id: 'b0000000-0000-4000-8000-000000000002', section: 'gallery',      image_url: '/landing/gym-2.jpg',            caption_en: null,                 sort_order: 1 },
+  { id: 'b0000000-0000-4000-8000-000000000003', section: 'gallery',      image_url: '/landing/gym-3.jpg',            caption_en: null,                 sort_order: 2 },
+  { id: 'c0000000-0000-4000-8000-000000000001', section: 'affiliations', image_url: '/landing/affiliations/lmf.jpg', caption_en: 'WL Federation One',  sort_order: 0 },
+  { id: 'c0000000-0000-4000-8000-000000000002', section: 'affiliations', image_url: '/landing/affiliations/ifma.png', caption_en: 'WL Federation Two', sort_order: 1 },
+]
+
+async function seedLandingImages(slug: string) {
+  const gymRes = await fetch(`${URL}/rest/v1/gyms?slug=eq.${encodeURIComponent(slug)}&select=id`, {
+    headers: { apikey: KEY!, Authorization: `Bearer ${KEY}` },
+  })
+  const gymId = ((await gymRes.json()) as Array<{ id: string }>)[0]?.id
+  if (!gymId) throw new Error(`seedLandingImages: gym ${slug} not found`)
+  const res = await fetch(`${URL}/rest/v1/gym_landing_images`, {
+    method: 'POST',
+    headers: { apikey: KEY!, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates' },
+    body: JSON.stringify(LANDING_ROWS.map((r) => ({ ...r, gym_id: gymId, is_active: true }))),
+  })
+  if (!res.ok) throw new Error(`seedLandingImages(${slug}) failed: ${res.status} ${await res.text()}`)
+}
+
 test.beforeAll(async () => {
   if (!URL || !KEY) throw new Error('WL-LANDING needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL')
   await seedWl(SLUG_SET, BRAND, NAME_SET)
   await seedWl(SLUG_DEF, null, NAME_DEF)
   await setContact(SLUG_SET)
+  await seedLandingImages(SLUG_SET) // SLUG_DEF is left with ZERO rows (the built-in fallback)
 })
 
 test('WL-LANDING · a gym with brand_color + name set renders ITS branding on the landing', async ({ browser }) => {
@@ -102,6 +134,42 @@ test('WL-LANDING · a gym with brand_color UNSET falls back to the default look 
     await expect(page.getByTestId('footer-phone'), 'default footer phone').toHaveText('+961 70 628 601')
     await expect(page.getByTestId('footer-email'), 'default footer email').toHaveText('alifakih998@gmail.com')
     await expect(page.getByTestId('footer-address'), 'default footer address').toHaveText('Sky Business Center, Baabda')
+
+    // LANDING-CONTENT: SLUG_DEF seeds ZERO landing images → the built-in Proline
+    // Champions/Gallery/Affiliations render (the per-gym rows branch is absent),
+    // byte-identical to today. The built-in champions are exactly the 4 hardcoded
+    // figures; the per-gym `landing-champion`/`landing-gallery-tile` testids never
+    // appear; the built-in affiliations are the hardcoded 4 slots.
+    await expect(page.locator('#champions'), 'the champions section still renders').toBeVisible()
+    await expect(page.locator('#champions figure'), 'the built-in 4 champions render').toHaveCount(4)
+    await expect(page.locator('#champions [data-testid="landing-champion"]'), 'no per-gym champion rows on the default gym').toHaveCount(0)
+    await expect(page.locator('#gallery [data-testid="landing-gallery-tile"]'), 'no per-gym gallery rows on the default gym').toHaveCount(0)
+    await expect(page.locator('#affiliations [data-testid="affiliation-slot"]'), 'the built-in 4 affiliations render').toHaveCount(4)
+  } finally {
+    await ctx.close()
+  }
+})
+
+test('LANDING-CONTENT · a gym with seeded champion/gallery/affiliation rows renders ITS images (not Proline\'s built-in set)', async ({ browser }) => {
+  const ctx = await browser.newContext({ locale: 'en' })
+  const page = await ctx.newPage()
+  try {
+    await page.goto(`/en?gym=${encodeURIComponent(SLUG_SET)}`)
+    // Champions: exactly the 2 seeded rows (not the built-in 4), with the gym's captions.
+    await expect(page.locator('#champions [data-testid="landing-champion"]'), 'the gym champion rows render')
+      .toHaveCount(2, { timeout: 15_000 })
+    await expect(page.getByText('WL Champ Alpha'), 'a seeded champion caption renders').toBeVisible()
+    await expect(page.getByText('WL Champ Beta')).toBeVisible()
+    // Gallery: exactly the 3 seeded tiles (the rows branch), not the built-in 6.
+    // The gallery is a pure photo mosaic (no visible captions, byte-identical to
+    // the built-in) → the seeded caption flows to the tile image's alt; assert it
+    // there (proves the gym's ROW data reached the tile, not just any 3 photos).
+    await expect(page.locator('#gallery [data-testid="landing-gallery-tile"]'), 'the gym gallery rows render').toHaveCount(3)
+    await expect(page.locator('#gallery [data-testid="landing-gallery-tile"]').first().locator('img'),
+      'the first gallery tile carries the seeded caption as its alt').toHaveAttribute('alt', 'WL Mat One')
+    // Affiliations: exactly the 2 seeded slots (the rows branch), not the built-in 4.
+    await expect(page.locator('#affiliations [data-testid="affiliation-slot"]'), 'the gym affiliation rows render').toHaveCount(2)
+    await expect(page.getByText('WL Federation One'), 'a seeded affiliation caption renders').toBeVisible()
   } finally {
     await ctx.close()
   }
