@@ -68,6 +68,7 @@
     "campaigns": "الحملات"
   },
   "common": {
+    "genericError": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "save": "حفظ",
     "cancel": "إلغاء",
     "delete": "حذف",
@@ -2532,7 +2533,7 @@
     "passwordHint": "اختر كلمة مرور تعرفها أنت فقط.",
     "newPassword": "كلمة المرور الجديدة",
     "confirmPassword": "تأكيد كلمة المرور",
-    "passwordTooShort": "8 أحرف على الأقل.",
+    "passwordTooShort": "10 أحرف على الأقل.",
     "passwordMismatch": "كلمتا المرور غير متطابقتين.",
     "stepLanguage": "اللغة",
     "languageHint": "اختر لغتك المفضلة.",

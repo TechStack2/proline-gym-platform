@@ -28,6 +28,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
   types: PtTypeRow[]; disciplines: Disc[]; gymId: string; locale: string
 }) {
   const t = useTranslations('settings.ptCatalog')
+  const tc = useTranslations('common')
   const router = useRouter()
   const isRTL = locale === 'ar'
 
@@ -44,7 +45,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
     setBusy(true); setError('')
     const { error: err } = await fn()
     setBusy(false)
-    if (err) setError(err.message)
+    if (err) { console.error('[pt-package-manager]', err); setError(tc('genericError')) } // ERROR-HARDEN: no raw pg errors
     else router.refresh()
   }
 

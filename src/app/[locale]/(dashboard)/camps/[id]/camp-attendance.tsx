@@ -37,7 +37,7 @@ export function CampAttendance({ campId, day, days, kids, locale }: {
         { onConflict: 'camp_id,student_id,attendance_date' },
       )
     setBusy(null)
-    if (error) toast({ title: t('markFailed'), description: error.message, variant: 'destructive' })
+    if (error) { console.error('[camp-attendance]', error); toast({ title: t('markFailed'), variant: 'destructive' }) } // ERROR-HARDEN
     else router.refresh()
   }
 

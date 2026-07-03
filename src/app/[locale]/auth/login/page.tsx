@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
-import { signInWithPhone } from '@/lib/auth/actions';
+import { signInWithPhone, signInWithEmail } from '@/lib/auth/actions';
 import { cn } from '@/lib/utils';
 import { Mail, Lock, Eye, EyeOff, Users, LogIn, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -130,14 +130,19 @@ export default function LoginPage({ params }: Props) {
       return;
     }
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email: id, password });
-    if (loginError) {
-      setError(loginError.message);
+    // ERROR-HARDEN #3: email sign-in goes through the SERVER action too — the old
+    // client-side supabase.auth.signInWithPassword bypassed the per-(IP+identifier)
+    // limiter and leaked raw GoTrue error.message. Same limiter + generic errors as
+    // the phone path; cookies are set server-side, so refresh to adopt the session.
+    const res = await signInWithEmail(id, password);
+    if (!res.ok) {
+      setError(res.rateLimited ? t('tooManyAttempts') : t('loginError'));
       setLoading(false);
       return;
     }
 
     router.push('/dashboard');
+    router.refresh();
   };
 
   const fillDemoAccount = (accountEmail: string) => {

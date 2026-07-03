@@ -49,6 +49,7 @@ const DEFAULT_LADDER: [string, string, string, string, number, number, number, b
 
 export function DisciplineManager({ disciplines, gymId, locale }: { disciplines: Row[]; gymId: string; locale: string }) {
   const t = useTranslations('settings.discipline')
+  const tc = useTranslations('common')
   const router = useRouter()
   const isRTL = locale === 'ar'
 
@@ -68,7 +69,7 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
     setError('')
     const { error: err } = await fn()
     setBusy(false)
-    if (err) setError(err.message)
+    if (err) { console.error('[discipline-manager]', err); setError(tc('genericError')) } // ERROR-HARDEN: no raw pg errors
     else router.refresh()
   }
 

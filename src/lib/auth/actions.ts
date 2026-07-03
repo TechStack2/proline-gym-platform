@@ -82,3 +82,35 @@ export async function signInWithPhone(
   }
   return { ok: false }
 }
+
+/**
+ * ERROR-HARDEN #3 — email sign-in as a SERVER action. The login page previously
+ * called supabase.auth.signInWithPassword CLIENT-side, which (a) bypassed the
+ * per-(IP+identifier) limiter entirely (the middleware only counts requests, and
+ * GoTrue is reached directly) and (b) surfaced raw GoTrue error.message to users.
+ * This mirrors signInWithPhone: limit → attempt → generic result; a success
+ * resets the identifier's window; the raw error stays in a server-side log.
+ */
+export async function signInWithEmail(
+  emailRaw: string,
+  password: string,
+): Promise<{ ok: boolean; rateLimited?: boolean }> {
+  const email = (emailRaw || '').trim().toLowerCase()
+  if (!email || !password) return { ok: false }
+
+  const limit = envLimit('AUTH_RATE_LIMIT_PER_ID', 5)
+  const windowMs = envLimit('AUTH_RATE_LIMIT_WINDOW_MS', 60 * 1000)
+  const idKey = `id:${clientIp()}:${email}`
+  cleanupRateLimitStore(idLimitStore)
+  const gate = checkRateLimit(idLimitStore, idKey, limit, windowMs)
+  if (!gate.allowed) return { ok: false, rateLimited: true }
+
+  const supabase = await createClient() // SSR client → writes the session cookies on success
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) {
+    console.error('[auth] email sign-in failed:', error.message) // server-side only — never shown raw
+    return { ok: false }
+  }
+  resetRateLimit(idLimitStore, idKey)
+  return { ok: true }
+}

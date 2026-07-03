@@ -236,6 +236,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // ERROR-HARDEN: branded error boundary on a forced segment throw (/en+/ar),
+      // the email login limiter (client-side bypass closed), and the gyms-UPDATE
+      // owner/head_coach tightening (a receptionist save never persists).
+      name: 'error-harden',
+      dependencies: ['setup'],
+      testMatch: /error-harden\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it
