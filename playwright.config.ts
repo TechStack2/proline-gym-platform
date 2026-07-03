@@ -471,6 +471,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PORTAL-BALANCE: the member's money number is ONE number — a part-paid
+      // member sees the SAME netted balance on the portal home tile and the
+      // billing tab (home used to omit 'partial' + ignore payments). Issues its
+      // own fixture invoice (owner) then reads as Karim.
+      name: 'portal-balance',
+      dependencies: ['setup'],
+      testMatch: /portal-balance\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // G1 WhatsApp channel: flips the gym's WhatsApp config to active and
       // records outbound rows; mutates gym config nothing later should read.
       name: 'g1',

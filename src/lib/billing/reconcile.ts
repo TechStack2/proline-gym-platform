@@ -19,6 +19,40 @@ export function balanceUsd(totalUsd: number | null, payments: PaymentLike[] | nu
   return bal < EPSILON ? 0 : Math.round(bal * 100) / 100
 }
 
+// PORTAL-BALANCE — the ONE source of truth for "what does this member owe".
+// The portal HOME tile used to sum raw total_usd over ['pending','overdue'] —
+// omitting 'partial' AND ignoring payments — while portal/billing netted
+// correctly: a part-paid member saw "$0 / settled" on home and a real balance
+// on the billing tab. Both surfaces now compute through here.
+export const OPEN_INVOICE_STATUSES = ['pending', 'partial', 'overdue'] as const
+
+type OutstandingInvoice = { id: string; status: string; total_usd: number | null }
+type LinkedPayment = { invoice_id: string | null; amount_usd: number | null }
+
+/** Σ amount_usd per invoice_id (unlinked payments are ignored). */
+export function paidByInvoice(payments: LinkedPayment[] | null | undefined): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const p of payments ?? []) {
+    if (!p.invoice_id) continue
+    map.set(p.invoice_id, (map.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+  }
+  return map
+}
+
+/** Net outstanding = Σ over OPEN invoices of (total − its payments), in cents-rounded USD. */
+export function outstandingUsd(
+  invoices: OutstandingInvoice[] | null | undefined,
+  payments: LinkedPayment[] | null | undefined,
+): number {
+  const paid = paidByInvoice(payments)
+  let sum = 0
+  for (const inv of invoices ?? []) {
+    if (!(OPEN_INVOICE_STATUSES as readonly string[]).includes(inv.status)) continue
+    sum += balanceUsd(inv.total_usd, [{ amount_usd: paid.get(inv.id) ?? 0 }])
+  }
+  return Math.round(sum * 100) / 100
+}
+
 type NameRow = {
   first_name_ar?: string | null; first_name_en?: string | null; first_name_fr?: string | null
   last_name_ar?: string | null; last_name_en?: string | null; last_name_fr?: string | null

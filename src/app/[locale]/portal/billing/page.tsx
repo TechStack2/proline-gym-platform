@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
-import { balanceUsd, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { balanceUsd, outstandingUsd, paidByInvoice, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 
 type Props = { params: { locale: string } }
 
@@ -48,20 +48,18 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
       const { data: hhPays } = invIds.length
         ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', invIds)
         : { data: [] as any[] }
-      const paidBy = new Map<string, number>()
-      for (const pmt of (hhPays ?? []) as any[]) {
-        if (pmt.invoice_id) paidBy.set(pmt.invoice_id, (paidBy.get(pmt.invoice_id) ?? 0) + Number(pmt.amount_usd ?? 0))
-      }
+      // PORTAL-BALANCE: aggregate through the shared helpers (one source of truth
+      // with the home tile + the member view below).
+      const paidBy = paidByInvoice((hhPays ?? []) as any[])
       const invoicesByKid = new Map<string, any[]>()
-      let outstanding = 0
       for (const inv of (hhInvoices ?? []) as any[]) {
         const bal = balUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }])
         const row = { ...inv, balance: bal }
         const list = invoicesByKid.get(inv.student_id) ?? []
         list.push(row)
         invoicesByKid.set(inv.student_id, list)
-        if (['pending', 'partial', 'overdue'].includes(inv.status)) outstanding += bal
       }
+      const outstanding = outstandingUsd((hhInvoices ?? []) as any[], (hhPays ?? []) as any[])
       household = { kids, invoicesByKid, outstanding }
     }
   }
@@ -74,14 +72,11 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
     .select('id, invoice_id, amount_usd, amount_lbp, payment_method, payment_date, reference_number')
     .eq('student_id', student?.id).order('payment_date', { ascending: false }).limit(50)
 
-  // Reconcile each invoice's balance from this member's payments (canonical USD).
-  const paidByInvoice = new Map<string, number>()
-  for (const p of (payments ?? []) as any[]) {
-    if (!p.invoice_id) continue
-    paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
-  }
+  // Reconcile each invoice's balance from this member's payments (canonical USD)
+  // — PORTAL-BALANCE: via the shared helper (was an inline copy of the same map).
+  const paidMap = paidByInvoice((payments ?? []) as any[])
   const invBalance = (inv: { id: string; total_usd: number | null }) =>
-    balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
+    balanceUsd(inv.total_usd, [{ amount_usd: paidMap.get(inv.id) ?? 0 }])
 
   const { data: membership } = await supabase.from('student_memberships')
     .select('status, end_date, membership_plans:plan_id (name_en, name_ar, name_fr, price_usd)')
