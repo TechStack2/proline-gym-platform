@@ -8,6 +8,7 @@ import { StudentList } from './components/student-list'
 import { StudentFilters } from './components/student-filters'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
 import { getMemberEnrichment } from '@/lib/members/enrichment'
+import { getEnabledProducts } from '@/lib/gym/products'
 import { LeadsPipeline } from '../leads/leads-pipeline'
 
 export default async function StudentsPage({
@@ -64,6 +65,10 @@ export default async function StudentsPage({
 
   const gymId = profile?.gym_id
   if (!gymId) return null
+
+  // NO-MEMBERSHIP-GAPS: the "expiring" chip is membership-expiry — hidden for a
+  // classes+PT gym.
+  const products = await getEnabledProducts(supabase, gymId)
 
   // Fetch students with profile data
   let query = supabase
@@ -199,7 +204,9 @@ export default async function StudentsPage({
 
       {/* FD-1 filter chips — “who needs attention” without opening files */}
       <div className="flex flex-wrap gap-2" data-testid="member-chips">
-        {(['owing', 'expiring', 'noguardian', 'recent'] as const).map((k) => (
+        {(['owing', 'expiring', 'noguardian', 'recent'] as const)
+          .filter((k) => k !== 'expiring' || products.membership)
+          .map((k) => (
           <Link
             key={k}
             href={`/${locale}/students${chip === k ? '' : `?chip=${k}`}`}

@@ -116,8 +116,10 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
               <tr className="border-b text-gray-500">
                 <th className="p-2 text-start font-medium">{t('month')}</th>
                 {products.membership && <th className="p-2 text-end font-medium">{t('churn.lapsed')}</th>}
-                <th className="p-2 text-end font-medium">{t('churn.cancelled')}</th>
-                <th className="p-2 text-end font-medium">{t('churn.suspended')}</th>
+                {/* NO-MEMBERSHIP-GAPS: the churn breakdown is membership-domain
+                    framing (audit) — a classes+PT gym keeps only the total. */}
+                {products.membership && <th className="p-2 text-end font-medium">{t('churn.cancelled')}</th>}
+                {products.membership && <th className="p-2 text-end font-medium">{t('churn.suspended')}</th>}
                 <th className="p-2 text-end font-medium">{t('total')}</th>
               </tr>
             </thead>
@@ -128,8 +130,8 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
                   <tr key={row.month} className="border-b last:border-0" data-testid="churn-row" data-month={row.month}>
                     <td className="p-2 font-medium text-gray-700">{monthLabel(row.month)}</td>
                     {products.membership && <td className="p-2 text-end text-gray-600" data-testid="churn-lapsed">{row.lapsed || <span className="text-gray-300">—</span>}</td>}
-                    <td className="p-2 text-end text-gray-600">{row.cancelled || <span className="text-gray-300">—</span>}</td>
-                    <td className="p-2 text-end text-gray-600">{row.suspended || <span className="text-gray-300">—</span>}</td>
+                    {products.membership && <td className="p-2 text-end text-gray-600">{row.cancelled || <span className="text-gray-300">—</span>}</td>}
+                    {products.membership && <td className="p-2 text-end text-gray-600">{row.suspended || <span className="text-gray-300">—</span>}</td>}
                     <td className="p-2 text-end font-bold text-gray-900">{total || <span className="text-gray-300">—</span>}</td>
                   </tr>
                 )
@@ -137,10 +139,12 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
             </tbody>
           </table>
         </div>
-        <Link href={`/${locale}/money?tab=winback`} data-testid="churn-winback-link"
-          className="mt-3 inline-block text-xs font-medium text-primary-600 hover:underline">
-          {t('toWinback')}
-        </Link>
+        {products.membership && (
+          <Link href={`/${locale}/money?tab=winback`} data-testid="churn-winback-link"
+            className="mt-3 inline-block text-xs font-medium text-primary-600 hover:underline">
+            {t('toWinback')}
+          </Link>
+        )}
       </section>
     </div>
   )

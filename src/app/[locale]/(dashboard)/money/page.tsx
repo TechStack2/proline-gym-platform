@@ -11,6 +11,7 @@ import { ProcessRenewalsButton } from '@/components/dashboard/lifecycle-buttons'
 import { OwnerFinances } from './money-owner-dashboard'
 import { WinbackView } from './winback-view'
 import { getWinbackQueue } from '@/lib/finances/winback'
+import { getEnabledProducts } from '@/lib/gym/products'
 import { OnlineOnlyNotice } from '@/components/offline/online-only-notice'
 
 export const dynamic = 'force-dynamic'
@@ -45,7 +46,18 @@ const TabLink = ({ locale, tab, k, label, icon: Icon }: { locale: string; tab: s
 export default async function MoneyPage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('money')
-  const tab = ['invoices', 'payments', 'winback'].includes(searchParams.tab ?? '') ? searchParams.tab! : 'overview'
+
+  // NO-MEMBERSHIP-GAPS: win-back is membership-churn recovery — hide the tab (and
+  // its deep link) when the gym doesn't sell membership.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: me } = user
+    ? await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+    : { data: null }
+  const products = await getEnabledProducts(supabase, me?.gym_id)
+
+  const validTabs = ['invoices', 'payments', ...(products.membership ? ['winback'] : [])]
+  const tab = validTabs.includes(searchParams.tab ?? '') ? searchParams.tab! : 'overview'
 
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
@@ -58,7 +70,7 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
           <TabLink locale={locale} tab={tab} k="overview" label={t('overview')} icon={DollarSign} />
           <TabLink locale={locale} tab={tab} k="invoices" label={t('invoices')} icon={FileText} />
           <TabLink locale={locale} tab={tab} k="payments" label={t('payments')} icon={Banknote} />
-          <TabLink locale={locale} tab={tab} k="winback" label={t('winback')} icon={Heart} />
+          {products.membership && <TabLink locale={locale} tab={tab} k="winback" label={t('winback')} icon={Heart} />}
         </div>
       </div>
 
@@ -93,6 +105,11 @@ async function MoneyOverview({ locale }: { locale: string }) {
     : { data: null }
   const gymId = profile?.gym_id as string | undefined
 
+  // NO-MEMBERSHIP-GAPS: the renewals card + ProcessRenewals are membership-cycle
+  // furniture — hidden for a classes+PT gym (audit call; class-reg renewals for
+  // such gyms surface via invoices/Today instead).
+  const products = await getEnabledProducts(supabase, gymId)
+
   // The cash drawer: today's per-method tally (shared D1 logic).
   const tally = await getDailyTally(supabase)
 
@@ -125,12 +142,14 @@ async function MoneyOverview({ locale }: { locale: string }) {
   return (
     <>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {products.membership && (
       <div className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="money-renewals">
         <p className="flex items-center gap-1 text-xs text-gray-500"><RefreshCw className="h-3 w-3" /> {t('renewalsOutstanding')}</p>
         <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd">${renewalOutstanding.toFixed(2)}</p>
         <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: openRenewalInvs.length })}</p>
         <div className="mt-2"><ProcessRenewalsButton /></div>
       </div>
+      )}
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
         <p className="text-xs text-gray-500">{t('outstanding')}</p>
         <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding">${outstanding.toFixed(2)}</p>
