@@ -84,7 +84,7 @@ function primeDeskMirror() {
   })
 }
 
-export function OfflineDesk({ locale }: { locale: string }) {
+export function OfflineDesk({ locale, showMembership = true }: { locale: string; showMembership?: boolean }) {
   const t = useTranslations('desk')
   const isRTL = locale === 'ar'
   const online = useOnline()
@@ -356,11 +356,14 @@ export function OfflineDesk({ locale }: { locale: string }) {
                 <div className="mt-2 space-y-1.5 text-sm text-gray-700">
                   {basics.phone && <p className="inline-flex items-center gap-1.5" data-testid="desk-basic-phone"><Phone className="h-3.5 w-3.5 text-gray-400" /><span dir="ltr">{basics.phone}</span></p>}
                   <p className="flex flex-wrap items-center gap-1.5">
+                    {/* NO-MEMBERSHIP-GAPS: a classes+PT gym has no membership state to badge. */}
+                    {showMembership && (
                     <span data-testid="desk-basic-membership" data-status={basics.membership}
                       className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
                         basics.membership === 'active' ? 'bg-green-100 text-green-800' : basics.membership === 'none' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-800')}>
                       {t(`membership.${basics.membership === 'active' ? 'active' : basics.membership === 'none' ? 'none' : 'inactive'}`)}
                     </span>
+                    )}
                     <span data-testid="desk-basic-pt" className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
                       <Dumbbell className="h-3 w-3" /> {t('ptRemaining', { n: basics.ptRemaining })}
                     </span>

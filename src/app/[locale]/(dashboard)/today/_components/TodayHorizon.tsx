@@ -371,9 +371,9 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           )
         })}
       </ActionCard>
-      </>)}
 
-      {/* ── Card: Win-back due (FIN-1) ── */}
+      {/* ── Card: Win-back due (FIN-1) — membership-churn recovery, so it lives
+             INSIDE the membership gate (NO-MEMBERSHIP-GAPS: it leaked outside). ── */}
       <ActionCard icon={Heart} title={t('cards.winbackDue')} count={winbackDue.length}
         emptyText={t('cards.noneWinback')} testid="winback-due" isRTL={isRTL}>
         {winbackDue.map((w) => (
@@ -396,6 +396,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           </ActionRow>
         ))}
       </ActionCard>
+      </>)}
 
       {/* ── Card 4: Money today (due now + overdue + the day's drawer) ── */}
       <ActionCard icon={DollarSign} title={t('cards.money')} count={(dueToday ?? []).length + overdueOpen.length}

@@ -27,12 +27,18 @@ type Props = {
   plans: MembershipPlan[];
   disciplines: Discipline[];
   ptTypes: PtTypeRow[];
+  /** NO-MEMBERSHIP-GAPS: false hides the membership-plans tab entirely. */
+  showMembership?: boolean;
 };
 
-export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes, initialTab }: Props & { initialTab?: string }) {
+export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes, initialTab, showMembership = true }: Props & { initialTab?: string }) {
   const t = useTranslations('settings');
+  // NO-MEMBERSHIP-GAPS: with membership off, the plans tab neither renders nor is
+  // deep-linkable (?tab=plans falls back to gym).
+  const availableTabs: TabId[] = (['gym', 'rates', 'plans', 'disciplines', 'ptpackages'] as TabId[])
+    .filter((tab) => tab !== 'plans' || showMembership);
   const [activeTab, setActiveTab] = useState<TabId>(
-    (['gym', 'rates', 'plans', 'disciplines', 'ptpackages'] as TabId[]).includes(initialTab as TabId) ? (initialTab as TabId) : 'gym'
+    availableTabs.includes(initialTab as TabId) ? (initialTab as TabId) : 'gym'
   );
   const isRTL = locale === 'ar';
 
@@ -52,7 +58,7 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
     ptpackages: <Dumbbell className="h-4 w-4" />,
   };
 
-  const tabIds: TabId[] = ['gym', 'rates', 'plans', 'disciplines', 'ptpackages'];
+  const tabIds: TabId[] = availableTabs;
 
   return (
     <div className="space-y-4">
@@ -81,7 +87,7 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
       <div>
         {activeTab === 'gym' && <GymSettings gym={gym} locale={locale} />}
         {activeTab === 'rates' && <ExchangeRates rates={rates} locale={locale} />}
-        {activeTab === 'plans' && (
+        {activeTab === 'plans' && showMembership && (
           <>
             {gym?.id && <PlanManager plans={plans as any} gymId={gym.id} locale={locale} />}
             <MembershipPlans plans={plans} locale={locale} />

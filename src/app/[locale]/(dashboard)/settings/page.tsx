@@ -9,6 +9,7 @@ import { getWhatsAppStatus } from './_components/whatsapp-actions';
 import { WaiverSettings } from './_components/waiver-settings';
 import { getWaiverTemplate } from './_components/waiver-actions';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import { parseEnabledProducts } from '@/lib/gym/products';
 import { Languages } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +27,10 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     .select('*')
     .limit(1)
     .single();
+
+  // NO-MEMBERSHIP-GAPS: gate the membership config surfaces (link + plans tab)
+  // when the gym doesn't sell membership. The row is already fetched (select *).
+  const products = parseEnabledProducts((gymData as { enabled_products?: unknown } | null)?.enabled_products);
 
   // Fetch exchange rates, ordered by date desc
   const { data: rates } = await supabase
@@ -76,9 +81,12 @@ export default async function SettingsPage({ params, searchParams }: Props) {
         <Link href={`/${locale}/belts`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
           {locale === 'ar' ? 'الأحزمة' : locale === 'fr' ? 'Ceintures' : 'Belts'}
         </Link>
-        <Link href={`/${locale}/settings?tab=plans`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
-          {locale === 'ar' ? 'خطط العضوية' : locale === 'fr' ? "Plans d'adhésion" : 'Membership plans'}
-        </Link>
+        {/* NO-MEMBERSHIP-GAPS: a classes+PT gym has no membership plans to configure. */}
+        {products.membership && (
+          <Link href={`/${locale}/settings?tab=plans`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            {locale === 'ar' ? 'خطط العضوية' : locale === 'fr' ? "Plans d'adhésion" : 'Membership plans'}
+          </Link>
+        )}
         {/* REP-1: reports re-enters the nav here (out-of-nav since IA-1; repaired). */}
         <Link href={`/${locale}/reports`} data-testid="settings-reports-link" className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
           {locale === 'ar' ? 'التقارير' : locale === 'fr' ? 'Rapports' : 'Reports'}
@@ -115,6 +123,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
           plans={plans || []}
           disciplines={disciplines || []}
           ptTypes={ptTypes || []}
+          showMembership={products.membership}
         />
       </Suspense>
 

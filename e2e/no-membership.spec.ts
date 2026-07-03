@@ -84,3 +84,55 @@ test('NO-MEMBERSHIP · disabled gym shows classes + PT and hides every membershi
     await ctx.close()
   }
 })
+
+test('NO-MEMBERSHIP-GAPS · the six audit leaks are gated on the disabled gym', async ({ browser }) => {
+  test.setTimeout(180_000)
+  const { ctx, page } = await ownerCtx(browser)
+  try {
+    // ── 1. Settings: no Membership-plans config link; no plans tab; the ?tab=plans
+    //       deep link falls back (no plan manager renders). ──
+    await page.goto('/en/settings')
+    await expect(vis(page, '[data-testid="settings-config-row"]').first()).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="settings-config-row"] a[href*="tab=plans"]'), 'no Membership-plans config link').toHaveCount(0)
+    await expect(page.locator('[data-testid="settings-tab-plans"]'), 'no plans tab in Settings').toHaveCount(0)
+    await page.goto('/en/settings?tab=plans')
+    await expect(page.locator('[data-testid="settings-tab-plans"]'), 'the plans deep link falls back (tab still absent)').toHaveCount(0)
+
+    // ── 2. Money: no Winback tab; no Renewals-outstanding card / ProcessRenewals. ──
+    await page.goto('/en/money')
+    await expect(vis(page, '[data-testid="money-tabs"]').first()).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="money-tabs"] a[href*="tab=winback"]'), 'no Winback tab').toHaveCount(0)
+    await expect(page.locator('[data-testid="money-renewals"]'), 'no Renewals-outstanding card (incl. ProcessRenewals)').toHaveCount(0)
+    // The churn breakdown collapses to month + total (no lapsed/cancelled/suspended),
+    // and the to-win-back link is gone.
+    await expect(vis(page, '[data-testid="churn-table"]').first()).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="churn-table"] thead th'), 'churn shows only month + total').toHaveCount(2)
+    await expect(page.locator('[data-testid="churn-winback-link"]'), 'no to-win-back link').toHaveCount(0)
+    // The winback deep link falls back to overview (never renders the winback view).
+    await page.goto('/en/money?tab=winback')
+    await expect(page.locator('[data-testid="money-renewals"]')).toHaveCount(0)
+    await expect(page.locator('[data-testid="winback-list"], [data-testid="winback-empty"]'), 'winback deep link falls back').toHaveCount(0)
+
+    // ── 3. Today: the Win-back-due card is inside the membership gate now. ──
+    await page.goto('/en/today')
+    await expect(vis(page, 'main').first()).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="card-winback-due"], [data-testid="card-empty-winback-due"]'), 'no Win-back-due card').toHaveCount(0)
+
+    // ── 4. Students: no "expiring" chip (the other chips stay). ──
+    await page.goto('/en/students')
+    await expect(vis(page, '[data-testid="member-chips"]').first()).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="chip-expiring"]'), 'no expiring chip').toHaveCount(0)
+    await expect(vis(page, '[data-testid="chip-owing"]').first(), 'the owing chip stays').toBeVisible()
+
+    // ── 6. Desk: a scanned member shows PT + belt but NO membership badge. ──
+    await page.goto('/en/desk')
+    await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 15_000 })
+    await vis(page, '[data-testid="desk-search"]').first().fill('Karim')
+    await vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first().click()
+    await expect(vis(page, '[data-testid="desk-member-basics"]').first(), 'the basics panel renders').toBeVisible({ timeout: 90_000 })
+    await expect(page.locator('[data-testid="desk-basic-membership"]'), 'no membership badge on the scanned member').toHaveCount(0)
+    await expect(vis(page, '[data-testid="desk-basic-pt"]').first(), 'the PT badge stays').toBeVisible()
+  } finally {
+    await ctx.close()
+  }
+})
