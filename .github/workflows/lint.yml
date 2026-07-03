@@ -1,4 +1,4 @@
-name: Lint — no unstable nested components
+name: Lint + Unit (isolated guards)
 
 # FORM-FOCUS-SWEEP: a standalone, ISOLATED guard (does NOT touch the e2e gate, so it can't
 # destabilize it) that fails if any component is defined inside a render body
@@ -6,6 +6,10 @@ name: Lint — no unstable nested components
 # (a nested component gets a new type each render → React remounts it → the cursor drops).
 # Focused grep so it fails ONLY on that rule, not on the repo's other pre-existing
 # next-lint findings (the eslint config is .eslintrc.json).
+#
+# CI-HYGIENE: the vitest unit suites (rate-limit.test.ts, invite.test.ts — the auth/security
+# guards) previously ran only locally. The unit-tests job gates PRs here, ISOLATED from the
+# e2e workflow (same rationale: it can't destabilize the behavior gate).
 on:
   push:
     branches: [main]
@@ -31,3 +35,15 @@ jobs:
             exit 1
           fi
           echo "✓ no unstable nested components"
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Vitest unit suites (auth rate-limit + invite security guards, billing units)
+        run: npx vitest run

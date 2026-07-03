@@ -1,5 +1,6 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
 import { ROLES, type Role } from './roles'
+import { gymSlug } from './helpers'
 
 /**
  * PORTAL-FND — the portal design-system + shell FOUNDATION.
@@ -24,6 +25,42 @@ import { ROLES, type Role } from './roles'
 
 const DESKTOP = { width: 1280, height: 800 }
 const MOBILE = { width: 390, height: 844 }
+
+// CI-HYGIENE: the recent-attendance proof-of-use previously depended on suite
+// co-residents (activity-loop) having marked Karim's attendance earlier in the
+// run — any TARGETED set without an attendance producer redded it. Self-seed the
+// fixture: one 'present' row for Karim on his seeded class (service role,
+// idempotent via the (class_id, student_id, attendance_date) unique key) so the
+// spec passes in ANY set. No assertion changes — the populated-card assert is
+// unchanged, it just owns its own data now.
+test.beforeAll(async () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return // legacy/local runs without a service key
+  const H = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }
+  const gym = ((await (await fetch(`${url}/rest/v1/gyms?slug=eq.${encodeURIComponent(gymSlug())}&select=id`, { headers: H })).json()) as Array<{ id: string }>)[0]?.id
+  if (!gym) return
+  // Karim = the run gym's seeded student login profile (first_name_en Karim).
+  const karim = ((await (await fetch(
+    `${url}/rest/v1/students?gym_id=eq.${gym}&select=id,profiles!inner(first_name_en)&profiles.first_name_en=eq.Karim&limit=1`,
+    { headers: H },
+  )).json()) as Array<{ id: string }>)[0]?.id
+  if (!karim) throw new Error('portal-fnd self-seed: Karim not found on the run gym')
+  const enr = ((await (await fetch(
+    `${url}/rest/v1/class_enrollments?student_id=eq.${karim}&is_active=eq.true&select=class_id&limit=1`,
+    { headers: H },
+  )).json()) as Array<{ class_id: string }>)[0]?.class_id
+  if (!enr) throw new Error('portal-fnd self-seed: Karim has no enrollment on the run gym')
+  const ins = await fetch(
+    `${url}/rest/v1/attendance_records?on_conflict=class_id,student_id,attendance_date`,
+    {
+      method: 'POST',
+      headers: { ...H, Prefer: 'resolution=ignore-duplicates' },
+      body: JSON.stringify({ class_id: enr, student_id: karim, attendance_date: new Date().toISOString().slice(0, 10), status: 'present' }),
+    },
+  )
+  if (!ins.ok) throw new Error(`portal-fnd self-seed failed: ${ins.status} ${await ins.text()}`)
+})
 
 async function open(browser: Browser, role: Role, viewport: { width: number; height: number }, url: string, locale = 'en') {
   const ctx = await browser.newContext({ storageState: ROLES[role].storage, viewport, locale })
