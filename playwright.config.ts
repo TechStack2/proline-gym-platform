@@ -431,6 +431,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // SETTINGS-LIVE: the gym editor + exchange-rate Settings forms PERSIST
+      // (audit P0 — both were dead stubs). Owner-only; SELF-RESTORING: the gym
+      // name is put back and the global exchange rate is corrected back to the
+      // seeded value via the 000075 upsert, so other specs see steady state.
+      name: 'settings-live',
+      dependencies: ['setup'],
+      testMatch: /settings-live\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // G1 WhatsApp channel: flips the gym's WhatsApp config to active and
       // records outbound rows; mutates gym config nothing later should read.
       name: 'g1',

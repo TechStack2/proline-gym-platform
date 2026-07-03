@@ -61,6 +61,7 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
         {tabIds.map(tab => (
           <button
             key={tab}
+            data-testid={`settings-tab-${tab}`}
             onClick={() => setActiveTab(tab)}
             className={cn(
               'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0',

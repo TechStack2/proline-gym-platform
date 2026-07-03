@@ -1215,7 +1215,23 @@
       "addressEn": "Adresse (EN)",
       "addressFr": "Adresse (FR)",
       "saveChanges": "Enregistrer",
-      "saveNotActive": "La sauvegarde n'est pas activée dans la version MVP",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré — les changements sont actifs",
+      "saveFailed": "Échec de l'enregistrement",
+      "branding": "Image de marque",
+      "brandColor": "Couleur de marque",
+      "heroImageUrl": "URL de l'image d'accueil",
+      "taglineAr": "Slogan (AR)",
+      "taglineEn": "Slogan (EN)",
+      "taglineFr": "Slogan (FR)",
+      "err": {
+        "invalid_color": "La couleur doit être une valeur hexadécimale comme #cd1419",
+        "invalid_currency": "La devise doit être USD, LBP ou BOTH",
+        "not_allowed": "Seul le personnel de cette salle peut enregistrer ces réglages",
+        "nothing_to_save": "Rien à enregistrer",
+        "no_gym": "Votre compte n'a pas de salle",
+        "not_signed_in": "Session expirée — reconnectez-vous"
+      },
       "enterArabicName": "Entrez le nom arabe",
       "enterEnglishName": "Entrez le nom anglais",
       "enterFrenchName": "Entrez le nom français",
@@ -1230,7 +1246,10 @@
       "saveRate": "Enregistrer",
       "history": "Historique des taux",
       "noRates": "Aucun taux enregistré",
-      "change": "Changement"
+      "change": "Changement",
+      "invalidRate": "Entrez un taux positif",
+      "saving": "Enregistrement…",
+      "saved": "Taux enregistré"
     },
     "membership": {
       "noPlans": "Aucun plan d'abonnement",

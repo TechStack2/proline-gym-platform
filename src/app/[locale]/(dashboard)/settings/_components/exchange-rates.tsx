@@ -1,5 +1,8 @@
 import { dateLocale } from '@/lib/utils/locale-format'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +26,38 @@ type Props = {
 
 export function ExchangeRates({ rates, locale }: Props) {
   const t = useTranslations('settings');
+  const router = useRouter();
   const isRTL = locale === 'ar';
+
+  // SETTINGS-LIVE: the add-rate form was an inert stub with NO insert path in the
+  // app. Controlled fields → the 000075 staff-gated SECURITY DEFINER RPC
+  // insert_exchange_rate (upsert on rate_date+source — re-submitting a day
+  // corrects it). exchange_rates is a GLOBAL table; no table policies added.
+  const [newRate, setNewRate] = useState('');
+  const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newSource, setNewSource] = useState('manual');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [savedOk, setSavedOk] = useState(false);
+
+  const saveRate = async () => {
+    setSaveError(''); setSavedOk(false);
+    const num = parseFloat(newRate);
+    if (!Number.isFinite(num) || num <= 0) { setSaveError(t('exchange.invalidRate')); return; }
+    setSaving(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc('insert_exchange_rate', {
+      p_rate: num,
+      p_rate_date: newDate || new Date().toISOString().split('T')[0],
+      p_source: newSource.trim() || 'manual',
+    });
+    setSaving(false);
+    if (error) { setSaveError(error.message); return; }
+    setSavedOk(true);
+    setNewRate('');
+    setTimeout(() => setSavedOk(false), 2500);
+    router.refresh();
+  };
 
   const sortedRates = [...rates].sort(
     (a, b) => new Date(b.rate_date).getTime() - new Date(a.rate_date).getTime()
@@ -111,8 +145,11 @@ export function ExchangeRates({ rates, locale }: Props) {
                 {t('exchange.rate')}
               </label>
               <Input
+                data-testid="rate-input"
                 type="number"
                 step="0.01"
+                value={newRate}
+                onChange={(e) => setNewRate(e.target.value)}
                 className="rounded-lg border p-2"
                 placeholder="e.g. 89500"
               />
@@ -122,9 +159,11 @@ export function ExchangeRates({ rates, locale }: Props) {
                 {t('exchange.date')}
               </label>
               <Input
+                data-testid="rate-date"
                 type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
                 className="rounded-lg border p-2"
-                defaultValue={new Date().toISOString().split('T')[0]}
               />
             </div>
           </div>
@@ -133,17 +172,24 @@ export function ExchangeRates({ rates, locale }: Props) {
               {t('exchange.source')}
             </label>
             <Input
+              data-testid="rate-source"
+              value={newSource}
+              onChange={(e) => setNewSource(e.target.value)}
               className="rounded-lg border p-2"
               placeholder="manual / lira-rate.org / sayrafa"
-              defaultValue="manual"
             />
           </div>
-          <Button className="w-full rounded-lg" size="lg">
-            {t('exchange.saveRate')}
+          {saveError && (
+            <div data-testid="rate-save-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</div>
+          )}
+          <Button data-testid="rate-save" onClick={() => void saveRate()} disabled={saving} className="w-full rounded-lg" size="lg">
+            {saving ? t('exchange.saving') : t('exchange.saveRate')}
           </Button>
-          <p className="text-2xs text-gray-400 text-center">
-            {t('gym.saveNotActive')}
-          </p>
+          {savedOk && (
+            <p data-testid="rate-save-ok" className={cn('text-xs font-medium text-green-700 text-center', isRTL && 'font-arabic')}>
+              {t('exchange.saved')}
+            </p>
+          )}
         </CardContent>
       </Card>
 
