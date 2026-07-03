@@ -43,11 +43,16 @@ const CONTACT_SET = {
   address_en: 'Blue Tower, Jbeil',
 }
 
+// SEO-PER-GYM: a per-gym share/OG image. A COMMITTED local asset (distinct from
+// the default /landing/og.jpg) so next/image is happy and the head's og:image can
+// prove it resolved the gym's hero, not the default card.
+const SET_OG_IMAGE = '/landing/gym-1.jpg'
+
 async function setContact(slug: string) {
   const res = await fetch(`${URL}/rest/v1/gyms?slug=eq.${encodeURIComponent(slug)}`, {
     method: 'PATCH',
     headers: { apikey: KEY!, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(CONTACT_SET),
+    body: JSON.stringify({ ...CONTACT_SET, hero_image_url: SET_OG_IMAGE }),
   })
   if (!res.ok) throw new Error(`contact patch(${slug}) failed: ${res.status} ${await res.text()}`)
 }
@@ -134,6 +139,38 @@ test('WL-LANDING · a gym with contact columns SET renders ITS identity in nav/h
     await expect(page.getByTestId('footer-phone')).toHaveText('+961 3 111 222')
     await expect(page.getByTestId('footer-email')).toHaveText('front@bluebelt.lb')
     await expect(page.getByTestId('footer-address')).toHaveText('Blue Tower, Jbeil')
+  } finally {
+    await ctx.close()
+  }
+})
+
+test('SEO-PER-GYM · a gym with name+contact set gets ITS <head> title/OG/JSON-LD', async ({ browser }) => {
+  const ctx = await browser.newContext({ locale: 'en' })
+  const page = await ctx.newPage()
+  try {
+    await page.goto(`/en?gym=${encodeURIComponent(SLUG_SET)}`)
+    // The <title> is the gym's OWN identity, and it's absolute → the app-wide
+    // "%s | PRO LINE Gym" template must NOT leak the vendor brand into a tenant.
+    await expect(page).toHaveTitle(/Blue Belt Academy/)
+    await expect(page, 'the Proline brand template must not leak into a tenant title').not.toHaveTitle(/PRO LINE/i)
+
+    // OpenGraph (the WhatsApp/Instagram share preview) follows the gym.
+    const ogTitle = await page.locator('head meta[property="og:title"]').getAttribute('content')
+    expect(ogTitle, 'og:title is the gym').toContain(NAME_SET)
+    const ogSite = await page.locator('head meta[property="og:site_name"]').getAttribute('content')
+    expect(ogSite, 'og:site_name is the gym').toBe(NAME_SET)
+    const ogImage = await page.locator('head meta[property="og:image"]').first().getAttribute('content')
+    expect(ogImage, 'per-gym OG image is the gym hero, not the default card').toContain(SET_OG_IMAGE)
+
+    // JSON-LD resolves the gym's name + phone (contact_phone) + IG (instagram_handle)
+    // + address (address_*) — no longer the hardcoded Proline block.
+    const jsonld = JSON.parse((await page.locator('[data-testid="landing-jsonld"]').textContent()) as string)
+    expect(jsonld['@type']).toBe('SportsActivityLocation')
+    expect(jsonld.name, 'JSON-LD name is the gym').toBe(NAME_SET)
+    expect(jsonld.telephone, 'JSON-LD telephone is the gym contact_phone').toBe(CONTACT_SET.contact_phone)
+    expect(jsonld.sameAs, 'JSON-LD sameAs is the gym Instagram').toContain('https://instagram.com/bluebelt.academy')
+    expect(jsonld.address?.addressLocality, 'JSON-LD locality derived from address_*').toBe('Jbeil')
+    expect(jsonld.address?.streetAddress, 'JSON-LD street from address_*').toContain('Blue Tower')
   } finally {
     await ctx.close()
   }

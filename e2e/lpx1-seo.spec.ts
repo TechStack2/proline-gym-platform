@@ -34,6 +34,10 @@ test('LPX-1 · landing has meta + OG + JSON-LD; sitemap + robots respond', async
     expect(ogImage, 'og:image points at the committed share card').toContain('/landing/og.jpg');
     const twitterCard = await page.locator('head meta[name="twitter:card"]').getAttribute('content');
     expect(twitterCard, 'twitter large-image card').toBe('summary_large_image');
+    // SEO-PER-GYM: metadata now resolves the gym on the PAGE (was the layout). The
+    // DEFAULT gym must stay byte-identical — the vendor brand copy is unchanged.
+    const ogSite = await page.locator('head meta[property="og:site_name"]').getAttribute('content');
+    expect(ogSite, 'default og:site_name is the vendor brand').toBe('PRO LINE Gym');
 
     // ── The og.jpg asset really resolves (WhatsApp would fetch it) ──
     const og = await page.request.get('/landing/og.jpg');
@@ -46,6 +50,10 @@ test('LPX-1 · landing has meta + OG + JSON-LD; sitemap + robots respond', async
     expect(jsonld['@type']).toBe('SportsActivityLocation');
     expect(jsonld.name, 'JSON-LD has a gym name').toBeTruthy();
     expect(jsonld.address?.addressLocality, 'JSON-LD has the locality').toBeTruthy();
+    // SEO-PER-GYM: the default gym keeps its curated address + telephone (the move
+    // from layout → page must not drop or alter the demo's structured data).
+    expect(jsonld.address?.streetAddress, 'default JSON-LD keeps the curated address').toContain('Baabda');
+    expect(jsonld.telephone, 'default JSON-LD keeps the public telephone').toBeTruthy();
 
     // ── sitemap.xml ──
     const sitemap = await page.request.get('/sitemap.xml');
