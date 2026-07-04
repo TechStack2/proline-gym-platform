@@ -14,7 +14,7 @@ type Props = { params: { locale: string; id: string } }
 
 export default async function InvoiceDetailPage({ params: { locale, id } }: Props) {
   const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
   const { data: inv } = await supabase
@@ -45,12 +45,12 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
     <div className={cn('space-y-6 p-6', isRTL && 'rtl text-right')}>
       <div className="flex items-center justify-between">
         <Link href={`/${locale}/invoices`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> {t('Invoices', 'الفواتير')}
+          <ArrowLeft className="h-4 w-4" /> {t('Invoices', 'الفواتير', 'Factures')}
         </Link>
         <Link href={`/${locale}/invoices/${id}/receipt`}
           data-testid="receipt-link"
           className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-muted">
-          <Printer className="h-4 w-4" /> {t('Receipt', 'الإيصال')}
+          <Printer className="h-4 w-4" /> {t('Receipt', 'الإيصال', 'Reçu')}
         </Link>
       </div>
 
@@ -61,10 +61,10 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
             <p className="text-sm text-muted-foreground">{studentName} · {inv.invoice_type}</p>
             {(inv as any).payer_profile_id && (
               <p className="text-xs text-muted-foreground" data-testid="invoice-detail-payer">
-                {t('Payer', 'الدافع')}: {localizedName((Array.isArray((inv as any).payer) ? (inv as any).payer[0] : (inv as any).payer), locale)}
+                {t('Payer', 'الدافع', 'Payeur')}: {localizedName((Array.isArray((inv as any).payer) ? (inv as any).payer[0] : (inv as any).payer), locale)}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">{t('Due', 'الاستحقاق')}: {fmtDate(inv.due_date)}</p>
+            <p className="text-xs text-muted-foreground">{t('Due', 'الاستحقاق', 'Échéance')}: {fmtDate(inv.due_date)}</p>
           </div>
           <span data-testid="invoice-status"
             className={cn('inline-flex rounded-full px-3 py-1 text-sm font-semibold', STATUS_BADGE[inv.status])}>
@@ -73,19 +73,19 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
         </div>
 
         <dl className="mt-6 grid gap-3 sm:grid-cols-4 text-sm">
-          <div><dt className="text-muted-foreground">{t('Subtotal', 'المجموع الفرعي')}</dt><dd className="font-medium">${Number(inv.amount_usd).toFixed(2)}</dd></div>
-          <div><dt className="text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)')}</dt><dd className="font-medium">${Number(inv.tax_amount_usd).toFixed(2)}</dd></div>
-          <div><dt className="text-muted-foreground">{t('Total', 'الإجمالي')}</dt><dd className="font-bold" data-testid="invoice-total">${Number(inv.total_usd).toFixed(2)}</dd></div>
-          <div><dt className="text-muted-foreground">{t('Balance', 'الرصيد')}</dt><dd className={cn('font-bold', balance > 0 ? 'text-red-600' : 'text-green-600')} data-testid="invoice-balance">${balance.toFixed(2)}</dd></div>
+          <div><dt className="text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</dt><dd className="font-medium">${Number(inv.amount_usd).toFixed(2)}</dd></div>
+          <div><dt className="text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)', 'TVA (11%)')}</dt><dd className="font-medium">${Number(inv.tax_amount_usd).toFixed(2)}</dd></div>
+          <div><dt className="text-muted-foreground">{t('Total', 'الإجمالي', 'Total')}</dt><dd className="font-bold" data-testid="invoice-total">${Number(inv.total_usd).toFixed(2)}</dd></div>
+          <div><dt className="text-muted-foreground">{t('Balance', 'الرصيد', 'Solde')}</dt><dd className={cn('font-bold', balance > 0 ? 'text-red-600' : 'text-green-600')} data-testid="invoice-balance">${balance.toFixed(2)}</dd></div>
         </dl>
         {inv.total_lbp ? (
-          <p className="mt-1 text-xs text-muted-foreground">{t('Total in LBP', 'الإجمالي بالليرة')}: {Number(inv.total_lbp).toLocaleString()} LBP</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('Total in LBP', 'الإجمالي بالليرة', 'Total en LBP')}: {Number(inv.total_lbp).toLocaleString()} LBP</p>
         ) : null}
       </div>
 
       {/* Settlement */}
       <div>
-        <h2 className="mb-2 text-sm font-semibold">{t('Record a payment', 'تسجيل دفعة')}</h2>
+        <h2 className="mb-2 text-sm font-semibold">{t('Record a payment', 'تسجيل دفعة', 'Enregistrer un paiement')}</h2>
         <PaymentForm
           locale={locale}
           invoice={{
@@ -101,19 +101,19 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
 
       {/* Payment history */}
       <div>
-        <h2 className="mb-2 text-sm font-semibold">{t('Payments', 'المدفوعات')} ({paid.toFixed(2)} {t('paid', 'مدفوع')})</h2>
+        <h2 className="mb-2 text-sm font-semibold">{t('Payments', 'المدفوعات', 'Paiements')} ({paid.toFixed(2)} {t('paid', 'مدفوع', 'payé')})</h2>
         {payments && payments.length > 0 ? (
           <div className="overflow-hidden rounded-xl border">
             <table className="w-full text-sm">
               <thead><tr className="border-b bg-muted/50 text-left">
-                <th className="p-2">{t('Date', 'التاريخ')}</th><th className="p-2">{t('Method', 'الطريقة')}</th>
-                <th className="p-2">{t('USD', 'دولار')}</th><th className="p-2">{t('LBP', 'ليرة')}</th><th className="p-2">{t('Reference', 'المرجع')}</th>
+                <th className="p-2">{t('Date', 'التاريخ', 'Date')}</th><th className="p-2">{t('Method', 'الطريقة', 'Méthode')}</th>
+                <th className="p-2">{t('USD', 'دولار', 'USD')}</th><th className="p-2">{t('LBP', 'ليرة', 'LBP')}</th><th className="p-2">{t('Reference', 'المرجع', 'Référence')}</th>
               </tr></thead>
               <tbody data-testid="payment-history">
                 {payments.map((p: any) => (
                   <tr key={p.id} className="border-b" data-testid="payment-row">
                     <td className="p-2">{fmtDate(p.payment_date)}</td>
-                    <td className="p-2">{(isRTL ? METHOD_LABEL[p.payment_method]?.ar : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}</td>
+                    <td className="p-2">{(locale === 'ar' ? METHOD_LABEL[p.payment_method]?.ar : locale === 'fr' ? METHOD_LABEL[p.payment_method]?.fr : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}</td>
                     <td className="p-2">${Number(p.amount_usd).toFixed(2)}</td>
                     <td className="p-2">{p.amount_lbp ? Number(p.amount_lbp).toLocaleString() : '—'}</td>
                     <td className="p-2 text-muted-foreground">{p.reference_number || '—'}</td>
@@ -123,7 +123,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
             </table>
           </div>
         ) : (
-          <p className="rounded-xl border p-4 text-sm text-muted-foreground">{t('No payments recorded yet.', 'لم تُسجَّل أي دفعات بعد.')}</p>
+          <p className="rounded-xl border p-4 text-sm text-muted-foreground">{t('No payments recorded yet.', 'لم تُسجَّل أي دفعات بعد.', 'Aucun paiement enregistré pour le moment.')}</p>
         )}
       </div>
 

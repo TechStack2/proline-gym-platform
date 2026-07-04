@@ -25,7 +25,7 @@ function agingBucket(dueDate: string | null, today: string): string {
  */
 export async function InvoicesView({ locale, searchParams }: Props) {
   const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
   const { data: invoices } = await supabase
@@ -91,25 +91,25 @@ export async function InvoicesView({ locale, searchParams }: Props) {
       <div className="flex items-center justify-end">
         <Link href={`/${locale}/invoices/new`} data-testid="new-invoice-btn"
           className="inline-flex items-center rounded-md bg-[#cd1419] px-4 py-2 text-sm font-medium text-white hover:bg-[#a81014]">
-          <Plus className="mr-2 h-4 w-4" /> {t('New invoice', 'فاتورة جديدة')}
+          <Plus className="mr-2 h-4 w-4" /> {t('New invoice', 'فاتورة جديدة', 'Nouvelle facture')}
         </Link>
       </div>
 
       {/* Outstanding + daily tally */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <p className="text-xs text-muted-foreground">{t('Outstanding balance', 'الرصيد المستحق')}</p>
+          <p className="text-xs text-muted-foreground">{t('Outstanding balance', 'الرصيد المستحق', 'Solde impayé')}</p>
           <p className="mt-1 text-2xl font-bold text-red-600" data-testid="outstanding-total">${outstanding.toFixed(2)}</p>
         </div>
         <div className="rounded-2xl border bg-white p-4 shadow-sm sm:col-span-2">
-          <p className="mb-2 text-xs text-muted-foreground">{t("Today's collections (by method)", 'تحصيلات اليوم (حسب الطريقة)')}</p>
+          <p className="mb-2 text-xs text-muted-foreground">{t("Today's collections (by method)", 'تحصيلات اليوم (حسب الطريقة)', 'Encaissements du jour (par méthode)')}</p>
           <div className="flex flex-wrap gap-3 text-sm" data-testid="daily-tally">
             {tally.size === 0 ? (
-              <span className="text-muted-foreground">{t('No payments today.', 'لا مدفوعات اليوم.')}</span>
+              <span className="text-muted-foreground">{t('No payments today.', 'لا مدفوعات اليوم.', "Aucun paiement aujourd'hui.")}</span>
             ) : (
               [...tally.entries()].map(([method, v]) => (
                 <span key={method} className="rounded-full bg-muted px-3 py-1">
-                  {(isRTL ? METHOD_LABEL[method]?.ar : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}{v.lbp ? ` · ${v.lbp.toLocaleString()} LBP` : ''}
+                  {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}{v.lbp ? ` · ${v.lbp.toLocaleString()} LBP` : ''}
                 </span>
               ))
             )}
@@ -120,23 +120,23 @@ export async function InvoicesView({ locale, searchParams }: Props) {
       {/* List */}
       <form className="flex gap-2" action={`/${locale}/money`} method="get">
         <input type="hidden" name="tab" value="invoices" />
-        <input name="search" defaultValue={searchParams.search ?? ''} placeholder={t('Search name or number…', 'ابحث بالاسم أو الرقم…')}
+        <input name="search" defaultValue={searchParams.search ?? ''} placeholder={t('Search name or number…', 'ابحث بالاسم أو الرقم…', 'Rechercher par nom ou numéro…')}
           className="h-9 flex-1 rounded-md border px-3 text-sm" data-testid="invoice-search" />
-        <button className="h-9 rounded-md border px-3 text-sm hover:bg-muted">{t('Search', 'بحث')}</button>
+        <button className="h-9 rounded-md border px-3 text-sm hover:bg-muted">{t('Search', 'بحث', 'Rechercher')}</button>
       </form>
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border bg-white p-10 text-center shadow-sm">
           <FileText className="mx-auto mb-2 h-10 w-10 text-gray-300" />
-          <p className="text-sm text-muted-foreground">{t('No invoices found.', 'لا توجد فواتير.')}</p>
+          <p className="text-sm text-muted-foreground">{t('No invoices found.', 'لا توجد فواتير.', 'Aucune facture trouvée.')}</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead><tr className="border-b bg-muted/50 text-left">
-              <th className="p-3">{t('Number', 'الرقم')}</th><th className="p-3">{t('Member', 'العضو')}</th>
-              <th className="p-3">{t('Total', 'الإجمالي')}</th><th className="p-3">{t('Balance', 'الرصيد')}</th>
-              <th className="p-3">{t('Due', 'الاستحقاق')}</th><th className="p-3">{t('Status', 'الحالة')}</th>
+              <th className="p-3">{t('Number', 'الرقم', 'Numéro')}</th><th className="p-3">{t('Member', 'العضو', 'Membre')}</th>
+              <th className="p-3">{t('Total', 'الإجمالي', 'Total')}</th><th className="p-3">{t('Balance', 'الرصيد', 'Solde')}</th>
+              <th className="p-3">{t('Due', 'الاستحقاق', 'Échéance')}</th><th className="p-3">{t('Status', 'الحالة', 'Statut')}</th>
             </tr></thead>
             <tbody data-testid="invoice-list">
               {filtered.map((inv: any) => {
@@ -163,7 +163,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                       </Link>
                       {inv.payer_profile_id && (
                         <span className="block text-[10px] text-gray-400" data-testid="invoice-payer">
-                          {t('Payer', 'الدافع')}: {localizedName(Array.isArray(inv.payer) ? inv.payer[0] : inv.payer, locale)}
+                          {t('Payer', 'الدافع', 'Payeur')}: {localizedName(Array.isArray(inv.payer) ? inv.payer[0] : inv.payer, locale)}
                         </span>
                       )}
                     </td>

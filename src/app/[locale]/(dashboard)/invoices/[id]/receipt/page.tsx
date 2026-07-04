@@ -19,7 +19,7 @@ type Props = { params: { locale: string; id: string } }
  */
 export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const tw = await getTranslations('whatsapp')
   const supabase = await createClient()
 
@@ -54,34 +54,34 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   return (
     <div className={cn('mx-auto max-w-xl p-6', isRTL && 'rtl text-right')} data-testid="receipt">
       <div className="mb-4 flex items-center justify-between print:hidden">
-        <a href={`/${locale}/invoices/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← {t('Back', 'رجوع')}</a>
+        <a href={`/${locale}/invoices/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← {t('Back', 'رجوع', 'Retour')}</a>
         <span className="flex items-center gap-2">
           <WhatsAppShare phone={profile?.phone} testid="receipt-wa" variant="button"
             message={tw('tmpl.receipt', { name: studentName, number: inv.invoice_number, gym: gymName,
               usd: Number(inv.total_usd ?? 0).toFixed(2),
               lbp: inv.total_lbp ? ` / ${Number(inv.total_lbp).toLocaleString()} LBP` : '' })}
             label={tw('share.sendReceipt')} />
-          <PrintButton label={t('Print', 'طباعة')} />
+          <PrintButton label={t('Print', 'طباعة', 'Imprimer')} />
         </span>
       </div>
 
       <div className="rounded-2xl border bg-white p-8 shadow-sm print:border-0 print:shadow-none">
         <div className="mb-6 border-b pb-4 text-center">
           <h1 className="text-xl font-bold">{gymName}</h1>
-          <p className="text-sm text-muted-foreground">{t('Payment Receipt', 'إيصال دفع')}</p>
+          <p className="text-sm text-muted-foreground">{t('Payment Receipt', 'إيصال دفع', 'Reçu de paiement')}</p>
         </div>
 
         <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
-          <div><span className="text-muted-foreground">{t('Invoice', 'الفاتورة')}: </span><span className="font-mono font-medium" data-testid="receipt-invoice-number">{inv.invoice_number}</span></div>
-          <div><span className="text-muted-foreground">{t('Date', 'التاريخ')}: </span>{fmtDate(inv.created_at)}</div>
-          <div><span className="text-muted-foreground">{t('Member', 'العضو')}: </span>{studentName}</div>
+          <div><span className="text-muted-foreground">{t('Invoice', 'الفاتورة', 'Facture')}: </span><span className="font-mono font-medium" data-testid="receipt-invoice-number">{inv.invoice_number}</span></div>
+          <div><span className="text-muted-foreground">{t('Date', 'التاريخ', 'Date')}: </span>{fmtDate(inv.created_at)}</div>
+          <div><span className="text-muted-foreground">{t('Member', 'العضو', 'Membre')}: </span>{studentName}</div>
           {(inv as any).payer_profile_id && (
-            <div data-testid="receipt-payer"><span className="text-muted-foreground">{t('Payer', 'الدافع')}: </span>
+            <div data-testid="receipt-payer"><span className="text-muted-foreground">{t('Payer', 'الدافع', 'Payeur')}: </span>
               {localizedName((Array.isArray((inv as any).payer) ? (inv as any).payer[0] : (inv as any).payer), locale)}
             </div>
           )}
-          <div><span className="text-muted-foreground">{t('Status', 'الحالة')}: </span><span data-testid="receipt-status">{statusLabel(inv.status, locale)}</span></div>
-          <div><span className="text-muted-foreground">{t('Type', 'النوع')}: </span>
+          <div><span className="text-muted-foreground">{t('Status', 'الحالة', 'Statut')}: </span><span data-testid="receipt-status">{statusLabel(inv.status, locale)}</span></div>
+          <div><span className="text-muted-foreground">{t('Type', 'النوع', 'Type')}: </span>
             <span data-testid="receipt-invoice-type" data-type={inv.invoice_type || 'other'}
               className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
               {invoiceTypeLabel(inv.invoice_type, locale)}
@@ -94,18 +94,18 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
 
         <table className="mb-4 w-full text-sm">
           <tbody>
-            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('Subtotal', 'المجموع الفرعي')}</td><td className="py-1 text-right">${Number(inv.amount_usd).toFixed(2)}</td></tr>
-            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)')}</td><td className="py-1 text-right">${Number(inv.tax_amount_usd).toFixed(2)}</td></tr>
-            <tr className="border-b font-bold"><td className="py-1">{t('Total', 'الإجمالي')}</td><td className="py-1 text-right">${Number(inv.total_usd).toFixed(2)}{inv.total_lbp ? ` · ${Number(inv.total_lbp).toLocaleString()} LBP` : ''}</td></tr>
+            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</td><td className="py-1 text-right">${Number(inv.amount_usd).toFixed(2)}</td></tr>
+            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)', 'TVA (11%)')}</td><td className="py-1 text-right">${Number(inv.tax_amount_usd).toFixed(2)}</td></tr>
+            <tr className="border-b font-bold"><td className="py-1">{t('Total', 'الإجمالي', 'Total')}</td><td className="py-1 text-right">${Number(inv.total_usd).toFixed(2)}{inv.total_lbp ? ` · ${Number(inv.total_lbp).toLocaleString()} LBP` : ''}</td></tr>
           </tbody>
         </table>
 
-        <h2 className="mb-1 text-sm font-semibold">{t('Payments', 'المدفوعات')}</h2>
+        <h2 className="mb-1 text-sm font-semibold">{t('Payments', 'المدفوعات', 'Paiements')}</h2>
         <table className="mb-4 w-full text-sm">
           <tbody>
             {(payments ?? []).map((p: any) => (
               <tr key={p.id} className="border-b">
-                <td className="py-1">{fmtDate(p.payment_date)} · {(isRTL ? METHOD_LABEL[p.payment_method]?.ar : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}{p.reference_number ? ` · ${p.reference_number}` : ''}</td>
+                <td className="py-1">{fmtDate(p.payment_date)} · {(locale === 'ar' ? METHOD_LABEL[p.payment_method]?.ar : locale === 'fr' ? METHOD_LABEL[p.payment_method]?.fr : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}{p.reference_number ? ` · ${p.reference_number}` : ''}</td>
                 <td className="py-1 text-right">${Number(p.amount_usd).toFixed(2)}{p.amount_lbp ? ` · ${Number(p.amount_lbp).toLocaleString()} LBP` : ''}</td>
               </tr>
             ))}
@@ -113,14 +113,14 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
         </table>
 
         <div className="flex justify-between border-t pt-2 text-sm font-bold">
-          <span>{t('Paid', 'المدفوع')}: ${paid.toFixed(2)}</span>
-          <span data-testid="receipt-balance" className={balance > 0 ? 'text-red-600' : 'text-green-600'}>{t('Balance', 'الرصيد')}: ${balance.toFixed(2)}</span>
+          <span>{t('Paid', 'المدفوع', 'Payé')}: ${paid.toFixed(2)}</span>
+          <span data-testid="receipt-balance" className={balance > 0 ? 'text-red-600' : 'text-green-600'}>{t('Balance', 'الرصيد', 'Solde')}: ${balance.toFixed(2)}</span>
         </div>
 
         {inv.exchange_rate ? (
-          <p className="mt-4 text-center text-xs text-muted-foreground">{t('Rate', 'سعر الصرف')}: 1 USD = {Number(inv.exchange_rate).toLocaleString()} LBP</p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">{t('Rate', 'سعر الصرف', 'Taux')}: 1 USD = {Number(inv.exchange_rate).toLocaleString()} LBP</p>
         ) : null}
-        <p className="mt-2 text-center text-xs text-muted-foreground">{t('Thank you', 'شكراً لكم')}</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">{t('Thank you', 'شكراً لكم', 'Merci')}</p>
       </div>
     </div>
   )
