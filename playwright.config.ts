@@ -235,6 +235,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // VENDOR-LANDING: the (marketing) apex serves the Gym 360 Pro vendor product
+      // page on a vendor host / ?vendor=1, and the tenant/DEFAULT landing otherwise.
+      // File is vendor.spec.ts (not vendor-landing) to avoid the `landing` project's
+      // unanchored /landing\.spec\.ts/ testMatch also matching it.
+      name: 'vendor-landing',
+      dependencies: ['setup'],
+      testMatch: /vendor\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).

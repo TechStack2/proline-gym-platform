@@ -2820,5 +2820,125 @@
     "leadSaveOffline": "Enregistrer hors ligne",
     "leadSavedOffline": "Enregistré hors ligne · se synchronisera",
     "leadRecorded": "Prospect enregistré"
+  },
+  "vendor": {
+    "meta": {
+      "title": "Gym 360 Pro — Gestion en marque blanche pour salles d'arts martiaux et boutiques",
+      "description": "La plateforme tout-en-un, pensée d'abord pour l'arabe, pour gérer votre salle : planning, présences, ceintures, facturation bi-devise, coaching, stages, prospects, PWA hors ligne et WhatsApp — entièrement à votre marque."
+    },
+    "nav": {
+      "features": "Fonctions",
+      "who": "Pour qui",
+      "pricing": "Tarifs",
+      "cta": "Demander une démo"
+    },
+    "hero": {
+      "badge": "Plateforme de salle en marque blanche",
+      "name": "Gym 360 Pro",
+      "tagline": "Gérez toute votre salle depuis une seule plateforme",
+      "subtitle": "Planning, présences, ceintures, facturation bi-devise, coaching, stages et prospects — pensée d'abord pour l'arabe, prête hors ligne, et entièrement à votre marque.",
+      "ctaPrimary": "Demander une démo",
+      "ctaSecondary": "Voir les fonctions"
+    },
+    "features": {
+      "title": "Tout ce qui fait tourner votre salle",
+      "subtitle": "Neuf piliers, une plateforme — conçue pour le fonctionnement réel des salles de la région.",
+      "scheduling": {
+        "title": "Planning des cours",
+        "desc": "Cours hebdomadaires récurrents avec salles et coachs, dans un planning clair pour les membres."
+      },
+      "attendance": {
+        "title": "Suivi des présences",
+        "desc": "Pointage rapide qui fonctionne même hors ligne, avec un historique par cours et par membre."
+      },
+      "belts": {
+        "title": "Ceintures et grades",
+        "desc": "Suivez les grades de chaque discipline et passez vos élèves avec un historique complet."
+      },
+      "billing": {
+        "title": "Facturation bi-devise",
+        "desc": "Chaque facture en USD et en LBP avec le taux de change enregistré — fini les tableurs."
+      },
+      "pt": {
+        "title": "Forfaits coaching",
+        "desc": "Vendez et suivez les forfaits de coaching par nombre de séances et validité."
+      },
+      "camps": {
+        "title": "Stages et saisons",
+        "desc": "Publiez des stages saisonniers avec âges, capacité et places restantes en direct."
+      },
+      "leads": {
+        "title": "Pipeline de prospects",
+        "desc": "Captez les demandes d'essai et menez les prospects du premier contact au membre actif."
+      },
+      "offline": {
+        "title": "PWA hors ligne",
+        "desc": "Installable sur tout appareil et conçue pour continuer sans connexion."
+      },
+      "whatsapp": {
+        "title": "WhatsApp intégré",
+        "desc": "Touchez vos membres là où ils sont déjà — rappels et invitations via WhatsApp."
+      }
+    },
+    "who": {
+      "title": "Conçue pour votre salle",
+      "subtitle": "Pensée pour la région — pas un outil générique adapté de force.",
+      "martial": {
+        "title": "Arts martiaux et salles boutiques",
+        "desc": "Ceintures, disciplines, stages et coaching — comme fonctionnent vraiment les clubs de sports de combat."
+      },
+      "mena": {
+        "title": "Pensée pour la région MENA",
+        "desc": "Argent bi-devise et paiements en espèces référencés — sans passerelle bancaire."
+      },
+      "arabic": {
+        "title": "L'arabe d'abord",
+        "desc": "Une vraie interface arabe de droite à gauche, avec l'anglais et le français intégrés."
+      }
+    },
+    "pricing": {
+      "title": "Tarifs simples et transparents",
+      "subtitle": "Choisissez le plan adapté à votre salle.",
+      "placeholder": "Tarifs provisoires — paliers et montants définitifs à confirmer.",
+      "cta": "Choisir",
+      "note": "Tous les plans sont en marque blanche — le nom, le logo et les couleurs de votre salle.",
+      "starter": {
+        "name": "Starter",
+        "price": "À définir",
+        "period": "par mois",
+        "tagline": "Pour un studio qui démarre",
+        "f1": "Planning et présences",
+        "f2": "Suivi membres et ceintures",
+        "f3": "Un seul site"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "À définir",
+        "period": "par mois",
+        "tagline": "Pour une salle multidisciplinaire en croissance",
+        "f1": "Tout Starter",
+        "f2": "Facturation bi-devise et coaching",
+        "f3": "Stages, prospects et WhatsApp"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Contactez-nous",
+        "period": "",
+        "tagline": "Pour les groupes et multi-sites",
+        "f1": "Tout Pro",
+        "f2": "Domaine et marque personnalisés",
+        "f3": "Onboarding et support prioritaires"
+      }
+    },
+    "cta": {
+      "title": "Mettez votre salle en ligne",
+      "subtitle": "Découvrez Gym 360 Pro sur les données de votre salle lors d'une démo personnalisée.",
+      "button": "Demander une démo",
+      "secondary": "Se connecter"
+    },
+    "footer": {
+      "tagline": "La plateforme en marque blanche pour salles d'arts martiaux et boutiques.",
+      "rights": "Gym 360 Pro. Tous droits réservés."
+    }
   }
 }

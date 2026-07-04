@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
 import { getLandingMeta } from '@/lib/marketing/seo';
+import { VendorLanding } from '@/components/marketing/VendorLanding';
 import { LandingNav } from '@/components/layout/LandingNav';
 import { LandingFooter } from '@/components/layout/LandingFooter';
 import { HeroSection } from '@/components/marketing/HeroSection';
@@ -26,7 +27,8 @@ type Props = {
   params: { locale: string };
   // X1: an explicit gym selector so CI's public-lead submit + catalog target the
   // run gym; prod (no ?gym) falls back to the demo gym (DEFAULT_GYM_SLUG).
-  searchParams?: { gym?: string };
+  // VENDOR-LANDING: ?vendor=1 previews the vendor product page.
+  searchParams?: { gym?: string; vendor?: string };
 };
 
 // SEO-PER-GYM: the request's gym slug — ?gym= (CI/preview) WINS, then a mapped
@@ -38,6 +40,23 @@ async function resolveRequestSlug(searchParams?: { gym?: string }): Promise<stri
   return searchParams?.gym || domainSlug || undefined;
 }
 
+// VENDOR-LANDING: is this a request for the VENDOR product page (Gym 360 Pro),
+// not a tenant gym landing? True when the request Host is a configured vendor host
+// (env VENDOR_LANDING_HOSTS, comma-sep; default EMPTY → zero prod change until the
+// owner points Proline at its own domain) OR ?vendor=1 (preview). Otherwise the
+// tenant/DEFAULT_GYM_SLUG resolution below is UNCHANGED.
+function isVendorRequest(searchParams?: { vendor?: string }): boolean {
+  if (searchParams?.vendor === '1') return true;
+  const hosts = (process.env.VENDOR_LANDING_HOSTS || '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase().split(':')[0])
+    .filter(Boolean);
+  if (hosts.length === 0) return false;
+  const hdrs = headers();
+  const host = (hdrs.get('x-forwarded-host') || hdrs.get('host') || '').trim().toLowerCase().split(':')[0];
+  return !!host && hosts.includes(host);
+}
+
 /**
  * SEO-PER-GYM: per-gym <head> (title/description/OG + JSON-LD name/address/phone/IG).
  * Lives on the PAGE, not the layout, because only a page can read searchParams —
@@ -45,6 +64,18 @@ async function resolveRequestSlug(searchParams?: { gym?: string }): Promise<stri
  * today's curated `seo` copy byte-identically (see getLandingMeta).
  */
 export async function generateMetadata({ params: { locale }, searchParams }: Props): Promise<Metadata> {
+  // VENDOR-LANDING: the vendor page gets its OWN <head> (Gym 360 Pro), not a
+  // tenant's. Absolute title → the app-wide "%s | PRO LINE Gym" template can't
+  // leak the tenant brand onto the vendor product page.
+  if (isVendorRequest(searchParams)) {
+    const t = await getTranslations({ locale, namespace: 'vendor' });
+    return {
+      title: { absolute: t('meta.title') },
+      description: t('meta.description'),
+      applicationName: t('hero.name'),
+      robots: { index: true, follow: true },
+    };
+  }
   const gymSlug = await resolveRequestSlug(searchParams);
   const { metadata } = await getLandingMeta(locale, gymSlug);
   return metadata;
@@ -58,6 +89,12 @@ export async function generateMetadata({ params: { locale }, searchParams }: Pro
  */
 export default async function LandingPage({ params: { locale }, searchParams }: Props) {
   setRequestLocale(locale); // pages render independently of layouts — both need it
+
+  // VENDOR-LANDING: a vendor request renders the Gym 360 Pro product page and
+  // returns — no tenant gym resolution, no catalog reads, no tenant chrome.
+  if (isVendorRequest(searchParams)) {
+    return <VendorLanding locale={locale} />;
+  }
 
   // WL-DOMAIN-ROUTING: which gym is this request for? ?gym= (explicit; CI + preview)
   // WINS, then the request Host (a mapped custom domain), then DEFAULT_GYM_SLUG (the
