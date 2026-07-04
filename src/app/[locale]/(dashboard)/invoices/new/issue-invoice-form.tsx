@@ -17,14 +17,14 @@ import { issueInvoice } from '../actions'
 
 type InvoiceType = 'membership' | 'pt_package' | 'pt_session' | 'camp' | 'rental' | 'event' | 'other'
 
-const TYPES: { value: InvoiceType; en: string; ar: string }[] = [
-  { value: 'membership', en: 'Membership', ar: 'اشتراك' },
-  { value: 'pt_package', en: 'PT package', ar: 'باقة تدريب خاص' },
-  { value: 'pt_session', en: 'PT session', ar: 'جلسة تدريب خاص' },
-  { value: 'camp', en: 'Camp', ar: 'مخيم' },
-  { value: 'rental', en: 'Rental', ar: 'إيجار' },
-  { value: 'event', en: 'Event', ar: 'فعالية' },
-  { value: 'other', en: 'Other', ar: 'أخرى' },
+const TYPES: { value: InvoiceType; en: string; ar: string; fr: string }[] = [
+  { value: 'membership', en: 'Membership', ar: 'اشتراك', fr: 'Abonnement' },
+  { value: 'pt_package', en: 'PT package', ar: 'باقة تدريب خاص', fr: 'Pack PT' },
+  { value: 'pt_session', en: 'PT session', ar: 'جلسة تدريب خاص', fr: 'Séance PT' },
+  { value: 'camp', en: 'Camp', ar: 'مخيم', fr: 'Camp' },
+  { value: 'rental', en: 'Rental', ar: 'إيجار', fr: 'Location' },
+  { value: 'event', en: 'Event', ar: 'فعالية', fr: 'Événement' },
+  { value: 'other', en: 'Other', ar: 'أخرى', fr: 'Autre' },
 ]
 
 export function IssueInvoiceForm({
@@ -36,7 +36,7 @@ export function IssueInvoiceForm({
   rateDate: string | null
 }) {
   const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -57,8 +57,8 @@ export function IssueInvoiceForm({
   function submit() {
     setError('')
     const usd = parseFloat(amountUsd)
-    if (!studentId) { setError(t('Select a member.', 'اختر عضواً.')); return }
-    if (!Number.isFinite(usd) || usd <= 0) { setError(t('Enter a positive amount.', 'أدخل مبلغاً موجباً.')); return }
+    if (!studentId) { setError(t('Select a member.', 'اختر عضواً.', 'Sélectionnez un membre.')); return }
+    if (!Number.isFinite(usd) || usd <= 0) { setError(t('Enter a positive amount.', 'أدخل مبلغاً موجباً.', 'Saisissez un montant positif.')); return }
     startTransition(async () => {
       const res = await issueInvoice({
         studentId,
@@ -81,48 +81,48 @@ export function IssueInvoiceForm({
   return (
     <div data-testid="issue-form" className={`max-w-lg space-y-4 rounded-xl border p-4 ${isRTL ? 'text-right' : ''}`}>
       <div className="space-y-1">
-        <Label htmlFor="inv-student">{t('Member', 'العضو')}</Label>
+        <Label htmlFor="inv-student">{t('Member', 'العضو', 'Membre')}</Label>
         <select id="inv-student" data-testid="inv-student" value={studentId} onChange={(e) => setStudentId(e.target.value)}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-          <option value="">{t('Select a member…', 'اختر عضواً…')}</option>
+          <option value="">{t('Select a member…', 'اختر عضواً…', 'Sélectionner un membre…')}</option>
           {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor="inv-type">{t('Type', 'النوع')}</Label>
+          <Label htmlFor="inv-type">{t('Type', 'النوع', 'Type')}</Label>
           <select id="inv-type" data-testid="inv-type" value={invoiceType} onChange={(e) => setInvoiceType(e.target.value as InvoiceType)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-            {TYPES.map((x) => <option key={x.value} value={x.value}>{t(x.en, x.ar)}</option>)}
+            {TYPES.map((x) => <option key={x.value} value={x.value}>{t(x.en, x.ar, x.fr)}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="inv-due">{t('Due date', 'تاريخ الاستحقاق')}</Label>
+          <Label htmlFor="inv-due">{t('Due date', 'تاريخ الاستحقاق', "Date d'échéance")}</Label>
           <Input id="inv-due" data-testid="inv-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="inv-amount-usd">{t('Amount (USD, pre-TVA)', 'المبلغ (دولار، قبل الضريبة)')}</Label>
+          <Label htmlFor="inv-amount-usd">{t('Amount (USD, pre-TVA)', 'المبلغ (دولار، قبل الضريبة)', 'Montant (USD, hors TVA)')}</Label>
           <Input id="inv-amount-usd" data-testid="inv-amount-usd" type="number" step="0.01" min="0"
             value={amountUsd} onChange={(e) => setAmountUsd(e.target.value)} placeholder="0.00" />
-          <p className="text-xs text-muted-foreground">{t('11% TVA added automatically.', 'تُضاف ضريبة 11% تلقائياً.')}</p>
+          <p className="text-xs text-muted-foreground">{t('11% TVA added automatically.', 'تُضاف ضريبة 11% تلقائياً.', 'TVA de 11% ajoutée automatiquement.')}</p>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="inv-amount-lbp">{t('Amount (LBP)', 'المبلغ (ليرة)')}</Label>
+          <Label htmlFor="inv-amount-lbp">{t('Amount (LBP)', 'المبلغ (ليرة)', 'Montant (LBP)')}</Label>
           <Input id="inv-amount-lbp" data-testid="inv-amount-lbp" type="number" step="1" min="0"
-            value={amountLbp} onChange={(e) => setAmountLbp(e.target.value)} placeholder={derivedLbp || t('optional', 'اختياري')} />
+            value={amountLbp} onChange={(e) => setAmountLbp(e.target.value)} placeholder={derivedLbp || t('optional', 'اختياري', 'facultatif')} />
         </div>
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="inv-notes">{t('Notes', 'ملاحظات')}</Label>
-        <Input id="inv-notes" data-testid="inv-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('optional', 'اختياري')} />
+        <Label htmlFor="inv-notes">{t('Notes', 'ملاحظات', 'Notes')}</Label>
+        <Input id="inv-notes" data-testid="inv-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('optional', 'اختياري', 'facultatif')} />
       </div>
 
       {error && <div data-testid="issue-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
       <Button data-testid="issue-submit" onClick={submit} disabled={pending} className="bg-[#cd1419] hover:bg-[#a81014]">
-        {pending ? t('Issuing…', 'جارٍ الإصدار…') : t('Issue invoice', 'إصدار الفاتورة')}
+        {pending ? t('Issuing…', 'جارٍ الإصدار…', 'Émission…') : t('Issue invoice', 'إصدار الفاتورة', 'Émettre la facture')}
       </Button>
     </div>
   )

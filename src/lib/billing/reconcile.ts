@@ -116,11 +116,11 @@ export function invoiceNote(
   return n || inv.notes_en || null
 }
 
-export const METHOD_LABEL: Record<string, { en: string; ar: string }> = {
-  cash_usd: { en: 'Cash (USD)', ar: 'نقداً (دولار)' },
-  cash_lbp: { en: 'Cash (LBP)', ar: 'نقداً (ليرة)' },
-  omt: { en: 'OMT', ar: 'OMT' },
-  whish: { en: 'Whish', ar: 'Whish' },
-  bank_transfer: { en: 'Bank transfer', ar: 'تحويل مصرفي' },
-  bob_finance: { en: 'BOB Finance', ar: 'BOB Finance' },
+export const METHOD_LABEL: Record<string, { en: string; ar: string; fr: string }> = {
+  cash_usd: { en: 'Cash (USD)', ar: 'نقداً (دولار)', fr: 'Espèces (USD)' },
+  cash_lbp: { en: 'Cash (LBP)', ar: 'نقداً (ليرة)', fr: 'Espèces (LBP)' },
+  omt: { en: 'OMT', ar: 'OMT', fr: 'OMT' },
+  whish: { en: 'Whish', ar: 'Whish', fr: 'Whish' },
+  bank_transfer: { en: 'Bank transfer', ar: 'تحويل مصرفي', fr: 'Virement bancaire' },
+  bob_finance: { en: 'BOB Finance', ar: 'BOB Finance', fr: 'BOB Finance' },
 }

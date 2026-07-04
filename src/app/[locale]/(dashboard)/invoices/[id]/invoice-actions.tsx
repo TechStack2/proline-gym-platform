@@ -12,8 +12,7 @@ import { Button } from '@/components/ui/button'
 import { refundInvoice, voidInvoice } from '../actions'
 
 export function InvoiceActions({ invoiceId, status, locale }: { invoiceId: string; status: string; locale: string }) {
-  const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -22,7 +21,7 @@ export function InvoiceActions({ invoiceId, status, locale }: { invoiceId: strin
   if (terminal) return null
 
   function run(kind: 'refund' | 'void') {
-    const reason = window.prompt(t('Reason (recorded in the audit log):', 'السبب (يُسجَّل في سجل التدقيق):')) || undefined
+    const reason = window.prompt(t('Reason (recorded in the audit log):', 'السبب (يُسجَّل في سجل التدقيق):', "Motif (enregistré dans le journal d'audit) :")) || undefined
     if (reason === undefined) return
     setError('')
     startTransition(async () => {
@@ -37,12 +36,12 @@ export function InvoiceActions({ invoiceId, status, locale }: { invoiceId: strin
       {status === 'paid' ? (
         <Button data-testid="refund-btn" variant="outline" disabled={pending} onClick={() => run('refund')}
           className="text-blue-700 hover:bg-blue-50">
-          {t('Refund', 'استرجاع')}
+          {t('Refund', 'استرجاع', 'Remboursement')}
         </Button>
       ) : (
         <Button data-testid="void-btn" variant="outline" disabled={pending} onClick={() => run('void')}
           className="text-gray-600 hover:bg-gray-50">
-          {t('Void invoice', 'إلغاء الفاتورة')}
+          {t('Void invoice', 'إلغاء الفاتورة', 'Annuler la facture')}
         </Button>
       )}
       {error && <span data-testid="invoice-action-error" className="text-sm text-red-700">{error}</span>}

@@ -46,6 +46,16 @@ test('I18N-1 · fr renders with no MISSING_MESSAGE and no raw-key leak across th
         expect(resp?.status() ?? 0, `${p} should load`).toBeLessThan(400);
         await assertCleanFr(owner.page, p);
       }
+      // I18N-POLISH-1: the invoices surfaces (list + issue form) render FRENCH, not
+      // English/Arabic fallbacks. assertCleanFr covers raw-key/MISSING_MESSAGE; the
+      // explicit tokens prove the actual French copy renders (the inline t(en,ar,fr)).
+      await owner.page.goto('/fr/invoices');
+      await assertCleanFr(owner.page, '/fr/invoices');
+      await expect(owner.page.getByText('Solde impayé'), '/fr invoices list is localized').toBeVisible({ timeout: 15_000 });
+      await owner.page.goto('/fr/invoices/new');
+      await assertCleanFr(owner.page, '/fr/invoices/new');
+      await expect(owner.page.getByText('Émettre la facture'), '/fr issue form is localized').toBeVisible({ timeout: 15_000 });
+
       // One member file (Member-360) — reached via the list's File action.
       await owner.page.goto('/fr/students');
       await owner.page.waitForLoadState('networkidle').catch(() => {});
