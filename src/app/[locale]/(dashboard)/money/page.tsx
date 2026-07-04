@@ -12,6 +12,7 @@ import { OwnerFinances } from './money-owner-dashboard'
 import { WinbackView } from './winback-view'
 import { getWinbackQueue } from '@/lib/finances/winback'
 import { getEnabledProducts } from '@/lib/gym/products'
+import { gymDisplayName } from '@/lib/whatsapp/identity'
 import { OnlineOnlyNotice } from '@/components/offline/online-only-notice'
 
 export const dynamic = 'force-dynamic'
@@ -92,7 +93,9 @@ async function WinbackTab({ locale }: { locale: string }) {
   const { data: profile } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   if (!profile?.gym_id) return null
   const rows = await getWinbackQueue(supabase, profile.gym_id, locale)
-  return <WinbackView rows={rows} locale={locale} />
+  // WL-TEMPLATES: the win-back wa.me message greets with this gym's localized name.
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', profile.gym_id).maybeSingle()
+  return <WinbackView rows={rows} locale={locale} gymName={gymDisplayName(gymRow, locale)} />
 }
 
 async function MoneyOverview({ locale }: { locale: string }) {

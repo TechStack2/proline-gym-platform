@@ -22,7 +22,7 @@ import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 const OUTCOMES = ['no_answer', 'not_interested', 'thinking', 'promised_visit', 'reactivated'] as const
 type Outcome = typeof OUTCOMES[number]
 
-export function WinbackView({ rows, locale }: { rows: WinbackRow[]; locale: string }) {
+export function WinbackView({ rows, locale, gymName }: { rows: WinbackRow[]; locale: string; gymName: string }) {
   const t = useTranslations('winback')
   const isRTL = locale === 'ar'
   const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
@@ -40,20 +40,21 @@ export function WinbackView({ rows, locale }: { rows: WinbackRow[]; locale: stri
     <div className="space-y-3" data-testid="winback-list">
       <p className="text-xs text-gray-500">{t('intro')}</p>
       {rows.map((r) => (
-        <WinbackCard key={r.studentId} row={r} locale={locale} isRTL={isRTL} t={t} fmt={fmt} />
+        <WinbackCard key={r.studentId} row={r} locale={locale} isRTL={isRTL} t={t} fmt={fmt} gymName={gymName} />
       ))}
     </div>
   )
 }
 
 function WinbackCard({
-  row, locale, isRTL, t, fmt,
+  row, locale, isRTL, t, fmt, gymName,
 }: {
   row: WinbackRow
   locale: string
   isRTL: boolean
   t: ReturnType<typeof useTranslations>
   fmt: (d: string | null) => string
+  gymName: string
 }) {
   const tw = useTranslations('whatsapp')
   const router = useRouter()
@@ -109,7 +110,7 @@ function WinbackCard({
             </a>
           )}
           <WhatsAppShare phone={row.phone} testid="winback-wa"
-            message={tw('tmpl.winback', { name: row.name })} label={tw('share.reachOut')} />
+            message={tw('tmpl.winback', { name: row.name, gym: gymName })} label={tw('share.reachOut')} />
           <Link href={`/${locale}/students/${row.studentId}`} data-testid="winback-reactivate"
             className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
             <RotateCcw className="h-3.5 w-3.5" /> {t('reactivate')}

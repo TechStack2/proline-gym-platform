@@ -12,6 +12,7 @@ import { RenewRowButton, ResumeRowButton } from '@/components/dashboard/lifecycl
 import { membershipState } from '@/lib/lifecycle/status'
 import { getWinbackQueue } from '@/lib/finances/winback'
 import { getEnabledProducts } from '@/lib/gym/products'
+import { gymDisplayName } from '@/lib/whatsapp/identity'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import {
   DollarSign, ClipboardList, Dumbbell, CalendarDays,
@@ -32,6 +33,9 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const supabase = await createClient()
   // NO-MEMBERSHIP: hide the membership horizon cards on gyms that don't sell it.
   const products = await getEnabledProducts(supabase, gymId)
+  // WL-TEMPLATES: the renewal wa.me shares greet with THIS gym's localized name.
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle()
+  const gymName = gymDisplayName(gymRow, locale)
 
   const now = new Date()
   const dow = now.getDay() // 0=Sunday … 6=Saturday (class_schedules convention)
@@ -297,7 +301,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                 <span className="flex shrink-0 items-center gap-1.5">
                   <RenewRowButton membershipId={m.id} studentId={st?.id} />
                   <WhatsAppShare phone={prof?.phone} testid="expiring-wa"
-                    message={tw('tmpl.renewal', { name: localizedName(prof, locale) })} label={tw('share.renew')} />
+                    message={tw('tmpl.renewal', { name: localizedName(prof, locale), gym: gymName })} label={tw('share.renew')} />
                   {tel(prof?.phone, 'expiring-call')}
                 </span>
               }>
@@ -328,7 +332,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                     <DollarSign className="h-3.5 w-3.5" /> {t('cards.recordPayment')}
                   </Link>
                   <WhatsAppShare phone={prof2?.phone} testid="chase-wa"
-                    message={tw('tmpl.renewal', { name: localizedName(prof2, locale) })} label={tw('share.renew')} />
+                    message={tw('tmpl.renewal', { name: localizedName(prof2, locale), gym: gymName })} label={tw('share.renew')} />
                   {tel(prof2?.phone, 'chase-call')}
                 </span>
               }>

@@ -2562,11 +2562,11 @@
       "test": "WhatsApp"
     },
     "tmpl": {
-      "renewal": "Bonjour {name}, ici PRO LINE Gym — un petit rappel que votre abonnement est à renouveler. Répondez ici pour l'organiser. Merci ! 💪",
-      "winback": "Bonjour {name}, vous nous manquez chez PRO LINE Gym ! Revenez pour une séance — répondez ici et on s'occupe de tout.",
-      "receipt": "Bonjour {name}, votre reçu PRO LINE Gym pour la facture {number} : {usd}${lbp}. Merci !",
-      "leadReply": "Bonjour {name}, ici PRO LINE Gym au sujet de votre intérêt. Envie d'un cours d'essai gratuit ? Répondez ici ! 🥊",
-      "regApproved": "Bonjour {name}, votre inscription à {class} chez PRO LINE Gym est confirmée ! À bientôt 💪"
+      "renewal": "Bonjour {name}, ici {gym} — un petit rappel que votre abonnement est à renouveler. Répondez ici pour l'organiser. Merci ! 💪",
+      "winback": "Bonjour {name}, vous nous manquez chez {gym} ! Revenez pour une séance — répondez ici et on s'occupe de tout.",
+      "receipt": "Bonjour {name}, votre reçu {gym} pour la facture {number} : {usd}${lbp}. Merci !",
+      "leadReply": "Bonjour {name}, ici {gym} au sujet de votre intérêt. Envie d'un cours d'essai gratuit ? Répondez ici ! 🥊",
+      "regApproved": "Bonjour {name}, votre inscription à {class} chez {gym} est confirmée ! À bientôt 💪"
     },
     "sendReminder": "Rappeler le renouvellement",
     "reminderSent": "Rappel envoyé"
