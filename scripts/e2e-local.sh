@@ -41,6 +41,7 @@ export WHATSAPP_PROVIDER_MODE="record"                 # no external Meta call (
 export WHATSAPP_TOKEN_ENC_KEY="ci-test-enc-key-not-a-secret"
 export E2E_PASSWORD="E2eTestPass!23"                   # matches the seed default
 export E2E_TEST_MODE="1"                               # disable the per-IP auth rate limit (test-only)
+export CRON_SECRET="e2e-cron-secret-not-a-real-secret" # SCHEDULER-WIRE: makes /api/cron/dunning active for its guard
 export E2E_WORKERS="${E2E_WORKERS:-2}"                 # worker slots = gyms = playwright workers
 export NEXT_PUBLIC_DEFAULT_LOCALE="en"
 export NEXT_PUBLIC_SUPPORTED_LOCALES="ar,en,fr"

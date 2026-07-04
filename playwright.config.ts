@@ -199,6 +199,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // SCHEDULER-WIRE: the scheduled dunning trigger (POST /api/cron/dunning) —
+      // secret-gated (401 without it; inert 204 when CRON_SECRET is unset), sweeps
+      // active gyms, WL-aware body, idempotent. Seeds + scopes its own gym.
+      name: 'scheduler-wire',
+      dependencies: ['setup'],
+      testMatch: /scheduler-wire\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // WL-LANDING: the public landing renders the RESOLVED gym's branding (name +
       // brand color, logo/hero/tagline) — set gym renders its look, unset = the
       // Proline default. Seeds its OWN isolated gyms; loads anon via ?gym=<slug>.

@@ -82,6 +82,9 @@ jobs:
       # bypass precedent). The per-IDENTIFIER limit is deliberately NOT raised, so
       # login-limiter.spec exercises the real 5/min-per-account posture.
       AUTH_RATE_LIMIT_PER_IP: '1000'
+      # SCHEDULER-WIRE: a CI test value so /api/cron/dunning is ACTIVE for the guard
+      # (UNSET in prod by default → the route is inert 204). Not a real secret.
+      CRON_SECRET: 'e2e-cron-secret-not-a-real-secret'
       # Worker slots = isolated gyms seeded below = playwright.config WORKERS. One source.
       # ISO-DB: a single `next start` app server backs all workers. workers:4
       # saturated it and flaked write-heavy multi-step flows (disabled submit
