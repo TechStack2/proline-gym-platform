@@ -73,9 +73,11 @@ jobs:
           [ "${APPLIED}" -ge "${EXPECTED}" ] || { echo "::error::only ${APPLIED}/${EXPECTED} migrations recorded"; exit 1; }
 
           # (2) RISK — direct auth.users inserts (000008 demo accounts; the GUC fix).
+          # 4 base logins from 000008 (owner/coach/reception/student) + 1 from 000066
+          # (the demo guardian, Samer Mourad / guardian@prolinegym.lb) = 5 from zero.
           USERS=$(q "select count(*) from auth.users where email like '%@prolinegym.lb';")
           echo "auth.users demo logins (@prolinegym.lb)=${USERS}"
-          [ "${USERS}" -eq 4 ] || { echo "::error::expected 4 demo auth.users (000008), got ${USERS} — the app.demo_password replay path regressed"; exit 1; }
+          [ "${USERS}" -eq 5 ] || { echo "::error::expected 5 demo auth.users (4 from 000008 + the 000066 demo guardian), got ${USERS} — the app.demo_password replay path regressed"; exit 1; }
 
           # (3) RISK — storage buckets + RLS policies (000039 avatars, 000061 drafts).
           BUCKETS=$(q "select count(*) from storage.buckets where id in ('avatars','coach-avatar-drafts');")

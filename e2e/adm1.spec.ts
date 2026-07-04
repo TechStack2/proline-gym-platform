@@ -58,6 +58,12 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
     await expect(anon.page.locator('#schedule')).toBeVisible({ timeout: 15_000 });
     await expect(anon.page.locator('#schedule'), 'staged class hidden from the public landing')
       .not.toContainText(CLASS_NAME);
+    // CATALOG-SCOPE-FIX: the staged class carries a monthly fee, so it must ALSO be
+    // hidden from the public per-class fees section (get_landing_class_fees publish
+    // gate — the second leak the schedule-only assertion didn't cover).
+    await expect(anon.page.locator('#pricing')).toBeVisible({ timeout: 15_000 });
+    await expect(anon.page.locator('#pricing'), 'staged priced class hidden from the public fees section')
+      .not.toContainText(CLASS_NAME);
 
     // Flip the publish switch on the class detail.
     await owner.page.goto('/en/classes');
@@ -76,6 +82,10 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
     await untilConsistent(async () => {
       await openLanding(anon.page);
       await expect(anon.page.locator('#schedule'), 'published class visible on the public landing')
+        .toContainText(CLASS_NAME, { timeout: 5_000 });
+      // CATALOG-SCOPE-FIX: once published, the priced class also surfaces in the
+      // public per-class fees section (proves the gate lets published rows through).
+      await expect(anon.page.locator('#pricing'), 'published priced class visible in the public fees section')
         .toContainText(CLASS_NAME, { timeout: 5_000 });
     });
 
