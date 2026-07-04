@@ -226,6 +226,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // CATALOG-SCOPE (Phase 4 SECURITY): the anon key can no longer bulk-read the
+      // catalog tables (000080 dropped the *_public_read policies); the per-gym
+      // definer RPCs return only the queried gym's rows. Seeds its own two gyms.
+      name: 'catalog-scope',
+      dependencies: ['setup'],
+      testMatch: /catalog-scope\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).

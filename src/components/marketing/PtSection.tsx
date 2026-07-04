@@ -25,14 +25,10 @@ export async function PtSection({ locale, gymSlug }: PtSectionProps) {
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
 
+  // CATALOG-SCOPE: per-gym definer RPC (000080) — active + show_on_landing types
+  // of the active gym only; no blanket anon table read.
   const { data: types } = gym
-    ? await supabase
-        .from('pt_packages')
-        .select('id, name_ar, name_en, name_fr, session_count, price_usd, validity_days')
-        .eq('gym_id', gym.id)
-        .eq('is_active', true)
-        .eq('show_on_landing', true)
-        .order('session_count')
+    ? await supabase.rpc('get_landing_pt', { p_gym_id: gym.id })
     : { data: null };
 
   if (!types || types.length === 0) return null;

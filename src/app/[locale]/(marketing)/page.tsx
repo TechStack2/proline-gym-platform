@@ -73,9 +73,10 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // → 'invalid' → dead form. Every gym-scoped section gets the resolved slug.
   const sectionSlug = gym?.slug ?? DEFAULT_GYM_SLUG;
   const supabase = await createClient();
+  // CATALOG-SCOPE: the trial chips read the same per-gym definer RPC (000080) as
+  // DisciplinesSection — no blanket anon table read. Returns id + names, sorted.
   const { data: discRows } = gym
-    ? await supabase.from('disciplines').select('id, name_ar, name_en, name_fr')
-        .eq('gym_id', gym.id).eq('is_active', true).order('sort_order')
+    ? await supabase.rpc('get_landing_disciplines', { p_gym_id: gym.id })
     : { data: null };
   const captureDisciplines = (discRows ?? []).map((d: any) => ({
     id: d.id,

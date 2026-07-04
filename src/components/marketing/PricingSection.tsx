@@ -44,24 +44,14 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
 
+  // CATALOG-SCOPE: per-gym definer RPCs (000080) — no blanket anon table reads.
   const { data: plans } = gym
-    ? await supabase
-        .from('membership_plans')
-        .select('name_ar, name_en, name_fr, duration_days, price_usd, price_lbp, includes_pt')
-        .eq('gym_id', gym.id)
-        .eq('is_active', true)
-        .order('duration_days')
+    ? await supabase.rpc('get_landing_plans', { p_gym_id: gym.id })
     : { data: null };
 
   // Classes that carry a monthly fee (B2) — shown as the per-program option.
   const { data: feeClasses } = gym
-    ? await supabase
-        .from('classes')
-        .select('id, name_ar, name_en, name_fr, monthly_fee_usd, monthly_fee_lbp')
-        .eq('gym_id', gym.id)
-        .eq('is_active', true)
-        .not('monthly_fee_usd', 'is', null)
-        .order('monthly_fee_usd')
+    ? await supabase.rpc('get_landing_class_fees', { p_gym_id: gym.id })
     : { data: null };
 
   const hasPlans = !!(plans && plans.length > 0);
