@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dispatchWhatsApp } from '@/lib/whatsapp/dispatch'
+import { dunningReminderBody, type MessagingGym } from '@/lib/whatsapp/identity'
 
 /**
  * DUNNING-AUTO — automatic WhatsApp renewal reminders.
@@ -28,26 +29,6 @@ type DueReminder = {
   product_type: string
 }
 
-/** Short, member-locale reminder body (name + amount). Kept plain-text (the
- *  Cloud-API text message path); the record-mode guard checks the row, not copy. */
-function reminderBody(r: DueReminder): string {
-  const name = r.member_name || ''
-  const amt = `$${Number(r.amount_usd ?? 0).toFixed(0)}`
-  const L = r.member_locale === 'ar' ? 'ar' : r.member_locale === 'fr' ? 'fr' : 'en'
-  if (r.nudge === 'overdue') {
-    return L === 'ar'
-      ? `مرحباً ${name}، لديك دفعة تجديد متأخرة بقيمة ${amt}. يرجى التجديد في النادي. شكراً — برولاين.`
-      : L === 'fr'
-        ? `Bonjour ${name}, votre renouvellement de ${amt} est en retard. Merci de régler à la salle. — PRO LINE.`
-        : `Hi ${name}, your ${amt} renewal is overdue. Please settle it at the gym. Thanks — PRO LINE.`
-  }
-  return L === 'ar'
-    ? `مرحباً ${name}، اقترب موعد تجديد اشتراكك (${amt}). يمكنك التجديد في النادي. — برولاين.`
-    : L === 'fr'
-      ? `Bonjour ${name}, votre renouvellement (${amt}) arrive bientôt. Vous pouvez régler à la salle. — PRO LINE.`
-      : `Hi ${name}, your renewal (${amt}) is coming up. You can renew at the gym. — PRO LINE.`
-}
-
 export type AutoDunResult = { considered: number; sent: number; deduped: number; failed: number }
 
 export async function runAutoDunning(gymId: string): Promise<AutoDunResult> {
@@ -55,10 +36,16 @@ export async function runAutoDunning(gymId: string): Promise<AutoDunResult> {
   const { data, error } = await admin.rpc('due_dunning_reminders', { p_gym_id: gymId })
   const due = (error ? [] : (data ?? [])) as DueReminder[]
 
+  // WL-IDENTITY: sign each reminder with THIS gym's localized name (not "PRO LINE").
+  // One fetch per run; the default gym → its own name; a missing name → the default.
+  const { data: gymRow } = await admin
+    .from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle()
+  const gym = (gymRow ?? null) as MessagingGym | null
+
   const result: AutoDunResult = { considered: due.length, sent: 0, deduped: 0, failed: 0 }
   for (const r of due) {
     const template = r.nudge === 'overdue' ? 'dunning_overdue' : 'dunning_upcoming'
-    const res = await dispatchWhatsApp(gymId, r.to_phone, template, reminderBody(r), r.dedup_key)
+    const res = await dispatchWhatsApp(gymId, r.to_phone, template, dunningReminderBody(r, gym), r.dedup_key)
     if (res.deduped) result.deduped++
     else if (res.dispatched) result.sent++
     else result.failed++

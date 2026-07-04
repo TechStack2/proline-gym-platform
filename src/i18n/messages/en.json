@@ -2504,7 +2504,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "shareWhatsapp": "Share on WhatsApp",
-    "waMessage": "Welcome to PRO LINE Gym! Log in at {url} with {login} and temporary password {temp}. Please change it on your first login.",
+    "waMessage": "Welcome to {gym}! Log in at {url} with {login} and temporary password {temp}. Please change it on your first login.",
     "inviteStaff": "Invite staff",
     "firstName": "First name",
     "lastName": "Last name",

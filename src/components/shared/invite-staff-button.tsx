@@ -70,7 +70,7 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
       const res = await inviteToPortal({ profileId: prof.id, role })
       setBusy(false)
       if (res.ok) {
-        setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone })
+        setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName })
         router.refresh() // the new staff member appears on the roster behind the card
       } else {
         setError(t(`err.${res.error}` as Parameters<typeof t>[0]) || res.error)

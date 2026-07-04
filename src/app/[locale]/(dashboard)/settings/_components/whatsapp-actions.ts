@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { encryptToken } from '@/lib/whatsapp/crypto'
 import { dispatchWhatsApp } from '@/lib/whatsapp/dispatch'
+import { whatsappTestBody, type MessagingGym } from '@/lib/whatsapp/identity'
 
 const STAFF = ['owner', 'head_coach', 'receptionist']
 
@@ -70,6 +71,9 @@ export async function saveWhatsAppConfig(input: {
 export async function sendWhatsAppTest(toPhone: string): Promise<{ ok: true; dispatched: boolean; status?: string } | { ok: false; error: string }> {
   const ctx = await staffGym()
   if (!ctx) return { ok: false, error: 'forbidden' }
-  const res = await dispatchWhatsApp(ctx.gymId, toPhone, 'test', 'PRO LINE Gym — WhatsApp test message ✅')
+  // WL-IDENTITY: sign the test message with the gym's own name (not "PRO LINE").
+  const supabase = await createClient()
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', ctx.gymId).maybeSingle()
+  const res = await dispatchWhatsApp(ctx.gymId, toPhone, 'test', whatsappTestBody(gymRow as MessagingGym | null))
   return { ok: true, dispatched: res.dispatched, status: res.status }
 }
