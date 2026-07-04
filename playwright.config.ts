@@ -254,6 +254,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // WL-ONBOARDING-WIZARD: the vendor super-admin onboards gym #2+. Seeds its
+      // own platform_admin fixture + gym and tears both down (hermetic). Proves
+      // the platform-admin gate blocks a regular owner + anon.
+      name: 'onboard-wizard',
+      dependencies: ['setup'],
+      testMatch: /onboard-wizard\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).
