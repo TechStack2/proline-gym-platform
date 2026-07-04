@@ -2820,5 +2820,125 @@
     "leadSaveOffline": "Save offline",
     "leadSavedOffline": "Saved offline · will sync",
     "leadRecorded": "Lead captured"
+  },
+  "vendor": {
+    "meta": {
+      "title": "Gym 360 Pro — White-label management for martial-arts & boutique gyms",
+      "description": "The all-in-one, Arabic-first platform to run your gym: scheduling, attendance, belts, dual-currency billing, PT, camps, leads, an offline PWA and WhatsApp — fully on your own brand."
+    },
+    "nav": {
+      "features": "Features",
+      "who": "Who it's for",
+      "pricing": "Pricing",
+      "cta": "Book a demo"
+    },
+    "hero": {
+      "badge": "White-label gym platform",
+      "name": "Gym 360 Pro",
+      "tagline": "Run your whole gym from one platform",
+      "subtitle": "Scheduling, attendance, belts, dual-currency billing, PT, camps and leads — Arabic-first, offline-ready, and fully on your own brand.",
+      "ctaPrimary": "Book a demo",
+      "ctaSecondary": "See the features"
+    },
+    "features": {
+      "title": "Everything your gym runs on",
+      "subtitle": "Nine pillars, one platform — built for how gyms in the region actually operate.",
+      "scheduling": {
+        "title": "Class scheduling",
+        "desc": "Recurring weekly classes with rooms and coaches, in a live timetable members read at a glance."
+      },
+      "attendance": {
+        "title": "Attendance tracking",
+        "desc": "Fast check-in that keeps working offline, with per-class and per-member history."
+      },
+      "belts": {
+        "title": "Belt & rank progression",
+        "desc": "Track every discipline's ranks and promote students with a full belt history."
+      },
+      "billing": {
+        "title": "Dual-currency billing",
+        "desc": "Every invoice in USD and LBP with the exchange rate on record — no more spreadsheets."
+      },
+      "pt": {
+        "title": "PT packages",
+        "desc": "Sell and track personal-training packages by session count and validity."
+      },
+      "camps": {
+        "title": "Camps & seasons",
+        "desc": "Publish seasonal camps with ages, capacity and a live spots-left counter."
+      },
+      "leads": {
+        "title": "Lead pipeline",
+        "desc": "Capture trial requests and move prospects from first inquiry to active member."
+      },
+      "offline": {
+        "title": "Offline-first PWA",
+        "desc": "Installable on any device and built to keep working when the connection doesn't."
+      },
+      "whatsapp": {
+        "title": "WhatsApp built in",
+        "desc": "Reach members where they already are — reminders and invites over WhatsApp."
+      }
+    },
+    "who": {
+      "title": "Built for your gym",
+      "subtitle": "Purpose-built for the region — not a generic tool bent to fit.",
+      "martial": {
+        "title": "Martial-arts & boutique gyms",
+        "desc": "Belts, disciplines, camps and PT — the way combat-sport and boutique studios really run."
+      },
+      "mena": {
+        "title": "Made for MENA",
+        "desc": "Dual-currency money and cash-first, reference-based payments — no card gateway required."
+      },
+      "arabic": {
+        "title": "Arabic-first",
+        "desc": "A true right-to-left Arabic interface, with English and French built in."
+      }
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "Pick the plan that fits your gym.",
+      "placeholder": "Placeholder pricing — final tiers and amounts to be confirmed.",
+      "cta": "Choose plan",
+      "note": "Every plan is white-label — your gym's name, logo and colors throughout.",
+      "starter": {
+        "name": "Starter",
+        "price": "TBD",
+        "period": "per month",
+        "tagline": "For a single studio getting started",
+        "f1": "Scheduling & attendance",
+        "f2": "Member & belt tracking",
+        "f3": "Single location"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "TBD",
+        "period": "per month",
+        "tagline": "For a growing, multi-discipline gym",
+        "f1": "Everything in Starter",
+        "f2": "Dual-currency billing & PT",
+        "f3": "Camps, leads & WhatsApp"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Let's talk",
+        "period": "",
+        "tagline": "For groups and multi-branch operators",
+        "f1": "Everything in Pro",
+        "f2": "Custom domain & branding",
+        "f3": "Priority onboarding & support"
+      }
+    },
+    "cta": {
+      "title": "Bring your gym online",
+      "subtitle": "See Gym 360 Pro running on your own gym's data in a personal walkthrough.",
+      "button": "Book a demo",
+      "secondary": "Sign in"
+    },
+    "footer": {
+      "tagline": "The white-label platform for martial-arts & boutique gyms.",
+      "rights": "Gym 360 Pro. All rights reserved."
+    }
   }
 }
