@@ -59,7 +59,11 @@ test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backe
     const wa = vis(page, '[data-testid="receipt-wa"]').first()
     const href = await wa.getAttribute('href')
     expect(href, 'a wa.me deep-link').toContain('https://wa.me/')
-    expect(decodeURIComponent(href!), 'the prefilled message is Arabic under /ar').toContain('برو لاين')
+    // WL-TEMPLATES re-point: the receipt template now interpolates THIS gym's
+    // localized name (was a hardcoded "برو لاين جيم"). g1 runs on the e2e gym
+    // (seed_e2e_gym, 000029) whose name_ar is "برولاين تجريبي" — so assert the
+    // message carries the gym's OWN name (stronger: proves per-gym interpolation).
+    expect(decodeURIComponent(href!), 'the Arabic receipt carries THIS gym name').toContain('برولاين تجريبي')
 
     // Lead-reply share (create a lead, then assert its wa.me reply link).
     const RUN = Date.now().toString().slice(-6)
@@ -77,7 +81,8 @@ test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backe
     const leadWa = vis(page, '[data-testid="lead-card"]').filter({ hasText: `Lead${RUN}` }).first().getByTestId('lead-wa')
     const lhref = await leadWa.getAttribute('href')
     expect(lhref, 'lead reply wa.me link').toContain('https://wa.me/')
-    expect(decodeURIComponent(lhref!)).toContain('برو لاين')
+    // WL-TEMPLATES re-point: leadReply interpolates the e2e gym's own name.
+    expect(decodeURIComponent(lhref!), 'the Arabic lead reply carries THIS gym name').toContain('برولاين تجريبي')
   } finally {
     await ctx.close()
   }

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
+import { gymDisplayName } from '@/lib/whatsapp/identity';
 import { LeadsClient } from './leads-client';
 import type {
   Lead,
@@ -45,6 +46,10 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
 
   const gymId = profile?.gym_id;
   if (!gymId) return null;
+
+  // WL-TEMPLATES: the lead-reply wa.me message greets with this gym's name.
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle();
+  const gymName = gymDisplayName(gymRow, locale);
 
   // ── Server-side COUNT stats (head: true avoids row transfer) ──
   const countResults = await Promise.all([
@@ -174,6 +179,7 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
           trials={trials}
           invites={invites}
           gymId={gymId}
+          gymName={gymName}
           locale={locale}
           statusColors={STATUS_COLORS}
           sourceIcons={SOURCE_ICONS}

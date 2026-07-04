@@ -30,6 +30,7 @@ type Props = {
   trials: TrialInfo[];
   invites: InviteInfo[];
   gymId: string;
+  gymName: string; // WL-TEMPLATES: the caller's gym localized name (for the lead-reply wa.me msg)
   locale: string;
   statusColors: Record<string, string>;
   sourceIcons: Record<string, string>;
@@ -56,6 +57,7 @@ export function LeadsClient({
   trials,
   invites,
   gymId,
+  gymName,
   locale,
   statusColors,
   sourceIcons,
@@ -377,7 +379,7 @@ export function LeadsClient({
                         {lead.phone}
                       </a>
                       <WhatsAppShare phone={lead.phone} testid="lead-wa"
-                        message={tw('tmpl.leadReply', { name: `${lead.first_name ?? ''}`.trim() || t('guardian_default') })}
+                        message={tw('tmpl.leadReply', { name: `${lead.first_name ?? ''}`.trim() || t('guardian_default'), gym: gymName })}
                         label={tw('share.reply')} />
                     </div>
                   )}

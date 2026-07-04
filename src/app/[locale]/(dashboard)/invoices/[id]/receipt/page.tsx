@@ -57,7 +57,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
         <a href={`/${locale}/invoices/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← {t('Back', 'رجوع')}</a>
         <span className="flex items-center gap-2">
           <WhatsAppShare phone={profile?.phone} testid="receipt-wa" variant="button"
-            message={tw('tmpl.receipt', { name: studentName, number: inv.invoice_number,
+            message={tw('tmpl.receipt', { name: studentName, number: inv.invoice_number, gym: gymName,
               usd: Number(inv.total_usd ?? 0).toFixed(2),
               lbp: inv.total_lbp ? ` / ${Number(inv.total_lbp).toLocaleString()} LBP` : '' })}
             label={tw('share.sendReceipt')} />

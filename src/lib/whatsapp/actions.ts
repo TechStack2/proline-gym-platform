@@ -10,6 +10,7 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { createNotification } from '@/lib/notifications/create'
 import { dispatchWhatsApp } from '@/lib/whatsapp/dispatch'
+import { gymDisplayName } from '@/lib/whatsapp/identity'
 
 const STAFF = ['owner', 'head_coach', 'receptionist']
 
@@ -53,8 +54,10 @@ export async function sendRenewalReminder(
   } catch { /* a login-less member may not receive — never abort */ }
 
   // ADDITIVE: WhatsApp auto-dispatch when the gym is active (best-effort).
+  // WL-TEMPLATES: greet with THIS gym's localized name, not a hardcoded "PRO LINE".
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle()
   const tw = await getTranslations({ locale: memberLocale, namespace: 'whatsapp' })
-  const body = tw('tmpl.renewal', { name })
+  const body = tw('tmpl.renewal', { name, gym: gymDisplayName(gymRow, memberLocale) })
   const d = await dispatchWhatsApp(gymId, prof?.phone, 'renewal_due', body)
 
   return { ok: true, notified, dispatched: d.dispatched, status: d.status }
