@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { getCurrentUserGym } from '@/lib/pwa/identity';
 import { cn } from '@/lib/utils';
 import { Toaster } from 'sonner';
 import { UseToastRenderer } from '@/components/ui/toaster';
@@ -40,19 +41,31 @@ export async function generateMetadata(props: Omit<Props, 'children'>) {
   const { locale } = await props.params;
   const t = await getTranslations({ locale, namespace: 'app' });
 
+  // PWA-IDENTITY: on AUTHENTICATED surfaces the tab title + favicon are the
+  // SIGNED-IN user's gym (resolvable for staff; members → the default). Anon
+  // surfaces (the landing) get null → the default brand, and the landing page's
+  // own generateMetadata (SEO-PER-GYM) overrides with its resolved gym anyway.
+  const userGym = await getCurrentUserGym();
+  const brand =
+    (userGym &&
+      (locale === 'ar' ? userGym.name_ar : locale === 'fr' ? userGym.name_fr : userGym.name_en)) ||
+    t('name');
+  const favicon = userGym?.logo_url || '/logo.jpg';
+
   return {
     title: {
-      default: t('name'),
-      template: `%s | ${t('name')}`,
+      default: brand,
+      template: `%s | ${brand}`,
     },
     description: t('tagline'),
     // OFF-1: link the web-app manifest so the app is INSTALLABLE (desktop Chrome
-    // "Install app" + mobile A2HS). It was never linked → no install criteria met
-    // → no installed PWA / no offline engagement anywhere. start_url is "/" so the
-    // launch respects the user's locale (was hard-coded "/en").
-    manifest: '/manifest.json',
-    // AX-3: use the PRO LINE logo as the favicon (there was no /favicon.ico → 404).
-    icons: { icon: '/logo.jpg' },
+    // "Install app" + mobile A2HS). PWA-IDENTITY: the dynamic /manifest.webmanifest
+    // route resolves the gym by Host, so the INSTALLED app carries the tenant's
+    // name/color/icon (was a static public/manifest.json = "PRO LINE" for everyone).
+    manifest: '/manifest.webmanifest',
+    // AX-3: the gym logo as the favicon (there was no /favicon.ico → 404); the
+    // signed-in user's gym logo when set, else the PRO LINE default.
+    icons: { icon: favicon },
     // Prevent in-browser auto-translation (e.g. Chrome) from rewriting text
     // nodes React owns, which corrupts reconciliation and crashes with
     // "NotFoundError: Node.removeChild" on client navigations.
