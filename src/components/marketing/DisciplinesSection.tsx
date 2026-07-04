@@ -34,19 +34,17 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
 
-  // GYM-FILTER + active only (anon-readable via 000035) — SSOT, no fallback list.
+  // CATALOG-SCOPE: per-gym definer RPC (000080) — no blanket anon table read.
+  // Active disciplines of the active gym, sorted; SSOT, no fallback list.
   const { data: disciplines } = gym
-    ? await supabase
-        .from('disciplines')
-        .select('name_ar, name_en, name_fr')
-        .eq('gym_id', gym.id)
-        .eq('is_active', true)
-        .order('sort_order')
+    ? await supabase.rpc('get_landing_disciplines', { p_gym_id: gym.id })
     : { data: null };
 
-  const programs = (disciplines || []).map((d: any) => ({
-    name: d[`name_${locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'}`] || d.name_en,
-    nameEn: d.name_en as string,
+  type DiscRow = { name_ar: string; name_en: string; name_fr: string };
+  const rows = (disciplines || []) as DiscRow[];
+  const programs = rows.map((d) => ({
+    name: (locale === 'ar' ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en,
+    nameEn: d.name_en,
     icon: disciplineIcon(d.name_en),
   }));
 

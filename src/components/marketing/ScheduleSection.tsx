@@ -46,31 +46,21 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
 
   if (gym) {
     const supabase = await createClient();
-    // GYM-FILTER: active classes for this gym only, with their recurring weekly slots.
-    const { data: classes } = await supabase
-      .from('classes')
-      .select(
-        `id, name_ar, name_en, name_fr, color,
-         schedules:class_schedules(day_of_week, start_time, end_time, is_active)`
-      )
-      .eq('gym_id', gym.id)
-      .eq('is_active', true);
+    // CATALOG-SCOPE: per-gym definer RPC (000080) — no blanket anon table read.
+    // Active classes JOIN their active recurring slots, flattened (one row per slot).
+    const { data: slots } = await supabase.rpc('get_landing_schedule', { p_gym_id: gym.id });
 
     const slotMap = new Map<string, Row>();
-    for (const c of classes || []) {
-      const name = localizedName(c, locale);
-      for (const s of (c as any).schedules || []) {
-        if (s.is_active === false) continue;
-        if (s.day_of_week == null) continue;
-        activeDow.add(s.day_of_week);
-        const key = `${s.start_time}-${s.end_time}`;
-        let row = slotMap.get(key);
-        if (!row) {
-          row = { start: s.start_time, end: s.end_time, cells: {} };
-          slotMap.set(key, row);
-        }
-        (row.cells[s.day_of_week] ??= []).push({ name, color: c.color ?? null });
+    for (const s of (slots as any[]) || []) {
+      if (s.day_of_week == null) continue;
+      activeDow.add(s.day_of_week);
+      const key = `${s.start_time}-${s.end_time}`;
+      let row = slotMap.get(key);
+      if (!row) {
+        row = { start: s.start_time, end: s.end_time, cells: {} };
+        slotMap.set(key, row);
       }
+      (row.cells[s.day_of_week] ??= []).push({ name: localizedName(s, locale), color: s.color ?? null });
     }
     rows.push(...[...slotMap.values()].sort((a, b) => a.start.localeCompare(b.start)));
   }

@@ -26,15 +26,11 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
 
-  const today = new Date().toISOString().slice(0, 10);
+  // CATALOG-SCOPE: per-gym definer RPC (000080) — published, upcoming, non-draft
+  // camps of the active gym only (end_date >= CURRENT_DATE server-side); no blanket
+  // anon table read.
   const { data: camps } = gym
-    ? await supabase
-        .from('camps')
-        .select('id, name_ar, name_en, name_fr, start_date, end_date, min_age, max_age, price_usd, status')
-        .eq('gym_id', gym.id)
-        .eq('show_on_landing', true)
-        .gte('end_date', today)
-        .order('start_date')
+    ? await supabase.rpc('get_landing_camps', { p_gym_id: gym.id })
     : { data: null };
 
   if (!camps || camps.length === 0) return null;
