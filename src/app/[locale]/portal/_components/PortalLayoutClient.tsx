@@ -66,7 +66,15 @@ export function PortalLayoutClient({ children, locale }: Props) {
           isActive={true}
           locale={locale}
         >
-          <div key={pathname}>
+          {/* PERF-1 #5c: the mobile NativeTabBar is `fixed bottom-0` (<md), so the
+              last rows of every portal page hid behind it (same class of bug the
+              dashboard fixed in FD-2). Clear it with tab-bar height + safe-area
+              bottom padding on mobile only (no bottom bar ≥md → md:pb-0). */}
+          <div
+            key={pathname}
+            data-testid="shell-content"
+            className="pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0"
+          >
             <PortalContent>{children}</PortalContent>
           </div>
         </PageTransition>

@@ -141,7 +141,7 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
                 the last rows of every dashboard page (seen on Today/Inbox) hid
                 behind it. Clear it with tab-bar height + safe-area bottom padding
                 on mobile only (no bottom bar ≥md → md:pb-0). */}
-            <div key={pathname} className="px-4 lg:px-0 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0">{children}</div>
+            <div key={pathname} data-testid="shell-content" className="px-4 lg:px-0 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">{children}</div>
           </PageTransition>
         </main>
 
