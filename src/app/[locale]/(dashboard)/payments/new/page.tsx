@@ -14,7 +14,7 @@ type Props = { params: { locale: string }; searchParams: { invoice?: string } }
  */
 export default async function NewPaymentPage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
   if (searchParams.invoice) {
@@ -27,7 +27,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
     if (inv) {
       return (
         <div className={`space-y-6 p-6 ${isRTL ? 'rtl text-right' : ''}`}>
-          <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة')} · {inv.invoice_number}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة', 'Enregistrer le paiement')} · {inv.invoice_number}</h1>
           <PaymentForm
             locale={locale}
             invoice={{
@@ -60,10 +60,10 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
 
   return (
     <div className={`space-y-6 p-6 ${isRTL ? 'rtl text-right' : ''}`}>
-      <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة')}</h1>
-      <p className="text-muted-foreground">{t('Pick an open invoice to settle.', 'اختر فاتورة مفتوحة للتسوية.')}</p>
+      <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة', 'Enregistrer le paiement')}</h1>
+      <p className="text-muted-foreground">{t('Pick an open invoice to settle.', 'اختر فاتورة مفتوحة للتسوية.', 'Choisissez une facture ouverte à régler.')}</p>
       {list.length === 0 ? (
-        <p className="rounded-xl border p-6 text-center text-sm text-muted-foreground">{t('No open invoices.', 'لا فواتير مفتوحة.')}</p>
+        <p className="rounded-xl border p-6 text-center text-sm text-muted-foreground">{t('No open invoices.', 'لا فواتير مفتوحة.', 'Aucune facture ouverte.')}</p>
       ) : (
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
           <table className="w-full text-sm">

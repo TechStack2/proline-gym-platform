@@ -56,6 +56,15 @@ test('I18N-1 · fr renders with no MISSING_MESSAGE and no raw-key leak across th
       await assertCleanFr(owner.page, '/fr/invoices/new');
       await expect(owner.page.getByText('Émettre la facture'), '/fr issue form is localized').toBeVisible({ timeout: 15_000 });
 
+      // I18N-POLISH-2: the payments surfaces (history/audit + record-payment) render
+      // French — the inline t(en,ar,fr) helper + METHOD_LABEL.fr.
+      await owner.page.goto('/fr/money?tab=payments');
+      await assertCleanFr(owner.page, '/fr/money?tab=payments');
+      await expect(owner.page.getByText('Toutes les méthodes'), '/fr payments view is localized').toBeVisible({ timeout: 15_000 });
+      await owner.page.goto('/fr/payments/new');
+      await assertCleanFr(owner.page, '/fr/payments/new');
+      await expect(owner.page.getByText('Choisissez une facture ouverte à régler.'), '/fr record-payment is localized').toBeVisible({ timeout: 15_000 });
+
       // One member file (Member-360) — reached via the list's File action.
       await owner.page.goto('/fr/students');
       await owner.page.waitForLoadState('networkidle').catch(() => {});

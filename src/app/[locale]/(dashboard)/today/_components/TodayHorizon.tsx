@@ -419,7 +419,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
               ) : (
                 [...tally.entries()].map(([method, v]) => (
                   <span key={method} className="rounded-full bg-muted px-3 py-1">
-                    {(isRTL ? METHOD_LABEL[method]?.ar : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}
+                    {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}
                     {v.lbp ? ` · ${v.lbp.toLocaleString()} LBP` : ''}
                   </span>
                 ))

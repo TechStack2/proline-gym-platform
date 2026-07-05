@@ -27,8 +27,7 @@ export function RegistrationsPanel({
   students: { id: string; name: string }[]
   locale: string
 }) {
-  const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -51,31 +50,31 @@ export function RegistrationsPanel({
 
   return (
     <Card data-testid="registrations-panel">
-      <CardHeader><CardTitle>{t('Registrations', 'التسجيلات')}</CardTitle></CardHeader>
+      <CardHeader><CardTitle>{t('Registrations', 'التسجيلات', 'Inscriptions')}</CardTitle></CardHeader>
       <CardContent className="space-y-5">
         {error && <div data-testid="reg-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
         {/* Walk-in register */}
         <div className="flex flex-wrap items-end gap-2 border-b pb-4">
           <div className="flex-1 min-w-[180px]">
-            <label className="mb-1 block text-xs text-muted-foreground">{t('Register a member (walk-in)', 'تسجيل عضو (مباشر)')}</label>
+            <label className="mb-1 block text-xs text-muted-foreground">{t('Register a member (walk-in)', 'تسجيل عضو (مباشر)', 'Inscrire un membre (sur place)')}</label>
             <select data-testid="walkin-student" value={walkInStudent} onChange={(e) => setWalkInStudent(e.target.value)}
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-              <option value="">{t('Select a member…', 'اختر عضواً…')}</option>
+              <option value="">{t('Select a member…', 'اختر عضواً…', 'Sélectionner un membre…')}</option>
               {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <Button data-testid="walkin-register-btn" disabled={pending || !walkInStudent}
             onClick={() => run(() => registerWalkIn(classId, walkInStudent))}>
-            {t('Register', 'تسجيل')}
+            {t('Register', 'تسجيل', 'Inscrire')}
           </Button>
         </div>
 
         {/* Pending requests */}
         <div>
-          <h3 className="mb-2 text-sm font-semibold">{t('Pending requests', 'طلبات معلّقة')} ({requested.length})</h3>
+          <h3 className="mb-2 text-sm font-semibold">{t('Pending requests', 'طلبات معلّقة', 'Demandes en attente')} ({requested.length})</h3>
           {requested.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('No pending requests.', 'لا طلبات معلّقة.')}</p>
+            <p className="text-sm text-muted-foreground">{t('No pending requests.', 'لا طلبات معلّقة.', 'Aucune demande en attente.')}</p>
           ) : (
             <div className="space-y-2">
               {requested.map((r) => (
@@ -83,13 +82,13 @@ export function RegistrationsPanel({
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
                   <span className="text-sm font-medium" data-testid="reg-student">{r.studentName}</span>
                   <div className="flex items-center gap-2">
-                    <Input type="number" min="0" max="100" placeholder={t('disc %', 'خصم %')} data-testid="discount-pct"
+                    <Input type="number" min="0" max="100" placeholder={t('disc %', 'خصم %', 'remise %')} data-testid="discount-pct"
                       className="h-8 w-20 text-xs" value={discount[r.id] ?? ''} onChange={(e) => setDiscount({ ...discount, [r.id]: e.target.value })} />
                     <Button size="sm" data-testid="approve-btn" disabled={pending}
                       onClick={() => run(() => approveRegistration({ regId: r.id, classId, discountPct: discount[r.id] ? parseFloat(discount[r.id]) : 0 }))}
-                      className="bg-[#cd1419] hover:bg-[#a81014]">{t('Approve', 'موافقة')}</Button>
+                      className="bg-[#cd1419] hover:bg-[#a81014]">{t('Approve', 'موافقة', 'Approuver')}</Button>
                     <Button size="sm" variant="outline" data-testid="reject-btn" disabled={pending}
-                      onClick={() => run(() => rejectRegistration(r.id, classId, undefined))}>{t('Reject', 'رفض')}</Button>
+                      onClick={() => run(() => rejectRegistration(r.id, classId, undefined))}>{t('Reject', 'رفض', 'Refuser')}</Button>
                   </div>
                 </div>
               ))}
@@ -99,9 +98,9 @@ export function RegistrationsPanel({
 
         {/* Active */}
         <div>
-          <h3 className="mb-2 text-sm font-semibold">{t('Active', 'النشطون')} ({active.length})</h3>
+          <h3 className="mb-2 text-sm font-semibold">{t('Active', 'النشطون', 'Actifs')} ({active.length})</h3>
           {active.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('No active registrations.', 'لا تسجيلات نشطة.')}</p>
+            <p className="text-sm text-muted-foreground">{t('No active registrations.', 'لا تسجيلات نشطة.', 'Aucune inscription active.')}</p>
           ) : (
             <div className="space-y-2" data-testid="active-list">
               {active.map((r) => (
@@ -109,9 +108,9 @@ export function RegistrationsPanel({
                   className="flex items-center justify-between gap-2 rounded-lg border p-3">
                   <span className="text-sm font-medium" data-testid="reg-student">{r.studentName}</span>
                   <div className="flex items-center gap-2">
-                    {r.invoice_id && <Badge className="bg-green-100 text-green-700">{t('Invoiced', 'مفوترة')}</Badge>}
+                    {r.invoice_id && <Badge className="bg-green-100 text-green-700">{t('Invoiced', 'مفوترة', 'Facturé')}</Badge>}
                     <Button size="sm" variant="outline" data-testid="cancel-reg-btn" disabled={pending}
-                      onClick={() => run(() => cancelRegistration(r.id, classId))}>{t('Cancel', 'إلغاء')}</Button>
+                      onClick={() => run(() => cancelRegistration(r.id, classId))}>{t('Cancel', 'إلغاء', 'Annuler')}</Button>
                   </div>
                 </div>
               ))}
@@ -121,9 +120,9 @@ export function RegistrationsPanel({
 
         {/* Waitlist */}
         <div>
-          <h3 className="mb-2 text-sm font-semibold">{t('Waitlist', 'قائمة الانتظار')} ({waitlisted.length})</h3>
+          <h3 className="mb-2 text-sm font-semibold">{t('Waitlist', 'قائمة الانتظار', "Liste d'attente")} ({waitlisted.length})</h3>
           {waitlisted.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('Waitlist is empty.', 'قائمة الانتظار فارغة.')}</p>
+            <p className="text-sm text-muted-foreground">{t('Waitlist is empty.', 'قائمة الانتظار فارغة.', "La liste d'attente est vide.")}</p>
           ) : (
             <div className="space-y-2" data-testid="waitlist">
               {waitlisted.map((r) => (
@@ -131,7 +130,7 @@ export function RegistrationsPanel({
                   className="flex items-center justify-between gap-2 rounded-lg border p-3">
                   <span className="text-sm font-medium" data-testid="reg-student">#{r.waitlist_position} · {r.studentName}</span>
                   <Button size="sm" variant="outline" data-testid="cancel-reg-btn" disabled={pending}
-                    onClick={() => run(() => cancelRegistration(r.id, classId))}>{t('Cancel', 'إلغاء')}</Button>
+                    onClick={() => run(() => cancelRegistration(r.id, classId))}>{t('Cancel', 'إلغاء', 'Annuler')}</Button>
                 </div>
               ))}
             </div>

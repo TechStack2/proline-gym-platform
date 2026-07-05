@@ -80,7 +80,7 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
             <ul className="space-y-1.5" data-testid="method-table">
               {methods.map((m) => (
                 <li key={m.method} className="flex items-center justify-between text-sm" data-testid="method-row" data-method={m.method}>
-                  <span className="text-gray-600">{(isRTL ? METHOD_LABEL[m.method]?.ar : METHOD_LABEL[m.method]?.en) || m.method}</span>
+                  <span className="text-gray-600">{(locale === 'ar' ? METHOD_LABEL[m.method]?.ar : locale === 'fr' ? METHOD_LABEL[m.method]?.fr : METHOD_LABEL[m.method]?.en) || m.method}</span>
                   <span className="font-semibold text-gray-900" dir="ltr">
                     ${m.usd.toFixed(2)}{m.lbp ? ` · ${m.lbp.toLocaleString()} LBP` : ''}
                   </span>
