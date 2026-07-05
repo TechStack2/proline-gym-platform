@@ -91,15 +91,22 @@ export async function onboardGym(input: unknown): Promise<OnboardResult> {
     await dropGym();
   };
 
-  // 3c) Point the owner's profile at the NEW gym + set names (the trigger default).
-  const { error: pe } = await admin
-    .from('profiles')
-    .update({
+  // 3c) UPSERT the owner's profile → the NEW gym + names. An UPSERT (keyed on id),
+  //     NOT an update: handle_new_user (000017) can RACE/MISS on prod → no profile
+  //     row exists → .update().eq('id') hits 0 rows → the owner has a role but NO
+  //     profile → the dashboard shell FREEZES on their first login. Upsert
+  //     GUARANTEES the profile exists and points at the NEW gym (gym_id is NOT NULL
+  //     and must win over any trigger-set oldest-gym fallback), regardless of the
+  //     trigger. profiles' only NOT NULL columns without a default are id + gym_id.
+  const { error: pe } = await admin.from('profiles').upsert(
+    {
+      id: ownerId,
       gym_id: gymId,
       first_name_ar: f.ownerFirstEn, first_name_en: f.ownerFirstEn, first_name_fr: f.ownerFirstEn,
       last_name_ar: f.ownerLastEn, last_name_en: f.ownerLastEn, last_name_fr: f.ownerLastEn,
-    })
-    .eq('id', ownerId);
+    },
+    { onConflict: 'id' },
+  );
   if (pe) {
     await rollback();
     return { ok: false, error: 'profile-failed' };
