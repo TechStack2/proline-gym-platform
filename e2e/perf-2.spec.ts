@@ -3,21 +3,25 @@ import { test, expect, type Browser } from '@playwright/test'
 /**
  * PERF-2 — optimistic front-desk mutations. Subject: the attendance desk toggle
  * (the single highest-frequency front-desk action). It writes straight through the
- * browser Supabase client, so we can gate/fail that PostgREST write with page.route
- * and observe the optimistic paint + reconcile/rollback deterministically.
+ * browser Supabase client, so we can fail that PostgREST write with page.route and
+ * observe the optimistic paint + rollback deterministically.
  *
- *   1. clicking a status paints it INSTANTLY (before the write round-trip resolves)
- *      and, once the write lands, it PERSISTS across a reload;
- *   2. an induced write failure ROLLS the row back to its prior status + toasts.
+ *   1. clicking a status paints it INSTANTLY and, once the real write lands, it
+ *      PERSISTS across a reload (a plain real write — no interception);
+ *   2. an induced write failure paints optimistically BEFORE the (delayed) round-trip
+ *      resolves, then ROLLS the row back to its prior status + toasts.
  *
- * Hermetic: seeds its OWN gym (seed_e2e_wl_gym — owner/coach/reception + Karim &
- * Omar enrolled in a Muay-Thai class scheduled every weekday) and tears it down. /en.
+ * We fulfill the failure (reliable) rather than gate-then-continue a real write
+ * (unreliable under the prod service worker). Hermetic: seeds its OWN gym
+ * (seed_e2e_wl_gym — owner/coach/reception + Karim & Omar enrolled in a Muay-Thai
+ * class scheduled every weekday). The slug carries the worker index so a retry in a
+ * fresh worker never collides with a prior attempt's surviving auth users. /en.
  */
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const PW = process.env.E2E_PASSWORD || 'E2eTestPass!23'
 const BASE = process.env.E2E_GYM_SLUG_BASE || 'local'
-const SLUG = `perf2-${BASE}`
+const SLUG = `perf2-${BASE}-w${process.env.TEST_WORKER_INDEX ?? '0'}`
 const H = { apikey: KEY!, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 const ATT_WRITE = '**/rest/v1/attendance_records*'
 let gymId = ''
@@ -47,36 +51,33 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  if (gymId) await svc(`gyms?id=eq.${gymId}`, { method: 'DELETE' }).catch(() => {}) // cascades classes/enrollments/records
+  // Delete the gym (cascades classes/enrollments/records + gym-scoped user_roles) and
+  // the run's auth users (GoTrue admin) so a survivor never blocks a later re-seed.
+  if (!gymId) return
+  const roleRows = (await (await svc(`user_roles?gym_id=eq.${gymId}&select=user_id`)).json().catch(() => [])) as Array<{ user_id: string }>
+  await svc(`gyms?id=eq.${gymId}`, { method: 'DELETE' }).catch(() => {})
+  for (const r of roleRows) {
+    await fetch(`${URL}/auth/v1/admin/users/${r.user_id}`, { method: 'DELETE', headers: H }).catch(() => {})
+  }
 })
 
-test('PERF-2 · a marked status paints instantly (before the write resolves) and persists', async ({ browser }) => {
+test('PERF-2 · a marked status paints instantly and the real write persists', async ({ browser }) => {
   test.setTimeout(120_000)
   const { ctx, page } = await loginOwner(browser)
   try {
     await page.goto('/en/attendance')
+    // Only this gym's card has visible enrolled rows (class_enrollments is gym-scoped),
+    // so the first att-row is deterministically one of our seeded students.
     const row = page.getByTestId('att-row').first()
     await expect(row, 'the seeded class roster renders').toBeVisible({ timeout: 20_000 })
     const sid = await row.getAttribute('data-student-id')
     expect(sid).toBeTruthy()
 
-    // Gate the PostgREST write so it stays IN-FLIGHT while we assert the paint.
-    let release: () => void = () => {}
-    const gate = new Promise<void>((r) => { release = r })
-    await page.route(ATT_WRITE, async (route) => {
-      if (route.request().method() === 'POST') { await gate; await route.continue() }
-      else await route.continue()
-    })
-
+    // Click present — the optimistic paint is synchronous (instant), then the real
+    // write lands and a success toast confirms it settled.
     await row.getByTestId('att-btn-present').click()
-    // OPTIMISTIC: the row flips to present WHILE the write is still gated (unresolved).
-    await expect(row, 'the status paints before the round-trip completes')
-      .toHaveAttribute('data-status', 'present', { timeout: 4_000 })
-
-    // Let the write land, confirm it settled, drop the gate.
-    release()
+    await expect(row, 'the status paints').toHaveAttribute('data-status', 'present', { timeout: 3_000 })
     await expect(page.locator('[data-sonner-toast]').first(), 'the save confirms').toBeVisible({ timeout: 15_000 })
-    await page.unroute(ATT_WRITE)
 
     // PERSISTS: a fresh SSR read shows the same student still present.
     await page.reload()
@@ -89,7 +90,7 @@ test('PERF-2 · a marked status paints instantly (before the write resolves) and
   }
 })
 
-test('PERF-2 · an induced write failure rolls the optimistic mark back', async ({ browser }) => {
+test('PERF-2 · an induced write failure paints before the round-trip resolves, then rolls back', async ({ browser }) => {
   test.setTimeout(120_000)
   const { ctx, page } = await loginOwner(browser)
   try {
@@ -99,19 +100,20 @@ test('PERF-2 · an induced write failure rolls the optimistic mark back', async 
     const before = (await row.getAttribute('data-status')) ?? ''
     const target = before === 'late' ? 'absent' : 'late' // always different from `before`
 
-    // Fail the write — but slowly enough to observe the optimistic paint first.
+    // Fail the write — but only AFTER a delay, so the optimistic paint is observable
+    // while the round-trip is still outstanding.
     await page.route(ATT_WRITE, async (route) => {
       if (route.request().method() === 'POST') {
         await new Promise((r) => setTimeout(r, 1_500))
-        await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'induced failure' }) })
-      } else await route.continue()
+        await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'induced failure' }) }).catch(() => {})
+      } else await route.continue().catch(() => {})
     })
 
     await row.getByTestId(`att-btn-${target}`).click()
-    // OPTIMISTIC paint happens immediately…
-    await expect(row, 'the new status paints optimistically')
+    // BEFORE the round-trip resolves: the new status is already painted.
+    await expect(row, 'the new status paints before the round-trip resolves')
       .toHaveAttribute('data-status', target, { timeout: 1_200 })
-    // …then the failed write ROLLS it back to the prior value + an error toast.
+    // AFTER the failed write: the row rolls back to its prior value + an error toast.
     await expect(row, 'the row rolls back on failure')
       .toHaveAttribute('data-status', before, { timeout: 10_000 })
     await expect(page.locator('[data-sonner-toast]').first(), 'an error is surfaced').toBeVisible({ timeout: 10_000 })
