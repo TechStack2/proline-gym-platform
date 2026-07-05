@@ -40,6 +40,21 @@ async function resolveRequestSlug(searchParams?: { gym?: string }): Promise<stri
   return searchParams?.gym || domainSlug || undefined;
 }
 
+// WL-BRANDING-DATA: build the `:root{--brand…}` CSS from the resolved gym's brand
+// color. Emitted in a NONCE'D <style> (prod style-src is nonce + strict-dynamic
+// with NO 'unsafe-inline', so an inline style="" attr would be STRIPPED — a var'd
+// class + a nonce'd :root block is the CSP-safe path). --brand-dark (hover) is an
+// 82% shade (floor → the default #cd1419 → exactly #a81014, today's hover); --brand-
+// soft is the 10% tint (the old bg-[#cd1419]/10). Literal values → no color-mix dep.
+function buildBrandCss(brand: string): string {
+  const n = parseInt(brand.slice(1), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const shade = (f: number) => '#' + [r, g, b].map((x) => Math.floor(x * f).toString(16).padStart(2, '0')).join('');
+  return `:root{--brand:${brand};--brand-dark:${shade(0.82)};--brand-soft:rgba(${r},${g},${b},0.1)}`;
+}
+
 // VENDOR-LANDING: is this a request for the VENDOR product page (Gym 360 Pro),
 // not a tenant gym landing? True when the request Host is a configured vendor host
 // (env VENDOR_LANDING_HOSTS, comma-sep; default EMPTY → zero prod change until the
@@ -151,8 +166,19 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // script-src CSP — so no per-request nonce is required.
   const { jsonLd } = await getLandingMeta(locale, gymSlug);
 
+  // WL-BRANDING-DATA: nonce'd :root{--brand…} for the resolved gym (CSP-safe —
+  // grabbed from the per-request X-CSP-Nonce the middleware forwards). Default gym
+  // + any gym with brand_color NULL resolve to Proline crimson → zero visual change.
+  const nonce = headers().get('X-CSP-Nonce') ?? '';
+  const brandCss = buildBrandCss(branding.brandColor);
+
   return (
     <>
+      <style
+        nonce={nonce}
+        data-testid="brand-vars"
+        dangerouslySetInnerHTML={{ __html: brandCss }}
+      />
       <script
         type="application/ld+json"
         data-testid="landing-jsonld"

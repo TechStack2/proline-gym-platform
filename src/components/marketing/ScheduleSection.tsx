@@ -123,7 +123,7 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
                                   key={i}
                                   className="rounded-lg px-3 py-2.5 text-sm font-medium text-white ring-1 ring-white/10"
                                   style={{
-                                    backgroundColor: cell.color || '#cd1419',
+                                    backgroundColor: cell.color || 'var(--brand)',
                                   }}
                                 >
                                   {cell.name}
