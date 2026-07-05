@@ -119,7 +119,10 @@ test('G1 · wa.me RECEIPT bridge renders the localized link (Arabic /ar) — no 
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
     // Direct nav to THIS test's own paid invoice → the receipt is always present.
-    await page.goto(`/ar/invoices/${invoiceId}`)
+    // waitUntil:'domcontentloaded' — don't block on the page's background RSC
+    // prefetches (they can hang under load and stall the 'load' event → 120s); the
+    // locators below wait for the hydrated content anyway.
+    await page.goto(`/ar/invoices/${invoiceId}`, { waitUntil: 'domcontentloaded' })
     await vis(page, '[data-testid="receipt-link"]').first().click()
     const wa = vis(page, '[data-testid="receipt-wa"]').first()
     const href = await wa.getAttribute('href')
@@ -140,7 +143,10 @@ test('G1 · wa.me LEAD-REPLY bridge renders the localized link (Arabic /ar) — 
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
     // Lead-reply share (create a lead this test OWNS, then assert its wa.me reply link).
-    await page.goto('/ar/students?tab=prospects')
+    // waitUntil:'domcontentloaded' — the prospects page fires background RSC prefetches
+    // for its status-tab links; under load one can hang and stall 'load' → a 120s
+    // goto hang. Return on DOM-ready; the locators below wait for the hydrated content.
+    await page.goto('/ar/students?tab=prospects', { waitUntil: 'domcontentloaded' })
     await vis(page, '[data-testid="add-lead-button"]').first().click()
     const modal = page.locator('[data-testid="add-lead-modal"]:visible')
     await modal.getByTestId('lead-first-name').fill('واتس')
@@ -150,7 +156,7 @@ test('G1 · wa.me LEAD-REPLY bridge renders the localized link (Arabic /ar) — 
     await modal.locator('[data-testid="lead-source-chip"][data-value="instagram"]').click()
     await modal.getByTestId('wizard-next').click()
     await modal.getByTestId('wizard-submit').click()
-    await page.goto(`/ar/students?tab=prospects&search=Lead${RUN}`)
+    await page.goto(`/ar/students?tab=prospects&search=Lead${RUN}`, { waitUntil: 'domcontentloaded' })
     const leadWa = vis(page, '[data-testid="lead-card"]').filter({ hasText: `Lead${RUN}` }).first().getByTestId('lead-wa')
     const lhref = await leadWa.getAttribute('href')
     expect(lhref, 'lead reply wa.me link').toContain('https://wa.me/')
