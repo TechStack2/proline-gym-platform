@@ -15,7 +15,7 @@ import fr from './messages/fr.json'
 const MESSAGES = { en, ar, fr } as const
 const KEYS = ['renewal', 'winback', 'receipt', 'leadReply', 'regApproved'] as const
 // A superset of every template's placeholders (extras are ignored; a missing one throws).
-const BASE = { name: 'Sara', number: 'INV-1042', usd: '40.00', lbp: '', class: 'Boxing' }
+const BASE = { name: 'Sara', number: 'INV-1042', usd: '40.00', lbp: '', class: 'Boxing', label: 'Boxing — July 2026', date: '2026-07-05', balance: '0.00' }
 const WL = { en: 'Iron Fist Club', ar: 'نادي القبضة الحديدية', fr: 'Club Poing de Fer' }
 const PROLINE = { en: 'PRO LINE Gym', ar: 'برو لاين جيم', fr: 'PRO LINE Gym' }
 
