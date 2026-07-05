@@ -1,6 +1,64 @@
 import { test, expect, type Browser } from '@playwright/test'
-import { ROLES } from './roles'
+import { ROLES, roleEmail, E2E_PASSWORD } from './roles'
 import { vis, gymSlug } from './helpers'
+
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const SVC = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+/**
+ * G1-STABILIZE: stand up THIS test's OWN paid membership invoice via the same RPCs
+ * the billing UI calls (create_student → issue_invoice → record_payment), driven
+ * API-only with the owner's real JWT. Returns the invoice id. API-only keeps the
+ * setup fast + read-nothing-shared, so the receipt assertion can't be raced by a
+ * parallel spec mutating the seed gym (the old flake) and the test stays well under
+ * budget even when the single next-start server is loaded.
+ */
+async function standUpOwnPaidInvoice(run: string): Promise<string> {
+  if (!URL || !ANON || !SVC) throw new Error('G1 receipt setup needs SUPABASE URL + anon + service-role key')
+  const tokRes = await fetch(`${URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: roleEmail('owner'), password: E2E_PASSWORD }),
+  })
+  const jwt = (await tokRes.json()).access_token as string | undefined
+  if (!jwt) throw new Error(`G1 owner sign-in failed: ${tokRes.status}`)
+  // Staff RPCs run under the owner's JWT (is_staff); return=representation gives the row.
+  const rpc = async (fn: string, body: unknown) => {
+    const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: ANON!, Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify(body),
+    })
+    if (!r.ok) throw new Error(`${fn} failed: ${r.status} ${await r.text()}`)
+    const j = await r.json()
+    return Array.isArray(j) ? j[0] : j
+  }
+  const gymRes = await fetch(`${URL}/rest/v1/gyms?slug=eq.${encodeURIComponent(gymSlug())}&select=id`, {
+    headers: { apikey: SVC, Authorization: `Bearer ${SVC}` },
+  })
+  const gymId = ((await gymRes.json()) as Array<{ id: string }>)[0]?.id
+  if (!gymId) throw new Error('G1 could not resolve the run gym')
+  // 1) a fresh member the test OWNS (the F1 create_student write path)
+  const stu = await rpc('create_student', {
+    p_first_name_ar: `قسيمة ${run}`, p_first_name_en: `G1 Receipt ${run}`, p_first_name_fr: `G1 Receipt ${run}`,
+    p_last_name_ar: '', p_last_name_en: '', p_last_name_fr: '',
+    p_phone: `+96170${run}`, p_gender: 'male', p_date_of_birth: null,
+    p_emergency_contact_name: null, p_emergency_contact_phone: null,
+    p_medical_notes: null, p_join_date: null, p_current_belt_rank: null,
+  })
+  // 2) issue a MEMBERSHIP invoice for THEM (billing's issue_invoice)
+  const inv = await rpc('issue_invoice', {
+    p_gym_id: gymId, p_student_id: stu.id, p_invoice_type: 'membership',
+    p_amount_usd: 50, p_amount_lbp: 0, p_exchange_rate: null, p_rate_date: null,
+    p_membership_id: null, p_due_date: null, p_notes_en: null, p_notes_ar: null, p_notes_fr: null,
+  })
+  // 3) record the FULL payment → paid → the receipt exists
+  await rpc('record_payment', {
+    p_invoice_id: inv.id, p_amount_usd: inv.total_usd, p_amount_lbp: 0, p_method: 'cash_usd',
+    p_reference: null, p_exchange_rate: null, p_payment_date: null, p_client_uuid: null,
+  })
+  return inv.id as string
+}
 
 /**
  * G1 — WhatsApp channel. Two proofs:
@@ -43,31 +101,56 @@ test.beforeEach(async () => {
   if (!del.ok) throw new Error(`g1 baseline reset failed: ${del.status} ${await del.text()}`)
 })
 
-test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backend', async ({ browser }) => {
+// G1-STABILIZE: the wa.me bridge proof is SPLIT into two independent tests (receipt +
+// lead-reply). It used to be one test doing both, and under --repeat-each the single
+// next-start server is loaded (RSC-prefetch fallbacks) → the two halves cumulatively
+// blew the 120s budget. Split, each half owns its own budget + data. No assertion
+// changed: both still require wa.me + THIS gym's Arabic name ("برولاين تجريبي").
+
+test('G1 · wa.me RECEIPT bridge renders the localized link (Arabic /ar) — no backend', async ({ browser }) => {
   test.setTimeout(120_000)
+  const RUN = Date.now().toString().slice(-6)
+  // OWN the receipt data instead of the shared "Adopt Member" (a parallel spec
+  // mutating the shared seed gym used to leave that invoice out of the asserted state
+  // → hang). Stand up this test's OWN member + PAID membership invoice via the RPCs
+  // the billing UI calls — API-only, so nothing shared is read and it can't be raced.
+  const invoiceId = await standUpOwnPaidInvoice(RUN)
+
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
-    // Receipt share (deterministic: ON-1's Adopt Member has a PAID invoice).
-    // NB: under /ar the card shows the Arabic name, so don't filter by the
-    // English name — the 'Adopt' search already narrows to the one student.
-    await page.goto('/ar/students?search=Adopt')
-    await vis(page, '[data-testid="student-card"]').first().click()
-    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 })
-    await vis(page, '[data-testid="member-invoice-row"][data-type="membership"]').first().locator('a').first().click()
-    await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 15_000 })
+    // Direct nav to THIS test's own paid invoice → the receipt is always present.
+    // waitUntil:'domcontentloaded' — don't block on the page's background RSC
+    // prefetches (they can hang under load and stall the 'load' event → 120s); the
+    // locators below wait for the hydrated content anyway.
+    await page.goto(`/ar/invoices/${invoiceId}`, { waitUntil: 'domcontentloaded' })
     await vis(page, '[data-testid="receipt-link"]').first().click()
     const wa = vis(page, '[data-testid="receipt-wa"]').first()
     const href = await wa.getAttribute('href')
     expect(href, 'a wa.me deep-link').toContain('https://wa.me/')
-    // WL-TEMPLATES re-point: the receipt template now interpolates THIS gym's
-    // localized name (was a hardcoded "برو لاين جيم"). g1 runs on the e2e gym
-    // (seed_e2e_gym, 000029) whose name_ar is "برولاين تجريبي" — so assert the
-    // message carries the gym's OWN name (stronger: proves per-gym interpolation).
+    // WL-TEMPLATES re-point: the receipt template interpolates THIS gym's localized
+    // name (was a hardcoded "برو لاين جيم"). g1 runs on the e2e gym (seed_e2e_gym,
+    // 000029) whose name_ar is "برولاين تجريبي" — assert the message carries the
+    // gym's OWN name (stronger: proves per-gym interpolation).
     expect(decodeURIComponent(href!), 'the Arabic receipt carries THIS gym name').toContain('برولاين تجريبي')
+  } finally {
+    await ctx.close()
+  }
+})
 
-    // Lead-reply share (create a lead, then assert its wa.me reply link).
-    const RUN = Date.now().toString().slice(-6)
-    await page.goto('/ar/students?tab=prospects')
+test('G1 · wa.me LEAD-REPLY bridge renders the localized link (Arabic /ar) — no backend', async ({ browser }) => {
+  // 180s (matching the heavier settings test, which is stable) — the /ar/students
+  // ?tab=prospects leads-pipeline SSR renders slowly on a loaded/slow CI runner, and
+  // the old 120s occasionally cut a slow-but-completing render off. The settings test
+  // (180s, more navs) never flaked while this one (120s) did — the delta was the budget.
+  test.setTimeout(180_000)
+  const RUN = Date.now().toString().slice(-6)
+  const { ctx, page } = await ownerCtx(browser, 'ar')
+  try {
+    // Lead-reply share (create a lead this test OWNS, then assert its wa.me reply link).
+    // waitUntil:'domcontentloaded' — the prospects page fires background RSC prefetches
+    // for its status-tab links; under load one can hang and stall 'load' → a 120s
+    // goto hang. Return on DOM-ready; the locators below wait for the hydrated content.
+    await page.goto('/ar/students?tab=prospects', { waitUntil: 'domcontentloaded' })
     await vis(page, '[data-testid="add-lead-button"]').first().click()
     const modal = page.locator('[data-testid="add-lead-modal"]:visible')
     await modal.getByTestId('lead-first-name').fill('واتس')
@@ -77,7 +160,7 @@ test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backe
     await modal.locator('[data-testid="lead-source-chip"][data-value="instagram"]').click()
     await modal.getByTestId('wizard-next').click()
     await modal.getByTestId('wizard-submit').click()
-    await page.goto(`/ar/students?tab=prospects&search=Lead${RUN}`)
+    await page.goto(`/ar/students?tab=prospects&search=Lead${RUN}`, { waitUntil: 'domcontentloaded' })
     const leadWa = vis(page, '[data-testid="lead-card"]').filter({ hasText: `Lead${RUN}` }).first().getByTestId('lead-wa')
     const lhref = await leadWa.getAttribute('href')
     expect(lhref, 'lead reply wa.me link').toContain('https://wa.me/')
