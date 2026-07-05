@@ -17,8 +17,6 @@ const BASE = process.env.E2E_GYM_SLUG_BASE || 'local'
 const SLUG = `obav-${BASE}-w${process.env.TEST_WORKER_INDEX ?? '0'}`
 const H = { apikey: KEY!, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 const ONBOARD_EMAIL = `onboard+${SLUG}@e2e.local`
-// A real, decodable PNG (the proven adm2 fixture) — the uploader downscales it to JPEG.
-const FIXTURE = 'e2e/fixtures/avatar.png'
 let gymId = ''
 let userId = ''
 
@@ -57,8 +55,9 @@ test.afterAll(async () => {
   }
 })
 
-test('ONBOARDING-AVATAR · the onboarding avatar upload stores the image + sets profile.avatar_url', async ({ browser }) => {
-  test.setTimeout(120_000)
+/** Log in as the onboarding user, advance to the avatar step, upload `fixture`, and
+ *  assert it stored (avatars/<gym>/<uid>.jpg) + set profiles.avatar_url. */
+async function uploadAtOnboarding(browser: Browser, fixture: string) {
   const ctx = await browser.newContext({ locale: 'en' })
   const page = await ctx.newPage()
   const consoleErrors: string[] = []
@@ -83,24 +82,33 @@ test('ONBOARDING-AVATAR · the onboarding avatar upload stores the image + sets 
 
     // Upload straight onto the hidden file input (fires onChange → uploadAvatar).
     // The input is display:hidden, so DON'T use :visible — setInputFiles works on it.
-    await page.locator('[data-testid="avatar-file-input"]').first().setInputFiles(FIXTURE)
+    await page.locator('[data-testid="avatar-file-input"]').first().setInputFiles(fixture)
 
-    // THE CONTRACT: profiles.avatar_url is set to the avatars-bucket path for THIS user.
-    await expect.poll(async () => {
+    // Surface a swallowed uploader error early with its message (fail fast + readable).
+    const err = page.getByTestId('avatar-error')
+    await expect(async () => {
+      if (await err.count()) throw new Error(`uploader error: "${(await err.first().innerText()).trim()}"`)
       const rows = await (await svc(`profiles?id=eq.${userId}&select=avatar_url`)).json().catch(() => [])
-      return Array.isArray(rows) ? rows[0]?.avatar_url : undefined
-    }, {
-      message: `avatar_url should be set${''}`,
-      timeout: 25_000, intervals: [500, 1000, 2000, 3000],
-    }).toContain(`/avatars/${gymId}/${userId}.jpg`)
+      const url = Array.isArray(rows) ? rows[0]?.avatar_url : undefined
+      expect(url, `avatar_url set (console: ${consoleErrors.join(' | ')})`).toContain(`/avatars/${gymId}/${userId}.jpg`)
+    }).toPass({ timeout: 25_000, intervals: [500, 1000, 2000, 3000] })
 
     // The object is really stored + publicly retrievable.
     const pub = await fetch(`${URL}/storage/v1/object/public/avatars/${gymId}/${userId}.jpg`)
     expect(pub.status, 'the stored avatar object is retrievable').toBe(200)
-
-    // (diagnostic) no swallowed uploader error left on screen.
-    await expect(page.getByTestId('avatar-error'), `no upload error (console: ${consoleErrors.join(' | ')})`).toHaveCount(0)
   } finally {
     await ctx.close()
   }
+}
+
+test('ONBOARDING-AVATAR · a standard image uploads + sets profile.avatar_url', async ({ browser }) => {
+  test.setTimeout(120_000)
+  await uploadAtOnboarding(browser, 'e2e/fixtures/avatar.png')
+})
+
+test('ONBOARDING-AVATAR · a HEIC photo (iPhone/Mac default) uploads too — the dead-upload fix', async ({ browser }) => {
+  test.setTimeout(120_000)
+  // createImageBitmap can't decode HEIC → the upload used to die silently. The lazy
+  // heic2any fallback transcodes it, so it now stores + sets avatar_url like any photo.
+  await uploadAtOnboarding(browser, 'e2e/fixtures/avatar.heic')
 })
