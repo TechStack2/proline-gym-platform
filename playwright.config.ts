@@ -263,6 +263,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // WL-BRANDING-DATA: the marketing landing renders the resolved gym's
+      // brand_color via a nonce'd :root{--brand} + var(--brand) classes. Unset →
+      // Proline red; a distinct brand_color → that color; no CSP violation. Seeds
+      // its own gyms + a landing PT package (anon /en).
+      name: 'wl-branding',
+      dependencies: ['setup'],
+      testMatch: /wl-branding\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).

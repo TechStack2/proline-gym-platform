@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { DEFAULT_BRAND_COLOR } from '@/lib/marketing/gym';
 import { Phone, MessageCircle } from 'lucide-react';
 
 // WL-LANDING: the resolved gym's branding. Every field is optional → the template
@@ -23,7 +24,7 @@ type HeroSectionProps = {
   branding?: HeroBranding;
 };
 
-const DEFAULT_BRANDING: HeroBranding = { brandColor: '#cd1419' };
+const DEFAULT_BRANDING: HeroBranding = { brandColor: DEFAULT_BRAND_COLOR };
 
 export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSectionProps) {
   // AX-1: copy now flows through next-intl (the isRTL?ar:en bypass dropped fr).

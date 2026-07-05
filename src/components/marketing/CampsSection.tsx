@@ -67,8 +67,8 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
                     {t('full')}
                   </span>
                 )}
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#cd1419]/10">
-                  <Tent className="h-5 w-5 text-[#cd1419]" />
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--brand-soft)]">
+                  <Tent className="h-5 w-5 text-[color:var(--brand)]" />
                 </div>
                 <h3 className={cn('text-lg font-semibold text-secondary-900', isRTL && 'font-arabic')}>
                   {localized(c, 'name', locale)}
@@ -97,7 +97,7 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
 
         <div className="mt-10 text-center">
           <a href="#trial" data-testid="landing-camps-cta"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#cd1419] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#a81014]">
+            className="inline-flex items-center gap-2 rounded-xl bg-[color:var(--brand)] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[color:var(--brand-dark)]">
             <Tent className="h-4 w-4" />
             {t('cta')}
           </a>
