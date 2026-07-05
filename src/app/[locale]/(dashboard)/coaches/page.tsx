@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CoachList } from './components/coach-list'
 import { CoachFilters } from './components/coach-filters'
+import { StaffAccessList, type StaffMember } from './components/staff-access-list'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
 import { InviteStaffButton } from '@/components/shared/invite-staff-button'
+import { localizedName } from '@/lib/names'
 
 export default async function CoachesPage({
   params: { locale },
@@ -31,6 +33,35 @@ export default async function CoachesPage({
   const { data: roleRow } = await supabase
     .from('user_roles').select('role').eq('user_id', user.id).limit(1).maybeSingle()
   const canInviteStaff = ['owner', 'head_coach'].includes((roleRow as any)?.role ?? '')
+
+  // STAFF-MGMT: the TEAM list reads user_roles (not the coaches table) so ALL staff
+  // roles show — owner, head_coach, coach AND receptionist. A receptionist has a
+  // user_roles row but no coaches row, so the coaches-table list below never showed
+  // them. profiles is joined in JS (no FK user_roles.user_id→profiles for embedding).
+  const { data: staffRoles } = await supabase
+    .from('user_roles').select('user_id, role, is_active')
+    .eq('gym_id', gymId).in('role', ['owner', 'head_coach', 'coach', 'receptionist'])
+  const staffUserIds = [...new Set((staffRoles ?? []).map((r: any) => r.user_id))]
+  const staffProfiles: any[] = staffUserIds.length
+    ? ((await supabase.from('profiles')
+        .select('id, first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, avatar_url')
+        .in('id', staffUserIds)).data ?? [])
+    : []
+  const profById = new Map(staffProfiles.map((p: any) => [p.id, p]))
+  const staffMap = new Map<string, { userId: string; roles: string[]; isActive: boolean; profile: any }>()
+  for (const r of (staffRoles ?? []) as any[]) {
+    const cur = staffMap.get(r.user_id) ?? { userId: r.user_id, roles: [] as string[], isActive: false, profile: profById.get(r.user_id) }
+    cur.roles.push(r.role)
+    cur.isActive = cur.isActive || r.is_active // active if any staff role is active
+    staffMap.set(r.user_id, cur)
+  }
+  const staff: StaffMember[] = [...staffMap.values()].map((s) => ({
+    userId: s.userId,
+    name: localizedName(s.profile, locale),
+    avatarUrl: s.profile?.avatar_url ?? null,
+    roles: [...new Set(s.roles)],
+    isActive: s.isActive,
+  }))
 
   let query = supabase
     .from('coaches')
@@ -85,6 +116,9 @@ export default async function CoachesPage({
           </Link>
         </div>
       </div>
+
+      {/* STAFF-MGMT: the full team + per-member access control (all staff roles). */}
+      <StaffAccessList staff={staff} canManage={canInviteStaff} currentUserId={user.id} locale={locale} />
 
       <CoachFilters locale={locale} isRTL={isRTL} />
 

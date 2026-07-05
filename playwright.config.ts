@@ -311,6 +311,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // STAFF-MGMT (000084): the team list shows ALL staff roles (not just coaches);
+      // deactivate/reactivate a staffer (user_roles.is_active gates is_staff via
+      // get_user_role); owner/head_coach-only. Hermetic: seeds its OWN gym.
+      name: 'staff-mgmt',
+      dependencies: ['setup'],
+      testMatch: /staff-mgmt\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ERROR-HARDEN: branded error boundary on a forced segment throw (/en+/ar),
       // the email login limiter (client-side bypass closed), and the gyms-UPDATE
       // owner/head_coach tightening (a receptionist save never persists).
