@@ -32,6 +32,43 @@
     --info: 221 83% 53%;
     --info-foreground: 0 0% 100%;
 
+    /* ─── DS-2: neutral CHANNEL vars (R G B) so Tailwind's rgb(var(--c-x) /
+       <alpha-value>) makes the pervasive hardcoded neutrals (bg-white ×259,
+       text-gray-* ×1000+, the charcoal `secondary` ramp) VAR-BACKED — a var
+       flip, not a per-component restyle. Light values = the EXACT current hex
+       → light mode is byte-identical; html.dark (below) inverts them. Brand
+       red / status / gold / belt stay hex (they read on dark unchanged). ─── */
+    --c-white: 255 255 255;
+    --c-gray-50: 249 250 251;
+    --c-gray-100: 243 244 246;
+    --c-gray-200: 229 231 235;
+    --c-gray-300: 209 213 219;
+    --c-gray-400: 156 163 175;
+    --c-gray-500: 107 114 128;
+    --c-gray-600: 75 85 99;
+    --c-gray-700: 55 65 81;
+    --c-gray-800: 31 41 55;
+    --c-gray-900: 17 24 39;
+    --c-gray-950: 3 7 18;
+    --c-bg: 255 255 255;
+    --c-fg: 17 24 39;
+    --c-muted: 243 244 246;
+    --c-muted-fg: 107 114 128;
+    --c-card: 255 255 255;
+    --c-border: 229 231 235;
+    --c-secondary-50: 247 247 247;
+    --c-secondary-100: 227 227 227;
+    --c-secondary-200: 200 200 200;
+    --c-secondary-300: 164 164 164;
+    --c-secondary-400: 129 129 129;
+    --c-secondary-500: 102 102 102;
+    --c-secondary-600: 81 81 81;
+    --c-secondary-700: 67 67 67;
+    --c-secondary-800: 56 56 56;
+    --c-secondary-900: 37 37 37;
+    --c-secondary-950: 31 31 31;
+    --c-secondary-fg: 255 255 255;
+
     /* ─── Typography ─── */
     --font-arabic: 'IBM Plex Sans Arabic', var(--font-geist-sans), system-ui, sans-serif;
     --font-latin: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
@@ -66,6 +103,59 @@
     --transition-normal: 250ms ease;
     --transition-slow: 350ms ease;
   }
+
+  /* ─── DS-2 DARK MODE — html.dark flips the neutral channel-vars + the raw-CSS
+     HSL vars (body bg/text, the `*` default border, skeleton shimmer, scrollbar)
+     + the per-role --surface. Brand red, status hues, gold, belt = kept (accents
+     read on dark). Applied before first paint by the nonce'd init script in the
+     root layout (no FOUC). Light mode is UNTOUCHED — the :root values above are
+     the byte-identical originals; nothing here runs unless <html> has .dark. ─── */
+  html.dark {
+    --c-white: 34 34 42;
+    --c-gray-50: 26 26 32;
+    --c-gray-100: 38 38 47;
+    --c-gray-200: 47 47 58;
+    --c-gray-300: 58 58 70;
+    --c-gray-400: 113 113 128;
+    --c-gray-500: 146 146 161;
+    --c-gray-600: 168 168 181;
+    --c-gray-700: 198 198 208;
+    --c-gray-800: 224 224 230;
+    --c-gray-900: 245 245 248;
+    --c-gray-950: 250 250 252;
+    --c-bg: 19 19 23;
+    --c-fg: 245 245 248;
+    --c-muted: 28 28 34;
+    --c-muted-fg: 146 146 161;
+    --c-card: 34 34 42;
+    --c-border: 47 47 58;
+    --c-secondary-50: 34 34 42;
+    --c-secondary-100: 38 38 47;
+    --c-secondary-200: 47 47 58;
+    --c-secondary-300: 58 58 70;
+    --c-secondary-400: 113 113 128;
+    --c-secondary-500: 146 146 161;
+    --c-secondary-600: 168 168 181;
+    --c-secondary-700: 198 198 208;
+    --c-secondary-800: 224 224 230;
+    --c-secondary-900: 245 245 248;
+    --c-secondary-950: 250 250 252;
+    --c-secondary-fg: 34 34 42;
+
+    --background: 240 10% 8%;
+    --foreground: 240 18% 97%;
+    --card: 240 11% 15%;
+    --card-foreground: 240 18% 97%;
+    --muted: 240 11% 15%;
+    --muted-foreground: 240 8% 60%;
+    --border: 240 11% 21%;
+    --input: 240 11% 21%;
+    --secondary: 240 6% 88%;
+    --secondary-foreground: 240 11% 15%;
+  }
+  html.dark .shell-staff  { --surface: #e5484d; } /* reception crimson → brightened */
+  html.dark .shell-portal { --surface: #d97706; } /* member bronze → brighter amber */
+  html.dark .shell-coach  { --surface: #64748b; } /* coach graphite → brighter slate */
 }
 
 @layer base {

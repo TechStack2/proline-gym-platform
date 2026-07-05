@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { useInboxCount } from '@/hooks/use-inbox-count';
 import { LogOut } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -115,6 +116,7 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
             rightActions={
               <div className="flex items-center gap-2">
                 {isDesktop === false && <NotificationBell locale={locale} />}
+                <ThemeToggle />
                 <button
                   onClick={handleLogout}
                   className="rounded-full h-10 w-10 inline-flex items-center justify-center hover:bg-red-50 transition-colors"

@@ -23,6 +23,26 @@ const config: Config = {
       //   Light: Silver/Gray #d0d0d0–#e0e0e0
       // ────────────────────────────────────────
       colors: {
+        // DS-2: `white` + the `gray` scale drive ~1400 of the app's surfaces/text/
+        // borders (bg-white ×259, text-gray-* ×1000+). Channel-var-backed so a var
+        // flip dark-modes them all without a per-component restyle. Light channels
+        // (globals.css :root) = the exact Tailwind defaults → light is byte-identical;
+        // html.dark inverts the ramp (gray-50→darkest … gray-900→lightest). `black`
+        // stays the literal default (text-black ×0; solid bg-black/backdrops keep dark).
+        white: 'rgb(var(--c-white) / <alpha-value>)',
+        gray: {
+          50: 'rgb(var(--c-gray-50) / <alpha-value>)',
+          100: 'rgb(var(--c-gray-100) / <alpha-value>)',
+          200: 'rgb(var(--c-gray-200) / <alpha-value>)',
+          300: 'rgb(var(--c-gray-300) / <alpha-value>)',
+          400: 'rgb(var(--c-gray-400) / <alpha-value>)',
+          500: 'rgb(var(--c-gray-500) / <alpha-value>)',
+          600: 'rgb(var(--c-gray-600) / <alpha-value>)',
+          700: 'rgb(var(--c-gray-700) / <alpha-value>)',
+          800: 'rgb(var(--c-gray-800) / <alpha-value>)',
+          900: 'rgb(var(--c-gray-900) / <alpha-value>)',
+          950: 'rgb(var(--c-gray-950) / <alpha-value>)',
+        },
         // Primary brand — crimson red (from logo)
         primary: {
           50: '#fef2f2',
@@ -39,21 +59,23 @@ const config: Config = {
           DEFAULT: '#cd1419',
           foreground: '#ffffff',
         },
-        // Secondary — dark charcoal (from logo)
+        // Secondary — dark charcoal (from logo). DS-2: a neutral GRAY ramp, so it's
+        // channel-var-backed + INVERTED under html.dark (text-secondary-900 headings
+        // ×29 → light on dark; the few bg-secondary chips flip too). Light = exact hex.
         secondary: {
-          50: '#f7f7f7',
-          100: '#e3e3e3',
-          200: '#c8c8c8',
-          300: '#a4a4a4',
-          400: '#818181',
-          500: '#666666',
-          600: '#515151',
-          700: '#434343',
-          800: '#383838',
-          900: '#252525',
-          950: '#1f1f1f',
-          DEFAULT: '#252525',
-          foreground: '#ffffff',
+          50: 'rgb(var(--c-secondary-50) / <alpha-value>)',
+          100: 'rgb(var(--c-secondary-100) / <alpha-value>)',
+          200: 'rgb(var(--c-secondary-200) / <alpha-value>)',
+          300: 'rgb(var(--c-secondary-300) / <alpha-value>)',
+          400: 'rgb(var(--c-secondary-400) / <alpha-value>)',
+          500: 'rgb(var(--c-secondary-500) / <alpha-value>)',
+          600: 'rgb(var(--c-secondary-600) / <alpha-value>)',
+          700: 'rgb(var(--c-secondary-700) / <alpha-value>)',
+          800: 'rgb(var(--c-secondary-800) / <alpha-value>)',
+          900: 'rgb(var(--c-secondary-900) / <alpha-value>)',
+          950: 'rgb(var(--c-secondary-950) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--c-secondary-900) / <alpha-value>)',
+          foreground: 'rgb(var(--c-secondary-fg) / <alpha-value>)',
         },
         // Accent — silver/chrome (from logo highlights)
         accent: {
@@ -139,19 +161,22 @@ const config: Config = {
           DEFAULT: '#3b82f6',
           foreground: '#ffffff',
         },
-        // Surfaces
-        background: '#ffffff',
-        foreground: '#111827',
+        // Surfaces — DS-2: channel-var-backed (rgb(var(--c-*) / <alpha-value>)) so
+        // they FLIP under html.dark. Light channels (globals.css :root) = the exact
+        // former hex, so light mode is byte-identical; <alpha-value> keeps opacity
+        // modifiers (bg-card/60, border-border/50) working.
+        background: 'rgb(var(--c-bg) / <alpha-value>)',
+        foreground: 'rgb(var(--c-fg) / <alpha-value>)',
         muted: {
-          DEFAULT: '#f3f4f6',
-          foreground: '#6b7280',
+          DEFAULT: 'rgb(var(--c-muted) / <alpha-value>)',
+          foreground: 'rgb(var(--c-muted-fg) / <alpha-value>)',
         },
         card: {
-          DEFAULT: '#ffffff',
-          foreground: '#111827',
+          DEFAULT: 'rgb(var(--c-card) / <alpha-value>)',
+          foreground: 'rgb(var(--c-fg) / <alpha-value>)',
         },
-        border: '#e5e7eb',
-        input: '#e5e7eb',
+        border: 'rgb(var(--c-border) / <alpha-value>)',
+        input: 'rgb(var(--c-border) / <alpha-value>)',
         ring: '#cd1419',
       },
 

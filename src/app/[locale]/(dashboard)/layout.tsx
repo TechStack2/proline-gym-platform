@@ -1,11 +1,20 @@
+import type { Viewport } from 'next';
 import { getMessages } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardLayoutClient } from './_components/DashboardLayoutClient';
 import { FrontDeskOfflineLayer } from '@/components/offline/front-desk-offline-layer';
 
-// AX-1 shell identity: per-shell PWA theme-color (staff = brand red).
-export const viewport = { themeColor: '#cd1419' }
+// AX-1 shell identity: per-shell PWA theme-color (staff = brand red). DS-2: now
+// per light/dark — the meta theme-color media queries track the OS prefers-color-
+// scheme (the app default is 'system', so they follow the in-app theme for the
+// common case). Dark status bar = the #131317 ground shared by all shells.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#cd1419' },
+    { media: '(prefers-color-scheme: dark)', color: '#131317' },
+  ],
+}
 
 type Props = {
   children: React.ReactNode;

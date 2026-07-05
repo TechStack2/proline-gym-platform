@@ -151,6 +151,12 @@
     "en": "English",
     "fr": "Français"
   },
+  "theme": {
+    "cycle": "المظهر: {mode} (اضغط للتغيير)",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "تلقائي"
+  },
   "direction": "rtl",
   "dashboard": {
     "title": "لوحة التحكم",

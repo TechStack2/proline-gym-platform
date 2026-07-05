@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { workspacesForRole, type DashboardRole } from './nav-config';
 import { useInboxCount } from '@/hooks/use-inbox-count';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 type SidebarProps = {
   locale: string;
@@ -101,9 +102,13 @@ export function Sidebar({ locale, role }: SidebarProps) {
       {/* Footer — profile + role */}
       <div className="border-t p-3">
         {profileItem && <ul>{renderItem(profileItem)}</ul>}
-        <div className="mt-2 flex items-center gap-2 px-1">
-          <div className="h-2 w-2 rounded-full bg-green-500" />
-          <span className="text-xs text-gray-400 capitalize">{ROLE_LABELS[role]?.[locale as 'en' | 'ar' | 'fr'] ?? role.replace('_', ' ')}</span>
+        <div className="mt-2 flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-green-500" />
+            <span className="text-xs text-gray-400 capitalize">{ROLE_LABELS[role]?.[locale as 'en' | 'ar' | 'fr'] ?? role.replace('_', ' ')}</span>
+          </div>
+          {/* DS-2: theme toggle for the desktop staff shell (the mobile shells carry it in NativeHeader). */}
+          <ThemeToggle />
         </div>
       </div>
     </aside>

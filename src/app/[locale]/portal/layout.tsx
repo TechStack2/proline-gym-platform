@@ -1,9 +1,16 @@
+import type { Viewport } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PortalLayoutClient } from './_components/PortalLayoutClient'
 
-// AX-1 shell identity: per-shell PWA theme-color (portal = cool teal).
-export const viewport = { themeColor: '#0e7490' }
+// AX-1 shell identity: per-shell PWA theme-color (portal = cool teal). DS-2: per
+// light/dark — dark status bar = the shared #131317 ground.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#0e7490' },
+    { media: '(prefers-color-scheme: dark)', color: '#131317' },
+  ],
+}
 
 type Props = { children: React.ReactNode; params: { locale: string } }
 

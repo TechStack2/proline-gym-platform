@@ -6,6 +6,7 @@ import { NativeHeader, NativeTabBar, PageTransition } from '@/components/native'
 import { PORTAL_TABS, PORTAL_BASE_PATH } from './PortalTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { LogOut } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { HeaderAvatar } from '@/components/shared/header-avatar';
 import { PortalContent } from '@/components/portal/portal-kit';
@@ -50,6 +51,7 @@ export function PortalLayoutClient({ children, locale }: Props) {
           <div className="flex items-center gap-2">
             <HeaderAvatar />
             <NotificationBell locale={locale} />
+            <ThemeToggle />
             <button
               onClick={handleLogout}
             className="rounded-full h-10 w-10 inline-flex items-center justify-center hover:bg-red-50 transition-colors"
