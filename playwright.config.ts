@@ -320,6 +320,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // SCHEDULE-MOBILE-FREEZE: the day view froze the tab on mobile-width resize
+      // (NativeHeader IntersectionObserver → setIsCollapsed feedback loop + CSP
+      // inline-style flood). Asserts responsiveness across 1024↔390 + no flood.
+      name: 'schedule-mobile',
+      dependencies: ['setup'],
+      testMatch: /schedule-mobile\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // UX-1 (bell crash fix + add-class wizard): wizard→timetable proof + a
       // zero-pageerror navigation sweep (catches the realtime double-mount
       // crash class). Owner-only.
