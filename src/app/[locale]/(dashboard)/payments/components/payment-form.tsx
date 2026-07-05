@@ -30,18 +30,18 @@ export interface PayableInvoice {
   exchange_rate: number | null
 }
 
-const METHODS: { value: Method; en: string; ar: string }[] = [
-  { value: 'cash_usd', en: 'Cash (USD)', ar: 'نقداً (دولار)' },
-  { value: 'cash_lbp', en: 'Cash (LBP)', ar: 'نقداً (ليرة)' },
-  { value: 'omt', en: 'OMT', ar: 'OMT' },
-  { value: 'whish', en: 'Whish', ar: 'Whish' },
-  { value: 'bank_transfer', en: 'Bank transfer', ar: 'تحويل مصرفي' },
-  { value: 'bob_finance', en: 'BOB Finance', ar: 'BOB Finance' },
+const METHODS: { value: Method; en: string; ar: string; fr: string }[] = [
+  { value: 'cash_usd', en: 'Cash (USD)', ar: 'نقداً (دولار)', fr: 'Espèces (USD)' },
+  { value: 'cash_lbp', en: 'Cash (LBP)', ar: 'نقداً (ليرة)', fr: 'Espèces (LBP)' },
+  { value: 'omt', en: 'OMT', ar: 'OMT', fr: 'OMT' },
+  { value: 'whish', en: 'Whish', ar: 'Whish', fr: 'Whish' },
+  { value: 'bank_transfer', en: 'Bank transfer', ar: 'تحويل مصرفي', fr: 'Virement bancaire' },
+  { value: 'bob_finance', en: 'BOB Finance', ar: 'BOB Finance', fr: 'BOB Finance' },
 ]
 
 export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; locale: string }) {
   const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
+  const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -57,13 +57,13 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
     setError('')
     const usd = parseFloat(amountUsd)
     if (!Number.isFinite(usd) || usd <= 0) {
-      setError(t('Enter a positive amount.', 'أدخل مبلغاً موجباً.'))
+      setError(t('Enter a positive amount.', 'أدخل مبلغاً موجباً.', 'Saisissez un montant positif.'))
       return
     }
     // E10: duplicate-reference soft warn (non-blocking).
     if (reference.trim()) {
       const dup = await referenceExists(invoice.id, reference.trim())
-      if (dup && !window.confirm(t('A payment with this reference already exists on this invoice. Record anyway?', 'توجد دفعة بنفس المرجع على هذه الفاتورة. تسجيل على أي حال؟'))) {
+      if (dup && !window.confirm(t('A payment with this reference already exists on this invoice. Record anyway?', 'توجد دفعة بنفس المرجع على هذه الفاتورة. تسجيل على أي حال؟', 'Un paiement avec cette référence existe déjà sur cette facture. Enregistrer quand même ?'))) {
         return
       }
     }
@@ -93,7 +93,7 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
   if (settled) {
     return (
       <div data-testid="payment-form" className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
-        {t('This invoice is settled — no further payment can be recorded.', 'تمت تسوية هذه الفاتورة — لا يمكن تسجيل دفعة أخرى.')}
+        {t('This invoice is settled — no further payment can be recorded.', 'تمت تسوية هذه الفاتورة — لا يمكن تسجيل دفعة أخرى.', 'Cette facture est réglée — aucun autre paiement ne peut être enregistré.')}
       </div>
     )
   }
@@ -102,36 +102,36 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
     <div data-testid="payment-form" className={`space-y-4 rounded-xl border p-4 ${isRTL ? 'text-right' : ''}`}>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor="pay-amount-usd">{t('Amount (USD)', 'المبلغ (دولار)')}</Label>
+          <Label htmlFor="pay-amount-usd">{t('Amount (USD)', 'المبلغ (دولار)', 'Montant (USD)')}</Label>
           <Input id="pay-amount-usd" data-testid="pay-amount-usd" type="number" step="0.01" min="0"
             value={amountUsd} onChange={(e) => setAmountUsd(e.target.value)} />
           <p className="text-xs text-muted-foreground">
-            {t('Balance', 'الرصيد')}: ${invoice.balance_usd.toFixed(2)}
+            {t('Balance', 'الرصيد', 'Solde')}: ${invoice.balance_usd.toFixed(2)}
           </p>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="pay-amount-lbp">{t('Amount (LBP)', 'المبلغ (ليرة)')}</Label>
+          <Label htmlFor="pay-amount-lbp">{t('Amount (LBP)', 'المبلغ (ليرة)', 'Montant (LBP)')}</Label>
           <Input id="pay-amount-lbp" data-testid="pay-amount-lbp" type="number" step="1" min="0"
-            placeholder={t('optional', 'اختياري')} value={amountLbp} onChange={(e) => setAmountLbp(e.target.value)} />
+            placeholder={t('optional', 'اختياري', 'facultatif')} value={amountLbp} onChange={(e) => setAmountLbp(e.target.value)} />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="pay-method">{t('Method', 'طريقة الدفع')}</Label>
+          <Label htmlFor="pay-method">{t('Method', 'طريقة الدفع', 'Méthode')}</Label>
           <select id="pay-method" data-testid="pay-method" value={method}
             onChange={(e) => setMethod(e.target.value as Method)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
             {METHODS.map((m) => (
-              <option key={m.value} value={m.value}>{t(m.en, m.ar)}</option>
+              <option key={m.value} value={m.value}>{t(m.en, m.ar, m.fr)}</option>
             ))}
           </select>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="pay-date">{t('Date', 'التاريخ')}</Label>
+          <Label htmlFor="pay-date">{t('Date', 'التاريخ', 'Date')}</Label>
           <Input id="pay-date" data-testid="pay-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="pay-reference">{t('Reference (OMT/Whish/transfer #)', 'المرجع (رقم OMT/Whish/تحويل)')}</Label>
+          <Label htmlFor="pay-reference">{t('Reference (OMT/Whish/transfer #)', 'المرجع (رقم OMT/Whish/تحويل)', 'Référence (n° OMT/Whish/virement)')}</Label>
           <Input id="pay-reference" data-testid="pay-reference" value={reference}
-            onChange={(e) => setReference(e.target.value)} placeholder={t('optional', 'اختياري')} />
+            onChange={(e) => setReference(e.target.value)} placeholder={t('optional', 'اختياري', 'facultatif')} />
         </div>
       </div>
 
@@ -141,7 +141,7 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
 
       <Button data-testid="pay-submit" onClick={submit} disabled={pending}
         className="bg-[#cd1419] hover:bg-[#a81014]">
-        {pending ? t('Recording…', 'جارٍ التسجيل…') : t('Record payment', 'تسجيل الدفعة')}
+        {pending ? t('Recording…', 'جارٍ التسجيل…', 'Enregistrement…') : t('Record payment', 'تسجيل الدفعة', 'Enregistrer le paiement')}
       </Button>
     </div>
   )

@@ -602,7 +602,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               <ul className="space-y-1">
                 {(payments ?? []).map((p: any) => (
                   <li key={p.id} className="flex items-center justify-between text-xs text-gray-600" data-testid="member-payment-row">
-                    <span>{fmtDate(p.payment_date)} · {(isRTL ? METHOD_LABEL[p.payment_method]?.ar : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}</span>
+                    <span>{fmtDate(p.payment_date)} · {(locale === 'ar' ? METHOD_LABEL[p.payment_method]?.ar : locale === 'fr' ? METHOD_LABEL[p.payment_method]?.fr : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}</span>
                     <span className="font-medium">${Number(p.amount_usd).toFixed(2)}</span>
                   </li>
                 ))}
