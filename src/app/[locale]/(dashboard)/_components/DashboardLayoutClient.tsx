@@ -98,7 +98,7 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
       {/* Desktop side nav — self-hides below lg (fixed w-64 lg:flex). */}
       <Sidebar locale={locale} role={role} />
 
-      <div className={cn('flex h-full min-h-0 flex-1 flex-col lg:h-auto lg:overflow-hidden', isRTL ? 'lg:pr-64' : 'lg:pl-64')}>
+      <div className={cn('flex h-full min-h-0 flex-1 flex-col lg:h-auto lg:overflow-hidden', isRTL ? 'md:pr-20 lg:pr-64' : 'md:pl-20 lg:pl-64')}>
         {/* Desktop chrome (≥lg) */}
         <div className="hidden lg:block">
           <Header locale={locale} role={role} showBell={isDesktop === true} />

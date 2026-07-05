@@ -162,6 +162,7 @@ export function NativeTabBar({
       <nav
         role="tablist"
         aria-label={t('dashboard')}
+        data-testid="desktop-rail"
         dir={isRTL ? 'rtl' : 'ltr'}
         className={cn(
           'hidden md:flex fixed inset-y-0 z-40 w-20 pt-[calc(env(safe-area-inset-top,0px)+4rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]',
