@@ -42,7 +42,16 @@ jobs:
       - name: Install the Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # CI-INFRA-PIN: pin the CLI (was `latest`, which resolves the newest release
+          # via the UNAUTHENTICATED GitHub API every run → the 60-req/hr limit gets
+          # exhausted on busy CI → the whole job died at "Install the Supabase CLI").
+          # A fixed npm version is fetched directly, no rate-limited "resolve latest"
+          # call. 2.109.0 = latest STABLE (2026-06-30); supports supabase start / db reset / stop.
+          version: 2.109.0
+        env:
+          # Belt-and-suspenders: authenticate any GitHub API call setup-cli still makes
+          # for the pinned tag (anon 60/hr → 5000/hr). GITHUB_TOKEN is the built-in token.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start an isolated local Supabase stack (Docker)
         run: |
