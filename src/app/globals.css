@@ -33,8 +33,8 @@
     --info-foreground: 0 0% 100%;
 
     /* ─── Typography ─── */
-    --font-arabic: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
-    --font-latin: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-arabic: 'IBM Plex Sans Arabic', var(--font-geist-sans), system-ui, sans-serif;
+    --font-latin: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', Menlo, monospace;
     --font-size-2xs: 0.625rem;
     --font-size-xs: 0.75rem;
@@ -112,21 +112,32 @@
      → /en + /fr Latin is untouched by construction. */
   [dir="rtl"] body {
     letter-spacing: 0;
-    line-height: 1.7;
-    font-weight: 500; /* Arabic body medium — reads warmer/clearer than 400 */
+    line-height: 1.75; /* DS-1: Arabic body looser (~1.75) for the connected script */
+    font-weight: 500;  /* Arabic body medium — reads warmer/clearer than 400 */
   }
-  /* Per-script size ramp (~1.15× Latin). Tailwind v3 utilities are hardcoded, so
+  /* DS-1 per-script size ramp — Arabic ≈1.13× the (DS-1-lifted) Latin, per
+     arabic-first/rtl-arabic-design.SKILL.md. Tailwind v3 utilities are hardcoded, so
      override text-* under RTL — [dir="rtl"] .text-* (0,1,1) beats .text-* (0,1,0). */
-  [dir="rtl"] .text-xs   { font-size: 0.8125rem; line-height: 1.6; }  /* 13px */
-  [dir="rtl"] .text-sm   { font-size: 0.9375rem; line-height: 1.65; } /* 15px */
-  [dir="rtl"] .text-base { font-size: 1rem;      line-height: 1.7; }  /* 16px body */
-  [dir="rtl"] .text-lg   { font-size: 1.1875rem; line-height: 1.55; } /* 19px */
-  [dir="rtl"] .text-xl   { font-size: 1.375rem;  line-height: 1.5; }  /* 22px */
-  [dir="rtl"] .text-2xl  { font-size: 1.625rem;  line-height: 1.45; } /* 26px */
-  [dir="rtl"] .text-3xl  { font-size: 2rem;      line-height: 1.4; }  /* 32px */
-  /* NEVER track Arabic: neutralize tracking-* + tight headings under RTL (audit A2).
-     Each selector repeats [dir="rtl"] so LTR (en/fr) headings are NOT affected. */
+  [dir="rtl"] .text-xs   { font-size: 0.9rem;    line-height: 1.65; } /* ~14.5px */
+  [dir="rtl"] .text-sm   { font-size: 1.0625rem; line-height: 1.7; }  /* 17px */
+  [dir="rtl"] .text-base { font-size: 1.125rem;  line-height: 1.75; } /* 18px body */
+  [dir="rtl"] .text-lg   { font-size: 1.28rem;   line-height: 1.55; } /* ~20.5px */
+  [dir="rtl"] .text-xl   { font-size: 1.4rem;    line-height: 1.5; }  /* 22.5px */
+  [dir="rtl"] .text-2xl  { font-size: 1.7rem;    line-height: 1.4; }  /* 27px */
+  [dir="rtl"] .text-3xl  { font-size: 2.125rem;  line-height: 1.3; }  /* 34px */
+  /* DS-1 semantic classes under RTL — same ≈1.13× ramp. */
+  [dir="rtl"] .text-label   { font-size: 0.9rem;    line-height: 1.5; }
+  [dir="rtl"] .text-body    { font-size: 1.125rem;  line-height: 1.75; }
+  [dir="rtl"] .text-h3      { font-size: 1.4rem;    line-height: 1.4; }
+  [dir="rtl"] .text-h2      { font-size: 1.7rem;    line-height: 1.35; }
+  [dir="rtl"] .text-h1      { font-size: 2.125rem;  line-height: 1.25; }
+  [dir="rtl"] .text-display { font-size: 2.8rem;    line-height: 1.15; }
+  /* NEVER track Arabic: neutralize tracking-* + the DS-1 semantic classes (their
+     fontSize token bakes negative letter-spacing) + tight headings under RTL. Each
+     selector repeats [dir="rtl"] so LTR (en/fr) is NOT affected. */
   [dir="rtl"] [class*="tracking-"],
+  [dir="rtl"] .text-label, [dir="rtl"] .text-body, [dir="rtl"] .text-h1,
+  [dir="rtl"] .text-h2, [dir="rtl"] .text-h3, [dir="rtl"] .text-display,
   [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4 { letter-spacing: 0 !important; }
 
   /* RTL-aware icon flipping */
@@ -215,11 +226,14 @@
     background-clip: text;
   }
 
-  /* RESPONSIVE-CSP-HARDENING (BUG 3): per-shell accent as a bundled class, NOT an
-     inline style="--shell-accent" on the shell root (SSR'd → stripped by the prod
-     strict style-src CSP → NativeTabBar/NativeHeader fell back to red). Consumed by
-     var(--shell-accent). */
-  .shell-staff { --shell-accent: #cd1419; }
-  .shell-portal { --shell-accent: #0e7490; }
-  .shell-coach { --shell-accent: #d4af37; }
+  /* DS-1: per-role SURFACE accent — the "which surface am I on" signal. Reception=
+     crimson, Coach=graphite, Member=warm bronze. CRIMSON stays the ACTION color
+     (primary buttons/CTAs) everywhere; --surface is identity chrome ONLY (top accent
+     stripe, active nav item, role/shell badge). --shell-accent aliases --surface so
+     the existing NativeHeader stripe + NativeTabBar active state pick it up with no
+     churn. Bundled class (NOT an inline style="" attr → CSP-safe; RESPONSIVE-CSP-
+     HARDENING BUG 3: an SSR'd inline var is stripped by the prod strict style-src). */
+  .shell-staff  { --surface: #cd1419; --shell-accent: var(--surface); } /* reception — crimson */
+  .shell-portal { --surface: #b45309; --shell-accent: var(--surface); } /* member — warm bronze */
+  .shell-coach  { --surface: #475569; --shell-accent: var(--surface); } /* coach — graphite */
 }

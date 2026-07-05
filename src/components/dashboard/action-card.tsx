@@ -35,7 +35,7 @@ export function ActionCard({
     return (
       <p
         data-testid={`card-empty-${testid}`}
-        className="flex items-center gap-2 rounded-2xl border bg-white px-4 py-3 text-sm text-gray-400 shadow-sm"
+        className="flex items-center gap-2 rounded-2xl border bg-white px-5 py-3.5 text-sm text-gray-400 shadow-elevation-1"
       >
         <Check className="h-4 w-4 text-green-500" />
         <span className={cn(isRTL && 'font-arabic')}>{title} — {emptyText}</span>
@@ -43,7 +43,7 @@ export function ActionCard({
     )
   }
   return (
-    <section className="rounded-2xl border bg-white p-4 shadow-sm" data-testid={`card-${testid}`} data-count={count}>
+    <section className="rounded-2xl border bg-white p-5 shadow-elevation-1" data-testid={`card-${testid}`} data-count={count}>
       <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
         <Icon className="h-4 w-4 text-primary-600" /> {title}
         <span
