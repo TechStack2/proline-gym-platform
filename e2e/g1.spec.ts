@@ -101,21 +101,24 @@ test.beforeEach(async () => {
   if (!del.ok) throw new Error(`g1 baseline reset failed: ${del.status} ${await del.text()}`)
 })
 
-test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backend', async ({ browser }) => {
+// G1-STABILIZE: the wa.me bridge proof is SPLIT into two independent tests (receipt +
+// lead-reply). It used to be one test doing both, and under --repeat-each the single
+// next-start server is loaded (RSC-prefetch fallbacks) → the two halves cumulatively
+// blew the 120s budget. Split, each half owns its own budget + data. No assertion
+// changed: both still require wa.me + THIS gym's Arabic name ("برولاين تجريبي").
+
+test('G1 · wa.me RECEIPT bridge renders the localized link (Arabic /ar) — no backend', async ({ browser }) => {
   test.setTimeout(120_000)
   const RUN = Date.now().toString().slice(-6)
-
-  // G1-STABILIZE: OWN the receipt data instead of the shared "Adopt Member" (a
-  // parallel spec mutating the shared seed gym used to leave that invoice out of the
-  // asserted state → 120s hang). Stand up this test's OWN fresh member + PAID
-  // membership invoice via the RPCs the billing UI calls — API-only, so nothing
-  // shared is read and the setup stays fast under load. Arabic assertion runs on /ar.
+  // OWN the receipt data instead of the shared "Adopt Member" (a parallel spec
+  // mutating the shared seed gym used to leave that invoice out of the asserted state
+  // → hang). Stand up this test's OWN member + PAID membership invoice via the RPCs
+  // the billing UI calls — API-only, so nothing shared is read and it can't be raced.
   const invoiceId = await standUpOwnPaidInvoice(RUN)
 
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
-    // Receipt share — assert on THIS test's OWN paid membership invoice (direct nav;
-    // the receipt is always present and cannot be raced by another spec).
+    // Direct nav to THIS test's own paid invoice → the receipt is always present.
     await page.goto(`/ar/invoices/${invoiceId}`)
     await vis(page, '[data-testid="receipt-link"]').first().click()
     const wa = vis(page, '[data-testid="receipt-wa"]').first()
@@ -126,8 +129,17 @@ test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backe
     // 000029) whose name_ar is "برولاين تجريبي" — assert the message carries the
     // gym's OWN name (stronger: proves per-gym interpolation).
     expect(decodeURIComponent(href!), 'the Arabic receipt carries THIS gym name').toContain('برولاين تجريبي')
+  } finally {
+    await ctx.close()
+  }
+})
 
-    // Lead-reply share (create a lead, then assert its wa.me reply link).
+test('G1 · wa.me LEAD-REPLY bridge renders the localized link (Arabic /ar) — no backend', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const RUN = Date.now().toString().slice(-6)
+  const { ctx, page } = await ownerCtx(browser, 'ar')
+  try {
+    // Lead-reply share (create a lead this test OWNS, then assert its wa.me reply link).
     await page.goto('/ar/students?tab=prospects')
     await vis(page, '[data-testid="add-lead-button"]').first().click()
     const modal = page.locator('[data-testid="add-lead-modal"]:visible')
