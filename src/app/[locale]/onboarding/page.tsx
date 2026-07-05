@@ -3,6 +3,7 @@ import { setRequestLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { OnboardingClient } from './onboarding-client'
 import { roleHomePath } from './role-home'
+import { isPlatformAdmin, VENDOR_HOME } from '@/lib/auth/platform-admin'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 
@@ -26,6 +27,8 @@ export default async function OnboardingPage({ params: { locale } }: { params: {
 
   // Already onboarded (flag cleared) → no reason to sit here.
   if (!(user.app_metadata as { must_change_password?: boolean } | null)?.must_change_password) {
+    // VENDOR-CONSOLE: a platform admin's home is the vendor console (precedence).
+    if (await isPlatformAdmin(supabase)) redirect(`/${locale}${VENDOR_HOME}`)
     redirect(`/${locale}${roleHomePath(role)}`)
   }
 

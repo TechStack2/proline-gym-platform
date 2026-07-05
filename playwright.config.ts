@@ -263,6 +263,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // VENDOR-CONSOLE: the platform admin's home is /vendor (the cross-tenant gym
+      // list + onboard CTA), gated by is_platform_admin() (000082) + the
+      // get_all_gyms_for_admin() RPC (000083). Seeds its OWN platform-admin fixture
+      // (hermetic). Proves the home redirect + the gate (owner 404, anon → login).
+      name: 'vendor-console',
+      dependencies: ['setup'],
+      testMatch: /vendor-console\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // WL-BRANDING-DATA: the marketing landing renders the resolved gym's
       // brand_color via a nonce'd :root{--brand} + var(--brand) classes. Unset →
       // Proline red; a distinct brand_color → that color; no CSP violation. Seeds
