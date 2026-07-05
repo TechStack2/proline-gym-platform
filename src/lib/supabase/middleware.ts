@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isPlatformAdmin, VENDOR_HOME } from '@/lib/auth/platform-admin';
 
 type PortalRole = 'owner' | 'head_coach' | 'coach' | 'receptionist' | 'student' | 'parent' | 'external_coach';
 
@@ -88,10 +89,16 @@ export async function updateSession(request: NextRequest) {
       segments.length === 0 ||
       (segments.length === 1 && ['ar', 'en', 'fr'].includes(segments[0]));
     if (atLandingRoot) {
-      const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
-      const role = (roleData?.role || 'owner') as PortalRole;
       const locale = segments[0] ?? getPreferredLocale(request);
       const url = request.nextUrl.clone();
+      // VENDOR-CONSOLE: a platform admin's home is the vendor console — takes
+      // precedence over any gym-role default (incl. the role-less 'owner' fallback).
+      if (await isPlatformAdmin(supabase)) {
+        url.pathname = `/${locale}${VENDOR_HOME}`;
+        return NextResponse.redirect(url);
+      }
+      const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+      const role = (roleData?.role || 'owner') as PortalRole;
       url.pathname = `/${locale}${ROLE_PORTAL_MAP[role]}`;
       return NextResponse.redirect(url);
     }
@@ -106,15 +113,27 @@ export async function updateSession(request: NextRequest) {
 
   // If user is authenticated and on the login page, redirect to role-specific portal
   if (user && pathname.includes('/auth/login')) {
+    const url = request.nextUrl.clone();
+    // VENDOR-CONSOLE: platform admin → vendor console (before any gym-role default).
+    if (await isPlatformAdmin(supabase)) {
+      url.pathname = `/${getPreferredLocale(request)}${VENDOR_HOME}`;
+      return NextResponse.redirect(url);
+    }
     const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
     const role = (roleData?.role || 'owner') as PortalRole;
-    const url = request.nextUrl.clone();
     url.pathname = `/${getPreferredLocale(request)}${ROLE_PORTAL_MAP[role]}`;
     return NextResponse.redirect(url);
   }
 
   // Redirect coach/student/parent away from /dashboard
   if (user && pathname.includes('/dashboard')) {
+    // VENDOR-CONSOLE: the login form pushes '/dashboard'; a platform admin (role-less)
+    // must land on the vendor console, not the empty staff dashboard.
+    if (await isPlatformAdmin(supabase)) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${getPreferredLocale(request)}${VENDOR_HOME}`;
+      return NextResponse.redirect(url);
+    }
     const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
     const role = roleData?.role as PortalRole | undefined;
     if (role === 'coach' || role === 'student' || role === 'parent') {

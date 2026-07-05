@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { roleHomePath } from './role-home'
+import { isPlatformAdmin, VENDOR_HOME } from '@/lib/auth/platform-admin'
 
 export async function completeOnboarding(): Promise<{ ok: true; home: string } | { ok: false; error: string }> {
   const supabase = await createClient()
@@ -30,7 +31,8 @@ export async function completeOnboarding(): Promise<{ ok: true; home: string } |
   // Re-issue the JWT so app_metadata.must_change_password=false propagates now.
   await supabase.auth.refreshSession()
 
-  // Route to the role's home.
+  // Route to home — a platform admin's home is the vendor console (precedence).
+  if (await isPlatformAdmin(supabase)) return { ok: true, home: VENDOR_HOME }
   const { data: roleRow } = await supabase
     .from('user_roles').select('role').eq('user_id', user.id).limit(1).maybeSingle()
   return { ok: true, home: roleHomePath(roleRow?.role) }
