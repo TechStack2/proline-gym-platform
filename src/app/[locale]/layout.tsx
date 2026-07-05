@@ -4,6 +4,7 @@ import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { getCurrentUserGym } from '@/lib/pwa/identity';
@@ -36,6 +37,16 @@ type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 };
+
+// DS-2: NO-FOUC theme init. Runs synchronously at the TOP of <body> — before the
+// browser paints the content — so the stored/system theme is on <html> from the
+// first frame (no light flash). Default = SYSTEM (no stored pref OR 'system' →
+// prefers-color-scheme). Add-only: the server always renders light, so we only
+// promote to dark here; ThemeToggle handles both directions after hydration.
+// CSP: injected with the per-request nonce (prod strict-dynamic blocks un-nonced
+// inline scripts); dev has no CSP. Kept tiny + wrapped in try/catch (a private-mode
+// localStorage throw must never break render).
+const THEME_INIT = `try{var t=localStorage.getItem('theme');if(t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}`;
 
 export async function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -94,9 +105,14 @@ export default async function RootLayout({ children, params }: Props) {
 
   const messages = await getMessages();
   const isRTL = locale === 'ar';
+  // DS-2: the per-request CSP nonce (prod). Same header the marketing/schedule/
+  // today server components already read for their nonce'd <style> blocks.
+  const nonce = headers().get('X-CSP-Nonce') ?? '';
 
   return (
-    <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'} translate="no">
+    // suppressHydrationWarning: the init script adds .dark to <html> before React
+    // hydrates, so the client className legitimately differs from the SSR'd one.
+    <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'} translate="no" suppressHydrationWarning>
       <body
         className={cn(
           GeistSans.variable,
@@ -105,6 +121,7 @@ export default async function RootLayout({ children, params }: Props) {
           isRTL ? 'font-arabic' : 'font-latin'
         )}
       >
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <NextIntlClientProvider messages={messages}>
           {children}
           <Toaster richColors position={isRTL ? 'bottom-left' : 'bottom-right'} />

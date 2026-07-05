@@ -35,8 +35,14 @@ async function assertArabicActive(page: Page, label: string, knownArabic: string
   expect(leak, `${label}: leaked a raw i18n key → "${leak?.[0]}"`).toBeNull();
 }
 
-async function themeColor(page: Page): Promise<string | null> {
-  return page.locator('meta[name="theme-color"]').first().getAttribute('content');
+// DS-2: the PWA theme-color is now per light/dark (two media-scoped meta tags).
+// Select by scheme so we can assert BOTH the light identity color and the shared
+// dark-ground (#131317) status-bar color.
+async function themeColor(page: Page, scheme: 'light' | 'dark' = 'light'): Promise<string | null> {
+  return page
+    .locator(`meta[name="theme-color"][media="(prefers-color-scheme: ${scheme})"]`)
+    .first()
+    .getAttribute('content');
 }
 
 test('AX-1 · /ar renders Arabic on every shell + brand font without layout shift + shell identity badges', async ({ browser }) => {
@@ -87,7 +93,8 @@ test('AX-1 · /ar renders Arabic on every shell + brand font without layout shif
         owner.page.locator('[data-testid="shell-badge"][data-shell="staff"]:visible').first(),
         'staff header carries the labeled shell badge',
       ).toBeVisible({ timeout: 15_000 });
-      expect(await themeColor(owner.page), 'staff PWA theme-color').toBe('#cd1419');
+      expect(await themeColor(owner.page, 'light'), 'staff PWA theme-color (light)').toBe('#cd1419');
+      expect(await themeColor(owner.page, 'dark'), 'staff PWA theme-color (dark)').toBe('#131317');
 
       await owner.page.goto('/ar/money');
       await assertArabicActive(owner.page, '/ar/money', 'المال');
@@ -106,7 +113,8 @@ test('AX-1 · /ar renders Arabic on every shell + brand font without layout shif
         coach.page.locator('[data-testid="shell-badge"][data-shell="coach"]:visible').first(),
         'coach header carries the labeled shell badge',
       ).toBeVisible({ timeout: 15_000 });
-      expect(await themeColor(coach.page), 'coach PWA theme-color').toBe('#111111');
+      expect(await themeColor(coach.page, 'light'), 'coach PWA theme-color (light)').toBe('#111111');
+      expect(await themeColor(coach.page, 'dark'), 'coach PWA theme-color (dark)').toBe('#131317');
     } finally {
       await coach.ctx.close();
     }
@@ -122,7 +130,8 @@ test('AX-1 · /ar renders Arabic on every shell + brand font without layout shif
         student.page.locator('[data-testid="shell-badge"][data-shell="portal"]:visible').first(),
         'portal header carries the labeled shell badge',
       ).toBeVisible({ timeout: 15_000 });
-      expect(await themeColor(student.page), 'portal PWA theme-color').toBe('#0e7490');
+      expect(await themeColor(student.page, 'light'), 'portal PWA theme-color (light)').toBe('#0e7490');
+      expect(await themeColor(student.page, 'dark'), 'portal PWA theme-color (dark)').toBe('#131317');
 
       await student.page.goto('/ar/portal/billing');
       await assertArabicActive(student.page, '/ar/portal/billing', 'سجل المدفوعات'); // payment history

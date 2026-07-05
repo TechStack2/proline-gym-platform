@@ -321,6 +321,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DS-2 (dark mode): the channel-var flip renders dark on all three shells
+      // (/en + /ar) — asserted via html.dark + the computed dark body bg — and the
+      // light/dark/system toggle persists across a reload (proving the CSP-nonced,
+      // no-FOUC init script re-applies the stored theme before first paint). $.
+      name: 'ds-2',
+      dependencies: ['setup'],
+      testMatch: /ds-2\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).

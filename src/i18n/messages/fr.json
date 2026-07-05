@@ -151,6 +151,12 @@
     "en": "English",
     "fr": "Français"
   },
+  "theme": {
+    "cycle": "Thème : {mode} (cliquer pour changer)",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système"
+  },
   "direction": "ltr",
   "dashboard": {
     "title": "Tableau de bord",

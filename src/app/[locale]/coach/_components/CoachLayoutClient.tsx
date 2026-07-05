@@ -6,6 +6,7 @@ import { NativeHeader, NativeTabBar, PageTransition } from '@/components/native'
 import { COACH_TABS, COACH_BASE_PATH } from './CoachTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { LogOut } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { PortalContent } from '@/components/portal/portal-kit';
 
@@ -49,6 +50,7 @@ export function CoachLayoutClient({ children, locale }: Props) {
         rightActions={
           <div className="flex items-center gap-2">
             <NotificationBell locale={locale} />
+            <ThemeToggle />
             <button
               onClick={handleLogout}
             className="rounded-full h-10 w-10 inline-flex items-center justify-center hover:bg-red-50 transition-colors"

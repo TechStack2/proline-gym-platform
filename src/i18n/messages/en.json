@@ -151,6 +151,12 @@
     "en": "English",
     "fr": "Français"
   },
+  "theme": {
+    "cycle": "Theme: {mode} (click to change)",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "direction": "ltr",
   "dashboard": {
     "title": "Dashboard",
