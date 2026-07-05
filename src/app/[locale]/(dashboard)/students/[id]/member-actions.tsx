@@ -124,6 +124,11 @@ export function MemberActions({
     if (!selected || !Number.isFinite(usd) || usd <= 0) {
       toast({ title: t('enterAmount'), variant: 'destructive' }); return
     }
+    // PERF-2: OPTIMISTIC — dismiss the modal INSTANTLY (the balance itself always
+    // reconciles from the server refresh, never a fabricated figure). On failure we
+    // reopen the modal (form state is preserved) + a destructive toast so the desk
+    // can retry — no payment is ever shown as recorded when it wasn't.
+    setPayOpen(false)
     startTransition(async () => {
       const res = await recordPayment({
         invoiceId: selected.id, amountUsd: usd, method,
@@ -131,9 +136,10 @@ export function MemberActions({
       })
       if (res.ok) {
         toast({ title: t('paymentRecorded'), variant: 'success' })
-        setPayOpen(false); setReference('')
+        setReference('')
         router.refresh()
       } else {
+        setPayOpen(true) // ROLLBACK: reopen so the desk can retry
         toast({ title: t('paymentFailed'), description: res.error, variant: 'destructive' })
       }
     })

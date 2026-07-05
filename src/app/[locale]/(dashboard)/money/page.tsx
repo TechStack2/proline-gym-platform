@@ -108,21 +108,27 @@ async function MoneyOverview({ locale }: { locale: string }) {
     : { data: null }
   const gymId = profile?.gym_id as string | undefined
 
-  // NO-MEMBERSHIP-GAPS: the renewals card + ProcessRenewals are membership-cycle
-  // furniture — hidden for a classes+PT gym (audit call; class-reg renewals for
-  // such gyms surface via invoices/Today instead).
-  const products = await getEnabledProducts(supabase, gymId)
+  // PERF-2: these four reads are mutually independent — the products flag, the cash
+  // drawer tally, the open-invoice set, and the renewal-invoice set. Fire them as one
+  // wave; only the payments reconciliation (below) depends on the open-invoice ids.
+  //   products — NO-MEMBERSHIP-GAPS: the renewals card + ProcessRenewals are
+  //   membership-cycle furniture, hidden for a classes+PT gym.
+  const [products, tally, { data: openInvoices }, { data: renewalRows }] = await Promise.all([
+    getEnabledProducts(supabase, gymId),
+    getDailyTally(supabase), // the cash drawer: today's per-method tally (shared D1 logic)
+    supabase
+      .from('invoices')
+      .select('id, total_usd, status')
+      .in('status', ['pending', 'partial', 'overdue'])
+      .limit(500),
+    // ML-1: open renewal invoices (the system-issued ones), reconciled below.
+    supabase
+      .from('renewal_invoices')
+      .select('invoice_id, invoices:invoice_id!inner (id, total_usd, status, gym_id)'),
+  ])
 
-  // The cash drawer: today's per-method tally (shared D1 logic).
-  const tally = await getDailyTally(supabase)
-
-  // Outstanding obligations: pending/partial/overdue invoices reconciled against
-  // their payments (D1 canon — balance from Σ amount_usd).
-  const { data: openInvoices } = await supabase
-    .from('invoices')
-    .select('id, total_usd, status')
-    .in('status', ['pending', 'partial', 'overdue'])
-    .limit(500)
+  // Outstanding obligations: reconcile the open invoices against their payments
+  // (D1 canon — balance from Σ amount_usd).
   const ids = (openInvoices ?? []).map((i) => i.id)
   const { data: pays } = ids.length
     ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', ids)
@@ -131,11 +137,6 @@ async function MoneyOverview({ locale }: { locale: string }) {
   for (const p of pays ?? []) paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
   const outstanding = (openInvoices ?? []).reduce(
     (s, inv) => s + balanceUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }]), 0)
-
-  // ML-1: open renewal invoices (the system-issued ones) reconciled.
-  const { data: renewalRows } = await supabase
-    .from('renewal_invoices')
-    .select('invoice_id, invoices:invoice_id!inner (id, total_usd, status, gym_id)')
   const openRenewalInvs = ((renewalRows ?? []) as any[])
     .map((r) => (Array.isArray(r.invoices) ? r.invoices[0] : r.invoices))
     .filter((i: any) => i && ['pending', 'partial', 'overdue'].includes(i.status))

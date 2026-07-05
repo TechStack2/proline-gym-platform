@@ -329,6 +329,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PERF-2: optimistic front-desk mutations. Gates/fails the attendance-toggle
+      // PostgREST write (page.route) to prove the row paints before the round-trip
+      // resolves + persists, and rolls back on an induced failure. Hermetic gym.
+      name: 'perf-2',
+      dependencies: ['setup'],
+      testMatch: /perf-2\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // IA-1 (journey-centric nav + Inbox + Today): nav desktop=mobile + the
       // cross-role inbox approve round-trip. Switches roles internally (owner
       // staff + Karim member) and opens its own mobile-viewport context, so it

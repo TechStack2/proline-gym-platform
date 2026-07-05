@@ -53,15 +53,27 @@ export function InboxQueues({
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [discounts, setDiscounts] = useState<Record<string, { pct: string; amt: string }>>({})
+  // PERF-2: OPTIMISTIC — hide a row the instant it's actioned; the refresh drops it
+  // from the server props on success, or we roll the hide back on failure (React 18.3
+  // has no useOptimistic, so this is the repo's optimistic-state + rollback pattern).
+  const [removed, setRemoved] = useState<Set<string>>(new Set())
 
-  const run = (fn: () => Promise<{ ok: boolean } | { ok: false; error: string }>) => {
+  const run = (id: string, fn: () => Promise<{ ok: boolean } | { ok: false; error: string }>) => {
     setError('')
+    setRemoved((prev) => new Set(prev).add(id)) // optimistic hide (instant)
     startTransition(async () => {
       const res = await fn()
-      if (!('ok' in res) || !res.ok) setError((res as any).error || 'failed')
+      if (!('ok' in res) || !res.ok) {
+        setError((res as any).error || 'failed')
+        setRemoved((prev) => { const n = new Set(prev); n.delete(id); return n }) // rollback → row reappears
+      }
       router.refresh()
     })
   }
+
+  const visCamp = campRequests.filter((r) => !removed.has(r.id))
+  const visReg = regRequests.filter((r) => !removed.has(r.id))
+  const visPt = ptRequests.filter((r) => !removed.has(r.id))
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
 
@@ -73,13 +85,13 @@ export function InboxQueues({
       <section>
         <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <Tent className="h-4 w-4 text-primary-600" />
-          {t('campRequests')} ({campRequests.length})
+          {t('campRequests')} ({visCamp.length})
         </h2>
-        {campRequests.length === 0 ? (
+        {visCamp.length === 0 ? (
           <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
         ) : (
           <div className="space-y-2">
-            {campRequests.map((r) => (
+            {visCamp.map((r) => (
               <div key={r.id} data-testid="inbox-camp-row" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4 shadow-sm">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{r.studentName}</p>
@@ -88,12 +100,12 @@ export function InboxQueues({
                 <div className="flex items-center gap-2">
                   <Button size="sm" data-testid="inbox-camp-approve" disabled={pending}
                     className="bg-green-600 hover:bg-green-700"
-                    onClick={() => run(async () => { const res = await registerToCamp({ studentId: r.studentId, campId: r.campId, requestId: r.id }); return res.ok ? { ok: true } : res })}>
+                    onClick={() => run(r.id, async () => { const res = await registerToCamp({ studentId: r.studentId, campId: r.campId, requestId: r.id }); return res.ok ? { ok: true } : res })}>
                     <CheckCircle2 className="mr-1 h-4 w-4" /> {t('approve')}
                   </Button>
                   <Button size="sm" variant="outline" data-testid="inbox-camp-decline" disabled={pending}
                     className="text-red-600 hover:bg-red-50"
-                    onClick={() => run(async () => { const res = await declineCampRequest(r.id); return res.ok ? { ok: true } : res })}>
+                    onClick={() => run(r.id, async () => { const res = await declineCampRequest(r.id); return res.ok ? { ok: true } : res })}>
                     <XCircle className="mr-1 h-4 w-4" /> {t('decline')}
                   </Button>
                 </div>
@@ -106,13 +118,13 @@ export function InboxQueues({
       <section>
         <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <CalendarDays className="h-4 w-4 text-primary-600" />
-          {t('registrations')} ({regRequests.length})
+          {t('registrations')} ({visReg.length})
         </h2>
-        {regRequests.length === 0 ? (
+        {visReg.length === 0 ? (
           <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
         ) : (
           <div className="space-y-2">
-            {regRequests.map((r) => {
+            {visReg.map((r) => {
               const d = discounts[r.id] ?? { pct: '', amt: '' }
               return (
                 <div key={r.id} data-testid="inbox-reg-row" className="rounded-2xl border bg-white p-4 shadow-sm">
@@ -132,7 +144,7 @@ export function InboxQueues({
                         className="h-9 w-24 text-xs" />
                       <Button size="sm" data-testid="inbox-approve" disabled={pending}
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={() => run(() => approveRegistration({
+                        onClick={() => run(r.id, () => approveRegistration({
                           regId: r.id, classId: r.classId,
                           discountPct: d.pct ? parseFloat(d.pct) : 0,
                           discountAmountUsd: d.amt ? parseFloat(d.amt) : 0,
@@ -141,7 +153,7 @@ export function InboxQueues({
                       </Button>
                       <Button size="sm" variant="outline" data-testid="inbox-decline" disabled={pending}
                         className="text-red-600 hover:bg-red-50"
-                        onClick={() => run(() => rejectRegistration(r.id, r.classId))}>
+                        onClick={() => run(r.id, () => rejectRegistration(r.id, r.classId))}>
                         <XCircle className="mr-1 h-4 w-4" /> {t('decline')}
                       </Button>
                     </div>
@@ -157,13 +169,13 @@ export function InboxQueues({
       <section>
         <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <Dumbbell className="h-4 w-4 text-primary-600" />
-          {t('ptRequests')} ({ptRequests.length})
+          {t('ptRequests')} ({visPt.length})
         </h2>
-        {ptRequests.length === 0 ? (
+        {visPt.length === 0 ? (
           <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
         ) : (
           <div className="space-y-2">
-            {ptRequests.map((r) => (
+            {visPt.map((r) => (
               <div key={r.id} data-testid="inbox-pt-row" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4 shadow-sm">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{r.studentName}</p>
@@ -174,12 +186,12 @@ export function InboxQueues({
                 <div className="flex items-center gap-2">
                   <Button size="sm" data-testid="inbox-pt-approve" disabled={pending}
                     className="bg-green-600 hover:bg-green-700"
-                    onClick={() => run(async () => { const res = await approvePtRequest(r.id); return res.ok ? { ok: true } : res })}>
+                    onClick={() => run(r.id, async () => { const res = await approvePtRequest(r.id); return res.ok ? { ok: true } : res })}>
                     <CheckCircle2 className="mr-1 h-4 w-4" /> {t('approve')}
                   </Button>
                   <Button size="sm" variant="outline" data-testid="inbox-pt-decline" disabled={pending}
                     className="text-red-600 hover:bg-red-50"
-                    onClick={() => run(async () => { const res = await rejectPtRequest(r.id, ''); return res.ok ? { ok: true } : res })}>
+                    onClick={() => run(r.id, async () => { const res = await rejectPtRequest(r.id, ''); return res.ok ? { ok: true } : res })}>
                     <XCircle className="mr-1 h-4 w-4" /> {t('decline')}
                   </Button>
                 </div>
