@@ -339,6 +339,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // ONBOARDING-AVATAR (#4): the first-login onboarding wizard's avatar upload
+      // stores the image in the avatars bucket + sets profiles.avatar_url. Hermetic
+      // gym + a net-new must_change_password user (GoTrue admin).
+      name: 'onboarding-avatar',
+      dependencies: ['setup'],
+      testMatch: /onboarding-avatar\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PERF-2: optimistic front-desk mutations. Gates/fails the attendance-toggle
       // PostgREST write (page.route) to prove the row paints before the round-trip
       // resolves + persists, and rolls back on an induced failure. Hermetic gym.

@@ -14,8 +14,25 @@ import { Avatar } from './avatar'
 import { cn } from '@/lib/utils'
 import { Camera, Loader2 } from 'lucide-react'
 
+/**
+ * Decode `file` to an ImageBitmap. createImageBitmap can't decode HEIC/HEIF — the
+ * DEFAULT iPhone/macOS photo format — in most browsers (notably desktop Chrome), so
+ * the avatar upload used to die silently on those photos. Fall back to a JS decoder
+ * (heic2any) that transcodes to JPEG, then decode that. It's imported LAZILY, only
+ * when native decode fails, so the JPEG/PNG happy path never pays the bundle cost.
+ */
+async function decodeToBitmap(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file)
+  } catch {
+    const { default: heic2any } = await import('heic2any')
+    const jpeg = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 })
+    return await createImageBitmap(Array.isArray(jpeg) ? jpeg[0] : jpeg)
+  }
+}
+
 export async function downscaleImage(file: File, maxDim = 512, quality = 0.85): Promise<Blob> {
-  const bitmap = await createImageBitmap(file)
+  const bitmap = await decodeToBitmap(file)
   const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height))
   const w = Math.max(1, Math.round(bitmap.width * scale))
   const h = Math.max(1, Math.round(bitmap.height * scale))
