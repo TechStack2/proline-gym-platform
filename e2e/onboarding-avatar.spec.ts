@@ -17,11 +17,8 @@ const BASE = process.env.E2E_GYM_SLUG_BASE || 'local'
 const SLUG = `obav-${BASE}-w${process.env.TEST_WORKER_INDEX ?? '0'}`
 const H = { apikey: KEY!, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 const ONBOARD_EMAIL = `onboard+${SLUG}@e2e.local`
-// a 1×1 PNG — createImageBitmap can decode it; downscaleImage re-encodes to JPEG.
-const PNG_1x1 = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC',
-  'base64',
-)
+// A real, decodable PNG (the proven adm2 fixture) — the uploader downscales it to JPEG.
+const FIXTURE = 'e2e/fixtures/avatar.png'
 let gymId = ''
 let userId = ''
 
@@ -86,8 +83,7 @@ test('ONBOARDING-AVATAR · the onboarding avatar upload stores the image + sets 
 
     // Upload straight onto the hidden file input (fires onChange → uploadAvatar).
     // The input is display:hidden, so DON'T use :visible — setInputFiles works on it.
-    await page.locator('[data-testid="avatar-file-input"]').first()
-      .setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: PNG_1x1 })
+    await page.locator('[data-testid="avatar-file-input"]').first().setInputFiles(FIXTURE)
 
     // THE CONTRACT: profiles.avatar_url is set to the avatars-bucket path for THIS user.
     await expect.poll(async () => {
