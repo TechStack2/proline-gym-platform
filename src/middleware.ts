@@ -105,7 +105,16 @@ function buildProdCspHeader(nonce: string): string {
   return [
     "default-src 'self'",
     `script-src 'self' 'strict-dynamic' 'nonce-${nonce}'`,
-    `style-src 'self' 'strict-dynamic' 'nonce-${nonce}'`,
+    // CSP-STYLE-FIX (owner-approved, style-src ONLY): this line used to mirror
+    // script-src (`'strict-dynamic' 'nonce-${nonce}'`), but 'strict-dynamic' is a
+    // SCRIPT-only keyword — on style-src it just over-hardens to nonce-only, which
+    // strips EVERY inline style attribute in prod (next/image `fill`, Radix/Floating-
+    // UI, sonner toasts, React `style={{}}`) and FROZE the app when an open toast
+    // tried to re-position on viewport resize. Per CSP-3 you cannot add 'unsafe-inline'
+    // beside a nonce (a present nonce makes browsers ignore 'unsafe-inline') → the
+    // nonce + strict-dynamic are REMOVED here. Our nonce'd <style> blocks still render
+    // ('unsafe-inline' covers them). script-src (above) stays strict — XSS unchanged.
+    "style-src 'self' 'unsafe-inline'",
     // OFF-1: the service worker IS the offline foundation, but `script-src` uses
     // 'strict-dynamic' — under which Chrome's worker-src FALLBACK refuses
     // `navigator.serviceWorker.register('/sw.js')` (the worker URL is not a

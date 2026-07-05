@@ -312,6 +312,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // CSP-STYLE-FIX: prod style-src is 'self' 'unsafe-inline' (was over-hardened to
+      // nonce+strict-dynamic, which stripped inline styles → unstyled toasts/Selects +
+      // a resize freeze). Guards the regression: real staff/coach pages fire ZERO
+      // style-src CSP violations. Runs under the local PROD CSP (middleware). $.
+      name: 'csp-style-fix',
+      dependencies: ['setup'],
+      testMatch: /csp-style-fix\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // DS-1 (design-system foundation): the per-role --surface accent differs across
       // shells (crimson/graphite/bronze, rendered via bundled class+var → CSP-safe) and
       // the Arabic per-script type ramp is ≥1.1× + looser + untracked. testMatch $.
