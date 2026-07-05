@@ -795,6 +795,15 @@ export default defineConfig({
       // ISO-DB: opens its own owner context via ROLES.owner.storage (per-worker).
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PERF-1 (perceived speed): route-segment loading.tsx skeletons show instantly
+      // on nav, and the mobile content clears the fixed bottom TabBar (#5c). Opens its
+      // own owner + student contexts (per-worker storageState). testMatch ANCHORED ($).
+      name: 'perf-1',
+      dependencies: ['setup'],
+      testMatch: /\/perf-1\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     // E2E-TIERED — the `smoke` project materializes ONLY under E2E_TIERED=1 (the
     // targeted branch-run path: `gh workflow run e2e.yml -f projects="<slice>"`).
     // It is ABSENT from the default config, so the FULL push-to-main union gate's
