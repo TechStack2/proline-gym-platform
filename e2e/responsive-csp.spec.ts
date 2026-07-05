@@ -100,3 +100,79 @@ test('RESPONSIVE-CSP · portal schedule at mobile — no freeze (shared NativeHe
     await ctx.close()
   }
 })
+
+/**
+ * SHELL-OVERLAP-FIX — at md–lg (768–1023px) the staff shell shows NativeTabBar's
+ * w-20 side rail (fixed left-0, or right-0 in RTL), but the content wrapper only
+ * cleared the w-64 Sidebar at lg (lg:pl-64) → the rail overlapped the content. The
+ * fix adds a md-tier clearance (md:pl-20 / md:pr-20) so content clears the rail at
+ * md–lg. Portal + coach shells already clear at md (md:ml-20) — unaffected.
+ */
+test('SHELL-OVERLAP · at 800px content clears the w-20 side rail — LTR + RTL', async ({ browser }) => {
+  // LTR: the rail hugs the LEFT edge; the content's left edge must be at/after the
+  // rail's right edge (md:pl-20).
+  {
+    const { ctx, page } = await staffPage(browser, 800)
+    try {
+      await page.goto('/en/today')
+      const rail = page.getByTestId('desktop-rail')
+      const title = page.getByTestId('native-large-title').first()
+      await expect(rail, 'the w-20 side rail renders at 800px').toBeVisible({ timeout: 15_000 })
+      await expect(title, 'the mobile shell title renders at 800px').toBeVisible()
+      const railBox = await rail.boundingBox()
+      const titleBox = await title.boundingBox()
+      expect(railBox && titleBox, 'rail + title are measurable').toBeTruthy()
+      expect(railBox!.x, 'the rail is anchored to the left edge').toBeLessThan(8)
+      expect(titleBox!.x, 'the title is NOT under the left rail (cleared by md:pl-20)')
+        .toBeGreaterThanOrEqual(railBox!.x + railBox!.width - 1)
+    } finally {
+      await ctx.close()
+    }
+  }
+  // RTL (/ar): the rail flips to the RIGHT edge; the content's right edge must be
+  // at/before the rail's left edge (md:pr-20).
+  {
+    const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale: 'ar', viewport: { width: 800, height: 860 } })
+    const page = await ctx.newPage()
+    try {
+      await page.goto('/ar/today')
+      const rail = page.getByTestId('desktop-rail')
+      const title = page.getByTestId('native-large-title').first()
+      await expect(rail, 'the RTL side rail renders at 800px').toBeVisible({ timeout: 15_000 })
+      await expect(title, 'the RTL shell title renders at 800px').toBeVisible()
+      const railBox = await rail.boundingBox()
+      const titleBox = await title.boundingBox()
+      expect(railBox && titleBox, 'rail + title are measurable').toBeTruthy()
+      expect(railBox!.x + railBox!.width, 'the rail is anchored to the right edge').toBeGreaterThan(800 - 8)
+      expect(titleBox!.x + titleBox!.width, 'the title is NOT under the right rail (cleared by md:pr-20)')
+        .toBeLessThanOrEqual(railBox!.x + 1)
+    } finally {
+      await ctx.close()
+    }
+  }
+})
+
+test('SHELL-OVERLAP · the side rail is absent <md and ≥lg (boundaries unchanged)', async ({ browser }) => {
+  // <md: the bottom TabBar is the nav (no left rail → no clearance needed).
+  {
+    const { ctx, page } = await staffPage(browser, 390)
+    try {
+      await page.goto('/en/today')
+      await expect(page.getByTestId('native-large-title').first(), 'mobile shell at 390px').toBeVisible({ timeout: 15_000 })
+      await expect(page.getByTestId('desktop-rail'), 'no side rail <md (bottom TabBar instead)').toBeHidden()
+    } finally {
+      await ctx.close()
+    }
+  }
+  // ≥lg: the w-64 Sidebar is the nav; the rail is gone (its wrapper is lg:hidden).
+  {
+    const { ctx, page } = await staffPage(browser, 1280)
+    try {
+      await page.goto('/en/today')
+      await expect(page.getByTestId('desktop-sidebar'), 'the Sidebar at 1280px').toBeVisible({ timeout: 15_000 })
+      await expect(page.getByTestId('desktop-rail'), 'no side rail ≥lg (Sidebar instead)').toBeHidden()
+    } finally {
+      await ctx.close()
+    }
+  }
+})
