@@ -341,6 +341,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MONDAY-HARDEN B: native <select> filters are dark-themed under html.dark
+      // (global `select` color-scheme + channel-var bg) — asserted via the coach
+      // status filter's computed dark surface; light stays the original white. $.
+      name: 'monday-harden',
+      dependencies: ['setup'],
+      testMatch: /monday-harden\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).
