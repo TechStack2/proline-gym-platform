@@ -43,12 +43,12 @@ async function svc(path: string, init?: RequestInit) {
   return fetch(`${URL}/rest/v1/${path}`, { ...init, headers: { ...svcHeaders, ...(init?.headers || {}) } })
 }
 
-async function loginAs(browser: Browser, email: string) {
+async function loginAs(browser: Browser, email: string, password = PW) {
   const ctx = await browser.newContext({ locale: 'en' })
   const page = await ctx.newPage()
   await page.goto('/en/auth/login')
   await page.locator('#email').fill(email)
-  await page.locator('#password').fill(PW)
+  await page.locator('#password').fill(password)
   await page.locator('button[type="submit"]').click()
   await page.waitForURL((u) => !u.pathname.includes('/auth/login'), { timeout: 20_000 })
   return { ctx, page }
@@ -77,24 +77,27 @@ test.afterAll(async () => {
   }
 })
 
-test('WL-ONBOARDING · a platform admin onboards a new gym + owner + starter catalog', async ({ browser }) => {
-  test.setTimeout(90_000)
-  const { ctx, page } = await loginAs(browser, ADMIN_EMAIL)
+test('WL-ONBOARDING · a platform admin onboards a new gym + owner, and the owner can LOG IN (no shell freeze)', async ({ browser }) => {
+  test.setTimeout(120_000)
+  let tempPw = ''
+  let ownerId = ''
+  const admin = await loginAs(browser, ADMIN_EMAIL)
   try {
-    await page.goto('/en/onboard')
-    await expect(page.getByTestId('onboard-form'), 'the super-admin sees the onboard form').toBeVisible({ timeout: 15_000 })
+    await admin.page.goto('/en/onboard')
+    await expect(admin.page.getByTestId('onboard-form'), 'the super-admin sees the onboard form').toBeVisible({ timeout: 15_000 })
 
-    await page.getByTestId('onboard-gymNameEn').fill(NEW_NAME_EN)
-    await page.getByTestId('onboard-gymNameAr').fill('نادٍ جديد')
-    await page.getByTestId('onboard-slug').fill(NEW_SLUG)
-    await page.getByTestId('onboard-ownerEmail').fill(OWNER_EMAIL)
-    await page.getByTestId('onboard-ownerFirstEn').fill('New')
-    await page.getByTestId('onboard-ownerLastEn').fill('Owner')
-    await page.getByTestId('onboard-submit').click()
+    await admin.page.getByTestId('onboard-gymNameEn').fill(NEW_NAME_EN)
+    await admin.page.getByTestId('onboard-gymNameAr').fill('نادٍ جديد')
+    await admin.page.getByTestId('onboard-slug').fill(NEW_SLUG)
+    await admin.page.getByTestId('onboard-ownerEmail').fill(OWNER_EMAIL)
+    await admin.page.getByTestId('onboard-ownerFirstEn').fill('New')
+    await admin.page.getByTestId('onboard-ownerLastEn').fill('Owner')
+    await admin.page.getByTestId('onboard-submit').click()
 
-    await expect(page.getByTestId('onboard-success'), 'the gym was created').toBeVisible({ timeout: 20_000 })
-    await expect(page.getByTestId('onboard-owner-email')).toHaveText(OWNER_EMAIL)
-    await expect(page.getByTestId('onboard-temp-pw'), 'a temp password is returned').not.toBeEmpty()
+    await expect(admin.page.getByTestId('onboard-success'), 'the gym was created').toBeVisible({ timeout: 20_000 })
+    await expect(admin.page.getByTestId('onboard-owner-email')).toHaveText(OWNER_EMAIL)
+    tempPw = ((await admin.page.getByTestId('onboard-temp-pw').textContent()) ?? '').trim()
+    expect(tempPw.length, 'a temp password is returned').toBeGreaterThan(6)
 
     // Assert the rows exist (service-role).
     const gyms = (await (await svc(`gyms?slug=eq.${NEW_SLUG}&select=id,name_en,is_active`)).json()) as Array<{ id: string; name_en: string; is_active: boolean }>
@@ -103,13 +106,45 @@ test('WL-ONBOARDING · a platform admin onboards a new gym + owner + starter cat
     expect(gyms[0].name_en).toBe(NEW_NAME_EN)
     expect(gyms[0].is_active).toBe(true)
 
-    const owners = (await (await svc(`user_roles?gym_id=eq.${newGymId}&role=eq.owner&select=user_id`)).json()) as unknown[]
+    const owners = (await (await svc(`user_roles?gym_id=eq.${newGymId}&role=eq.owner&select=user_id`)).json()) as Array<{ user_id: string }>
     expect(owners.length, 'an owner role was assigned').toBe(1)
+    ownerId = owners[0].user_id
 
     const discs = (await (await svc(`disciplines?gym_id=eq.${newGymId}&select=id`)).json()) as unknown[]
     expect(discs.length, 'a starter discipline catalog was seeded').toBeGreaterThanOrEqual(2)
+
+    // WIZARD-PROFILE-FIX: the owner MUST have a profile row pointing at the NEW gym
+    // (the upsert guarantee) — without it, the dashboard shell freezes on login.
+    const profs = (await (await svc(`profiles?id=eq.${ownerId}&select=id,gym_id`)).json()) as Array<{ gym_id: string }>
+    expect(profs.length, 'the new owner has a profile row').toBe(1)
+    expect(profs[0].gym_id, 'the profile points at the NEW gym (not the trigger default)').toBe(newGymId)
+
+    // Clear must_change_password (service-role) so the owner's login lands on the
+    // owner home — the freeze surface — not the ON-1 change-password wizard.
+    const upd = await fetch(`${URL}/auth/v1/admin/users/${ownerId}`, {
+      method: 'PUT',
+      headers: svcHeaders,
+      body: JSON.stringify({ app_metadata: { must_change_password: false } }),
+    })
+    expect(upd.ok, 'cleared must_change_password for the login').toBeTruthy()
   } finally {
-    await ctx.close()
+    await admin.ctx.close()
+  }
+
+  // ── THE REAL REGRESSION GUARD ──
+  // Log in AS the freshly-onboarded owner and load the owner home (/today). It must
+  // RENDER (shell chrome + page content) and NOT freeze/infinite-loop. A missing
+  // profile is a CLIENT hang that asserting rows can't catch — only a real
+  // login + owner-home load does. (Without the 3c upsert, this hangs → times out.)
+  const owner = await loginAs(browser, OWNER_EMAIL, tempPw)
+  try {
+    await owner.page.goto('/en/today')
+    await expect(owner.page.getByTestId('horizon-switcher').first(), 'the owner home RENDERS (no freeze)')
+      .toBeVisible({ timeout: 25_000 })
+    await expect(owner.page.getByTestId('notification-bell').first(), 'the dashboard shell mounted for the owner')
+      .toBeVisible({ timeout: 10_000 })
+  } finally {
+    await owner.ctx.close()
   }
 })
 
