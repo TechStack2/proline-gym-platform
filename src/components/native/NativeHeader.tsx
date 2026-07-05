@@ -27,10 +27,13 @@ export type NativeHeaderProps = {
 
 // design-system.md "Per-shell accents": staff=brand red, coach=gold-on-black,
 // portal=cool teal. Tenant-clean: keyed by ROLE-shell, never by gym.
-const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { bar: string; badge: string; labelKey: string }> = {
-  staff: { bar: '#cd1419', badge: 'bg-[#cd1419] text-white', labelKey: 'shellStaff' },
-  coach: { bar: '#d4af37', badge: 'bg-[#111111] text-[#d4af37]', labelKey: 'shellCoach' },
-  portal: { bar: '#0e7490', badge: 'bg-[#0e7490] text-white', labelKey: 'shellMember' },
+// CSP-SWEEP: `barClass` is a build-time Tailwind class (JIT-scanned) — the accent
+// bar used to be an inline style={{ backgroundColor }}, which prod CSP strips AND
+// which floods the console when the header re-renders. Class = CSP-safe.
+const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { barClass: string; badge: string; labelKey: string }> = {
+  staff: { barClass: 'bg-[#cd1419]', badge: 'bg-[#cd1419] text-white', labelKey: 'shellStaff' },
+  coach: { barClass: 'bg-[#d4af37]', badge: 'bg-[#111111] text-[#d4af37]', labelKey: 'shellCoach' },
+  portal: { barClass: 'bg-[#0e7490]', badge: 'bg-[#0e7490] text-white', labelKey: 'shellMember' },
 };
 
 const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
@@ -77,8 +80,12 @@ export function NativeHeader({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // When sentinel is not intersecting, the title has scrolled past
-        setIsCollapsed(!entry.isIntersecting);
+        // When sentinel is not intersecting, the title has scrolled past.
+        // SCHEDULE-MOBILE-FREEZE: bail when unchanged — never re-enter the render
+        // path with the same value (belt-and-suspenders with the out-of-flow
+        // sentinel below, which is the actual feedback-loop break).
+        const next = !entry.isIntersecting;
+        setIsCollapsed((prev) => (prev === next ? prev : next));
       },
       {
         root: null,
@@ -109,7 +116,7 @@ export function NativeHeader({
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* AX-1 shell accent bar */}
-      {shellStyle && <div className="h-1 w-full" style={{ backgroundColor: shellStyle.bar }} aria-hidden />}
+      {shellStyle && <div className={cn('h-1 w-full', shellStyle.barClass)} aria-hidden />}
       {/* Top row: back button + right actions + collapsed title */}
       <div className="flex items-center justify-between px-4 h-12">
         <div className="flex items-center gap-2 min-w-0">
@@ -201,10 +208,18 @@ export function NativeHeader({
         </div>
       )}
 
-      {/* Sentinel element for Intersection Observer */}
+      {/* Sentinel element for Intersection Observer.
+          SCHEDULE-MOBILE-FREEZE (root cause): this was an IN-FLOW element AFTER the
+          collapsible large title, so setIsCollapsed(true) shrank the title (max-h-0)
+          → the sentinel moved UP across the observer threshold → the observer fired
+          the opposite value → setIsCollapsed toggled → re-layout → re-fire … an
+          infinite render loop (reconciler recursion) that froze the tab whenever a
+          mobile-width resize mounted this header. Making the sentinel OUT OF FLOW
+          (absolute, pinned to the header top) means the collapse can no longer move
+          it, so the observer can never re-trigger itself. */}
       <div
         ref={sentinelRef}
-        className="h-px w-full"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
         aria-hidden="true"
       />
     </header>

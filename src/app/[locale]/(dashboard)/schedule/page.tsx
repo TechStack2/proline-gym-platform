@@ -36,8 +36,13 @@ type Props = {
 const WEEK_DOWS = [1, 2, 3, 4, 5, 6, 0] as const
 
 // Tenant-clean discipline palette: stable hue per discipline by sort position.
-const DISCIPLINE_PALETTE = [
-  '#cd1419', '#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#65a30d',
+// CSP-SWEEP: the prod CSP (style-src strict-dynamic, no unsafe-inline) STRIPS inline
+// style="" attributes, so a runtime `style={{ backgroundColor }}` is dropped in prod
+// (chips render default red) AND floods the console with violations. Use build-time
+// Tailwind bg CLASSES (JIT-scanned from src/**) instead — CSP-safe, [[prod-csp-strips-inline-style-attrs]].
+const DISCIPLINE_BG = [
+  'bg-[#cd1419]', 'bg-[#2563eb]', 'bg-[#059669]', 'bg-[#d97706]',
+  'bg-[#7c3aed]', 'bg-[#db2777]', 'bg-[#0891b2]', 'bg-[#65a30d]',
 ]
 
 const hhmm = (v: string | null) => (v || '').slice(0, 5)
@@ -71,8 +76,9 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
 
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
   const coachName = (id: string | null) => localizedName(one((coaches ?? []).find((c: any) => c.id === id)?.profiles), locale)
+  // Maps discipline → a Tailwind bg CLASS (not a hex → not an inline style).
   const disciplineColor = new Map<string, string>(
-    (disciplines ?? []).map((d: any, i: number) => [d.id, DISCIPLINE_PALETTE[i % DISCIPLINE_PALETTE.length]]),
+    (disciplines ?? []).map((d: any, i: number) => [d.id, DISCIPLINE_BG[i % DISCIPLINE_BG.length]]),
   )
 
   // Filters apply to both views.
@@ -296,8 +302,8 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                               {cell.map((c: any) => (
                                 <Link key={c.id} href={`/${locale}/classes/${c.id}`}
                                   data-testid="week-chip" data-class-en={c.name_en}
-                                  className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white ring-1 ring-black/5 transition-transform hover:scale-[1.02]"
-                                  style={{ backgroundColor: disciplineColor.get(c.discipline_id) || '#cd1419' }}>
+                                  className={cn('block rounded-lg px-2.5 py-2 text-xs font-medium text-white ring-1 ring-black/5 transition-transform hover:scale-[1.02]',
+                                    disciplineColor.get(c.discipline_id) || 'bg-[#cd1419]')}>
                                   <span className="block truncate font-semibold">{lname(c)}</span>
                                   <span className="block truncate opacity-80" dir="ltr">{hhmm(row.start)} · {coachName(c.coach_id)}</span>
                                 </Link>
@@ -343,8 +349,8 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                       {col.classes.map(({ cls, slot }: any) => (
                         <Link key={slot.id} href={`/${locale}/classes/${cls.id}`}
                           data-testid="diary-class-block"
-                          className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white"
-                          style={{ backgroundColor: disciplineColor.get(cls.discipline_id) || '#cd1419' }}>
+                          className={cn('block rounded-lg px-2.5 py-2 text-xs font-medium text-white',
+                            disciplineColor.get(cls.discipline_id) || 'bg-[#cd1419]')}>
                           <span className="block truncate font-semibold">{lname(cls)}</span>
                           <span className="block opacity-80" dir="ltr">{hhmm(slot.start_time)}–{hhmm(slot.end_time)}</span>
                         </Link>
