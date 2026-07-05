@@ -112,7 +112,18 @@ jobs:
       - name: Install the Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # CI-INFRA-PIN: pin the CLI (was `latest`, which resolves the newest release
+          # via the UNAUTHENTICATED GitHub API every run → the 60-req/hr limit gets
+          # exhausted on busy CI → the whole job died at "Install the Supabase CLI"
+          # before any spec ran). A fixed npm version is fetched directly, with no
+          # rate-limited "resolve latest" call. 2.109.0 = latest STABLE (2026-06-30);
+          # supports every subcommand here (supabase start / db reset / status / stop).
+          version: 2.109.0
+        env:
+          # Belt-and-suspenders: authenticate any GitHub API call setup-cli still makes
+          # for the pinned tag (anon 60/hr → 5000/hr). No new secret — GITHUB_TOKEN is
+          # the runner's built-in token.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Cache the Playwright browser download (the ~100MB chromium) across runs.
       - name: Cache Playwright browsers
