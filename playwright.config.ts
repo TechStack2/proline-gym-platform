@@ -350,6 +350,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // FREEZE-FIX: /settings must not freeze at tablet (md) width — loading it +
+      // toggling across the md boundary must leave the main thread responsive with
+      // no layout/recursion loop (the owner-reported a5→a6 vendor freeze). $.
+      name: 'freeze-fix',
+      dependencies: ['setup'],
+      testMatch: /freeze-fix\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).
