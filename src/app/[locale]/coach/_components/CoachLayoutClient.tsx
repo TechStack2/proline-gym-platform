@@ -38,7 +38,7 @@ export function CoachLayoutClient({ children, locale }: Props) {
     : t('schedule') || 'Schedule';
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50" style={{ ['--shell-accent' as string]: '#d4af37' }}>
+    <div className="shell-coach flex flex-col h-screen bg-gray-50">
       <NativeHeader
         title={headerTitle}
         locale={locale}

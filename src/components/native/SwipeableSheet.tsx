@@ -174,14 +174,27 @@ export function SwipeableSheet({
     [handleDragStart, handleDragMove, handleDragEnd]
   );
 
-  if (!isOpen && !currentSnap) return null;
-
-  // Calculate translateY based on current snap or drag
+  // Calculate translateY based on current snap or drag. Computed BEFORE the early
+  // return so the effect below can apply it (hooks must precede a conditional return).
   const translateY = isDragging
     ? (100 - dragOffset) + '%'
     : currentSnap !== null
       ? (100 - currentSnap) + '%'
       : '100%';
+  const sheetHeight = currentSnap !== null ? `${currentSnap}vh` : '50vh';
+
+  // RESPONSIVE-CSP-HARDENING (BUG 3): apply the DYNAMIC drag transform/height via
+  // the ref (CSSOM) — never a React style prop. This element is client-only (opens
+  // via state, so it's never in the SSR HTML the CSP parses) but the ref path is
+  // CSP-bulletproof either way.
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+    el.style.transform = `translateY(${translateY})`;
+    el.style.height = sheetHeight;
+  }, [translateY, sheetHeight]);
+
+  if (!isOpen && !currentSnap) return null;
 
   return (
     <div className="fixed inset-0 z-[100]" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -212,10 +225,6 @@ export function SwipeableSheet({
           isAnimating && 'transition-transform duration-300 ease-out',
           isDragging && 'transition-none'
         )}
-        style={{
-          transform: `translateY(${translateY})`,
-          height: currentSnap !== null ? `${currentSnap}vh` : '50vh',
-        }}
       >
         {/* Drag Handle */}
         <div

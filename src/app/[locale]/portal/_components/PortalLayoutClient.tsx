@@ -39,7 +39,7 @@ export function PortalLayoutClient({ children, locale }: Props) {
     : t('home') || 'Home';
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50" style={{ ['--shell-accent' as string]: '#0e7490' }}>
+    <div className="shell-portal flex flex-col h-screen bg-gray-50">
       <NativeHeader
         title={headerTitle}
         locale={locale}

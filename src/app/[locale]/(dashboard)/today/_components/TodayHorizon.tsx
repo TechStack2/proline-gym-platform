@@ -1,6 +1,7 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
@@ -226,8 +227,19 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     </a>
   ) : null
 
+  // BUG 3: per-class color chips as a NONCE'D <style> + data-attr, NOT inline
+  // style={{}} (SSR'd → stripped by the prod strict style-src CSP). Server component.
+  const chipNonce = headers().get('X-CSP-Nonce') ?? ''
+  const chipNorm = (c: string | null | undefined): string =>
+    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : '#cd1419'
+  const chipBgToken = (c: string | null | undefined): string => 's' + chipNorm(c).slice(1)
+  const chipBgCss = [...new Set<string>((todayClasses as any[]).map((s) => chipNorm(s.cls?.color)).concat('#cd1419'))]
+    .map((c) => `[data-chipbg="s${c.slice(1)}"]{background-color:${c}}`)
+    .join('')
+
   return (
     <div className="space-y-4">
+      <style nonce={chipNonce} dangerouslySetInnerHTML={{ __html: chipBgCss }} />
       {/* ── Card 1: Now / Next ── */}
       <ActionCard icon={CalendarDays} title={t('classes')} count={todayClasses.length}
         emptyText={t('cards.noneToday')} testid="classes" isRTL={isRTL}>
@@ -240,7 +252,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                 className={cn('flex items-center justify-between gap-3 rounded-xl border bg-gray-50/60 px-3 py-2.5 hover:bg-gray-50',
                   phase === 'now' && 'border-[#cd1419]/40 ring-1 ring-[#cd1419]/30')}>
                 <Link href={`/${locale}/attendance`} className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="h-9 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: s.cls.color || '#cd1419' }} />
+                  <span className="h-9 w-1.5 shrink-0 rounded-full" data-chipbg={chipBgToken(s.cls.color)} />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-gray-900">
                       {clsName(s.cls)}

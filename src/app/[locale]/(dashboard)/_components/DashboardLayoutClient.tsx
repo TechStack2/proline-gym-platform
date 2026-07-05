@@ -48,9 +48,15 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
   // fetch anyway), never two.
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    setIsDesktop(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    // SHELL-RESPONSIVE-FIX (BUG 1): breakpoint at lg (1024px) to match the shell
+    // chrome below (mobile <lg, Sidebar+Header ≥lg). matchMedia 'change' fires ONLY
+    // on a breakpoint CROSS (never a per-pixel resize), and the functional setState
+    // BAILS when the value is unchanged — so a spurious/repeated event (or a
+    // scrollbar thrash near the edge) can't feed the reconciliation render loop.
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = (matches: boolean) => setIsDesktop((prev) => (prev === matches ? prev : matches));
+    apply(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => apply(e.matches);
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, []);
@@ -81,20 +87,25 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
   // offline-flush listeners. Now the CHROME is responsive around a single subtree:
   // mobile = NativeHeader + bottom NativeTabBar; desktop = Sidebar + Header.
   return (
-    <div className={cn('flex h-screen flex-col bg-gray-50 md:flex-row md:overflow-hidden', isRTL && 'rtl')}
-      style={{ ['--shell-accent' as string]: '#cd1419' }}>
-      {/* Desktop side nav — self-hides below lg (fixed w-64 lg:flex); Header's Menu
-          button covers md–lg exactly as before. */}
+    <div className={cn('shell-staff flex h-screen flex-col bg-gray-50 lg:flex-row lg:overflow-hidden', isRTL && 'rtl')}>
+      {/* SHELL-RESPONSIVE-FIX (BUG 2): the shell now switches at lg, not md — below
+          lg is the MOBILE shell (NativeHeader + bottom TabBar), ≥lg is Sidebar +
+          Header. This kills the old md–lg dead zone (desktop Header shown, but its
+          hamburger targeted a Sidebar hard-hidden below lg → no working nav).
+          --shell-accent (was an inline style here, STRIPPED by the prod CSP →
+          React reconciliation churn) is dropped: NativeTabBar's var(--shell-accent,
+          #cd1419) fallback IS the staff value, so zero visual change. */}
+      {/* Desktop side nav — self-hides below lg (fixed w-64 lg:flex). */}
       <Sidebar locale={locale} role={role} />
 
-      <div className={cn('flex h-full min-h-0 flex-1 flex-col md:h-auto md:overflow-hidden', isRTL ? 'lg:pr-64' : 'lg:pl-64')}>
-        {/* Desktop chrome (≥md) */}
-        <div className="hidden md:block">
+      <div className={cn('flex h-full min-h-0 flex-1 flex-col lg:h-auto lg:overflow-hidden', isRTL ? 'lg:pr-64' : 'lg:pl-64')}>
+        {/* Desktop chrome (≥lg) */}
+        <div className="hidden lg:block">
           <Header locale={locale} role={role} showBell={isDesktop === true} />
         </div>
 
-        {/* Mobile chrome (<md) */}
-        <div className="md:hidden">
+        {/* Mobile chrome (<lg) */}
+        <div className="lg:hidden">
           <NativeHeader
             title={headerTitle}
             locale={locale}
@@ -116,7 +127,7 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
           />
         </div>
 
-        <main className="flex-1 overflow-y-auto scrollbar-thin md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto scrollbar-thin lg:p-8">
           <PageTransition
             direction="forward"
             isActive={true}
@@ -130,12 +141,12 @@ export function DashboardLayoutClient({ children, locale, role }: Props) {
                 the last rows of every dashboard page (seen on Today/Inbox) hid
                 behind it. Clear it with tab-bar height + safe-area bottom padding
                 on mobile only (no bottom bar ≥md → md:pb-0). */}
-            <div key={pathname} className="px-4 md:px-0 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">{children}</div>
+            <div key={pathname} className="px-4 lg:px-0 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0">{children}</div>
           </PageTransition>
         </main>
 
-        {/* Mobile bottom tab bar (the staff desktop uses the Sidebar, never the rail) */}
-        <div className="md:hidden">
+        {/* Mobile bottom tab bar (<lg; the staff desktop uses the Sidebar) */}
+        <div className="lg:hidden">
           <NativeTabBar
             tabs={primaryTabs}
             locale={locale}

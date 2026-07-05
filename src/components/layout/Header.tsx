@@ -4,8 +4,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { cn } from '@/lib/utils';
-import { Menu, Search, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { Search, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from '@/i18n/routing';
 import { NotificationBell } from '@/components/notifications/notification-bell';
@@ -33,7 +32,6 @@ export function Header({ locale, role, showBell = true }: HeaderProps) {
   const t = useTranslations();
   const router = useRouter();
   const supabase = createClient();
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const isRTL = locale === 'ar';
 
   const handleLogout = async () => {
@@ -48,14 +46,10 @@ export function Header({ locale, role, showBell = true }: HeaderProps) {
       {/* AX-1 staff shell accent bar */}
       <div className="h-1 w-full bg-[#cd1419]" aria-hidden />
       <div className="flex h-16 items-center gap-4 px-4">
-      <button
-        onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-        className="lg:hidden rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-        aria-label="Menu"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
+      {/* SHELL-RESPONSIVE-FIX (BUG 2): the dead hamburger is gone. It toggled a
+          `showMobileSidebar` state that was never rendered (a no-op), and the shell
+          now shows this Header only ≥lg (where the persistent Sidebar is the nav).
+          Below lg the mobile NativeHeader + bottom TabBar own navigation. */}
       <div className="flex-1 flex items-center gap-2 max-w-md">
         <div className="relative flex-1">
           <Search className={cn(

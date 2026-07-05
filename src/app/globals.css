@@ -214,4 +214,12 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* RESPONSIVE-CSP-HARDENING (BUG 3): per-shell accent as a bundled class, NOT an
+     inline style="--shell-accent" on the shell root (SSR'd → stripped by the prod
+     strict style-src CSP → NativeTabBar/NativeHeader fell back to red). Consumed by
+     var(--shell-accent). */
+  .shell-staff { --shell-accent: #cd1419; }
+  .shell-portal { --shell-accent: #0e7490; }
+  .shell-coach { --shell-accent: #d4af37; }
 }
