@@ -77,8 +77,14 @@ export function NativeHeader({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // When sentinel is not intersecting, the title has scrolled past
-        setIsCollapsed(!entry.isIntersecting);
+        // When sentinel is not intersecting, the title has scrolled past.
+        // RESPONSIVE-CSP-HARDENING (BUG 1 root cause): EQUALITY-GUARD the setState.
+        // On a mobile-resize the day-view's (formerly CSP-stripped) inline-style
+        // cells thrash layout near this sentinel → the observer fires repeatedly at
+        // the threshold; an unguarded setIsCollapsed(true↔false) then drives an
+        // infinite render loop that FREEZES the tab. Bail when unchanged.
+        const collapsed = !entry.isIntersecting;
+        setIsCollapsed((prev) => (prev === collapsed ? prev : collapsed));
       },
       {
         root: null,
@@ -108,8 +114,11 @@ export function NativeHeader({
       )}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      {/* AX-1 shell accent bar */}
-      {shellStyle && <div className="h-1 w-full" style={{ backgroundColor: shellStyle.bar }} aria-hidden />}
+      {/* AX-1 shell accent bar. BUG 3: was style={{ backgroundColor }} (SSR'd →
+          stripped by the prod strict style-src CSP). --shell-accent is set by the
+          shell root's shell-{staff,portal,coach} class (globals.css) and equals
+          SHELL_STYLE[shell].bar, so a var'd class is CSP-safe + identical. */}
+      {shellStyle && <div className="h-1 w-full bg-[color:var(--shell-accent)]" aria-hidden />}
       {/* Top row: back button + right actions + collapsed title */}
       <div className="flex items-center justify-between px-4 h-12">
         <div className="flex items-center gap-2 min-w-0">

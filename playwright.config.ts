@@ -273,6 +273,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // RESPONSIVE-CSP-HARDENING: the shells + calendar views are responsive under
+      // the prod CSP — schedule day view survives a mobile-resize (no freeze / no
+      // CSP inline-style error), 800px has reachable nav, <lg TabBar + ≥lg Sidebar.
+      name: 'responsive-csp',
+      dependencies: ['setup'],
+      testMatch: /responsive-csp\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).

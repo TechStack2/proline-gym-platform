@@ -1,6 +1,7 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { cn } from '@/lib/utils'
@@ -74,6 +75,21 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   const disciplineColor = new Map<string, string>(
     (disciplines ?? []).map((d: any, i: number) => [d.id, DISCIPLINE_PALETTE[i % DISCIPLINE_PALETTE.length]]),
   )
+
+  // SHELL-RESPONSIVE-FIX (BUG 1): the class-cell colors are per-discipline, so they
+  // WERE inline style={{ backgroundColor }} — which the prod CSP (style-src nonce +
+  // strict-dynamic, no 'unsafe-inline') STRIPS. React then re-applies the stripped
+  // style every render → a reconciliation loop that (amplified by a shell re-render
+  // on resize) FREEZES the tab + floods "Applying inline style violates CSP". Emit
+  // the bounded palette as a NONCE'D <style> + a data-cellbg attr (CSP-safe
+  // stylesheet rules). Server component → the nonce is on the X-CSP-Nonce header.
+  const cellNonce = headers().get('X-CSP-Nonce') ?? ''
+  const cellNorm = (c: string | null | undefined): string =>
+    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : '#cd1419'
+  const cellBgToken = (c: string | null | undefined): string => 's' + cellNorm(c).slice(1)
+  const cellBgCss = [...new Set<string>([...disciplineColor.values(), '#cd1419'].map(cellNorm))]
+    .map((c) => `[data-cellbg="s${c.slice(1)}"]{background-color:${c}}`)
+    .join('')
 
   // Filters apply to both views.
   const fDiscipline = searchParams.discipline || ''
@@ -215,6 +231,8 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
 
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
+      {/* CSP-safe per-discipline cell colors (see cellBgCss above) — nonce'd. */}
+      <style nonce={cellNonce} data-testid="schedule-cellbg" dangerouslySetInnerHTML={{ __html: cellBgCss }} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className={cn('hidden md:block text-2xl font-bold', isRTL && 'font-arabic')}>{t('title')}</h1>
         <WorkspaceSegments
@@ -297,7 +315,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                                 <Link key={c.id} href={`/${locale}/classes/${c.id}`}
                                   data-testid="week-chip" data-class-en={c.name_en}
                                   className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white ring-1 ring-black/5 transition-transform hover:scale-[1.02]"
-                                  style={{ backgroundColor: disciplineColor.get(c.discipline_id) || '#cd1419' }}>
+                                  data-cellbg={cellBgToken(disciplineColor.get(c.discipline_id))}>
                                   <span className="block truncate font-semibold">{lname(c)}</span>
                                   <span className="block truncate opacity-80" dir="ltr">{hhmm(row.start)} · {coachName(c.coach_id)}</span>
                                 </Link>
@@ -344,7 +362,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                         <Link key={slot.id} href={`/${locale}/classes/${cls.id}`}
                           data-testid="diary-class-block"
                           className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white"
-                          style={{ backgroundColor: disciplineColor.get(cls.discipline_id) || '#cd1419' }}>
+                          data-cellbg={cellBgToken(disciplineColor.get(cls.discipline_id))}>
                           <span className="block truncate font-semibold">{lname(cls)}</span>
                           <span className="block opacity-80" dir="ltr">{hhmm(slot.start_time)}–{hhmm(slot.end_time)}</span>
                         </Link>
