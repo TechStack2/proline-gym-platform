@@ -244,6 +244,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // ATTENDANCE-GYM-SCOPE (SECURITY): the staff /attendance page must show only the
+      // caller's gym's classes (class_schedules_read RLS is a blanket authenticated
+      // read → the un-scoped select leaked every gym's today-classes). Seeds its own
+      // two gyms + a uniquely-named canary class in the other. testMatch ANCHORED ($).
+      name: 'attendance-scope',
+      dependencies: ['setup'],
+      testMatch: /attendance-scope\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // VENDOR-LANDING: the (marketing) apex serves the Gym 360 Pro vendor product
       // page on a vendor host / ?vendor=1, and the tenant/DEFAULT landing otherwise.
       // File is vendor.spec.ts (not vendor-landing) to avoid the `landing` project's

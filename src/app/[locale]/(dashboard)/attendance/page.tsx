@@ -18,6 +18,17 @@ export default async function AttendancePage({ params: { locale }, searchParams 
   const supabase = await createClient()
   const isRTL = locale === 'ar'
 
+  // ATTENDANCE-GYM-SCOPE: resolve the caller's gym so the class_schedules read below
+  // is gym-scoped AT THE QUERY. `class_schedules_read` RLS is a blanket authenticated
+  // read (USING auth.role()='authenticated'), so an un-scoped select returns EVERY
+  // gym's classes — a cross-tenant leak (empty rosters today only because
+  // class_enrollments is separately gym-scoped, but the schedule/class rows leak).
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('gym_id').eq('id', user.id).maybeSingle()
+    : { data: null }
+  const gymId = profile?.gym_id ?? null
+
   const selectedDate = searchParams.date || new Date().toISOString().split('T')[0]
   const dayOfWeek = new Date(selectedDate).getDay()
 
@@ -26,29 +37,35 @@ export default async function AttendancePage({ params: { locale }, searchParams 
   // roster must be embedded THROUGH classes (the old top-level
   // `class_enrollments!class_id` hint errored PGRST200, leaving the marking
   // list permanently empty). Flatten back to the shape the client expects.
-  const { data: rawSchedules, error: classErr } = await supabase
-    .from('class_schedules')
-    .select(`
-      id, class_id, day_of_week, start_time, end_time,
-      classes:class_id (
-        id, name_en, name_ar, name_fr,
-        discipline_id,
-        disciplines:discipline_id (name_en, name_ar, name_fr),
-        class_enrollments (
-          id,
-          student_id,
-          is_active,
-          students:student_id (
-            id,
-            profile_id,
-            profiles:profile_id (first_name_en, first_name_ar, last_name_en, last_name_ar)
+  // Gym-scoped via classes.gym_id (class_schedules has no gym_id): `!inner` + the
+  // `classes.gym_id` filter restrict the TOP-LEVEL schedules to the caller's gym. No
+  // gym context (e.g. a vendor without a gym) → no classes, never an un-scoped read.
+  const { data: rawSchedules, error: classErr } = gymId
+    ? await supabase
+        .from('class_schedules')
+        .select(`
+          id, class_id, day_of_week, start_time, end_time,
+          classes:class_id!inner (
+            id, gym_id, name_en, name_ar, name_fr,
+            discipline_id,
+            disciplines:discipline_id (name_en, name_ar, name_fr),
+            class_enrollments (
+              id,
+              student_id,
+              is_active,
+              students:student_id (
+                id,
+                profile_id,
+                profiles:profile_id (first_name_en, first_name_ar, last_name_en, last_name_ar)
+              )
+            )
           )
-        )
-      )
-    `)
-    .eq('day_of_week', dayOfWeek)
-    .eq('is_active', true)
-    .order('start_time', { ascending: true })
+        `)
+        .eq('classes.gym_id', gymId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_active', true)
+        .order('start_time', { ascending: true })
+    : { data: [] as any[], error: null }
 
   if (classErr) console.error('Error fetching classes:', classErr)
 
