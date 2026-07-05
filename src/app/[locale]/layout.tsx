@@ -1,6 +1,7 @@
 import { DevSwCleanup } from '@/components/dev/sw-cleanup'
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
-import { Inter, IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -11,11 +12,14 @@ import { Toaster } from 'sonner';
 import { UseToastRenderer } from '@/components/ui/toaster';
 import '@/app/globals.css';
 
-const latin = Inter({ subsets: ['latin'], variable: '--font-latin', display: 'swap' });
+// DS-1: Geist (Vercel's UI sans) over Inter — the approved v4 prototype's Latin face.
+// Ships via the `geist` package (self-hosted next/font; Geist is NOT in
+// next/font/google's list in next 14.2). GeistSans.variable sets --font-geist-sans;
+// globals.css aliases --font-latin → var(--font-geist-sans). CSP-safe (self-hosted).
 // AX-1 (client: "the font is not the best"): IBM Plex Sans Arabic over the old
 // Noto NASKH (a traditional serif-class face — wrong register for app UI) and
 // over Cairo (rounder, display-leaning). Plex Sans Arabic is a UI text face
-// designed alongside a Latin companion, so it sits naturally next to Inter at
+// designed alongside a Latin companion, so it sits naturally next to Geist at
 // matching x-height/weight. next/font self-hosts + injects a size-adjusted
 // local fallback automatically (adjustFontFallback), so swap causes no CLS.
 const arabic = IBM_Plex_Sans_Arabic({
@@ -95,7 +99,7 @@ export default async function RootLayout({ children, params }: Props) {
     <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'} translate="no">
       <body
         className={cn(
-          latin.variable,
+          GeistSans.variable,
           arabic.variable,
           'min-h-screen bg-gray-50',
           isRTL ? 'font-arabic' : 'font-latin'

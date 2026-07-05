@@ -302,6 +302,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DS-1 (design-system foundation): the per-role --surface accent differs across
+      // shells (crimson/graphite/bronze, rendered via bundled class+var → CSP-safe) and
+      // the Arabic per-script type ramp is ≥1.1× + looser + untracked. testMatch $.
+      name: 'ds-1',
+      dependencies: ['setup'],
+      testMatch: /ds-1\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // GO-LIVE-GUARDS: TVA-0 gym bills the exact configured price; the leads
       // status select never offers 'converted'; the default login leaks no demo
       // password. Seeds its OWN isolated gym (tax_rate=0 via service role).

@@ -162,11 +162,22 @@ const config: Config = {
         // Resolve the next/font variables (self-hosted, size-adjusted fallback)
         // instead of raw family names, which bypassed the optimized font.
         arabic: ['var(--font-arabic)', 'IBM Plex Sans Arabic', 'system-ui', 'sans-serif'],
-        latin: ['var(--font-latin)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        latin: ['var(--font-latin)', 'Geist', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
       },
       fontSize: {
         '2xs': ['0.625rem', { lineHeight: '1rem' }],
+        // DS-1: lift the pervasive small end (the app leaned on text-xs/sm). +1px each.
+        'xs': ['0.8125rem', { lineHeight: '1.125rem' }], // 13px (was 12)
+        'sm': ['0.9375rem', { lineHeight: '1.375rem' }], // 15px (was 14)
+        // DS-1 semantic type scale (base ~16px): use text-display/h1/h2/h3/body/label
+        // on hubs instead of ad-hoc text-2xl/text-xs. Weight left to the element.
+        'label': ['0.8125rem', { lineHeight: '1.1rem', letterSpacing: '0.02em' }], // 13px eyebrow
+        'body': ['1rem', { lineHeight: '1.6' }],          // 16px body
+        'h3': ['1.25rem', { lineHeight: '1.4', letterSpacing: '-0.005em' }],  // 20px
+        'h2': ['1.5rem', { lineHeight: '1.3', letterSpacing: '-0.01em' }],    // 24px
+        'h1': ['1.875rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],  // 30px
+        'display': ['2.5rem', { lineHeight: '1.08', letterSpacing: '-0.02em' }], // 40px
         'display-lg': ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
         'display-md': ['2.25rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
         'display-sm': ['1.875rem', { lineHeight: '1.3' }],

@@ -147,14 +147,14 @@ async function MoneyOverview({ locale }: { locale: string }) {
     <>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {products.membership && (
-      <div className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="money-renewals">
+      <div className="rounded-2xl border bg-white p-5 shadow-elevation-1" data-testid="money-renewals">
         <p className="flex items-center gap-1 text-xs text-gray-500"><RefreshCw className="h-3 w-3" /> {t('renewalsOutstanding')}</p>
         <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd">${renewalOutstanding.toFixed(2)}</p>
         <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: openRenewalInvs.length })}</p>
         <div className="mt-2"><ProcessRenewalsButton /></div>
       </div>
       )}
-      <div className="rounded-2xl border bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border bg-white p-5 shadow-elevation-1">
         <p className="text-xs text-gray-500">{t('outstanding')}</p>
         <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding">${outstanding.toFixed(2)}</p>
         <p className="mt-0.5 text-xs text-gray-400">{t('openInvoices', { count: (openInvoices ?? []).length })}</p>
@@ -162,7 +162,7 @@ async function MoneyOverview({ locale }: { locale: string }) {
           {t('viewInvoices')}
         </Link>
       </div>
-      <div className="rounded-2xl border bg-white p-4 shadow-sm sm:col-span-2">
+      <div className="rounded-2xl border bg-white p-5 shadow-elevation-1 sm:col-span-2">
         <p className="mb-2 text-xs text-gray-500">{t('todayTally')}</p>
         <div className="flex flex-wrap gap-3 text-sm" data-testid="money-tally">
           {tally.size === 0 ? (

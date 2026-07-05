@@ -43,8 +43,8 @@ export function Header({ locale, role, showBell = true }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-white">
-      {/* AX-1 staff shell accent bar */}
-      <div className="h-1 w-full bg-[#cd1419]" aria-hidden />
+      {/* AX-1 staff shell accent bar — DS-1: the per-role --surface accent (var-driven) */}
+      <div className="h-1 w-full bg-[color:var(--shell-accent)]" aria-hidden />
       <div className="flex h-16 items-center gap-4 px-4">
       {/* SHELL-RESPONSIVE-FIX (BUG 2): the dead hamburger is gone. It toggled a
           `showMobileSidebar` state that was never rendered (a no-op), and the shell
@@ -91,7 +91,7 @@ export function Header({ locale, role, showBell = true }: HeaderProps) {
             {label}
           </span>
           <span data-testid="shell-badge" data-shell="staff"
-            className="inline-flex items-center rounded-full bg-[#cd1419] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-white">
+            className="inline-flex items-center rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-white">
             {t('common.shellStaff')}
           </span>
         </div>

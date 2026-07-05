@@ -27,10 +27,14 @@ export type NativeHeaderProps = {
 
 // design-system.md "Per-shell accents": staff=brand red, coach=gold-on-black,
 // portal=cool teal. Tenant-clean: keyed by ROLE-shell, never by gym.
+// DS-1: the shell badge now carries the per-role --surface accent (reception=crimson,
+// coach=graphite, member=bronze) — the "which surface" identity chip. `bar` is unused
+// (the visible stripe reads var(--shell-accent); the PWA theme-color lives in each
+// shell's layout.tsx viewport — deliberately left on the prior scheme for now).
 const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { bar: string; badge: string; labelKey: string }> = {
-  staff: { bar: '#cd1419', badge: 'bg-[#cd1419] text-white', labelKey: 'shellStaff' },
-  coach: { bar: '#d4af37', badge: 'bg-[#111111] text-[#d4af37]', labelKey: 'shellCoach' },
-  portal: { bar: '#0e7490', badge: 'bg-[#0e7490] text-white', labelKey: 'shellMember' },
+  staff: { bar: '#cd1419', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellStaff' },
+  coach: { bar: '#d4af37', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellCoach' },
+  portal: { bar: '#0e7490', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellMember' },
 };
 
 const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
@@ -118,7 +122,7 @@ export function NativeHeader({
           stripped by the prod strict style-src CSP). --shell-accent is set by the
           shell root's shell-{staff,portal,coach} class (globals.css) and equals
           SHELL_STYLE[shell].bar, so a var'd class is CSP-safe + identical. */}
-      {shellStyle && <div className="h-1 w-full bg-[color:var(--shell-accent)]" aria-hidden />}
+      {shellStyle && <div data-testid="shell-accent-stripe" className="h-1 w-full bg-[color:var(--shell-accent)]" aria-hidden />}
       {/* Top row: back button + right actions + collapsed title */}
       <div className="flex items-center justify-between px-4 h-12">
         <div className="flex items-center gap-2 min-w-0">

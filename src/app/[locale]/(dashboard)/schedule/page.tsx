@@ -342,7 +342,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
           ) : (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3" data-testid="coach-diary">
               {diary.map((col) => (
-                <div key={col.coachId} className="rounded-2xl border bg-white p-3 shadow-sm" data-testid="diary-coach-column" data-coach-id={col.coachId}>
+                <div key={col.coachId} className="rounded-2xl border bg-white p-5 shadow-elevation-1" data-testid="diary-coach-column" data-coach-id={col.coachId}>
                   {/* TEAM-1: the column header is the door into the coach's file. */}
                   <Link href={`/${locale}/coaches/${col.coachId}`} data-testid="diary-coach-header" data-coach-link="1"
                     className={cn('mb-2 flex items-center gap-2 border-b pb-2 text-sm font-bold text-gray-900 hover:text-[#cd1419]', isRTL && 'font-arabic')}>

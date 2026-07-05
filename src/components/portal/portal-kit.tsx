@@ -64,7 +64,7 @@ export function PortalCard({
   return (
     <Card
       data-testid={testid ?? 'portal-card'}
-      className={cn('rounded-2xl border-gray-100 p-4 shadow-sm', className)}
+      className={cn('rounded-2xl border-gray-100 p-5 shadow-elevation-1', className)}
       {...props}
     >
       {children}
