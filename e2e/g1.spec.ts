@@ -1,6 +1,64 @@
 import { test, expect, type Browser } from '@playwright/test'
-import { ROLES } from './roles'
+import { ROLES, roleEmail, E2E_PASSWORD } from './roles'
 import { vis, gymSlug } from './helpers'
+
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const SVC = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+/**
+ * G1-STABILIZE: stand up THIS test's OWN paid membership invoice via the same RPCs
+ * the billing UI calls (create_student → issue_invoice → record_payment), driven
+ * API-only with the owner's real JWT. Returns the invoice id. API-only keeps the
+ * setup fast + read-nothing-shared, so the receipt assertion can't be raced by a
+ * parallel spec mutating the seed gym (the old flake) and the test stays well under
+ * budget even when the single next-start server is loaded.
+ */
+async function standUpOwnPaidInvoice(run: string): Promise<string> {
+  if (!URL || !ANON || !SVC) throw new Error('G1 receipt setup needs SUPABASE URL + anon + service-role key')
+  const tokRes = await fetch(`${URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: roleEmail('owner'), password: E2E_PASSWORD }),
+  })
+  const jwt = (await tokRes.json()).access_token as string | undefined
+  if (!jwt) throw new Error(`G1 owner sign-in failed: ${tokRes.status}`)
+  // Staff RPCs run under the owner's JWT (is_staff); return=representation gives the row.
+  const rpc = async (fn: string, body: unknown) => {
+    const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: ANON!, Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify(body),
+    })
+    if (!r.ok) throw new Error(`${fn} failed: ${r.status} ${await r.text()}`)
+    const j = await r.json()
+    return Array.isArray(j) ? j[0] : j
+  }
+  const gymRes = await fetch(`${URL}/rest/v1/gyms?slug=eq.${encodeURIComponent(gymSlug())}&select=id`, {
+    headers: { apikey: SVC, Authorization: `Bearer ${SVC}` },
+  })
+  const gymId = ((await gymRes.json()) as Array<{ id: string }>)[0]?.id
+  if (!gymId) throw new Error('G1 could not resolve the run gym')
+  // 1) a fresh member the test OWNS (the F1 create_student write path)
+  const stu = await rpc('create_student', {
+    p_first_name_ar: `قسيمة ${run}`, p_first_name_en: `G1 Receipt ${run}`, p_first_name_fr: `G1 Receipt ${run}`,
+    p_last_name_ar: '', p_last_name_en: '', p_last_name_fr: '',
+    p_phone: `+96170${run}`, p_gender: 'male', p_date_of_birth: null,
+    p_emergency_contact_name: null, p_emergency_contact_phone: null,
+    p_medical_notes: null, p_join_date: null, p_current_belt_rank: null,
+  })
+  // 2) issue a MEMBERSHIP invoice for THEM (billing's issue_invoice)
+  const inv = await rpc('issue_invoice', {
+    p_gym_id: gymId, p_student_id: stu.id, p_invoice_type: 'membership',
+    p_amount_usd: 50, p_amount_lbp: 0, p_exchange_rate: null, p_rate_date: null,
+    p_membership_id: null, p_due_date: null, p_notes_en: null, p_notes_ar: null, p_notes_fr: null,
+  })
+  // 3) record the FULL payment → paid → the receipt exists
+  await rpc('record_payment', {
+    p_invoice_id: inv.id, p_amount_usd: inv.total_usd, p_amount_lbp: 0, p_method: 'cash_usd',
+    p_reference: null, p_exchange_rate: null, p_payment_date: null, p_client_uuid: null,
+  })
+  return inv.id as string
+}
 
 /**
  * G1 — WhatsApp channel. Two proofs:
@@ -48,53 +106,17 @@ test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backe
   const RUN = Date.now().toString().slice(-6)
 
   // G1-STABILIZE: OWN the receipt data instead of the shared "Adopt Member" (a
-  // parallel spec mutating the shared seed gym used to leave that invoice out of
-  // the asserted state → 120s hang). Stand up THIS test's own fresh member + a PAID
-  // membership invoice via the same app flow the billing specs use (add-student →
-  // issue_invoice → record full payment → paid → receipt). Done on /en (the member
-  // dropdowns are localized under /ar); the Arabic assertion happens on /ar below.
-  const setup = await ownerCtx(browser, 'en')
-  let memberId = ''
-  try {
-    // 1) A fresh adult member (identity → plan[skip] → review → submit), owner.spec F1#3 flow.
-    await setup.page.goto('/en/students/add')
-    const wiz = (tid: string) => setup.page.locator(`[data-testid="${tid}"]:visible`).first()
-    await wiz('sw-name-en').fill(`G1 Receipt ${RUN}`)
-    await wiz('sw-name-ar').fill(`قسيمة ${RUN}`)
-    await wiz('sw-phone').fill(`+96170${RUN}`)
-    for (let i = 0; i < 5; i++) { // step-count-agnostic: advance until Submit shows
-      if (await setup.page.locator('[data-testid="wizard-submit"]:visible').count()) break
-      await wiz('wizard-next').click()
-    }
-    await wiz('wizard-submit').click()
-    await expect(setup.page, 'the new member was created').toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 20_000 })
-    memberId = setup.page.url().match(/\/students\/([0-9a-f-]{36})/)![1]
-
-    // 2) Issue a MEMBERSHIP invoice for THEM (billing's issue flow) …
-    await setup.page.goto('/en/invoices/new')
-    await vis(setup.page, '[data-testid="inv-student"]').selectOption(memberId)
-    await vis(setup.page, '[data-testid="inv-type"]').selectOption('membership')
-    await vis(setup.page, '[data-testid="inv-amount-usd"]').fill('50')
-    await vis(setup.page, '[data-testid="issue-submit"]').click()
-    await expect(vis(setup.page, '[data-testid="invoice-number"]')).toBeVisible({ timeout: 15_000 })
-
-    // 3) … and record the FULL payment → paid → the receipt exists.
-    const balance = (await vis(setup.page, '[data-testid="invoice-balance"]').textContent())!.replace(/[^0-9.]/g, '')
-    await vis(setup.page, '[data-testid="pay-amount-usd"]').fill(balance)
-    await vis(setup.page, '[data-testid="pay-method"]').selectOption('cash_usd')
-    await vis(setup.page, '[data-testid="pay-submit"]').click()
-    await expect(vis(setup.page, '[data-testid="receipt"]'), 'full payment → paid → receipt').toBeVisible({ timeout: 15_000 })
-  } finally {
-    await setup.ctx.close()
-  }
+  // parallel spec mutating the shared seed gym used to leave that invoice out of the
+  // asserted state → 120s hang). Stand up this test's OWN fresh member + PAID
+  // membership invoice via the RPCs the billing UI calls — API-only, so nothing
+  // shared is read and the setup stays fast under load. Arabic assertion runs on /ar.
+  const invoiceId = await standUpOwnPaidInvoice(RUN)
 
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
-    // Receipt share — this test OWNS this member's ONE paid membership invoice, so
-    // the row/receipt are always present and can't be raced by another spec.
-    await page.goto(`/ar/students/${memberId}`)
-    await vis(page, '[data-testid="member-invoice-row"][data-type="membership"]').first().locator('a').first().click()
-    await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 15_000 })
+    // Receipt share — assert on THIS test's OWN paid membership invoice (direct nav;
+    // the receipt is always present and cannot be raced by another spec).
+    await page.goto(`/ar/invoices/${invoiceId}`)
     await vis(page, '[data-testid="receipt-link"]').first().click()
     const wa = vis(page, '[data-testid="receipt-wa"]').first()
     const href = await wa.getAttribute('href')
