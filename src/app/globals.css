@@ -237,3 +237,22 @@
   .shell-portal { --surface: #b45309; --shell-accent: var(--surface); } /* member — warm bronze */
   .shell-coach  { --surface: #475569; --shell-accent: var(--surface); } /* coach — graphite */
 }
+
+/* INVOICE-POLISH #6: printable receipt. On the receipt route, PRINT ONLY the receipt
+   card — hide the dashboard shell chrome (sidebar/header/mobile TabBar/nav) and let
+   the receipt fill a white page. Scoped via :has() to the page that carries
+   [data-testid="receipt"], so EVERY other dashboard page still prints normally (an
+   un-scoped "hide everything" would print blank elsewhere). */
+@media print {
+  body:has([data-testid="receipt"]) { background: #fff; }
+  body:has([data-testid="receipt"]) * { visibility: hidden; }
+  body:has([data-testid="receipt"]) [data-testid="receipt"],
+  body:has([data-testid="receipt"]) [data-testid="receipt"] * { visibility: visible; }
+  body:has([data-testid="receipt"]) [data-testid="receipt"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+  }
+}

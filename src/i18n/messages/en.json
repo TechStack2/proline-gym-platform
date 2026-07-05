@@ -2564,7 +2564,7 @@
     "tmpl": {
       "renewal": "Hi {name}, this is {gym} — a friendly reminder that your membership is due for renewal. Reply here to arrange it. Thank you! 💪",
       "winback": "Hi {name}, we miss you at {gym}! Come back for a session — reply here and we will sort you out.",
-      "receipt": "Hi {name}, your {gym} receipt for invoice {number}: ${usd}{lbp}. Thank you!",
+      "receipt": "Hi {name}, your receipt from {gym} — invoice {number} · {label}: ${usd}{lbp}. Paid {date}. Balance: ${balance}. Thank you!",
       "leadReply": "Hi {name}, this is {gym} replying about your interest. Want to book a free trial? Just reply here! 🥊",
       "regApproved": "Hi {name}, your registration for {class} at {gym} is confirmed! See you in class 💪"
     },

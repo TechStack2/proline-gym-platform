@@ -131,6 +131,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // INVOICE-POLISH: the printable receipt hides the shell chrome under print
+      // media, and a class-registration invoice (via approve_class_registration,
+      // post-000086) carries the enriched customer-facing label ("<class> — Month
+      // Year") on the receipt, localized ar/en. Creates its own class + registration.
+      name: 'invoice-polish',
+      dependencies: ['setup'],
+      testMatch: /invoice-polish\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Admin Presentation Repair (Prompt AR): classes/students/coaches/schedule/
       // payments render real normalized data. Owner-only; runs after billing so a
       // settled invoice already exists in the gym (and AR also self-issues one).

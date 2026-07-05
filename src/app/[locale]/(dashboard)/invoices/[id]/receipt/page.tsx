@@ -50,6 +50,10 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const paid = paidUsd(payments)
   const balance = balanceUsd(inv.total_usd, payments)
   const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
+  // INVOICE-POLISH 6a/6b: the customer-facing "what it's for" label lives in notes_*
+  // (composed at creation by the billing RPCs). Rendered on the receipt (receipt-note)
+  // + passed into the WhatsApp share below.
+  const label = invoiceNote(inv, locale)
 
   return (
     <div className={cn('mx-auto max-w-xl p-6', isRTL && 'rtl text-right')} data-testid="receipt">
@@ -58,8 +62,11 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
         <span className="flex items-center gap-2">
           <WhatsAppShare phone={profile?.phone} testid="receipt-wa" variant="button"
             message={tw('tmpl.receipt', { name: studentName, number: inv.invoice_number, gym: gymName,
+              label: label || invoiceTypeLabel(inv.invoice_type, locale),
               usd: Number(inv.total_usd ?? 0).toFixed(2),
-              lbp: inv.total_lbp ? ` / ${Number(inv.total_lbp).toLocaleString()} LBP` : '' })}
+              lbp: inv.total_lbp ? ` / ${Number(inv.total_lbp).toLocaleString()} LBP` : '',
+              date: fmtDate((inv as any).paid_at || inv.created_at),
+              balance: balance.toFixed(2) })}
             label={tw('share.sendReceipt')} />
           <PrintButton label={t('Print', 'طباعة', 'Imprimer')} />
         </span>
@@ -89,7 +96,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
           </div>
         </div>
         {invoiceNote(inv, locale) && (
-          <p className="mb-4 text-sm text-muted-foreground" data-testid="receipt-note">{invoiceNote(inv, locale)}</p>
+          <p className="mb-4 rounded-lg bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-800" data-testid="receipt-note">{invoiceNote(inv, locale)}</p>
         )}
 
         <table className="mb-4 w-full text-sm">
