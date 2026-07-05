@@ -2685,6 +2685,8 @@
     "offlineTitle": "Vous êtes hors ligne",
     "offlineDescription": "Les modifications se synchroniseront à la reconnexion.",
     "backOnline": "De retour en ligne",
+    "updateAvailable": "Nouvelle version disponible",
+    "updateAction": "Actualiser",
     "cardTitle": "Installer l'application",
     "cardDescription": "Installez Proline sur cet appareil pour un accueil plus rapide et prêt hors ligne.",
     "alreadyInstalledHint": "Déjà installée ? Vous pouvez masquer ceci.",
