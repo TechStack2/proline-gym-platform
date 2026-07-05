@@ -138,7 +138,11 @@ test('G1 · wa.me RECEIPT bridge renders the localized link (Arabic /ar) — no 
 })
 
 test('G1 · wa.me LEAD-REPLY bridge renders the localized link (Arabic /ar) — no backend', async ({ browser }) => {
-  test.setTimeout(120_000)
+  // 180s (matching the heavier settings test, which is stable) — the /ar/students
+  // ?tab=prospects leads-pipeline SSR renders slowly on a loaded/slow CI runner, and
+  // the old 120s occasionally cut a slow-but-completing render off. The settings test
+  // (180s, more navs) never flaked while this one (120s) did — the delta was the budget.
+  test.setTimeout(180_000)
   const RUN = Date.now().toString().slice(-6)
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
