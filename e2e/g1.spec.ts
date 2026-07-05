@@ -45,28 +45,67 @@ test.beforeEach(async () => {
 
 test('G1 · wa.me bridge renders localized links (Arabic under /ar) — no backend', async ({ browser }) => {
   test.setTimeout(120_000)
+  const RUN = Date.now().toString().slice(-6)
+
+  // G1-STABILIZE: OWN the receipt data instead of the shared "Adopt Member" (a
+  // parallel spec mutating the shared seed gym used to leave that invoice out of
+  // the asserted state → 120s hang). Stand up THIS test's own fresh member + a PAID
+  // membership invoice via the same app flow the billing specs use (add-student →
+  // issue_invoice → record full payment → paid → receipt). Done on /en (the member
+  // dropdowns are localized under /ar); the Arabic assertion happens on /ar below.
+  const setup = await ownerCtx(browser, 'en')
+  let memberId = ''
+  try {
+    // 1) A fresh adult member (identity → plan[skip] → review → submit), owner.spec F1#3 flow.
+    await setup.page.goto('/en/students/add')
+    const wiz = (tid: string) => setup.page.locator(`[data-testid="${tid}"]:visible`).first()
+    await wiz('sw-name-en').fill(`G1 Receipt ${RUN}`)
+    await wiz('sw-name-ar').fill(`قسيمة ${RUN}`)
+    await wiz('sw-phone').fill(`+96170${RUN}`)
+    for (let i = 0; i < 5; i++) { // step-count-agnostic: advance until Submit shows
+      if (await setup.page.locator('[data-testid="wizard-submit"]:visible').count()) break
+      await wiz('wizard-next').click()
+    }
+    await wiz('wizard-submit').click()
+    await expect(setup.page, 'the new member was created').toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 20_000 })
+    memberId = setup.page.url().match(/\/students\/([0-9a-f-]{36})/)![1]
+
+    // 2) Issue a MEMBERSHIP invoice for THEM (billing's issue flow) …
+    await setup.page.goto('/en/invoices/new')
+    await vis(setup.page, '[data-testid="inv-student"]').selectOption(memberId)
+    await vis(setup.page, '[data-testid="inv-type"]').selectOption('membership')
+    await vis(setup.page, '[data-testid="inv-amount-usd"]').fill('50')
+    await vis(setup.page, '[data-testid="issue-submit"]').click()
+    await expect(vis(setup.page, '[data-testid="invoice-number"]')).toBeVisible({ timeout: 15_000 })
+
+    // 3) … and record the FULL payment → paid → the receipt exists.
+    const balance = (await vis(setup.page, '[data-testid="invoice-balance"]').textContent())!.replace(/[^0-9.]/g, '')
+    await vis(setup.page, '[data-testid="pay-amount-usd"]').fill(balance)
+    await vis(setup.page, '[data-testid="pay-method"]').selectOption('cash_usd')
+    await vis(setup.page, '[data-testid="pay-submit"]').click()
+    await expect(vis(setup.page, '[data-testid="receipt"]'), 'full payment → paid → receipt').toBeVisible({ timeout: 15_000 })
+  } finally {
+    await setup.ctx.close()
+  }
+
   const { ctx, page } = await ownerCtx(browser, 'ar')
   try {
-    // Receipt share (deterministic: ON-1's Adopt Member has a PAID invoice).
-    // NB: under /ar the card shows the Arabic name, so don't filter by the
-    // English name — the 'Adopt' search already narrows to the one student.
-    await page.goto('/ar/students?search=Adopt')
-    await vis(page, '[data-testid="student-card"]').first().click()
-    await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 })
+    // Receipt share — this test OWNS this member's ONE paid membership invoice, so
+    // the row/receipt are always present and can't be raced by another spec.
+    await page.goto(`/ar/students/${memberId}`)
     await vis(page, '[data-testid="member-invoice-row"][data-type="membership"]').first().locator('a').first().click()
     await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/, { timeout: 15_000 })
     await vis(page, '[data-testid="receipt-link"]').first().click()
     const wa = vis(page, '[data-testid="receipt-wa"]').first()
     const href = await wa.getAttribute('href')
     expect(href, 'a wa.me deep-link').toContain('https://wa.me/')
-    // WL-TEMPLATES re-point: the receipt template now interpolates THIS gym's
-    // localized name (was a hardcoded "برو لاين جيم"). g1 runs on the e2e gym
-    // (seed_e2e_gym, 000029) whose name_ar is "برولاين تجريبي" — so assert the
-    // message carries the gym's OWN name (stronger: proves per-gym interpolation).
+    // WL-TEMPLATES re-point: the receipt template interpolates THIS gym's localized
+    // name (was a hardcoded "برو لاين جيم"). g1 runs on the e2e gym (seed_e2e_gym,
+    // 000029) whose name_ar is "برولاين تجريبي" — assert the message carries the
+    // gym's OWN name (stronger: proves per-gym interpolation).
     expect(decodeURIComponent(href!), 'the Arabic receipt carries THIS gym name').toContain('برولاين تجريبي')
 
     // Lead-reply share (create a lead, then assert its wa.me reply link).
-    const RUN = Date.now().toString().slice(-6)
     await page.goto('/ar/students?tab=prospects')
     await vis(page, '[data-testid="add-lead-button"]').first().click()
     const modal = page.locator('[data-testid="add-lead-modal"]:visible')
