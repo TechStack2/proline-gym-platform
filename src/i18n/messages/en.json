@@ -2685,6 +2685,8 @@
     "offlineTitle": "You're offline",
     "offlineDescription": "Changes will sync when you reconnect.",
     "backOnline": "Back online",
+    "updateAvailable": "New version available",
+    "updateAction": "Refresh",
     "cardTitle": "Install the app",
     "cardDescription": "Install Proline on this device for a faster, offline-ready front desk.",
     "alreadyInstalledHint": "Already installed? You can dismiss this.",

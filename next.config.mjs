@@ -6,7 +6,18 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const withPWA = withPWAInit({
   dest: 'public',
   register: true,
-  skipWaiting: true,
+  // PWA-UPDATE: the new SW WAITS instead of silently taking over an already-loaded
+  // page (which risks a mid-entry hard-reload at the front desk via Next buildId
+  // skew). ServiceWorkerRegister detects the waiting worker and shows a non-blocking
+  // "New version — Refresh" toast; tapping it posts SKIP_WAITING (worker/index.js)
+  // to promote the waiting worker, then reloads once it takes control. First install
+  // (no prior worker) still activates immediately, so offline engages on first visit.
+  skipWaiting: false,
+  // PWA-UPDATE one-time succession: a cache-version makes THIS deploy's /sw.js
+  // byte-different (browsers install it over the stale, unversioned skipWaiting:true
+  // worker) and gives it a FRESH precache; cleanupOutdatedCaches purges the old
+  // caches when the new worker activates. Bump this string on any future SW change.
+  cacheId: 'proline-gym-v2',
   disable: process.env.NODE_ENV === 'development',
   // OFF-1: next-pwa builds an all-or-nothing precache manifest that, with Next 14
   // App Router, includes URLs `next start` 404s → the SW precache install REJECTS

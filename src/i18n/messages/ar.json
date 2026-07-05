@@ -2685,6 +2685,8 @@
     "offlineTitle": "أنت غير متصل بالإنترنت",
     "offlineDescription": "ستتم المزامنة عند عودة الاتصال.",
     "backOnline": "عاد الاتصال",
+    "updateAvailable": "يتوفّر إصدار جديد",
+    "updateAction": "تحديث",
     "cardTitle": "ثبّت التطبيق",
     "cardDescription": "ثبّت برو لاين على هذا الجهاز لمكتب أمامي أسرع وجاهز للعمل دون اتصال.",
     "alreadyInstalledHint": "مثبّت مسبقاً؟ يمكنك إخفاء هذا.",
