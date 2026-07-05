@@ -348,6 +348,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // USER-ROLES-RLS-HARDENING (000085): a receptionist can't directly write
+      // user_roles (no role-escalation / bypass-deactivate) but set_staff_active
+      // works for admins; an un-scoped class_schedules read never leaks another gym.
+      // API-only (RLS via user JWT); hermetic two-gym seed.
+      name: 'user-roles-hardening',
+      dependencies: ['setup'],
+      testMatch: /user-roles-hardening\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ONBOARDING-AVATAR (#4): the first-login onboarding wizard's avatar upload
       // stores the image in the avatars bucket + sets profiles.avatar_url. Hermetic
       // gym + a net-new must_change_password user (GoTrue admin).
