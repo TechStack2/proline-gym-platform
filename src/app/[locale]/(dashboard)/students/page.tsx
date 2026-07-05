@@ -70,11 +70,16 @@ export default async function StudentsPage({
   // classes+PT gym.
   const products = await getEnabledProducts(supabase, gymId)
 
-  // Fetch students with profile data
+  // Fetch students with profile data. PERF-2: only the columns the roster actually
+  // reads (id, is_active, join_date, current_belt_rank + the embedded profile) — the
+  // old `select('*')` pulled every students column over the wire unused.
   let query = supabase
     .from('students')
     .select(`
-      *,
+      id,
+      is_active,
+      join_date,
+      current_belt_rank,
       profiles!inner (
         id,
         first_name_ar,
@@ -142,22 +147,22 @@ export default async function StudentsPage({
   const chip = searchParams.chip && chipPredicates[searchParams.chip] ? searchParams.chip : ''
   const visibleStudents = chip ? (students ?? []).filter(chipPredicates[chip]) : (students ?? [])
 
-  // MEMBER-ENRICH: discipline(s) + active class(es) + membership status per
-  // visible member (one gym-scoped read; the class→discipline join the card lacked).
-  const memberInfo = await getMemberEnrichment(
-    supabase, gymId, visibleStudents.map((s: any) => s.id), locale,
-  )
+  // PERF-2: the per-member enrichment and the disciplines filter list are independent
+  // — fetch them in one wave instead of back-to-back.
+  //   MEMBER-ENRICH: discipline(s) + active class(es) + membership status per visible
+  //   member (one gym-scoped read; the class→discipline join the card lacked).
+  const [memberInfo, { data: disciplines }] = await Promise.all([
+    getMemberEnrichment(supabase, gymId, visibleStudents.map((s: any) => s.id), locale),
+    supabase
+      .from('disciplines')
+      .select(`id, name_${locale}`)
+      .eq('gym_id', gymId)
+      .eq('is_active', true)
+      .order(`name_${locale}`),
+  ])
   const chipCounts = Object.fromEntries(
     Object.entries(chipPredicates).map(([k, pred]) => [k, (students ?? []).filter(pred).length]),
   )
-
-  // Fetch disciplines for filter
-  const { data: disciplines } = await supabase
-    .from('disciplines')
-    .select(`id, name_${locale}`)
-    .eq('gym_id', gymId)
-    .eq('is_active', true)
-    .order(`name_${locale}`)
 
   // Fetch belt ranks for filter. ADM-2: belt_hierarchies has NO gym_id column —
   // the old .eq('gym_id', …) was a phantom-column 42703 that silently emptied

@@ -112,39 +112,77 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     .filter((s: any) => s.cls && s.cls.gym_id === gymId && s.cls.is_active)
 
   const classIds = [...new Set(todayClasses.map((s: any) => s.cls.id))]
-  const { data: enrollments } = classIds.length
-    ? await supabase.from('class_enrollments').select('class_id').in('class_id', classIds).eq('is_active', true)
-    : { data: [] as { class_id: string }[] }
-  const enrolledBy = new Map<string, number>()
-  for (const e of enrollments ?? []) enrolledBy.set(e.class_id, (enrolledBy.get(e.class_id) ?? 0) + 1)
-
-  // Reconcile open balances for the Money card (D1 canon: Σ payments.amount_usd).
+  // Reconcile-target ids for the Money card (D1 canon: Σ payments.amount_usd).
   const dueIds = (dueToday ?? []).map((i: any) => i.id)
   const overIds = (overdueRaw ?? []).map((i: any) => i.id)
   const allOpenIds = [...dueIds, ...overIds]
-  const { data: pays } = allOpenIds.length
-    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', allOpenIds)
-    : { data: [] as { invoice_id: string; amount_usd: number | null }[] }
+
+  // PERF-2: one parallel wave for every INDEPENDENT read — enrollments, open-invoice
+  // payments, the drawer tally, PT refills, live camps, the dunning policy, the chase
+  // + paused membership lists, and the win-back queue. Only the camp roster→invoice
+  // chain below stays sequential (each step feeds the next). Was ~9 serial round-trips.
+  const [
+    { data: enrollments },
+    { data: pays },
+    tally,
+    renewals,
+    { data: liveCamps },
+    { data: gymPolicyRow },
+    { data: chaseRaw },
+    { data: pausedRaw },
+    winbackQueue,
+  ] = await Promise.all([
+    classIds.length
+      ? supabase.from('class_enrollments').select('class_id').in('class_id', classIds).eq('is_active', true)
+      : Promise.resolve({ data: [] as { class_id: string }[] }),
+    allOpenIds.length
+      ? supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', allOpenIds)
+      : Promise.resolve({ data: [] as { invoice_id: string; amount_usd: number | null }[] }),
+    getDailyTally(supabase, dayStart),
+    getRenewalsDue(supabase, gymId, locale),
+    supabase
+      .from('camps')
+      .select('id, name_ar, name_en, name_fr, max_capacity')
+      .eq('gym_id', gymId)
+      .is('deleted_at', null)
+      .in('status', ['open', 'in_progress', 'full'])
+      .lte('start_date', horizonEnd)
+      .gte('end_date', dayStart),
+    supabase
+      .from('gyms').select('renewal_lead_days, dunning_grace_days').eq('id', gymId).single(),
+    supabase
+      .from('student_memberships')
+      .select(`id, end_date, status, pause_end_date,
+        students!inner (id, gym_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
+      .eq('students.gym_id', gymId)
+      .in('status', ['active', 'lapsed'])
+      .lt('end_date', dayStart)
+      .order('end_date')
+      .limit(30),
+    supabase
+      .from('student_memberships')
+      .select(`id, pause_start_date, pause_end_date, status,
+        students!inner (id, gym_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
+      .eq('students.gym_id', gymId)
+      .eq('status', 'paused')
+      .order('pause_end_date')
+      .limit(30),
+    getWinbackQueue(supabase, gymId, locale),
+  ])
+
+  const enrolledBy = new Map<string, number>()
+  for (const e of enrollments ?? []) enrolledBy.set(e.class_id, (enrolledBy.get(e.class_id) ?? 0) + 1)
+
   const paidBy = new Map<string, number>()
   for (const p of pays ?? []) paidBy.set(p.invoice_id!, (paidBy.get(p.invoice_id!) ?? 0) + Number(p.amount_usd ?? 0))
   const bal = (inv: any) => balanceUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }])
   const overdueOpen = (overdueRaw ?? []).filter((i: any) => bal(i) > 0)
   const overdueUsd = overdueOpen.reduce((s: number, i: any) => s + bal(i), 0)
   const projectedUsd = (dueToday ?? []).reduce((s: number, i: any) => s + bal(i), 0)
-
   const todayPt = (ptSessions ?? []).filter((s: any) => one(s.coaches)?.gym_id === gymId)
-  const tally = await getDailyTally(supabase, dayStart)
-  const renewals = await getRenewalsDue(supabase, gymId, locale)
 
-  // ── E1: camps running today — N expected · M unpaid → roster ──
-  const { data: liveCamps } = await supabase
-    .from('camps')
-    .select('id, name_ar, name_en, name_fr, max_capacity')
-    .eq('gym_id', gymId)
-    .is('deleted_at', null)
-    .in('status', ['open', 'in_progress', 'full'])
-    .lte('start_date', horizonEnd)
-    .gte('end_date', dayStart)
+  // ── E1: camps running today — N expected · M unpaid → roster. The roster→invoice
+  //    chain stays sequential (liveCamps → liveRegs → openCampInvs). ──
   const liveCampIds = ((liveCamps ?? []) as any[]).map((c) => c.id)
   const { data: liveRegs } = liveCampIds.length
     ? await supabase.from('camp_registrations')
@@ -165,33 +203,15 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   })
   const inboxCount = (regRequests ?? 0) + (ptRequests ?? 0)
 
-  // ── ML-1 chase list: read-time overdue (past end, inside grace) + lapsed ──
-  const { data: gymPolicyRow } = await supabase
-    .from('gyms').select('renewal_lead_days, dunning_grace_days').eq('id', gymId).single()
-  const { data: chaseRaw } = await supabase
-    .from('student_memberships')
-    .select(`id, end_date, status, pause_end_date,
-      students!inner (id, gym_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
-    .eq('students.gym_id', gymId)
-    .in('status', ['active', 'lapsed'])
-    .lt('end_date', dayStart)
-    .order('end_date')
-    .limit(30)
+  // ── ML-1 chase list: read-time overdue (past end, inside grace) + lapsed
+  //    (chaseRaw + gymPolicyRow fetched in the wave above) ──
   const chase = ((chaseRaw ?? []) as any[])
     .map((m) => ({ ...m, state: membershipState(m, gymPolicyRow ?? {}) }))
     .filter((m) => m.state === 'overdue' || m.state === 'lapsed')
 
-  // ── PAUSE-CARD: currently-paused (frozen) memberships — gym-scoped, RLS-respecting.
-  //    Reuses the existing freeze infra (status='paused', pause_end_date); one-tap
+  // ── PAUSE-CARD: currently-paused (frozen) memberships (pausedRaw fetched above) —
+  //    reuses the existing freeze infra (status='paused', pause_end_date); one-tap
   //    Resume calls the existing unfreeze_membership action. No schema/RPC change.
-  const { data: pausedRaw } = await supabase
-    .from('student_memberships')
-    .select(`id, pause_start_date, pause_end_date, status,
-      students!inner (id, gym_id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
-    .eq('students.gym_id', gymId)
-    .eq('status', 'paused')
-    .order('pause_end_date')
-    .limit(30)
   const paused = ((pausedRaw ?? []) as any[]).map((m) => {
     const start = m.pause_start_date ? new Date(m.pause_start_date) : null
     const end = m.pause_end_date ? new Date(m.pause_end_date) : null
@@ -199,8 +219,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     return { ...m, daysHeld }
   })
 
-  // ── FIN-1: win-back due — queued followups due today + fresh lapses ──
-  const winbackQueue = await getWinbackQueue(supabase, gymId, locale)
+  // ── FIN-1: win-back due — queued followups due today + fresh lapses (fetched above) ──
   const winbackDue = winbackQueue.filter((w) =>
     !w.reactivated && (
       (w.nextActionDate != null && w.nextActionDate >= dayStart && w.nextActionDate <= horizonEnd) ||

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -61,6 +61,7 @@ export function AttendanceDashboardClient({
   const supabase = createClient()
   const online = useOnline()
   const { count: pending, refresh: refreshPending } = usePendingAttendance()
+  const [, startTransition] = useTransition()
   const [loading, setLoading] = useState<string | null>(null)
   const [records, setRecords] = useState<Record<string, AttendanceStatus>>(() => {
     const initial: Record<string, AttendanceStatus> = {}
@@ -85,94 +86,92 @@ export function AttendanceDashboardClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const updateAttendance = useCallback(async (studentId: string, status: AttendanceStatus) => {
+  // PERF-2: OPTIMISTIC — paint the new status INSTANTLY, then persist. On failure
+  // roll back to the prior value + error toast (React 18.3 has no useOptimistic, so
+  // this is the repo's established optimistic-setState + rollback pattern). The write
+  // is an idempotent upsert so re-toggling a student's status is reliable (the old
+  // insert-vs-update branch double-inserted on a second toggle → unique violation).
+  const updateAttendance = useCallback((studentId: string, status: AttendanceStatus) => {
+    const prev = records[studentId]
+    setRecords(r => ({ ...r, [studentId]: status })) // optimistic (instant)
     setLoading(studentId)
-    try {
-      // G2: OFFLINE — queue the mark + optimistic UI; drains on reconnect.
-      if (!navigator.onLine) {
-        await queueMark({ class_id: classId, student_id: studentId, attendance_date: date, status })
-        setRecords(prev => ({ ...prev, [studentId]: status }))
-        await refreshPending()
-        setLoading(null)
-        return
-      }
+    startTransition(async () => {
+      try {
+        // G2: OFFLINE — queue the mark (optimistic paint already applied); drains on reconnect.
+        if (!navigator.onLine) {
+          await queueMark({ class_id: classId, student_id: studentId, attendance_date: date, status })
+          await refreshPending()
+          return
+        }
 
-      const existingRecord = attendanceRecords.find(r => r.student_id === studentId)
-
-      if (existingRecord) {
         const { error } = await supabase
           .from('attendance_records')
-          .update({ status })
-          .eq('id', existingRecord.id)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('attendance_records')
-          .insert({
+          .upsert({
             student_id: studentId,
             schedule_id: classScheduleId,
             class_id: classId,
             attendance_date: date,
             status,
-          })
+          }, { onConflict: 'class_id,student_id,attendance_date' })
 
         if (error) throw error
-      }
-
-      setRecords(prev => ({ ...prev, [studentId]: status }))
-      toast({ title: t('toast.saved'), variant: 'success' })
-    } catch (error) {
-      console.error('Error updating attendance:', error)
-      toast({ title: t('toast.error'), variant: 'destructive' })
-    } finally {
-      setLoading(null)
-    }
-  }, [attendanceRecords, classScheduleId, classId, date, supabase, t, refreshPending])
-
-  const markAllPresent = useCallback(async () => {
-    setLoading('all')
-    try {
-      // G2: OFFLINE — queue every student present + optimistic UI.
-      if (!navigator.onLine) {
-        for (const enrollment of enrollments) {
-          await queueMark({ class_id: classId, student_id: enrollment.student_id, attendance_date: date, status: 'present' })
-        }
-        const newRecords: Record<string, AttendanceStatus> = {}
-        enrollments.forEach(e => { newRecords[e.student_id] = 'present' })
-        setRecords(prev => ({ ...prev, ...newRecords }))
-        await refreshPending()
+        toast({ title: t('toast.saved'), variant: 'success' })
+      } catch (error) {
+        console.error('Error updating attendance:', error)
+        // ROLLBACK to the prior value (delete the key if there was none).
+        setRecords(r => {
+          const next = { ...r }
+          if (prev === undefined) delete next[studentId]
+          else next[studentId] = prev
+          return next
+        })
+        toast({ title: t('toast.error'), variant: 'destructive' })
+      } finally {
         setLoading(null)
-        return
       }
+    })
+  }, [records, classScheduleId, classId, date, supabase, t, refreshPending])
 
-      const updates = enrollments.map(enrollment => ({
-        student_id: enrollment.student_id,
-        schedule_id: classScheduleId,
-        class_id: classId,
-        attendance_date: date,
-        status: 'present' as AttendanceStatus,
-      }))
+  const markAllPresent = useCallback(() => {
+    const snapshot = records // full snapshot for rollback
+    const patch: Record<string, AttendanceStatus> = {}
+    enrollments.forEach(e => { patch[e.student_id] = 'present' })
+    setRecords(prev => ({ ...prev, ...patch })) // optimistic (instant)
+    setLoading('all')
+    startTransition(async () => {
+      try {
+        // G2: OFFLINE — queue every student present (optimistic paint already applied).
+        if (!navigator.onLine) {
+          for (const enrollment of enrollments) {
+            await queueMark({ class_id: classId, student_id: enrollment.student_id, attendance_date: date, status: 'present' })
+          }
+          await refreshPending()
+          return
+        }
 
-      const { error } = await supabase
-        .from('attendance_records')
-        .upsert(updates, { onConflict: 'class_id,student_id,attendance_date' })
+        const updates = enrollments.map(enrollment => ({
+          student_id: enrollment.student_id,
+          schedule_id: classScheduleId,
+          class_id: classId,
+          attendance_date: date,
+          status: 'present' as AttendanceStatus,
+        }))
 
-      if (error) throw error
+        const { error } = await supabase
+          .from('attendance_records')
+          .upsert(updates, { onConflict: 'class_id,student_id,attendance_date' })
 
-      const newRecords: Record<string, AttendanceStatus> = {}
-      enrollments.forEach(enrollment => {
-        newRecords[enrollment.student_id] = 'present'
-      })
-      setRecords(prev => ({ ...prev, ...newRecords }))
-      toast({ title: t('toast.saved'), variant: 'success' })
-    } catch (error) {
-      console.error('Error marking all present:', error)
-      toast({ title: t('toast.error'), variant: 'destructive' })
-    } finally {
-      setLoading(null)
-    }
-  }, [enrollments, classScheduleId, classId, date, supabase, t, refreshPending])
+        if (error) throw error
+        toast({ title: t('toast.saved'), variant: 'success' })
+      } catch (error) {
+        console.error('Error marking all present:', error)
+        setRecords(snapshot) // ROLLBACK to the pre-click snapshot
+        toast({ title: t('toast.error'), variant: 'destructive' })
+      } finally {
+        setLoading(null)
+      }
+    })
+  }, [records, enrollments, classScheduleId, classId, date, supabase, t, refreshPending])
 
   const getStatusIcon = (status: AttendanceStatus) => {
     switch (status) {
@@ -233,6 +232,9 @@ export function AttendanceDashboardClient({
           return (
             <div
               key={enrollment.id}
+              data-testid="att-row"
+              data-student-id={enrollment.student_id}
+              data-status={currentStatus ?? ''}
               className={cn(
                 "flex items-center justify-between p-3 rounded-lg border",
                 "hover:bg-accent/50 transition-colors",
@@ -268,6 +270,7 @@ export function AttendanceDashboardClient({
                   {(['present', 'absent', 'late', 'excused'] as AttendanceStatus[]).map((status) => (
                     <Button
                       key={status}
+                      data-testid={`att-btn-${status}`}
                       variant={currentStatus === status ? 'primary' : 'ghost'}
                       size="sm"
                       className="h-8 w-8 p-0"
