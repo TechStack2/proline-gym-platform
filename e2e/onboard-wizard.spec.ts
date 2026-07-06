@@ -4,8 +4,8 @@ import { ROLES } from './roles'
 /**
  * WL-ONBOARDING-WIZARD — the vendor SUPER-ADMIN onboards gym #2+ (not public
  * self-serve). Proves the new platform-admin access primitive (000082):
- *   1. a platform_admin reaches /onboard, submits, and a NEW gym + owner login +
- *      starter catalog are created (rows asserted service-side);
+ *   1. a platform_admin reaches /onboard, submits, and a NEW gym + owner login are
+ *      created — EMPTY (FX-PER-GYM stop-seeding: no starter catalog), asserted service-side;
  *   2. a regular gym OWNER is BLOCKED from /onboard (route 404 → cannot submit →
  *      no gym created) — the route calls is_platform_admin(), the SAME gate
  *      onboardGym re-asserts server-side;
@@ -110,8 +110,13 @@ test('WL-ONBOARDING · a platform admin onboards a new gym + owner, and the owne
     expect(owners.length, 'an owner role was assigned').toBe(1)
     ownerId = owners[0].user_id
 
+    // FX-PER-GYM / WIZARD STOP-SEEDING: a fresh gym now starts EMPTY — no starter
+    // disciplines or plans (and no exchange rate) — so the owner builds their own
+    // catalog and the onboarding checklist honestly reads those items as unchecked.
     const discs = (await (await svc(`disciplines?gym_id=eq.${newGymId}&select=id`)).json()) as unknown[]
-    expect(discs.length, 'a starter discipline catalog was seeded').toBeGreaterThanOrEqual(2)
+    expect(discs.length, 'a fresh gym starts with NO starter disciplines').toBe(0)
+    const plans = (await (await svc(`membership_plans?gym_id=eq.${newGymId}&select=id`)).json()) as unknown[]
+    expect(plans.length, 'a fresh gym starts with NO starter plans').toBe(0)
 
     // WIZARD-PROFILE-FIX: the owner MUST have a profile row pointing at the NEW gym
     // (the upsert guarantee) — without it, the dashboard shell freezes on login.

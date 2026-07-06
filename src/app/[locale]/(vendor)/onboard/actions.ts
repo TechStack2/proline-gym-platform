@@ -121,25 +121,10 @@ export async function onboardGym(input: unknown): Promise<OnboardResult> {
     return { ok: false, error: 'role-failed' };
   }
 
-  // 3e) Minimal starter catalog: a couple disciplines (visible) + one staged plan
-  //     (is_active=false → owner sets the real price before it shows on the landing).
-  const { error: de } = await admin.from('disciplines').insert([
-    { gym_id: gymId, name_ar: 'ملاكمة', name_en: 'Boxing', name_fr: 'Boxe', sort_order: 1, is_active: true },
-    { gym_id: gymId, name_ar: 'لياقة بدنية', name_en: 'Fitness', name_fr: 'Fitness', sort_order: 2, is_active: true },
-  ]);
-  if (de) {
-    await rollback();
-    return { ok: false, error: 'catalog-failed' };
-  }
-  const { error: mpe } = await admin.from('membership_plans').insert({
-    gym_id: gymId,
-    name_ar: 'اشتراك شهري', name_en: 'Monthly', name_fr: 'Mensuel',
-    duration_days: 30, price_usd: 0, is_active: false,
-  });
-  if (mpe) {
-    await rollback();
-    return { ok: false, error: 'plan-failed' };
-  }
+  // 3e) WIZARD STOP-SEEDING (FX-PER-GYM): a new gym starts EMPTY — no starter
+  //     disciplines/plans and no exchange rate — so the onboarding checklist reads
+  //     the honest truth (discipline/plan/exchange items UNCHECKED) and the owner
+  //     configures their own catalog. (Was: 2 default disciplines + 1 staged plan.)
 
   return { ok: true, gymId, slug: f.slug, ownerEmail: f.ownerEmail, tempPassword };
 }

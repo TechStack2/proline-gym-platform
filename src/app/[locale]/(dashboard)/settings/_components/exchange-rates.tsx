@@ -31,8 +31,8 @@ export function ExchangeRates({ rates, locale }: Props) {
 
   // SETTINGS-LIVE: the add-rate form was an inert stub with NO insert path in the
   // app. Controlled fields → the 000075 staff-gated SECURITY DEFINER RPC
-  // insert_exchange_rate (upsert on rate_date+source — re-submitting a day
-  // corrects it). exchange_rates is a GLOBAL table; no table policies added.
+  // insert_exchange_rate (FX-PER-GYM: upsert on gym_id+rate_date+source — the RPC
+  // stamps the caller's gym_id; re-submitting a day corrects THAT gym's rate).
   const [newRate, setNewRate] = useState('');
   const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newSource, setNewSource] = useState('manual');

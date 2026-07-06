@@ -23,9 +23,6 @@
 -- ALLOWLIST (tablename) — each an INTENTIONAL, reviewed exception (none carries a
 -- gym_id column TODAY, so each is also excluded by the column filter — listed for
 -- documentation + forward-safety):
---   • exchange_rates  — GLOBAL rate table (no gym_id). Listed so that when FX-PER-GYM
---                       adds a gym_id column, a transient window can't wedge CI before
---                       that migration scopes exchange_rates_read itself.
 --   • gyms            — the tenant table itself (key is `id`, no gym_id column); its
 --                       visibility is by membership, not a gym_id predicate.
 --   • platform_admins — the vendor CROSS-gym super-role table (is_platform_admin,
@@ -69,7 +66,7 @@ BEGIN
     AND p.qual NOT LIKE '%gym_id%'           -- no direct gym predicate
     AND p.qual NOT LIKE '%get_user_gym_id%'  -- no gym-scoping helper
     AND p.qual NOT LIKE '%auth.uid%'         -- not ownership-scoped
-    AND p.tablename NOT IN ('exchange_rates', 'gyms', 'platform_admins')  -- reviewed exceptions
+    AND p.tablename NOT IN ('gyms', 'platform_admins')  -- reviewed exceptions
     AND EXISTS (
       SELECT 1 FROM information_schema.columns c
       WHERE c.table_schema = 'public' AND c.table_name = p.tablename AND c.column_name = 'gym_id'

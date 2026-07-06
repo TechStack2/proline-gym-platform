@@ -26,9 +26,15 @@ export default async function NewInvoicePage({ params: { locale } }: Props) {
     .filter((s) => s.name)
     .sort((a, b) => a.name.localeCompare(b.name))
 
+  // FX-PER-GYM: rates are per-gym now — scope to the caller's gym (the new RLS
+  // enforces this too; the .eq is defense-in-depth + explicit intent).
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: prof } = await supabase.from('profiles').select('gym_id').eq('id', user?.id ?? '').single()
+  const gymId = prof?.gym_id ?? ''
   const { data: rate } = await supabase
     .from('exchange_rates')
     .select('rate, rate_date')
+    .eq('gym_id', gymId)
     .order('rate_date', { ascending: false })
     .limit(1)
     .maybeSingle()

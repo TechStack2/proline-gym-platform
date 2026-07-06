@@ -11,8 +11,8 @@ import { parseEnabledProducts } from './products'
  * Two honest caveats, surfaced in the UI copy:
  *  · `branding` has no gym-level "landing published" flag in the schema — it derives
  *    from whether staff customized brand_color / hero_image_url / tagline (000072).
- *  · `exchange_rates` is a GLOBAL table (no gym_id), so that one item is
- *    tenant-agnostic — it ticks as soon as any staff enters a rate.
+ *  · exchange rates are now PER-GYM (FX-PER-GYM, 000090) — the exchange item ticks
+ *    when THIS gym has a rate (RLS gym-scopes the read; the `.eq` is defense-in-depth).
  */
 export type SetupItemKey =
   | 'profile' | 'branding' | 'discipline' | 'coach'
@@ -74,11 +74,11 @@ export async function getSetupChecklist(
   ])
 
   // Batch 2 (≤3 concurrent): the two product-gated catalogs (skipped when the
-  // product is off) + the GLOBAL exchange_rates check (no gym_id, no deleted_at).
+  // product is off) + the per-gym exchange_rates check (FX-PER-GYM: gym-scoped, no deleted_at).
   const [plan, ptpackage, exchange] = await Promise.all([
     products.membership ? scopedExists('membership_plans') : Promise.resolve(false),
     products.pt ? scopedExists('pt_packages') : Promise.resolve(false),
-    supabase.from('exchange_rates').select('id', { count: 'exact', head: true })
+    supabase.from('exchange_rates').select('id', { count: 'exact', head: true }).eq('gym_id', gymId)
       .then(({ count }) => (count ?? 0) > 0),
   ])
 
