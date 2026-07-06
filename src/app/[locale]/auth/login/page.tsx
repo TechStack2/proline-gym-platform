@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
 import { signInWithPhone, signInWithEmail } from '@/lib/auth/actions';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 import { cn } from '@/lib/utils';
 import { Mail, Lock, Eye, EyeOff, Users, LogIn, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -87,7 +88,7 @@ export default function LoginPage({ params }: Props) {
         const { data } = await supabase.rpc('get_public_gym', { p_slug: slug });
         const g = Array.isArray(data) ? data[0] : data;
         if (g) setBrand({
-          logoUrl: g.logo_url || undefined,
+          logoUrl: storagePublicUrl('avatars', g.logo_url) || undefined,
           name: (locale === 'ar' ? g.name_ar : locale === 'fr' ? g.name_fr : g.name_en) || undefined,
         });
       } catch { /* keep the default branding */ }

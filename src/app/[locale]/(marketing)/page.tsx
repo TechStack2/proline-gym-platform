@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
 import { getLandingMeta } from '@/lib/marketing/seo';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 import { VendorLanding } from '@/components/marketing/VendorLanding';
 import { LandingNav } from '@/components/layout/LandingNav';
 import { LandingFooter } from '@/components/layout/LandingFooter';
@@ -142,7 +143,9 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
     (locale === 'ar' ? ar : locale === 'fr' ? fr : en) || en || undefined;
   const branding = {
     name: gym ? (pick(gym.name_ar, gym.name_en, gym.name_fr) || undefined) : undefined,
-    logoUrl: gym?.logo_url || undefined,
+    // AVATAR-PATHS: logo_url is a stored bucket path → resolve to a public URL
+    // (feeds the Nav/Hero/Footer). hero_image_url is a free-text URL field → as-is.
+    logoUrl: storagePublicUrl('avatars', gym?.logo_url) || undefined,
     heroImageUrl: gym?.hero_image_url || undefined,
     brandColor: safeBrandColor(gym?.brand_color),
     tagline: gym ? pick(gym.tagline_ar, gym.tagline_en, gym.tagline_fr) : undefined,

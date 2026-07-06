@@ -17,6 +17,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getLandingGym, DEFAULT_GYM_SLUG, resolveLandingContact } from './gym';
 import { SITE_URL, OG_IMAGE_PATH, buildGymJsonLd } from '@/lib/seo';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 
 // og:locale codes (language_TERRITORY) for the three supported locales.
 const OG_LOCALE: Record<string, string> = { ar: 'ar_LB', en: 'en_US', fr: 'fr_FR' };
@@ -59,7 +60,12 @@ export async function getLandingMeta(
 
   // OG image: the gym's hero (or logo) when set, else the committed default card.
   // width/height 1200×630 are only truthful for that committed asset.
-  const ogImagePath = isDefault ? OG_IMAGE_PATH : gym?.hero_image_url || gym?.logo_url || OG_IMAGE_PATH;
+  // AVATAR-PATHS: a set logo_url is a stored bucket path → resolve to an absolute
+  // URL (hero_image_url is free-text http, OG_IMAGE_PATH is a '/…' asset → both
+  // pass through storagePublicUrl unchanged, so the default branch is byte-identical).
+  const ogImagePath = isDefault
+    ? OG_IMAGE_PATH
+    : storagePublicUrl('avatars', gym?.hero_image_url || gym?.logo_url || OG_IMAGE_PATH);
   const ogImages =
     ogImagePath === OG_IMAGE_PATH
       ? [{ url: OG_IMAGE_PATH, width: 1200, height: 630, alt: ogAlt }]

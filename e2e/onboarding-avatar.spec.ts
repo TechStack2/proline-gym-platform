@@ -90,7 +90,11 @@ async function uploadAtOnboarding(browser: Browser, fixture: string) {
       if (await err.count()) throw new Error(`uploader error: "${(await err.first().innerText()).trim()}"`)
       const rows = await (await svc(`profiles?id=eq.${userId}&select=avatar_url`)).json().catch(() => [])
       const url = Array.isArray(rows) ? rows[0]?.avatar_url : undefined
-      expect(url, `avatar_url set (console: ${consoleErrors.join(' | ')})`).toContain(`/avatars/${gymId}/${userId}.jpg`)
+      // AVATAR-PATHS: the DB stores the RELATIVE object path (project-portable) — NO
+      // host, NO 'http'. The read side resolves it to a public URL; the object's
+      // public retrievability is asserted separately below.
+      expect(url, `avatar_url set (console: ${consoleErrors.join(' | ')})`).toBe(`${gymId}/${userId}.jpg`)
+      expect(url, 'stored avatar_url is a project-portable relative path, never an absolute URL').not.toContain('http')
     }).toPass({ timeout: 25_000, intervals: [500, 1000, 2000, 3000] })
 
     // The object is really stored + publicly retrievable.
