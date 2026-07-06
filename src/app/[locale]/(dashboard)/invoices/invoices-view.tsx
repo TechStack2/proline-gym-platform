@@ -57,10 +57,17 @@ export async function InvoicesView({ locale, searchParams }: Props) {
 
   // Per-method daily tally (today's drawer).
   const today = new Date().toISOString().slice(0, 10)
+  // QUICK-WINS #4b: the identical future-payment bug as #1 (daily-tally) — bound the
+  // drawer to a true same-day window [today, tomorrow). A naked .limit() would instead
+  // truncate a busy day and undercount the drawer, so the window is the correct bound.
+  const nextDay = new Date(`${today}T00:00:00.000Z`)
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1)
+  const tomorrow = nextDay.toISOString().slice(0, 10)
   const { data: todayPays } = await supabase
     .from('payments')
     .select('amount_usd, amount_lbp, payment_method')
     .gte('payment_date', today)
+    .lt('payment_date', tomorrow)
   const tally = new Map<string, { usd: number; lbp: number }>()
   for (const p of (todayPays ?? []) as any[]) {
     const cur = tally.get(p.payment_method) ?? { usd: 0, lbp: 0 }

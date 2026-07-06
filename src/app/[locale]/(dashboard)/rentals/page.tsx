@@ -29,10 +29,18 @@ export default async function RentalsPage({ params }: Props) {
     .eq('gym_id', gymId)
     .order('hourly_rate_usd');
 
+  // QUICK-WINS #3: rental_bookings has NO gym_id column (000003) — it's gym-scoped via
+  // rental_id → rentals. Defense-in-depth (RLS already scopes) + a hard bound vs
+  // unbounded growth: restrict to THIS gym's rentals' bookings, most-recent 200. The
+  // calendar filters bookings by date client-side (isBooked = .some), so order is
+  // immaterial to the render.
+  const rentalIds = (rentals ?? []).map((r: any) => r.id);
   const { data: bookings } = await supabase
     .from('rental_bookings')
     .select('*')
-    .order('start_time', { ascending: true });
+    .in('rental_id', rentalIds)
+    .order('start_time', { ascending: false })
+    .limit(200);
 
   const t = await getTranslations('rentals');
 

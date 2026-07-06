@@ -47,7 +47,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     waiverTemplate,
   ] = await Promise.all([
     // Exchange rates, ordered by date desc
-    supabase.from('exchange_rates').select('*').order('rate_date', { ascending: false }),
+    supabase.from('exchange_rates').select('*').order('rate_date', { ascending: false }).limit(50),
     // Membership plans (gym-scoped: the *_read RLS is all-authenticated)
     supabase.from('membership_plans').select('*').eq('gym_id', gymId).order('duration_days', { ascending: true }),
     // PT package-type catalog (incl. archived, for the manager) — PT-1

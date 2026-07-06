@@ -1,5 +1,5 @@
 import { test, expect, type Page, type BrowserContext, type Browser } from '@playwright/test';
-import { ROLES, shot } from './roles';
+import { ROLES, shot, E2E_GYM_SLUG } from './roles';
 import { vis, expectNotification } from './helpers';
 
 /**
@@ -154,5 +154,76 @@ test('D1 · a voided invoice cannot be settled (settlement blocked)', async ({ b
     await expect(owner.page.locator('[data-testid="pay-submit"]')).toHaveCount(0);
   } finally {
     await owner.ctx.close();
+  }
+});
+
+// ── QUICK-WINS #1/#4b — future-dated payments must not inflate "today's" drawer ──
+// getDailyTally (daily-tally.ts, #1) and invoices-view todayPays (#4b) both bounded
+// the payments query to a true same-day window. Proof: a post-dated (2099) payment is
+// EXCLUDED from both drawers, while a same-day payment IS included (positive control,
+// so the exclusion isn't a broken measurement). Own-data + full cleanup; svc = service
+// role (plain fetch — supabase-js's Realtime client throws on CI Node).
+const SVC_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SVC_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function svc(path: string, method = 'GET', body?: unknown): Promise<any> {
+  const res = await fetch(`${SVC_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      apikey: SVC_KEY as string, Authorization: `Bearer ${SVC_KEY}`,
+      'Content-Type': 'application/json', Prefer: 'return=representation',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`svc ${method} ${path}: ${res.status} ${await res.text()}`);
+  return res.status === 204 ? null : res.json();
+}
+
+/** Σ of the USD figures in a drawer tally testid (LBP amounts carry no $, so skipped). */
+async function tallySumUsd(page: Page, url: string, testid: string): Promise<number> {
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  const el = vis(page, `[data-testid="${testid}"]`).first();
+  await expect(el).toBeVisible({ timeout: 15_000 });
+  const nums = ((await el.innerText()).match(/\$[\d,]+\.\d{2}/g) ?? []).map((s) => parseFloat(s.replace(/[$,]/g, '')));
+  return nums.reduce((s, n) => s + n, 0);
+}
+
+test('D1 · QUICK-WINS #1/#4b — a FUTURE-dated payment is EXCLUDED from today\'s drawer tally', async ({ browser }) => {
+  test.setTimeout(90_000);
+  if (!SVC_URL || !SVC_KEY) throw new Error('QUICK-WINS tally test needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL');
+  const { ctx, page } = await ctxFor(browser, 'owner');
+  const createdIds: string[] = [];
+  try {
+    const gym = (await svc(`gyms?slug=eq.${E2E_GYM_SLUG}&select=id`))[0];
+    const inv = (await svc(`invoices?gym_id=eq.${gym.id}&select=id,student_id&limit=1`))[0];
+    expect(inv, 'the run gym has an invoice to attach test payments to').toBeTruthy();
+
+    const day0 = await tallySumUsd(page, '/en/money?tab=invoices', 'daily-tally');
+    const today0 = await tallySumUsd(page, '/en/today', 'today-tally');
+
+    // The exact bug: a post-dated (future) payment must NOT enter today's drawer.
+    const future = (await svc('payments', 'POST', {
+      invoice_id: inv.id, student_id: inv.student_id, amount_usd: 50, amount_lbp: 0,
+      payment_method: 'cash_usd', payment_date: '2099-06-01T12:00:00.000Z',
+    }))[0];
+    createdIds.push(future.id);
+
+    expect(await tallySumUsd(page, '/en/money?tab=invoices', 'daily-tally'),
+      '#4b invoices drawer excludes the future-dated payment').toBeCloseTo(day0, 2);
+    expect(await tallySumUsd(page, '/en/today', 'today-tally'),
+      '#1 today drawer (getDailyTally) excludes the future-dated payment').toBeCloseTo(today0, 2);
+
+    // Positive control: a same-day payment IS counted — proves the tally is live and the
+    // measurement can detect a payment, so the exclusions above are meaningful.
+    const todayPay = (await svc('payments', 'POST', {
+      invoice_id: inv.id, student_id: inv.student_id, amount_usd: 30, amount_lbp: 0,
+      payment_method: 'cash_usd', payment_date: new Date().toISOString(),
+    }))[0];
+    createdIds.push(todayPay.id);
+    expect(await tallySumUsd(page, '/en/today', 'today-tally'),
+      'a same-day payment IS included (control)').toBeCloseTo(today0 + 30, 2);
+  } finally {
+    for (const id of createdIds) await svc(`payments?id=eq.${id}`, 'DELETE').catch(() => {});
+    await ctx.close();
   }
 });

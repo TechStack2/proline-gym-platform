@@ -29,6 +29,7 @@ export default async function CampsPage({ params: { locale } }: Props) {
     .eq('gym_id', gymId)
     .is('deleted_at', null)
     .order('start_date', { ascending: false })
+    .limit(100)
 
   const ids = (camps ?? []).map((c: any) => c.id)
   const { data: regs } = ids.length
