@@ -115,6 +115,19 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/ci/assert-gym-scoped-policies.sql
           echo "✅ CATALOG-SCOPE guard GREEN — no gym_id-bearing table carries a blanket authenticated read."
 
+      - name: Assert the role helpers follow profiles.gym_id (AUTH-PRIMITIVES proof)
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y postgresql-client; fi
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          # AUTH-PRIMITIVES (000089): get_user_role() + is_gym_admin() must resolve a
+          # multi-gym identity's role/admin from its CURRENT gym (profiles.gym_id), not
+          # an arbitrary gym. The SQL seeds a 2-gym identity, impersonates it, and RAISEs
+          # (→ psql exits non-zero under ON_ERROR_STOP=1) if role/admin don't flip with
+          # profiles.gym_id. All in a ROLLBACK'd transaction — no persisted test data.
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/ci/assert-auth-primitives.sql
+          echo "✅ AUTH-PRIMITIVES proof GREEN — role + admin scope to profiles.gym_id."
+
       - name: Stop the local stack
         if: always()
         run: supabase stop --no-backup || true
