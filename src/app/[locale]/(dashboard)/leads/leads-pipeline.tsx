@@ -47,35 +47,8 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
   const gymId = profile?.gym_id;
   if (!gymId) return null;
 
-  // WL-TEMPLATES: the lead-reply wa.me message greets with this gym's name.
-  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle();
-  const gymName = gymDisplayName(gymRow, locale);
-
-  // ── Server-side COUNT stats (head: true avoids row transfer) ──
-  const countResults = await Promise.all([
-    supabase
-      .from('leads')
-      .select('*', { count: 'exact', head: true })
-      .eq('gym_id', gymId),
-    ...COUNTABLE_STATUSES.map((status) =>
-      supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('gym_id', gymId)
-        .eq('status', status),
-    ),
-  ]);
-
-  const counts = {
-    all: countResults[0].count ?? 0,
-    new: countResults[1].count ?? 0,
-    contacted: countResults[2].count ?? 0,
-    trial_scheduled: countResults[3].count ?? 0,
-    converted: countResults[4].count ?? 0,
-  };
-
-  // ── Server-side lead query with .ilike() search ────────
-  let query = supabase
+  // ── Server-side lead query with .ilike() search — built here (sync), fetched below ──
+  let leadsQuery = supabase
     .from('leads')
     .select('*')
     .eq('gym_id', gymId)
@@ -83,50 +56,76 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
 
   if (searchParams.search) {
     const term = `%${searchParams.search}%`;
-    query = query.or(
+    leadsQuery = leadsQuery.or(
       `first_name.ilike.${term},last_name.ilike.${term},phone.ilike.${term},email.ilike.${term}`,
     );
   }
 
   if (searchParams.status && searchParams.status !== 'all') {
-    query = query.eq('status', searchParams.status);
+    leadsQuery = leadsQuery.eq('status', searchParams.status);
   }
 
-  const { data: leads } = await query;
-
-  // ── Disciplines with gym_id filter ─────────────────────
-  const { data: disciplines } = await supabase
-    .from('disciplines')
-    .select('id, name_ar, name_en, name_fr')
-    .eq('gym_id', gymId)
-    .eq('is_active', true);
-
-  // ── Journey data: coaches (trial assignment), active plans (convert picker),
-  //    scheduled trials (lead card), simulated invites (converted members) ──
-  const [coachesRes, plansRes, trialsRes, invitesRes] = await Promise.all([
-    supabase.rpc('get_gym_coaches'),
-    supabase
-      .from('membership_plans')
-      .select('id, name_ar, name_en, name_fr, duration_days, price_usd')
-      .eq('gym_id', gymId)
-      .eq('is_active', true)
-      .order('price_usd', { ascending: true }),
-    // trial_classes RLS (000023) scopes to the lead's gym, so a plain select is
-    // already gym-isolated.
-    supabase
-      .from('trial_classes')
-      .select('id, lead_id, scheduled_date, scheduled_time, assigned_coach_id, status, show_up')
-      .order('scheduled_date', { ascending: false }),
-    supabase.from('account_invites').select('student_id, status, channel'),
+  // PERF-SSR: everything below only needs gymId and is INDEPENDENT — the gym-name row,
+  // the COUNT stats, the lead list, disciplines, the journey batch (coaches/plans/trials/
+  // invites), and the growth funnel. Fetch them in ONE parallel wave instead of 6
+  // sequential awaits (this is the prospects/leads SSR that stalled under --repeat-each
+  // load). Same queries + variables → identical data to the client. NOTE: the lead list
+  // is still an unbounded `.select('*')` — bounding it would change what's shown (needs
+  // pagination), so left as-is per the "identical data" scope; flagged as a follow-up.
+  const [
+    { data: gymRow },
+    countResults,
+    { data: leads },
+    { data: disciplines },
+    [coachesRes, plansRes, trialsRes, invitesRes],
+    funnel,
+  ] = await Promise.all([
+    // WL-TEMPLATES: the lead-reply wa.me message greets with this gym's name.
+    supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle(),
+    // Server-side COUNT stats (head: true avoids row transfer)
+    Promise.all([
+      supabase.from('leads').select('*', { count: 'exact', head: true }).eq('gym_id', gymId),
+      ...COUNTABLE_STATUSES.map((status) =>
+        supabase.from('leads').select('*', { count: 'exact', head: true }).eq('gym_id', gymId).eq('status', status),
+      ),
+    ]),
+    // The lead list (search/status filters applied above)
+    leadsQuery,
+    // Disciplines with gym_id filter
+    supabase.from('disciplines').select('id, name_ar, name_en, name_fr').eq('gym_id', gymId).eq('is_active', true),
+    // Journey data: coaches (trial assignment), active plans (convert picker), scheduled
+    // trials (lead card), simulated invites (converted members). trial_classes RLS
+    // (000023) scopes to the lead's gym, so a plain select is already gym-isolated.
+    Promise.all([
+      supabase.rpc('get_gym_coaches'),
+      supabase
+        .from('membership_plans')
+        .select('id, name_ar, name_en, name_fr, duration_days, price_usd')
+        .eq('gym_id', gymId)
+        .eq('is_active', true)
+        .order('price_usd', { ascending: true }),
+      supabase
+        .from('trial_classes')
+        .select('id, lead_id, scheduled_date, scheduled_time, assigned_coach_id, status, show_up')
+        .order('scheduled_date', { ascending: false }),
+      supabase.from('account_invites').select('student_id, status, channel'),
+    ]),
+    // GRW-1: the growth funnel (this month) — conversion rate + by-source/campaign.
+    getFunnel(supabase, gymId, monthStartISO()),
   ]);
 
+  const gymName = gymDisplayName(gymRow, locale);
+  const counts = {
+    all: countResults[0].count ?? 0,
+    new: countResults[1].count ?? 0,
+    contacted: countResults[2].count ?? 0,
+    trial_scheduled: countResults[3].count ?? 0,
+    converted: countResults[4].count ?? 0,
+  };
   const coaches = (coachesRes.data || []) as GymCoach[];
   const plans = (plansRes.data || []) as MembershipPlan[];
   const trials = (trialsRes.data || []) as TrialInfo[];
   const invites = (invitesRes.data || []) as InviteInfo[];
-
-  // GRW-1: the growth funnel (this month) — conversion rate + by-source/campaign.
-  const funnel = await getFunnel(supabase, gymId, monthStartISO());
 
   // ── FD-1: the stats bar is the stage FILTER — chips with counts ──
   const activeStatus = searchParams.status ?? 'all';

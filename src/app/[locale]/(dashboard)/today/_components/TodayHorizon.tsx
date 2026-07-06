@@ -32,10 +32,13 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const t = await getTranslations('today')
   const tw = await getTranslations('whatsapp')
   const supabase = await createClient()
-  // NO-MEMBERSHIP: hide the membership horizon cards on gyms that don't sell it.
-  const products = await getEnabledProducts(supabase, gymId)
-  // WL-TEMPLATES: the renewal wa.me shares greet with THIS gym's localized name.
-  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle()
+  // PERF-SSR: both only need gymId + are independent → one wave, not two awaits.
+  //   NO-MEMBERSHIP: hide the membership horizon cards on gyms that don't sell it.
+  //   WL-TEMPLATES: the renewal wa.me shares greet with THIS gym's localized name.
+  const [products, { data: gymRow }] = await Promise.all([
+    getEnabledProducts(supabase, gymId),
+    supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle(),
+  ])
   const gymName = gymDisplayName(gymRow, locale)
 
   const now = new Date()
