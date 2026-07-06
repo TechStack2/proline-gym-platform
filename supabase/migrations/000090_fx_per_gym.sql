@@ -35,7 +35,7 @@ CREATE POLICY exchange_rates_staff ON exchange_rates FOR ALL
   WITH CHECK (is_staff() AND gym_id = get_user_gym_id());
 
 -- ── 4. Function amendments (byte-exact; only the rate lines changed) ──────────
-CREATE OR REPLACE FUNCTION seed_e2e_gym_pre_coachlp(p_slug TEXT, p_password TEXT DEFAULT 'E2eTestPass!23')
+CREATE OR REPLACE FUNCTION seed_e2e_gym_base(p_slug TEXT, p_password TEXT DEFAULT 'E2eTestPass!23')
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -217,7 +217,7 @@ BEGIN
   RETURN v_gym;
 END;
 $$;
-REVOKE ALL ON FUNCTION seed_e2e_gym_pre_coachlp(TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION seed_e2e_gym_base(TEXT, TEXT) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION insert_exchange_rate(
   p_rate      NUMERIC,
