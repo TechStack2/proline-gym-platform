@@ -1717,6 +1717,20 @@
     "no_history": "Aucune promotion",
     "no_student": "Aucun profil membre trouvé"
   },
+  "setupChecklist": {
+    "title": "Terminez la configuration de votre salle",
+    "progress": "{done} sur {total} effectué",
+    "items": {
+      "profile": "Ajoutez les coordonnées de votre salle",
+      "branding": "Configurez votre page d'accueil et votre identité",
+      "discipline": "Ajoutez un cours ou une discipline",
+      "coach": "Ajoutez un coach",
+      "plan": "Créez un forfait d'abonnement",
+      "ptpackage": "Créez un forfait de coaching privé",
+      "exchange": "Définissez le taux de change",
+      "member": "Ajoutez votre premier membre"
+    }
+  },
   "today": {
     "title": "Aujourd'hui",
     "classes": "Cours du jour",
