@@ -865,6 +865,7 @@
     "subtitle": "Manage and track leads and free trials",
     "search_placeholder": "Search by name, phone, or email...",
     "all_statuses": "All Statuses",
+    "showing": "Showing {shown} of {total}",
     "schedule_trial": "Schedule Trial",
     "convert": "Convert",
     "schedule_trial_session": "Schedule Trial Session",

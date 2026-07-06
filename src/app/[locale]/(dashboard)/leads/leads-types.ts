@@ -102,6 +102,12 @@ export const COUNTABLE_STATUSES = [
   'converted',
 ] as const;
 
+// LEADS-BOUND: the lead LIST is capped at this many rows (the SSR fetch + the
+// client search/filter re-fetch both apply it), so a gym with thousands of real
+// leads doesn't load them all. The total is surfaced via the count query as
+// "Showing N of TOTAL". A real load-more/pagination is a later polish.
+export const LEADS_LIMIT = 50;
+
 export const STATUS_COLORS: Record<LeadStatus, string> = {
   new: 'bg-blue-100 text-blue-700',
   contacted: 'bg-yellow-100 text-yellow-700',

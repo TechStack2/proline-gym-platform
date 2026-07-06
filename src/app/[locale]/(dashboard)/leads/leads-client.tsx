@@ -18,12 +18,13 @@ import { FormWizard } from '@/components/shared/form-wizard';
 import type {
   Lead, LeadStatus, Discipline, StatusFilter, GymCoach, MembershipPlan, TrialInfo, InviteInfo, LeadSource,
 } from './leads-types';
-import { LEAD_STATUSES, LEAD_SOURCES } from './leads-types';
+import { LEAD_STATUSES, LEAD_SOURCES, LEADS_LIMIT } from './leads-types';
 import { leadStatusUpdateSchema } from '@/lib/validators/leads.schema';
 import { addLead, scheduleTrial, recordTrialOutcome, convertLead } from './actions';
 
 type Props = {
   leads: Lead[];
+  total: number; // LEADS-BOUND: total lead count (gym-wide) for the "Showing N of TOTAL" caption
   disciplines: Discipline[];
   coaches: GymCoach[];
   plans: MembershipPlan[];
@@ -51,6 +52,7 @@ type ConvertResult = { invoiceNumber: string; totalUsd: number; inviteStatus: st
 
 export function LeadsClient({
   leads: initialLeads,
+  total,
   disciplines,
   coaches,
   plans,
@@ -141,7 +143,8 @@ export function LeadsClient({
         .from('leads')
         .select('*')
         .eq('gym_id', gymId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(LEADS_LIMIT); // LEADS-BOUND: same cap as the SSR fetch (search/filter re-fetch)
       if (debouncedSearch) {
         const term = `%${debouncedSearch}%`;
         query = query.or(
@@ -278,6 +281,14 @@ export function LeadsClient({
           {t('add_lead')}
         </button>
       </div>
+
+      {/* LEADS-BOUND: the list is capped at LEADS_LIMIT — surface the gym-wide total so
+          staff know more exist (a real load-more is a later polish). */}
+      {total > 0 && (
+        <p className="text-xs text-gray-500" data-testid="leads-showing-count">
+          {t('showing', { shown: leads.length, total })}
+        </p>
+      )}
 
       {/* Lead Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
