@@ -93,8 +93,10 @@ export async function publishCoachProfile(input: {
       upsert: true, contentType: 'image/jpeg', cacheControl: '3600',
     })
     if (upErr) return { ok: false, error: upErr.message }
-    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(livePath)
-    liveAvatarUrl = `${pub.publicUrl}?v=${Date.now()}` // cache-buster on the in-place replace
+    // AVATAR-PATHS: hand the RELATIVE object path to the RPC (project-portable — no
+    // host in the DB). publish_coach_profile pass-through-assigns it to
+    // profiles.avatar_url (000061, unchanged); the read side resolves it.
+    liveAvatarUrl = livePath
   }
 
   const { error } = await supabase.rpc('publish_coach_profile', {

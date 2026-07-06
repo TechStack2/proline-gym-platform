@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Award, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 
 type CoachesSectionProps = {
   locale: string;
@@ -85,7 +86,7 @@ export async function CoachesSection({ locale, gymSlug }: CoachesSectionProps) {
                   )}>
                     {c.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.avatar_url} alt={name} className={cn('h-full w-full object-cover', comingSoon && 'grayscale')} />
+                      <img src={storagePublicUrl('avatars', c.avatar_url)} alt={name} className={cn('h-full w-full object-cover', comingSoon && 'grayscale')} />
                     ) : (
                       <span className="text-3xl font-extrabold text-primary-300">{initials(name)}</span>
                     )}

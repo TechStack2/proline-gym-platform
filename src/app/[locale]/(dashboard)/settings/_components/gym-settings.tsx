@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Phone, Mail, Globe, Clock, CreditCard, MapPin, Camera, Loader2, Palette } from 'lucide-react';
 import { downscaleImage } from '@/components/shared/avatar-upload';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 import { saveGymSettings } from './gym-actions';
 
 type GymData = {
@@ -61,11 +62,11 @@ async function uploadGymLogo(gymId: string, file: File): Promise<string> {
     cacheControl: '3600',
   });
   if (upErr) throw upErr;
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-  const url = `${data.publicUrl}?v=${Date.now()}`;
-  const { error: gymErr } = await supabase.from('gyms').update({ logo_url: url }).eq('id', gymId);
+  // AVATAR-PATHS: persist the RELATIVE object path (project-portable); the read side
+  // resolves it. Return a freshly-versioned absolute url for the optimistic UI only.
+  const { error: gymErr } = await supabase.from('gyms').update({ logo_url: path }).eq('id', gymId);
   if (gymErr) throw gymErr;
-  return url;
+  return storagePublicUrl('avatars', path, Date.now());
 }
 
 export function GymSettings({ gym, locale }: Props) {
@@ -153,7 +154,7 @@ export function GymSettings({ gym, locale }: Props) {
             <label className="group relative cursor-pointer" data-testid="gym-logo-upload">
               {logoUrl ? (
                 <img
-                  src={logoUrl}
+                  src={storagePublicUrl('avatars', logoUrl)}
                   alt={gymName || 'Gym logo'}
                   className="h-14 w-14 rounded-xl object-cover border"
                 />

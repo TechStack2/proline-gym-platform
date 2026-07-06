@@ -15,6 +15,7 @@
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { DEFAULT_GYM_SLUG, safeBrandColor, type LandingGym } from '@/lib/marketing/gym';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 
 // The byte-identical default manifest (mirrors public/manifest.json). The dynamic
 // route emits EXACTLY this for the default gym or any gym with unset fields.
@@ -36,11 +37,14 @@ export function buildGymManifest(gym: LandingGym | null) {
   const name = isDefault ? DEFAULT_NAME : gym!.name_en || DEFAULT_NAME;
   const shortName = isDefault ? DEFAULT_SHORT : gym!.name_en || DEFAULT_SHORT;
   const themeColor = isDefault ? DEFAULT_THEME : safeBrandColor(gym!.brand_color);
+  // AVATAR-PATHS: logo_url is a stored bucket path → resolve to a public URL for the
+  // manifest icon src (a committed '/…' asset or legacy absolute url passes through).
+  const logoIcon = storagePublicUrl('avatars', gym?.logo_url);
   const icons =
-    !isDefault && gym!.logo_url
+    !isDefault && logoIcon
       ? [
-          { src: gym!.logo_url, sizes: '192x192', purpose: 'any' },
-          { src: gym!.logo_url, sizes: '512x512', purpose: 'any' },
+          { src: logoIcon, sizes: '192x192', purpose: 'any' },
+          { src: logoIcon, sizes: '512x512', purpose: 'any' },
         ]
       : DEFAULT_ICONS;
 

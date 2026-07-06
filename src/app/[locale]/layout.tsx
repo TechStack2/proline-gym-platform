@@ -8,6 +8,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { getCurrentUserGym } from '@/lib/pwa/identity';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 import { cn } from '@/lib/utils';
 import { Toaster } from 'sonner';
 import { UseToastRenderer } from '@/components/ui/toaster';
@@ -65,7 +66,7 @@ export async function generateMetadata(props: Omit<Props, 'children'>) {
     (userGym &&
       (locale === 'ar' ? userGym.name_ar : locale === 'fr' ? userGym.name_fr : userGym.name_en)) ||
     t('name');
-  const favicon = userGym?.logo_url || '/logo.jpg';
+  const favicon = storagePublicUrl('avatars', userGym?.logo_url) || '/logo.jpg';
 
   return {
     title: {

@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar } from './avatar'
+import { storagePublicUrl } from '@/lib/storage/public-url'
 import { cn } from '@/lib/utils'
 import { Camera, Loader2 } from 'lucide-react'
 
@@ -56,11 +57,12 @@ export async function uploadAvatar(gymId: string, profileId: string, file: File)
     cacheControl: '3600',
   })
   if (upErr) throw upErr
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-  const url = `${data.publicUrl}?v=${Date.now()}` // replace-in-place needs a buster
-  const { error: profErr } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', profileId)
+  // AVATAR-PATHS: persist the RELATIVE object path (project-portable — no host in
+  // the DB); the read side resolves it to a public URL via storagePublicUrl. Return
+  // a freshly-versioned ABSOLUTE url for the optimistic UI only (never stored).
+  const { error: profErr } = await supabase.from('profiles').update({ avatar_url: path }).eq('id', profileId)
   if (profErr) throw profErr
-  return url
+  return storagePublicUrl('avatars', path, Date.now())
 }
 
 export function AvatarUpload({
