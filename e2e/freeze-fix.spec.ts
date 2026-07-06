@@ -4,11 +4,15 @@ import { ROLES } from './roles'
 /**
  * FREEZE-FIX — /settings must not freeze when the app is RESIZED across the desktop↔
  * tablet boundary (~1024px, where the shell swaps the Sidebar for the mobile
- * NativeHeader). Owner-reported at prod: resizing desktop→tablet on /settings pegs the
+ * NativeHeader). Owner-reported at prod: resizing desktop→tablet on /settings pegged the
  * main thread in a synchronous vendor recursion (a5→a6→a5) until the PWA restarts.
- * Regression guard: load /settings as owner, then cross the lg↔md boundary repeatedly,
- * probing that the main thread stays RESPONSIVE (a frozen thread → the double-rAF probe
- * times out) with no layout/recursion loop console errors.
+ *
+ * STATUS: this guard PASSES as written — the freeze did NOT reproduce post-MONDAY-HARDEN
+ * (which removed the perpetual `duration:Infinity` sonner update-toast; sonner re-measuring
+ * that permanently-mounted toast on every resize tick is the leading root, now gone). Every
+ * app observer is already equality-guarded and no Radix/sonner/floating-ui is active on an
+ * idle /settings. It's retained as a REGRESSION GUARD: if the freeze ever returns, this goes
+ * RED (a frozen thread → the double-rAF probe times out; an async RO loop → the console floods).
  */
 test('FREEZE-FIX · /settings survives desktop↔tablet resize — no layout/recursion freeze', async ({ browser }) => {
   test.setTimeout(120_000)
