@@ -13,7 +13,7 @@ import type {
   TrialInfo,
   InviteInfo,
 } from './leads-types';
-import { COUNTABLE_STATUSES, STATUS_COLORS, SOURCE_ICONS } from './leads-types';
+import { COUNTABLE_STATUSES, LEADS_LIMIT, STATUS_COLORS, SOURCE_ICONS } from './leads-types';
 import { FunnelStrip } from './funnel-strip';
 import { getFunnel, monthStartISO } from '@/lib/growth/funnel';
 import { Megaphone } from 'lucide-react';
@@ -75,6 +75,14 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
   };
 
   // ── Server-side lead query with .ilike() search ────────
+  // LEADS-BOUND: cap the list at the most-recent LEADS_LIMIT so a gym with thousands
+  // of real leads doesn't load them all; the total comes from the count query above
+  // → "Showing N of TOTAL" in LeadsClient (which applies the SAME limit on its
+  // search/filter re-fetch). Concurrency stays LOW here on purpose — the reverted
+  // sequential/small-batch structure; a wide Promise.all burst the pooler.
+  // ORDER MATTERS: apply .limit() LAST, AFTER the .or()/.eq() FILTERS. postgrest-js
+  // chains `.limit()` before `.or()` broke the .ilike() search at runtime (returned 0)
+  // — filters must be built before the limit transform.
   let query = supabase
     .from('leads')
     .select('*')
@@ -92,7 +100,7 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
     query = query.eq('status', searchParams.status);
   }
 
-  const { data: leads } = await query;
+  const { data: leads } = await query.limit(LEADS_LIMIT);
 
   // ── Disciplines with gym_id filter ─────────────────────
   const { data: disciplines } = await supabase
@@ -173,6 +181,7 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
       >
         <LeadsClient
           leads={(leads || []) as Lead[]}
+          total={counts.all}
           disciplines={(disciplines || []) as Discipline[]}
           coaches={coaches}
           plans={plans}

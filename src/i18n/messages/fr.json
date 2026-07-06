@@ -865,6 +865,7 @@
     "subtitle": "Gérer et suivre les prospects",
     "search_placeholder": "Rechercher par nom, téléphone ou email...",
     "all_statuses": "Tous les statuts",
+    "showing": "Affichage de {shown} sur {total}",
     "schedule_trial": "Planifier un essai",
     "convert": "Convertir",
     "schedule_trial_session": "Planifier une séance d'essai",

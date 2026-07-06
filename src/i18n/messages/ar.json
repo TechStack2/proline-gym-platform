@@ -865,6 +865,7 @@
     "subtitle": "إدارة ومتابعة العملاء المحتملين",
     "search_placeholder": "بحث بالاسم أو الهاتف أو البريد الإلكتروني...",
     "all_statuses": "كل الحالات",
+    "showing": "عرض {shown} من {total}",
     "schedule_trial": "جدولة تجربة",
     "convert": "تحويل",
     "schedule_trial_session": "جدولة جلسة تجريبية",

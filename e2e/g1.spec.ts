@@ -160,9 +160,16 @@ test('G1 · wa.me LEAD-REPLY bridge renders the localized link (Arabic /ar) — 
     await modal.locator('[data-testid="lead-source-chip"][data-value="instagram"]').click()
     await modal.getByTestId('wizard-next').click()
     await modal.getByTestId('wizard-submit').click()
-    await page.goto(`/ar/students?tab=prospects&search=Lead${RUN}`, { waitUntil: 'domcontentloaded' })
-    const leadWa = vis(page, '[data-testid="lead-card"]').filter({ hasText: `Lead${RUN}` }).first().getByTestId('lead-wa')
-    const lhref = await leadWa.getAttribute('href')
+    // FLAKE-FIX (LEADS-BOUND): the addLead write can lag the immediate navigation on a
+    // slow CI runner (the heavy /ar prospects SSR renders before the row is visible → 0
+    // results → a 180s hang waiting for the card). RETRY the search page until the new
+    // lead card appears, instead of navigating once and hoping the write has landed.
+    const leadCard = vis(page, '[data-testid="lead-card"]').filter({ hasText: `Lead${RUN}` }).first()
+    await expect(async () => {
+      await page.goto(`/ar/students?tab=prospects&search=Lead${RUN}`, { waitUntil: 'domcontentloaded' })
+      await expect(leadCard).toBeVisible({ timeout: 8_000 })
+    }).toPass({ timeout: 90_000 })
+    const lhref = await leadCard.getByTestId('lead-wa').getAttribute('href')
     expect(lhref, 'lead reply wa.me link').toContain('https://wa.me/')
     // WL-TEMPLATES re-point: leadReply interpolates the e2e gym's own name.
     expect(decodeURIComponent(lhref!), 'the Arabic lead reply carries THIS gym name').toContain('برولاين تجريبي')
