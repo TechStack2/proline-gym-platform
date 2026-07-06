@@ -271,7 +271,7 @@ export default function LoginPage({ params }: Props) {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 py-3.5 text-base font-semibold text-white transition-all hover:bg-primary-700 hover:scale-[1.01] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 py-3.5 text-base font-semibold text-primary-foreground transition-all hover:bg-primary-700 hover:scale-[1.01] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
           >
             {loading ? (
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -305,7 +305,7 @@ export default function LoginPage({ params }: Props) {
                 data-email={acct.email}
                 onClick={() => fillDemoAccount(acct.email)}
                 className={cn(
-                  'flex items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-all',
+                  'flex items-center justify-between rounded-lg px-3 py-2 text-start text-xs transition-all',
                   email === acct.email
                     ? 'bg-primary-50 text-primary-700 border border-primary-200'
                     : 'text-gray-600 hover:bg-gray-50 border border-transparent'

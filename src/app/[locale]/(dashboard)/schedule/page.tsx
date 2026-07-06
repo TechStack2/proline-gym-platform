@@ -276,7 +276,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
             <option value="">{t('allCoaches')}</option>
             {(coaches ?? []).map((c: any) => <option key={c.id} value={c.id}>{localizedName(one(c.profiles), locale)}</option>)}
           </select>
-          <button className="h-9 rounded-lg bg-[#cd1419] px-4 text-sm font-medium text-white hover:bg-[#a81014]">{t('apply')}</button>
+          <button className="h-9 rounded-lg bg-[#cd1419] px-4 text-sm font-medium text-primary-foreground hover:bg-[#a81014]">{t('apply')}</button>
         </form>
       </div>
 

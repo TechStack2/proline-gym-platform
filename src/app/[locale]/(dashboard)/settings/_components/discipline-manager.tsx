@@ -131,7 +131,7 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
         <Input data-testid="discipline-add-ar" dir="rtl" placeholder={t('nameAr')} value={addAr} onChange={(e) => setAddAr(e.target.value)} className="h-9 w-40" />
         <Input data-testid="discipline-add-fr" placeholder={t('nameFr')} value={addFr} onChange={(e) => setAddFr(e.target.value)} className="h-9 w-40" />
         <Button size="sm" data-testid="discipline-add-btn" disabled={busy} onClick={add} className="bg-[#cd1419] hover:bg-[#a81014]">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />} {t('add')}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="me-1 h-4 w-4" />} {t('add')}
         </Button>
       </div>
 

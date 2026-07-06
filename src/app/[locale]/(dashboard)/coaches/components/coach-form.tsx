@@ -218,7 +218,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
                   onClick={() => toggle(d.id)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                     selected.includes(d.id)
-                      ? 'border-[#cd1419] bg-[#cd1419] text-white'
+                      ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                   {dName(d)}
                 </button>

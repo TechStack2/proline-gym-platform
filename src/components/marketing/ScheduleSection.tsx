@@ -88,14 +88,14 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
             <table className="w-full min-w-[640px] border-separate border-spacing-2">
               <thead>
                 <tr>
-                  <th className="w-32 rounded-lg bg-secondary-900 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <th className="w-32 rounded-lg bg-secondary-900 px-4 py-3 text-start text-xs font-semibold uppercase tracking-wider text-gray-400">
                     {t('time')}
                   </th>
                   {DAYS.map((d) => (
                     <th
                       key={d.dow}
                       className={cn(
-                        'rounded-lg bg-primary-600 px-4 py-3 text-center text-sm font-bold text-white',
+                        'rounded-lg bg-primary-600 px-4 py-3 text-center text-sm font-bold text-primary-foreground',
                         isRTL && 'font-arabic'
                       )}
                     >

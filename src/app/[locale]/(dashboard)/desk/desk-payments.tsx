@@ -108,7 +108,7 @@ export function RecordPaymentForm({
   if (!open) {
     return (
       <button type="button" data-testid="desk-record-payment" onClick={() => setOpen(true)}
-        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#a81014]">
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-2.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[#a81014]">
         <Banknote className="h-3.5 w-3.5" /> {t('recordPayment')}
       </button>
     )
@@ -145,7 +145,7 @@ export function RecordPaymentForm({
       {error && <p data-testid="pay-error" className="rounded-md bg-red-50 px-2 py-1.5 text-xs text-red-700">{error}</p>}
       <div className="flex gap-2">
         <button type="button" data-testid="pay-submit" onClick={() => void submit()} disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#a81014] disabled:opacity-50">
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[#a81014] disabled:opacity-50">
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Banknote className="h-3.5 w-3.5" />}
           {online ? t('recordPayment') : t('saveOffline')}
         </button>
@@ -217,7 +217,7 @@ export function CaptureLeadForm({
         <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-800"><UserPlus className="h-4 w-4" /> {t('captureLead')}</h2>
         {!open && !done && (
           <button type="button" data-testid="desk-capture-lead" onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#a81014]">
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-2.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[#a81014]">
             <UserPlus className="h-3.5 w-3.5" /> {t('newLead')}
           </button>
         )}
@@ -250,7 +250,7 @@ export function CaptureLeadForm({
           {error && <p data-testid="lead-error" className="rounded-md bg-red-50 px-2 py-1.5 text-xs text-red-700">{error}</p>}
           <div className="flex gap-2">
             <button type="button" data-testid="lead-submit" onClick={() => void submit()} disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#a81014] disabled:opacity-50">
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[#a81014] disabled:opacity-50">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
               {online ? t('captureLead') : t('leadSaveOffline')}
             </button>
@@ -368,7 +368,7 @@ function LeadConflictRow({
         </span>
         {!open && (
           <button type="button" data-testid="desk-lead-conflict-resolve" onClick={() => setOpen(true)}
-            className="shrink-0 rounded-md bg-amber-600 px-2 py-1 font-semibold text-white hover:bg-amber-700">
+            className="shrink-0 rounded-md bg-amber-600 px-2 py-1 font-semibold text-primary-foreground hover:bg-amber-700">
             {t('resolve')}
           </button>
         )}
@@ -462,7 +462,7 @@ function ConflictRow({
         </span>
         {!open && (
           <button type="button" data-testid="desk-conflict-resolve" onClick={() => void expand()}
-            className="shrink-0 rounded-md bg-amber-600 px-2 py-1 font-semibold text-white hover:bg-amber-700">
+            className="shrink-0 rounded-md bg-amber-600 px-2 py-1 font-semibold text-primary-foreground hover:bg-amber-700">
             {t('resolve')}
           </button>
         )}

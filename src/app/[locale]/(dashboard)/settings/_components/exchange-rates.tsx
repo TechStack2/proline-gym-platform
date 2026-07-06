@@ -92,7 +92,7 @@ export function ExchangeRates({ rates, locale }: Props) {
     <div className="space-y-4">
       {/* Current Rate Highlight Card */}
       <Card className="rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-white">
+        <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-primary-foreground">
           <div className="flex items-center justify-between">
             <div>
               <p className={cn('text-sm opacity-90', isRTL && 'font-arabic')}>
@@ -121,7 +121,7 @@ export function ExchangeRates({ rates, locale }: Props) {
                 </Badge>
               )}
               {rateDiff !== 0 && (
-                <span className="text-xs ml-auto opacity-90">
+                <span className="text-xs ms-auto opacity-90">
                   {rateDiff > 0 ? '+' : ''}{rateDiff.toFixed(2)} ({rateDiffPercent}%)
                 </span>
               )}
@@ -241,7 +241,7 @@ export function ExchangeRates({ rates, locale }: Props) {
                           <span className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
                             {r.rate.toLocaleString()}
                           </span>
-                          <span className="text-xs text-gray-400 ml-1">LBP</span>
+                          <span className="text-xs text-gray-400 ms-1">LBP</span>
                         </td>
                         <td className="px-4 py-2.5">
                           <span className={cn('text-xs text-gray-600', isRTL && 'font-arabic')}>

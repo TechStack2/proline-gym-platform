@@ -94,7 +94,7 @@ export function CampaignsClient({ rows, locale }: { rows: CampaignRow[]; locale:
           <p className="mt-0.5 text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         <button type="button" data-testid="campaign-add-btn" onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1 rounded-xl bg-[#cd1419] px-4 py-2 text-sm font-semibold text-white hover:bg-[#a81014]">
+          className="inline-flex items-center gap-1 rounded-xl bg-[#cd1419] px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]">
           <Plus className="h-4 w-4" /> {t('add')}
         </button>
       </div>

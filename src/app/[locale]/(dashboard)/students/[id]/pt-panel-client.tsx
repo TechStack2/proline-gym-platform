@@ -131,7 +131,7 @@ export function MemberPtPanel({
               <div className="mt-2">
                 <Button size="sm" variant="outline" data-testid="pt-extend-btn" disabled={pending}
                   onClick={() => extend(d.id)} className="h-7 border-red-200 text-xs text-red-700 hover:bg-red-50">
-                  <AlarmClock className="mr-1 h-3.5 w-3.5" /> {t('extend30')}
+                  <AlarmClock className="me-1 h-3.5 w-3.5" /> {t('extend30')}
                 </Button>
               </div>
             ) : computePtStatus(d) === 'active' && d.sessionsRemaining > 0 ? (
@@ -147,7 +147,7 @@ export function MemberPtPanel({
       {/* PT-2 docking slot: "Book session" lands beside Sell on each ACTIVE card
           (slot per journey-pt-360 §4 — availability picker, not built here). */}
       <Button size="sm" data-testid="pt-sell-open" onClick={() => setOpen(true)} className="bg-[#cd1419] hover:bg-[#a81014]">
-        <Plus className="mr-1 h-4 w-4" /> {t('sell')}
+        <Plus className="me-1 h-4 w-4" /> {t('sell')}
       </Button>
 
       {open && (
@@ -172,7 +172,7 @@ export function MemberPtPanel({
                       <button key={x.id} type="button" data-testid="pt-type-chip" data-id={x.id}
                         onClick={() => { setTypeId(x.id); setCoachId('') }}
                         className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                          typeId === x.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                          typeId === x.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                         {lname(x)} · {x.session_count}× · ${Number(x.price_usd).toFixed(0)}
                         {x.validity_days ? ` · ${x.validity_days}d` : ''}
                       </button>
@@ -208,7 +208,7 @@ export function MemberPtPanel({
                 </div>
                 <Button data-testid="pt-sell-submit" onClick={sell} disabled={pending || !typeId || !coachId}
                   className="w-full bg-[#cd1419] hover:bg-[#a81014]">
-                  {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('sellConfirm')}
+                  {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('sellConfirm')}
                 </Button>
               </div>
             )}

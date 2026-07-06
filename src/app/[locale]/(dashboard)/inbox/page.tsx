@@ -183,7 +183,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
       <section data-testid="inbox-renewals">
         <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <RefreshCw className="h-4 w-4 text-primary-600" /> {t('renewalsTitle')}
-          <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', renewals.length > 0 ? 'bg-[#cd1419] text-white' : 'bg-gray-100 text-gray-500')}>
+          <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', renewals.length > 0 ? 'bg-[#cd1419] text-primary-foreground' : 'bg-gray-100 text-gray-500')}>
             {renewals.length}
           </span>
         </h2>
@@ -204,7 +204,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
                   </p>
                 </div>
                 <Link href={`/${locale}/students/${r.studentId}?sellpt=${r.packageId}`} data-testid="inbox-renewal-resell"
-                  className="inline-flex items-center gap-1 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#a81014]">
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
                   <RefreshCw className="h-3.5 w-3.5" /> {t('resell')}
                 </Link>
               </div>

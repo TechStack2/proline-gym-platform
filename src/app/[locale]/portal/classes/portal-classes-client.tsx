@@ -97,7 +97,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
                   {reg?.end_date ? `${monthlyWord} · ${renewsWord} ${fmtDate(reg.end_date)}` : monthlyWord}
                 </span>
               </div>
-              <div className="text-right">
+              <div className="text-end">
                 {c.monthly_fee_usd != null && (
                   <p className="inline-flex items-center gap-0.5 text-sm font-bold text-gray-900">
                     <DollarSign className="h-3.5 w-3.5" />{Number(c.monthly_fee_usd).toFixed(2)}
@@ -121,7 +121,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
                 </>
               ) : (
                 <button data-testid="request-btn" disabled={busy || !hasStudent} onClick={() => request(c.id)}
-                  className="rounded-md bg-[#cd1419] px-4 py-1.5 text-xs font-medium text-white hover:bg-[#a81014] disabled:opacity-50">
+                  className="rounded-md bg-[#cd1419] px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-50">
                   {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('Request', 'تسجيل')}
                 </button>
               )}

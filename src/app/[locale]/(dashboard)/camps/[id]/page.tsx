@@ -93,7 +93,7 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
           </Link>
           <Link href={`/${locale}/camps/${id}?tab=attendance`} data-testid="camp-tab-attendance"
             className={cn('rounded-lg px-4 py-1.5 text-sm font-medium', tab === 'attendance' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500')}>
-            <ClipboardList className="mr-1 inline h-3.5 w-3.5" />{t('attendance')}
+            <ClipboardList className="me-1 inline h-3.5 w-3.5" />{t('attendance')}
           </Link>
         </div>
       </div>

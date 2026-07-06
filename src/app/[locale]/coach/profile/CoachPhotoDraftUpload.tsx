@@ -88,7 +88,7 @@ export function CoachPhotoDraftUpload({
           <Avatar url={null} name={name} size="lg" />
         )}
         <span className={cn(
-          'absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#cd1419] text-white ring-2 ring-white',
+          'absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#cd1419] text-primary-foreground ring-2 ring-white',
           busy && 'opacity-70',
         )}>
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}

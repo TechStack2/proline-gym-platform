@@ -492,7 +492,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
-          <Package className="h-4 w-4 mr-1.5" />
+          <Package className="h-4 w-4 me-1.5" />
           {t('new_package')}
         </Button>
       </div>
@@ -531,11 +531,11 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                       {coaches.map((c) => (<option key={c.id} value={c.id}>{getCoachName(c)}</option>))}
                     </select>
                     <Button size="sm" disabled={processing === req.id} onClick={() => handleApprove(req)}>
-                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                      <CheckCircle className="h-3.5 w-3.5 me-1" />
                       {t('approve')}
                     </Button>
                     <Button size="sm" variant="outline" className="text-red-600" disabled={processing === req.id} onClick={() => handleReject(req)}>
-                      <X className="h-3.5 w-3.5 mr-1" />
+                      <X className="h-3.5 w-3.5 me-1" />
                       {t('reject')}
                     </Button>
                   </div>
@@ -627,7 +627,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                       <p className="text-xs text-gray-400">{pkg.session_count} {t('sessions')}</p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <span className="text-2xl font-bold text-primary-700">${pkg.price_usd}</span>
                     {pkg.price_lbp && (
                       <p className="text-xs text-gray-400">{pkg.price_lbp.toLocaleString()} LBP</p>
@@ -713,18 +713,18 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                 ) : (
                   <div className="space-y-2 pt-2 border-t">
                     <Button variant="outline" className="w-full mt-1" size="sm" onClick={() => setAssignPkg(pkg.id)}>
-                      <Users className="h-3.5 w-3.5 mr-1" />
+                      <Users className="h-3.5 w-3.5 me-1" />
                       {t('assign_to_student')}
                     </Button>
 
                     {/* ── Edit / Delete / Toggle Active ──────── */}
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" className="flex-1" onClick={() => openEditModal(pkg)}>
-                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        <Pencil className="h-3.5 w-3.5 me-1" />
                         {t('edit')}
                       </Button>
                       <Button variant="ghost" size="sm" className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteTarget(pkg)}>
-                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        <Trash2 className="h-3.5 w-3.5 me-1" />
                         {t('delete')}
                       </Button>
                     </div>
@@ -735,7 +735,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                       onClick={() => handleToggleActive(pkg)}
                     >
                       {pkg.is_active ? t('status_active') : t('status_inactive')}
-                      <span className={cn('ml-1.5 w-2 h-2 rounded-full', pkg.is_active ? 'bg-green-500' : 'bg-gray-400')} />
+                      <span className={cn('ms-1.5 w-2 h-2 rounded-full', pkg.is_active ? 'bg-green-500' : 'bg-gray-400')} />
                     </Button>
                   </div>
                 )}

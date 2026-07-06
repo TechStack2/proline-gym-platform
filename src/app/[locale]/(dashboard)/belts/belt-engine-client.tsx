@@ -40,24 +40,24 @@ type Promotion = {
 const BELT_DISPLAY: Record<string, { color: string; label: { ar: string; en: string; fr: string } }> = {
   white:        { color: 'bg-white border-2 border-gray-300 text-gray-700', label: { ar: 'أبيض', en: 'White', fr: 'Blanche' } },
   white_yellow: { color: 'bg-gradient-to-r from-white to-yellow-300 border border-gray-300 text-gray-700', label: { ar: 'أبيض/أصفر', en: 'White/Yellow', fr: 'Blanc/Jaune' } },
-  yellow:       { color: 'bg-yellow-400 text-white', label: { ar: 'أصفر', en: 'Yellow', fr: 'Jaune' } },
-  yellow_orange:{ color: 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white', label: { ar: 'أصفر/برتقالي', en: 'Yellow/Orange', fr: 'Jaune/Orange' } },
-  orange:       { color: 'bg-orange-500 text-white', label: { ar: 'برتقالي', en: 'Orange', fr: 'Orange' } },
-  orange_green: { color: 'bg-gradient-to-r from-orange-400 to-green-400 text-white', label: { ar: 'برتقالي/أخضر', en: 'Orange/Green', fr: 'Orange/Vert' } },
-  green:        { color: 'bg-green-500 text-white', label: { ar: 'أخضر', en: 'Green', fr: 'Verte' } },
-  green_blue:   { color: 'bg-gradient-to-r from-green-400 to-blue-400 text-white', label: { ar: 'أخضر/أزرق', en: 'Green/Blue', fr: 'Vert/Bleu' } },
-  blue:         { color: 'bg-blue-500 text-white', label: { ar: 'أزرق', en: 'Blue', fr: 'Bleue' } },
-  blue_purple:  { color: 'bg-gradient-to-r from-blue-400 to-purple-400 text-white', label: { ar: 'أزرق/أرجواني', en: 'Blue/Purple', fr: 'Bleu/Violet' } },
-  purple:       { color: 'bg-purple-500 text-white', label: { ar: 'أرجواني', en: 'Purple', fr: 'Violette' } },
-  purple_brown: { color: 'bg-gradient-to-r from-purple-400 to-amber-600 text-white', label: { ar: 'أرجواني/بني', en: 'Purple/Brown', fr: 'Violet/Marron' } },
-  brown:        { color: 'bg-amber-700 text-white', label: { ar: 'بني', en: 'Brown', fr: 'Marron' } },
-  brown_black:  { color: 'bg-gradient-to-r from-amber-700 to-black text-white', label: { ar: 'بني/أسود', en: 'Brown/Black', fr: 'Marron/Noir' } },
-  red:          { color: 'bg-red-600 text-white', label: { ar: 'أحمر', en: 'Red', fr: 'Rouge' } },
-  black_1:      { color: 'bg-black text-white ring-1 ring-red-500', label: { ar: 'أسود °1', en: 'Black 1°', fr: 'Noir 1°' } },
-  black_2:      { color: 'bg-black text-white ring-1 ring-white/50', label: { ar: 'أسود °2', en: 'Black 2°', fr: 'Noir 2°' } },
-  black_3:      { color: 'bg-black text-white ring-1 ring-yellow-500', label: { ar: 'أسود °3', en: 'Black 3°', fr: 'Noir 3°' } },
-  black_4:      { color: 'bg-black text-white ring-1 ring-blue-500', label: { ar: 'أسود °4', en: 'Black 4°', fr: 'Noir 4°' } },
-  black_5:      { color: 'bg-black text-white ring-1 ring-red-500 ring-offset-1', label: { ar: 'أسود °5', en: 'Black 5°', fr: 'Noir 5°' } },
+  yellow:       { color: 'bg-yellow-400 text-primary-foreground', label: { ar: 'أصفر', en: 'Yellow', fr: 'Jaune' } },
+  yellow_orange:{ color: 'bg-gradient-to-r from-yellow-400 to-orange-400 text-primary-foreground', label: { ar: 'أصفر/برتقالي', en: 'Yellow/Orange', fr: 'Jaune/Orange' } },
+  orange:       { color: 'bg-orange-500 text-primary-foreground', label: { ar: 'برتقالي', en: 'Orange', fr: 'Orange' } },
+  orange_green: { color: 'bg-gradient-to-r from-orange-400 to-green-400 text-primary-foreground', label: { ar: 'برتقالي/أخضر', en: 'Orange/Green', fr: 'Orange/Vert' } },
+  green:        { color: 'bg-green-500 text-primary-foreground', label: { ar: 'أخضر', en: 'Green', fr: 'Verte' } },
+  green_blue:   { color: 'bg-gradient-to-r from-green-400 to-blue-400 text-primary-foreground', label: { ar: 'أخضر/أزرق', en: 'Green/Blue', fr: 'Vert/Bleu' } },
+  blue:         { color: 'bg-blue-500 text-primary-foreground', label: { ar: 'أزرق', en: 'Blue', fr: 'Bleue' } },
+  blue_purple:  { color: 'bg-gradient-to-r from-blue-400 to-purple-400 text-primary-foreground', label: { ar: 'أزرق/أرجواني', en: 'Blue/Purple', fr: 'Bleu/Violet' } },
+  purple:       { color: 'bg-purple-500 text-primary-foreground', label: { ar: 'أرجواني', en: 'Purple', fr: 'Violette' } },
+  purple_brown: { color: 'bg-gradient-to-r from-purple-400 to-amber-600 text-primary-foreground', label: { ar: 'أرجواني/بني', en: 'Purple/Brown', fr: 'Violet/Marron' } },
+  brown:        { color: 'bg-amber-700 text-primary-foreground', label: { ar: 'بني', en: 'Brown', fr: 'Marron' } },
+  brown_black:  { color: 'bg-gradient-to-r from-amber-700 to-black text-primary-foreground', label: { ar: 'بني/أسود', en: 'Brown/Black', fr: 'Marron/Noir' } },
+  red:          { color: 'bg-red-600 text-primary-foreground', label: { ar: 'أحمر', en: 'Red', fr: 'Rouge' } },
+  black_1:      { color: 'bg-black text-primary-foreground ring-1 ring-red-500', label: { ar: 'أسود °1', en: 'Black 1°', fr: 'Noir 1°' } },
+  black_2:      { color: 'bg-black text-primary-foreground ring-1 ring-white/50', label: { ar: 'أسود °2', en: 'Black 2°', fr: 'Noir 2°' } },
+  black_3:      { color: 'bg-black text-primary-foreground ring-1 ring-yellow-500', label: { ar: 'أسود °3', en: 'Black 3°', fr: 'Noir 3°' } },
+  black_4:      { color: 'bg-black text-primary-foreground ring-1 ring-blue-500', label: { ar: 'أسود °4', en: 'Black 4°', fr: 'Noir 4°' } },
+  black_5:      { color: 'bg-black text-primary-foreground ring-1 ring-red-500 ring-offset-1', label: { ar: 'أسود °5', en: 'Black 5°', fr: 'Noir 5°' } },
 };
 
 const selectClass = 'w-full px-3 py-2 text-sm border rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500';
@@ -229,11 +229,11 @@ export function BeltEngineClient({
       <div className="flex gap-2 border-b pb-2">
         <button onClick={() => { setActiveTab('promote'); resetPromotion(); }}
           className={cn('px-4 py-2 text-sm font-medium rounded-t-lg', activeTab === 'promote' ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-600' : 'text-gray-500')}>
-          <TrendingUp className="inline h-4 w-4 mr-1" />{t('promote')}
+          <TrendingUp className="inline h-4 w-4 me-1" />{t('promote')}
         </button>
         <button onClick={() => { setActiveTab('history'); }}
           className={cn('px-4 py-2 text-sm font-medium rounded-t-lg', activeTab === 'history' ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-600' : 'text-gray-500')}>
-          <Award className="inline h-4 w-4 mr-1" />{t('history')}
+          <Award className="inline h-4 w-4 me-1" />{t('history')}
         </button>
       </div>
 
@@ -248,7 +248,7 @@ export function BeltEngineClient({
                   <div key={i} className="flex items-center gap-1">
                     <div className={cn(
                       'h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold',
-                      step === i ? 'bg-primary-600 text-white' : step > i ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                      step === i ? 'bg-primary-600 text-primary-foreground' : step > i ? 'bg-green-500 text-primary-foreground' : 'bg-gray-200 text-gray-500'
                     )}>
                       {step > i ? <Check className="h-3.5 w-3.5" /> : i + 1}
                     </div>
@@ -367,12 +367,12 @@ export function BeltEngineClient({
               <div className="flex gap-2">
                 {step > 0 && (
                   <Button variant="outline" onClick={goBack} className="flex-1">
-                    <ArrowLeft className="h-4 w-4 mr-1" />{t('back')}
+                    <ArrowLeft className="h-4 w-4 me-1" />{t('back')}
                   </Button>
                 )}
                 {step < 2 ? (
                   <Button data-testid="be-next" onClick={goNext} disabled={!canGoNext()} className="flex-1">
-                    {t('next')}<ArrowRight className="h-4 w-4 ml-1" />
+                    {t('next')}<ArrowRight className="h-4 w-4 ms-1" />
                   </Button>
                 ) : (
                   <Button data-testid="be-confirm" onClick={handlePromote} disabled={submitting} className="flex-1">
@@ -407,7 +407,7 @@ export function BeltEngineClient({
                           </span>
                           {s.belt_promotion_date && (
                             <span className="text-xs text-gray-400">
-                              <Calendar className="inline h-3 w-3 mr-1" />
+                              <Calendar className="inline h-3 w-3 me-1" />
                               {new Date(s.belt_promotion_date).toLocaleDateString(getDateLocale(locale))}
                             </span>
                           )}

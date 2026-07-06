@@ -203,9 +203,9 @@ export function RentalsClient({ rentals: initialRentals, bookings, locale }: Pro
               {t('weekly_calendar')}
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => w - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => w - 1)}><ChevronLeft className={cn('h-4 w-4', isRTL && 'rotate-180')} /></Button>
               <span className="text-sm font-medium text-gray-600">{weekDays[0].toLocaleDateString()} - {weekDays[6].toLocaleDateString()}</span>
-              <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => w + 1)}><ChevronRight className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" onClick={() => setWeekOffset(w => w + 1)}><ChevronRight className={cn('h-4 w-4', isRTL && 'rotate-180')} /></Button>
             </div>
           </div>
         </CardHeader>
@@ -214,7 +214,7 @@ export function RentalsClient({ rentals: initialRentals, bookings, locale }: Pro
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <th className="p-2 text-left text-gray-400 font-medium w-32">{t('space')}</th>
+                  <th className="p-2 text-start text-gray-400 font-medium w-32">{t('space')}</th>
                   {weekDays.map(d => (
                     <th key={d.toISOString()} className="p-2 text-center text-gray-400 font-medium">
                       <div>{DAYS[d.getDay()]}</div>
@@ -264,10 +264,10 @@ export function RentalsClient({ rentals: initialRentals, bookings, locale }: Pro
               <div className="text-lg font-bold text-primary-700"><DollarSign className="inline h-4 w-4" />${rental.hourly_rate_usd}<span className="text-sm font-normal text-gray-400">/{t('per_hour')}</span></div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => setBookModal(rental.id)}>
-                  <Calendar className="h-3 w-3 mr-1" />{t('book')}
+                  <Calendar className="h-3 w-3 me-1" />{t('book')}
                 </Button>
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowWaivers(!showWaivers)}>
-                  <FileText className="h-3 w-3 mr-1" />{t('waiver')}
+                  <FileText className="h-3 w-3 me-1" />{t('waiver')}
                 </Button>
               </div>
             </CardContent>

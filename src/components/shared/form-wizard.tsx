@@ -96,7 +96,7 @@ export function FormWizard({
           {last ? (
             <Button size="sm" data-testid="wizard-submit" disabled={!valid || busy}
               onClick={() => void onSubmit()} className="bg-[#cd1419] hover:bg-[#a81014]">
-              {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+              {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />}
               {submitLabel}
             </Button>
           ) : (
@@ -125,7 +125,7 @@ export function ChipRow<T extends string>({ options, value, onChange, testid }: 
         <button key={o.value} type="button" data-testid={testid} data-value={o.value}
           onClick={() => onChange(o.value)}
           className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-            value === o.value ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+            value === o.value ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
           {o.label}
         </button>
       ))}

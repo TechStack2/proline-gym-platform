@@ -276,8 +276,8 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                     <p className="truncate text-sm font-semibold text-gray-900">
                       {clsName(s.cls)}
                       {phase && (
-                        <span className={cn('ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase',
-                          phase === 'now' ? 'bg-[#cd1419] text-white' : 'bg-gray-900 text-white')}>
+                        <span className={cn('ms-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase',
+                          phase === 'now' ? 'bg-[#cd1419] text-primary-foreground' : 'bg-gray-900 text-white')}>
                           {t(`cards.${phase}`)}
                         </span>
                       )}
@@ -359,7 +359,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
               action={
                 <span className="flex shrink-0 items-center gap-1.5">
                   <Link href={`/${locale}/students/${st?.id}?pay=1`} data-testid="chase-pay"
-                    className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
+                    className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
                     <DollarSign className="h-3.5 w-3.5" /> {t('cards.recordPayment')}
                   </Link>
                   <WhatsAppShare phone={prof2?.phone} testid="chase-wa"
@@ -462,7 +462,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           <ActionRow key={inv.id} href={`/${locale}/money?tab=invoices`} testid="money-due-row"
             action={
               <Link href={`/${locale}/invoices/${inv.id}`} data-testid="money-record-payment"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
                 <DollarSign className="h-3.5 w-3.5" /> {t('cards.recordPayment')}
               </Link>
             }>
@@ -523,7 +523,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           <ActionRow key={r.assignmentId} href={`/${locale}/students/${r.studentId}`} testid="refill-row"
             action={
               <Link href={`/${locale}/students/${r.studentId}?sellpt=${r.packageId}`} data-testid="refill-resell"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
                 <RefreshCw className="h-3.5 w-3.5" /> {t('cards.resell')}
               </Link>
             }>

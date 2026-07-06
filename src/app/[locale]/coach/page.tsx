@@ -232,7 +232,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
               </Link>
               <Link href={`/${locale}/coach/attendance?classId=${r.classId}`} data-testid="coach-today-attendance"
                 className={cn('inline-flex shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium',
-                  complete ? 'bg-green-50 text-green-700' : 'bg-[#cd1419] text-white hover:bg-[#b01216]')}>
+                  complete ? 'bg-green-50 text-green-700' : 'bg-[#cd1419] text-primary-foreground hover:bg-[#b01216]')}>
                 {complete ? <CheckCircle2 className="h-4 w-4" /> : <>{t('today.startAttendance')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></>}
               </Link>
             </div>

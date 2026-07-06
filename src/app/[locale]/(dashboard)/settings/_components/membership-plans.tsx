@@ -96,7 +96,7 @@ const PlanCard = ({
             </p>
             <p className={cn('text-xs font-semibold text-gray-900', isRTL && 'font-arabic')}>
               {plan.duration_days ? `${plan.duration_days}d` : '—'}
-              <span className="text-2xs text-gray-400 ml-1">
+              <span className="text-2xs text-gray-400 ms-1">
                 ({plan.duration_days ? getDurationLabel(plan.duration_days) : ''})
               </span>
             </p>

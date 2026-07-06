@@ -100,7 +100,7 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs font-medium',
                       interested[tr.id]
-                        ? 'border-green-600 bg-green-600 text-white'
+                        ? 'border-green-600 bg-green-600 text-primary-foreground'
                         : 'border-gray-200 bg-white text-gray-600',
                     )}
                   >
@@ -111,9 +111,9 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                     data-testid="coach-trial-show"
                     disabled={busyId === tr.id}
                     onClick={() => record(tr.id, 'completed', true)}
-                    className="flex-1 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    className="flex-1 py-1.5 text-xs bg-green-600 text-primary-foreground rounded-lg hover:bg-green-700 disabled:opacity-50"
                   >
-                    <CheckCircle2 className="inline h-3.5 w-3.5 mr-1" />
+                    <CheckCircle2 className="inline h-3.5 w-3.5 me-1" />
                     {t('mark_show')}
                   </button>
                   <button
@@ -122,7 +122,7 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                     onClick={() => record(tr.id, 'no_show', false)}
                     className="flex-1 py-1.5 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50"
                   >
-                    <XCircle className="inline h-3.5 w-3.5 mr-1" />
+                    <XCircle className="inline h-3.5 w-3.5 me-1" />
                     {t('mark_no_show')}
                   </button>
                   </div>

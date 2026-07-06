@@ -69,7 +69,7 @@ const SessionItem = ({ s, busy, run, t, locale }: {
           data-testid="pt-complete"
           disabled={busy !== null}
           onClick={() => run(`cmp-${s.session_id}`, () => completePtSession({ sessionId: s.session_id }), t('session_completed'))}
-          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
         >
           <CheckCircle2 className="h-3.5 w-3.5" />
           {s.status === 'completed' ? t('session_status.completed') : t('complete')}

@@ -249,21 +249,6 @@
   [dir="rtl"] .text-h2, [dir="rtl"] .text-h3, [dir="rtl"] .text-display,
   [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4 { letter-spacing: 0 !important; }
 
-  /* RTL-aware icon flipping */
-  [dir="rtl"] .icon-rtl-flip {
-    transform: scaleX(-1);
-  }
-
-  /* Logical property helpers for RTL */
-  [dir="rtl"] .logical-start {
-    right: 0;
-    left: auto;
-  }
-
-  [dir="ltr"] .logical-start {
-    left: 0;
-    right: auto;
-  }
 }
 
 @layer components {
@@ -322,10 +307,6 @@
     min-height: 44px;
     min-width: 44px;
   }
-
-  /* ─── RTL margin/padding utilities ─── */
-  [dir="rtl"] .ms-auto { margin-right: auto; margin-left: 0; }
-  [dir="rtl"] .me-auto { margin-left: auto; margin-right: 0; }
 
   /* ─── Belt rank gradient text ─── */
   .text-belt-gradient {

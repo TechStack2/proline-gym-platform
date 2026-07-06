@@ -66,7 +66,7 @@ export function PtPolicySettings({ locale, gymId, noShowForfeits, lateCancelWind
           data-testid="pt-policy-save"
           disabled={busy}
           onClick={save}
-          className="rounded-lg bg-[#cd1419] px-4 py-2 text-sm font-medium text-white hover:bg-[#b01216] disabled:opacity-50"
+          className="rounded-lg bg-[#cd1419] px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-[#b01216] disabled:opacity-50"
         >
           {t('pt_policy_save')}
         </button>

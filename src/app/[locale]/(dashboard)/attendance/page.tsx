@@ -138,7 +138,7 @@ export default async function AttendancePage({ params: { locale }, searchParams 
           <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm">
-          <Calendar className="h-4 w-4 mr-2" />
+          <Calendar className="h-4 w-4 me-2" />
           {t('dashboard.selectDate')}
         </Button>
       </div>

@@ -68,7 +68,7 @@ export function InviteResultCard({ result, locale }: { result: InviteResult; loc
         </button>
       </div>
       <a href={waLink} target="_blank" rel="noopener noreferrer" data-testid="invite-wa-link"
-        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1ebe5b]">
+        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[#1ebe5b]">
         <MessageCircle className="h-4 w-4" /> {t('shareWhatsapp')}
       </a>
     </div>

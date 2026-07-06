@@ -79,7 +79,7 @@ export function LanguageSwitcher({ locale, variant = 'dropdown' }: LanguageSwitc
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-50">
+        <div className="absolute end-0 mt-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-50">
           {(['ar', 'en', 'fr'] as const).map((lang) => (
             <button
               key={lang}

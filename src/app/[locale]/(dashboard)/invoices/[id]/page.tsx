@@ -105,7 +105,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
         {payments && payments.length > 0 ? (
           <div className="overflow-hidden rounded-xl border">
             <table className="w-full text-sm">
-              <thead><tr className="border-b bg-muted/50 text-left">
+              <thead><tr className="border-b bg-muted/50 text-start">
                 <th className="p-2">{t('Date', 'التاريخ', 'Date')}</th><th className="p-2">{t('Method', 'الطريقة', 'Méthode')}</th>
                 <th className="p-2">{t('USD', 'دولار', 'USD')}</th><th className="p-2">{t('LBP', 'ليرة', 'LBP')}</th><th className="p-2">{t('Reference', 'المرجع', 'Référence')}</th>
               </tr></thead>

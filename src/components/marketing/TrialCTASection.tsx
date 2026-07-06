@@ -136,7 +136,7 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
                       <button key={d.id} type="button" data-testid="trial-interest-chip" data-id={d.id}
                         onClick={() => setDisciplineId(disciplineId === d.id ? '' : d.id)}
                         className={cn('rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                          disciplineId === d.id ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                          disciplineId === d.id ? 'border-primary-600 bg-primary-600 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                         {d.name}
                       </button>
                     ))}
@@ -156,7 +156,7 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
               )}
 
               <button type="submit" disabled={loading} data-testid="trial-submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-6 py-3.5 text-base font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-95 shadow-glow-primary">
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-6 py-3.5 text-base font-semibold text-primary-foreground hover:bg-primary-700 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-95 shadow-glow-primary">
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (

@@ -167,11 +167,11 @@ export function AttendanceReportsClient({
             </div>
             <div className="flex items-end gap-2">
               <Button variant="outline" size="sm" onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t('reports.export')}
               </Button>
               <Button variant="outline" size="sm" onClick={printReport}>
-                <Printer className="h-4 w-4 mr-2" />
+                <Printer className="h-4 w-4 me-2" />
                 {t('reports.print')}
               </Button>
             </div>
@@ -231,13 +231,13 @@ export function AttendanceReportsClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.month')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.present')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.absent')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.late')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.excused')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.total')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.rate')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.month')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.present')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.absent')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.late')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.excused')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.total')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.rate')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -301,12 +301,12 @@ export function AttendanceReportsClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.date')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.student')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.class')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.discipline')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.time')}</th>
-                  <th className="text-left py-3 px-4 font-medium">{t('reports.status')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.date')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.student')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.class')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.discipline')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.time')}</th>
+                  <th className="text-start py-3 px-4 font-medium">{t('reports.status')}</th>
                 </tr>
               </thead>
               <tbody>

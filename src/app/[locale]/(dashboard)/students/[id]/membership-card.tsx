@@ -107,29 +107,29 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
         {state !== 'frozen' && (
           <Button size="sm" variant="outline" data-testid="ms-renew-now" disabled={pending}
             onClick={() => run(() => renewMembershipNow(data.id, studentId), 'renewIssued')} className="h-7 text-xs">
-            <RefreshCw className="mr-1 h-3 w-3" /> {t('renewNow')}
+            <RefreshCw className="me-1 h-3 w-3" /> {t('renewNow')}
           </Button>
         )}
         {state === 'frozen' ? (
           <Button size="sm" variant="outline" data-testid="ms-unfreeze" disabled={pending}
             onClick={() => run(() => unfreezeMembership(data.id, studentId), 'unfrozen')} className="h-7 text-xs text-blue-700">
-            <Sun className="mr-1 h-3 w-3" /> {t('unfreeze')}
+            <Sun className="me-1 h-3 w-3" /> {t('unfreeze')}
           </Button>
         ) : state === 'lapsed' ? (
           <Button size="sm" data-testid="ms-reinstate" disabled={pending}
             onClick={() => run(() => reinstateMembership(data.id, studentId), 'reinstated')}
             className="h-7 bg-[#cd1419] text-xs hover:bg-[#a81014]">
-            <RotateCcw className="mr-1 h-3 w-3" /> {t('reinstate')}
+            <RotateCcw className="me-1 h-3 w-3" /> {t('reinstate')}
           </Button>
         ) : (
           <Button size="sm" variant="outline" data-testid="ms-freeze-open" disabled={pending}
             onClick={() => setFreezeOpen(true)} className="h-7 text-xs">
-            <Snowflake className="mr-1 h-3 w-3" /> {t('freeze')}
+            <Snowflake className="me-1 h-3 w-3" /> {t('freeze')}
           </Button>
         )}
         <Button size="sm" variant="outline" data-testid="ms-change-plan-open" disabled={pending}
           onClick={() => setPlanOpen(true)} className="h-7 text-xs">
-          <ArrowUpDown className="mr-1 h-3 w-3" /> {t('changePlan')}
+          <ArrowUpDown className="me-1 h-3 w-3" /> {t('changePlan')}
         </Button>
         {/* G1: send the renewal reminder (in-app notif + WhatsApp when active) */}
         <RenewalReminderButton membershipId={data.id} locale={locale} />
@@ -154,7 +154,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
             <Button size="sm" data-testid="ms-freeze-submit" disabled={pending}
               onClick={() => run(() => freezeMembership(data.id, Number(freezeDays), studentId), 'frozen')}
               className="h-8 bg-[#cd1419] text-xs hover:bg-[#a81014]">
-              {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Snowflake className="mr-1 h-3 w-3" />} {t('freezeConfirm')}
+              {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Snowflake className="me-1 h-3 w-3" />} {t('freezeConfirm')}
             </Button>
           </div>
         </div>

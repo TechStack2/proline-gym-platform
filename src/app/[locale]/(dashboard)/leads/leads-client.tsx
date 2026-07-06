@@ -272,7 +272,7 @@ export function LeadsClient({
           type="button"
           data-testid="add-lead-button"
           onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 whitespace-nowrap"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary-600 text-primary-foreground rounded-lg hover:bg-primary-700 whitespace-nowrap"
         >
           <Plus className="h-4 w-4" />
           {t('add_lead')}
@@ -309,7 +309,7 @@ export function LeadsClient({
                     <h3 className="font-medium text-gray-900 flex items-center gap-1.5">
                       {lead.first_name} {lead.last_name}
                       {isFresh && (
-                        <span data-testid="lead-fresh-badge" className="rounded-full bg-[#cd1419] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                        <span data-testid="lead-fresh-badge" className="rounded-full bg-[#cd1419] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                           {t('freshInquiry')}
                         </span>
                       )}
@@ -429,7 +429,7 @@ export function LeadsClient({
                       onClick={() => setExpandedLead(isExpanded ? null : lead.id)}
                       className="flex-1 h-8 text-xs border rounded-lg hover:bg-gray-50 font-medium"
                     >
-                      <Calendar className="inline h-3 w-3 mr-1" />
+                      <Calendar className="inline h-3 w-3 me-1" />
                       {t('schedule_trial')}
                     </button>
                     <button
@@ -576,9 +576,9 @@ function TrialPanel({
               data-testid="trial-show"
               disabled={busy}
               onClick={() => handleOutcome('completed', true)}
-              className="flex-1 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="flex-1 py-1.5 text-xs bg-green-600 text-primary-foreground rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
-              <CheckCircle2 className="inline h-3.5 w-3.5 mr-1" />
+              <CheckCircle2 className="inline h-3.5 w-3.5 me-1" />
               {t('mark_show')}
             </button>
             <button
@@ -587,7 +587,7 @@ function TrialPanel({
               onClick={() => handleOutcome('no_show', false)}
               className="flex-1 py-1.5 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50"
             >
-              <XCircle className="inline h-3.5 w-3.5 mr-1" />
+              <XCircle className="inline h-3.5 w-3.5 me-1" />
               {t('mark_no_show')}
             </button>
           </div>
@@ -629,7 +629,7 @@ function TrialPanel({
             data-testid="trial-confirm"
             disabled={busy}
             onClick={handleSchedule}
-            className="w-full py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+            className="w-full py-1.5 text-xs bg-primary-600 text-primary-foreground rounded-lg hover:bg-primary-700 disabled:opacity-50"
           >
             {t('confirm_trial')}
           </button>
@@ -715,7 +715,7 @@ function AddLeadModal({
                 <button key={d.id} type="button" data-testid="lead-discipline-chip" data-id={d.id}
                   onClick={() => setDisciplineId(disciplineId === d.id ? '' : d.id)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                    disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700')}>
+                    disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                   {disciplineName(d)}
                 </button>
               ))}
@@ -727,7 +727,7 @@ function AddLeadModal({
                 <button key={src} type="button" data-testid="lead-source-chip" data-value={src}
                   onClick={() => setSource(src)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                    source === src ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700')}>
+                    source === src ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                   {t(`source.${src}` as Parameters<typeof t>[0])}
                 </button>
               ))}
@@ -937,7 +937,7 @@ function ConvertModal({
             data-testid="convert-confirm"
             disabled={busy || !planId}
             onClick={handleConvert}
-            className="flex-1 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            className="flex-1 py-2 text-sm bg-green-600 text-primary-foreground rounded-lg hover:bg-green-700 disabled:opacity-50"
           >
             {t('convert_confirm')}
           </button>

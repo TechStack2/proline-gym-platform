@@ -67,7 +67,7 @@ export function OnboardForm({ locale }: { locale: string }) {
             type="submit"
             disabled={pending}
             data-testid="onboard-submit"
-            className="w-full rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
+            className="w-full rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-700 disabled:opacity-50"
           >
             {pending ? 'Creating…' : 'Create gym'}
           </button>

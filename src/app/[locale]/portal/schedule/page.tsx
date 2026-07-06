@@ -113,7 +113,7 @@ export default async function PortalSchedulePage({ params: { locale } }: Props) 
                       <p className="font-semibold text-gray-900">{className(enr.classes)}</p>
                       <p className="text-sm text-[#cd1419] font-medium">{discipline(enr.classes?.disciplines)}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Clock className="h-3.5 w-3.5" />
                         <span>{enr.schedule?.start_time?.slice(0, 5)} - {enr.schedule?.end_time?.slice(0, 5)}</span>

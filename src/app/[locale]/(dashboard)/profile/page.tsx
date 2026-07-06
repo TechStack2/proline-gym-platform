@@ -68,7 +68,7 @@ export default async function StaffProfilePage({ params }: Props) {
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       {/* Avatar + Name Card */}
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
-        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-[#cd1419] text-white text-3xl font-bold mb-3">
+        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-[#cd1419] text-primary-foreground text-3xl font-bold mb-3">
           {firstName?.charAt(0) || '?'}
         </div>
         <h2 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')}>
@@ -222,7 +222,7 @@ export default async function StaffProfilePage({ params }: Props) {
 
         <button
           type="submit"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#cd1419] text-white text-sm font-medium rounded-xl hover:bg-[#b01216] active:bg-[#9a0f13] transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#cd1419] text-primary-foreground text-sm font-medium rounded-xl hover:bg-[#b01216] active:bg-[#9a0f13] transition-colors"
         >
           <Save className="h-4 w-4" />
           {isRTL ? 'حفظ التغييرات' : locale === 'fr' ? 'Enregistrer les modifications' : 'Save Changes'}

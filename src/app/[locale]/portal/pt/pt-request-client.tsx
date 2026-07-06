@@ -84,7 +84,7 @@ export function PtRequestClient({ packages, coaches, locale }: Props) {
                     <p className="text-xs text-gray-400">{pkg.session_count} {t('sessions')}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <span className="text-lg font-bold text-[#cd1419]">${pkg.price_usd}</span>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export function PtRequestClient({ packages, coaches, locale }: Props) {
                     <button
                       disabled={submitting}
                       onClick={() => handleRequest(pkg.id)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                     >
                       <Send className="h-3.5 w-3.5" />
                       {t('send_request')}

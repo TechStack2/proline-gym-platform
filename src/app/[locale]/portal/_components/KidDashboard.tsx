@@ -119,7 +119,7 @@ export async function KidDashboard({
         {kids.map((k) => (
           k.id === kid.id ? (
             <span key={k.id} data-testid="kid-chip" data-kid-id={k.id} data-active="true"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#cd1419] px-3 py-1.5 text-sm font-semibold text-white">
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#cd1419] px-3 py-1.5 text-sm font-semibold text-primary-foreground">
               <Avatar url={k.avatarUrl} name={k.name} size="xs" />
               {k.name}
             </span>

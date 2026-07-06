@@ -129,7 +129,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
         </button>
         <Button variant="outline" size="sm" data-testid="class-edit-btn" disabled={adminBusy}
           onClick={() => setShowEditWizard(true)}>
-          <Edit className="mr-1 h-4 w-4" /> {ta('edit')}
+          <Edit className="me-1 h-4 w-4" /> {ta('edit')}
         </Button>
         {classData.is_active && (
           confirmArchive ? (
@@ -146,7 +146,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
           ) : (
             <Button variant="outline" size="sm" data-testid="class-archive-btn" disabled={adminBusy}
               className="text-red-600 hover:bg-red-50" onClick={() => setConfirmArchive(true)}>
-              <Trash2 className="mr-1 h-4 w-4" /> {ta('archive')}
+              <Trash2 className="me-1 h-4 w-4" /> {ta('archive')}
             </Button>
           )
         )}
@@ -220,7 +220,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
                         </span>
                         {schedule.room && (
                           <span className="text-muted-foreground">
-                            <MapPin className="h-3 w-3 inline mr-1" />
+                            <MapPin className="h-3 w-3 inline me-1" />
                             {schedule.room}
                           </span>
                         )}
@@ -237,7 +237,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t('enrolledStudents')} ({classData.enrollments_count})</CardTitle>
               <Button data-testid="enroll-open" onClick={() => setShowEnrollModal(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
+                <UserPlus className="h-4 w-4 me-2" />
                 {t('enrollStudent')}
               </Button>
             </CardHeader>
@@ -314,11 +314,11 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
             </CardHeader>
             <CardContent className="space-y-3">
               <Button className="w-full" variant="outline">
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 me-2" />
                 {t('editClass')}
               </Button>
               <Button className="w-full" variant="outline" onClick={() => setShowEnrollModal(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
+                <UserPlus className="h-4 w-4 me-2" />
                 {t('enrollStudent')}
               </Button>
             </CardContent>

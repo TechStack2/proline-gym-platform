@@ -64,14 +64,14 @@ export function CoachActions({
     <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-white p-3 shadow-sm" data-testid="coach-admin-bar">
       <Link href={`/${locale}/coaches/${coachId}/edit`}>
         <Button variant="outline" size="sm" data-testid="coach-edit-btn">
-          <Pencil className="mr-1 h-4 w-4" /> {ta('edit')}
+          <Pencil className="me-1 h-4 w-4" /> {ta('edit')}
         </Button>
       </Link>
 
       {/* Assign to a class — the wizard owns coach↔class assignment (no new writer). */}
       <Link href={`/${locale}/classes`}>
         <Button variant="outline" size="sm" data-testid="coach-assign-class">
-          <CalendarPlus className="mr-1 h-4 w-4" /> {t('actions.assignClass')}
+          <CalendarPlus className="me-1 h-4 w-4" /> {t('actions.assignClass')}
         </Button>
       </Link>
 
@@ -106,13 +106,13 @@ export function CoachActions({
           ) : (
             <Button variant="outline" size="sm" data-testid="coach-deactivate-btn"
               className="text-red-600 hover:bg-red-50" onClick={() => setConfirmDeact(true)}>
-              <UserX className="mr-1 h-4 w-4" /> {ta('deactivate')}
+              <UserX className="me-1 h-4 w-4" /> {ta('deactivate')}
             </Button>
           )
         ) : (
           <Button variant="outline" size="sm" data-testid="coach-reactivate-btn" disabled={busy}
             className="text-green-700 hover:bg-green-50" onClick={reactivate}>
-            {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <UserCheck className="mr-1 h-4 w-4" />} {t('actions.reactivate')}
+            {busy ? <Loader2 className="me-1 h-3.5 w-3.5 animate-spin" /> : <UserCheck className="me-1 h-4 w-4" />} {t('actions.reactivate')}
           </Button>
         )
       )}

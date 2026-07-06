@@ -73,7 +73,7 @@ export async function PaymentsView({ locale, searchParams }: Props) {
             {METHODS.map((m) => <option key={m} value={m}>{methodLabel(m)}</option>)}
           </select>
         </div>
-        <button className="h-9 rounded-md bg-[#cd1419] px-4 text-sm font-medium text-white hover:bg-[#a81014]">{t('Filter', 'تصفية', 'Filtrer')}</button>
+        <button className="h-9 rounded-md bg-[#cd1419] px-4 text-sm font-medium text-primary-foreground hover:bg-[#a81014]">{t('Filter', 'تصفية', 'Filtrer')}</button>
         <Link href={`/${locale}/money?tab=payments`} className="h-9 rounded-md border px-4 text-sm leading-9 hover:bg-muted">{t('Clear', 'مسح', 'Effacer')}</Link>
       </form>
 
@@ -89,7 +89,7 @@ export async function PaymentsView({ locale, searchParams }: Props) {
       ) : (
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead><tr className="border-b bg-muted/50 text-left">
+            <thead><tr className="border-b bg-muted/50 text-start">
               <th className="p-3">{t('Date', 'التاريخ', 'Date')}</th><th className="p-3">{t('Member', 'العضو', 'Membre')}</th>
               <th className="p-3">{t('Invoice', 'الفاتورة', 'Facture')}</th><th className="p-3">{t('Method', 'الطريقة', 'Méthode')}</th>
               <th className="p-3">{t('Reference', 'المرجع', 'Référence')}</th><th className="p-3">{t('Amount', 'المبلغ', 'Montant')}</th>

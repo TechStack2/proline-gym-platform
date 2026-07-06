@@ -83,7 +83,7 @@ export function Header({ locale, role, showBell = true }: HeaderProps) {
           <LogOut className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-2 ml-1">
+        <div className="flex items-center gap-2 ms-1">
           <div className="relative h-8 w-8 overflow-hidden rounded-full">
             <Image src="/logo.jpg" alt="PRO LINE Gym" width={32} height={32} className="h-full w-full object-cover" />
           </div>
