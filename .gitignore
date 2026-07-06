@@ -58,3 +58,6 @@ screenshots/
 
 # Local Claude Code settings (per-machine permission allow-list)
 .claude/
+
+# DB-migration scratch — never commit
+migrate_out/
