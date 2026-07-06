@@ -190,6 +190,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // ONBOARDING-CHECKLIST: the DERIVED first-run setup card on /today. Runs on
+      // the per-worker seed gym (fully configured EXCEPT branding → 7/8), proving
+      // the card shows while incomplete, then service-role-completes branding to
+      // prove it hides at 8/8. Restores branding null so the shared gym is untouched.
+      name: 'onboarding-checklist',
+      dependencies: ['setup'],
+      testMatch: /onboarding-checklist\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PWA-MOBILE-UX: installed-mobile-PWA shell polish — NativeTabBar items scale
       // up on Pro-Max widths (#2); language switcher in Settings + the mobile More
       // menu, tail not clipped (#3). Opens its own Pro-Max-viewport owner context.

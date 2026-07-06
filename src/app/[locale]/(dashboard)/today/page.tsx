@@ -7,6 +7,7 @@ import { parseHorizon, horizonEndDate, HORIZONS, type Horizon } from '@/lib/fina
 import { TodayHorizon } from './_components/TodayHorizon'
 import { WeekHorizon } from './_components/WeekHorizon'
 import { MonthHorizon } from './_components/MonthHorizon'
+import { SetupChecklist } from './_components/SetupChecklist'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
 import { UserPlus, Users, DollarSign } from 'lucide-react'
 
@@ -75,6 +76,10 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
       {/* PWA-INSTALL: dismissible, platform-aware "Install the app" affordance for the
           front-desk laptop (the offline guarantee). Renders nothing once installed. */}
       <InstallAppCard locale={locale} />
+
+      {/* ONBOARDING-CHECKLIST: derived first-run setup guide — renders only while
+          setup is incomplete, hides itself once every applicable item is done. */}
+      <SetupChecklist locale={locale} gymId={gymId} />
 
       {/* Horizon switcher — Today / Week / Month swap the whole card set */}
       <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="horizon-switcher">

@@ -1718,6 +1718,20 @@
     "no_history": "No promotions yet",
     "no_student": "No member profile found"
   },
+  "setupChecklist": {
+    "title": "Finish setting up your gym",
+    "progress": "{done} of {total} done",
+    "items": {
+      "profile": "Add your gym's contact details",
+      "branding": "Set up your landing & branding",
+      "discipline": "Add a class or discipline",
+      "coach": "Add a coach",
+      "plan": "Create a membership plan",
+      "ptpackage": "Create a PT package",
+      "exchange": "Set the exchange rate",
+      "member": "Add your first member"
+    }
+  },
   "today": {
     "title": "Today",
     "classes": "Today's classes",
