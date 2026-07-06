@@ -131,6 +131,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // RENTALS (QUICK-WINS #3): the bookings query is now gym-scoped (via rentals,
+      // since rental_bookings has no gym_id) + bounded. Smoke: seeds one own-gym
+      // rental + booking (service role) and asserts the page renders it.
+      name: 'rentals',
+      dependencies: ['setup'],
+      testMatch: /rentals\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // INVOICE-POLISH: the printable receipt hides the shell chrome under print
       // media, and a class-registration invoice (via approve_class_registration,
       // post-000086) carries the enriched customer-facing label ("<class> — Month
