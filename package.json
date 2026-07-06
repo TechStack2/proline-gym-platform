@@ -1,6 +1,6 @@
 {
   "name": "proline-gym-platform",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Proline Gym Management Platform — Tri-lingual (AR/EN/FR) martial arts gym management",
   "scripts": {
