@@ -32,33 +32,38 @@ export default async function SettingsPage({ params, searchParams }: Props) {
   // when the gym doesn't sell membership. The row is already fetched (select *).
   const products = parseEnabledProducts((gymData as { enabled_products?: unknown } | null)?.enabled_products);
 
-  // Fetch exchange rates, ordered by date desc
-  const { data: rates } = await supabase
-    .from('exchange_rates')
-    .select('*')
-    .order('rate_date', { ascending: false });
-
-  // Fetch membership plans (gym-scoped: the *_read RLS is all-authenticated)
-  const { data: plans } = await supabase
-    .from('membership_plans')
-    .select('*')
-    .eq('gym_id', gymData?.id ?? '')
-    .order('duration_days', { ascending: true });
-
-  // PT package-type catalog (incl. archived, for the manager) — PT-1
-  const { data: ptTypes } = await supabase
-    .from('pt_packages')
-    .select('id, name_ar, name_en, name_fr, session_count, price_usd, validity_days, discipline_id, is_active, show_on_landing')
-    .eq('gym_id', gymData?.id ?? '')
-    .is('deleted_at', null)
-    .order('session_count', { ascending: true })
-
-  // Fetch disciplines with their belt hierarchies (incl. archived, for the manager)
-  const { data: disciplines } = await supabase
-    .from('disciplines')
-    .select('*, belt_hierarchies(*)')
-    .eq('gym_id', gymData?.id ?? '')
-    .order('sort_order', { ascending: true });
+  // PERF-SSR: gymData is fetched first (the rest filter by its id); everything below
+  // is INDEPENDENT — exchange rates, membership plans, the PT catalog, disciplines, the
+  // WhatsApp status, and the waiver template. Fetch them in ONE parallel wave instead of
+  // ~6 sequential awaits (the last two were even awaited inline in the JSX below). Same
+  // queries, same variables → identical data + render to the client.
+  const gymId = gymData?.id ?? '';
+  const [
+    { data: rates },
+    { data: plans },
+    { data: ptTypes },
+    { data: disciplines },
+    whatsappStatus,
+    waiverTemplate,
+  ] = await Promise.all([
+    // Exchange rates, ordered by date desc
+    supabase.from('exchange_rates').select('*').order('rate_date', { ascending: false }),
+    // Membership plans (gym-scoped: the *_read RLS is all-authenticated)
+    supabase.from('membership_plans').select('*').eq('gym_id', gymId).order('duration_days', { ascending: true }),
+    // PT package-type catalog (incl. archived, for the manager) — PT-1
+    supabase
+      .from('pt_packages')
+      .select('id, name_ar, name_en, name_fr, session_count, price_usd, validity_days, discipline_id, is_active, show_on_landing')
+      .eq('gym_id', gymId)
+      .is('deleted_at', null)
+      .order('session_count', { ascending: true }),
+    // Disciplines with their belt hierarchies (incl. archived, for the manager)
+    supabase.from('disciplines').select('*, belt_hierarchies(*)').eq('gym_id', gymId).order('sort_order', { ascending: true }),
+    // G1: per-gym WhatsApp config status (definer read) — was `await getWhatsAppStatus()` inline in the JSX
+    getWhatsAppStatus(),
+    // F3: gym-configurable waiver template — was `await getWaiverTemplate()` inline in the JSX
+    getWaiverTemplate(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -138,10 +143,10 @@ export default async function SettingsPage({ params, searchParams }: Props) {
 
       {/* G1: per-gym WhatsApp Cloud-API config (status read via the definer; the
           token is write-only and never fetched to the client). */}
-      <WhatsAppSettings initial={await getWhatsAppStatus()} locale={locale} />
+      <WhatsAppSettings initial={whatsappStatus} locale={locale} />
 
       {/* F3: gym-configurable liability waiver (tenant-clean DATA; body edit bumps version). */}
-      <WaiverSettings initial={await getWaiverTemplate()} locale={locale} />
+      <WaiverSettings initial={waiverTemplate} locale={locale} />
     </div>
   );
 }
