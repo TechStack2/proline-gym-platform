@@ -63,6 +63,14 @@ export function SwipeableSheet({
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      // FREEZE-MORE-MENU: when the controlled `isOpen` goes false (backdrop click,
+      // Escape, item tap) the internal `currentSnap` MUST also reset — otherwise the
+      // render guard below (`!isOpen && !currentSnap`) stays false, the `fixed
+      // inset-0` container lingers, and its pointer-events:auto body swallowed every
+      // click app-wide until a refresh. Resetting unmounts it cleanly.
+      setCurrentSnap(null);
+      setDragOffset(0);
+      setIsDragging(false);
     }
 
     return () => {
@@ -197,9 +205,18 @@ export function SwipeableSheet({
   if (!isOpen && !currentSnap) return null;
 
   return (
-    <div className="fixed inset-0 z-[100]" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div
+      data-testid="sheet-overlay"
+      // FREEZE-MORE-MENU defense-in-depth: the container must NEVER intercept clicks
+      // while closed. The backdrop already goes pointer-events-none when !isOpen; the
+      // CONTAINER didn't, so it wedged the app. Guard it too — this also closes the
+      // one-render window before the reset effect unmounts the whole overlay.
+      className={cn('fixed inset-0 z-[100]', !isOpen && 'pointer-events-none')}
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       {/* Backdrop */}
       <div
+        data-testid="sheet-backdrop"
         className={cn(
           'absolute inset-0 bg-black/40',
           'transition-opacity duration-300',

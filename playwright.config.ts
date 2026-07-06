@@ -209,6 +209,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // FREEZE-MORE-MENU: regression guard for the deterministic screen-freeze —
+      // open the More sheet, click the backdrop, click away; the SwipeableSheet
+      // teardown must fully unmount (no lingering pointer-events overlay) so the app
+      // stays interactive. Runs the 3-step sequence at mobile + tablet widths.
+      name: 'freeze-more-menu',
+      dependencies: ['setup'],
+      testMatch: /freeze-more-menu\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // DUNNING-AUTO: auto WhatsApp renewal reminders (opt-in, deduped, record
       // mode). Seeds its OWN isolated opted-in + opted-out gyms (service-role seed)
       // and drives POST /api/dunning/run — one reminder, no duplicate, zero when
