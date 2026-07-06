@@ -101,6 +101,20 @@ jobs:
 
           echo "✅ Phase 0b: replay-check GREEN — chain replays from zero; auth.users + storage risks confirmed applied."
 
+      - name: Assert every gym_id-bearing table's RLS is gym-scoped (CATALOG-SCOPE guard)
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y postgresql-client; fi
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          # occurrence-#5 insurance (CATALOG-SCOPE / 000088): a role-only
+          # `auth.role() = 'authenticated'` read on ANY gym_id-bearing public table — the
+          # cross-tenant blanket-RLS leak class fixed by 000085 (class_schedules) + 000088
+          # (the 6 catalog tables) — RAISEs and fails this job. ON_ERROR_STOP=1 → the
+          # RAISE EXCEPTION exits psql non-zero. The SQL also prints every candidate
+          # policy's qual + verdict for the run log.
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/ci/assert-gym-scoped-policies.sql
+          echo "✅ CATALOG-SCOPE guard GREEN — no gym_id-bearing table carries a blanket authenticated read."
+
       - name: Stop the local stack
         if: always()
         run: supabase stop --no-backup || true
