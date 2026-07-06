@@ -139,12 +139,13 @@ export function LeadsClient({
     prevStatusFilter.current = statusFilter;
 
     async function fetchFiltered() {
+      // LEADS-BOUND: same cap as the SSR fetch. .limit() LAST, after the .or()/.eq()
+      // filters (chaining .limit() before .or() broke the .ilike() search at runtime).
       let query = supabase
         .from('leads')
         .select('*')
         .eq('gym_id', gymId)
-        .order('created_at', { ascending: false })
-        .limit(LEADS_LIMIT); // LEADS-BOUND: same cap as the SSR fetch (search/filter re-fetch)
+        .order('created_at', { ascending: false });
       if (debouncedSearch) {
         const term = `%${debouncedSearch}%`;
         query = query.or(
@@ -152,7 +153,7 @@ export function LeadsClient({
         );
       }
       if (statusFilter !== 'all') query = query.eq('status', statusFilter);
-      const { data } = await query;
+      const { data } = await query.limit(LEADS_LIMIT);
       if (data) setLeads(data as Lead[]);
     }
     fetchFiltered();

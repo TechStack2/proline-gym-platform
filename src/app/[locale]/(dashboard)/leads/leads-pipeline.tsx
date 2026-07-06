@@ -80,12 +80,14 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
   // → "Showing N of TOTAL" in LeadsClient (which applies the SAME limit on its
   // search/filter re-fetch). Concurrency stays LOW here on purpose — the reverted
   // sequential/small-batch structure; a wide Promise.all burst the pooler.
+  // ORDER MATTERS: apply .limit() LAST, AFTER the .or()/.eq() FILTERS. postgrest-js
+  // chains `.limit()` before `.or()` broke the .ilike() search at runtime (returned 0)
+  // — filters must be built before the limit transform.
   let query = supabase
     .from('leads')
     .select('*')
     .eq('gym_id', gymId)
-    .order('created_at', { ascending: false })
-    .limit(LEADS_LIMIT);
+    .order('created_at', { ascending: false });
 
   if (searchParams.search) {
     const term = `%${searchParams.search}%`;
@@ -98,7 +100,7 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
     query = query.eq('status', searchParams.status);
   }
 
-  const { data: leads } = await query;
+  const { data: leads } = await query.limit(LEADS_LIMIT);
 
   // ── Disciplines with gym_id filter ─────────────────────
   const { data: disciplines } = await supabase
