@@ -241,7 +241,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       {kids.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="kid-switcher">
           <span data-testid="kid-chip-me"
-            className="rounded-full bg-[#cd1419] px-4 py-1.5 text-sm font-semibold text-white">
+            className="rounded-full bg-[#cd1419] px-4 py-1.5 text-sm font-semibold text-primary-foreground">
             {t('me')}
           </span>
           {kids.map((k: any) => (

@@ -665,7 +665,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
             </h2>
             <p className="mb-2 text-xs text-gray-500">
               {householdKids.map((k) => (
-                <Link key={k.id} href={`/${locale}/students/${k.id}`} className="mr-2 text-primary-600 hover:underline">{k.name}</Link>
+                <Link key={k.id} href={`/${locale}/students/${k.id}`} className="me-2 text-primary-600 hover:underline">{k.name}</Link>
               ))}
             </p>
             {payerInvoices.length === 0 ? (

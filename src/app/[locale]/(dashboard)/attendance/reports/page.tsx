@@ -109,7 +109,7 @@ export default async function AttendancePage({ params: { locale }, searchParams 
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4 mr-2" />
+            <Calendar className="h-4 w-4 me-2" />
             {t('dashboard.selectDate')}
           </Button>
         </div>

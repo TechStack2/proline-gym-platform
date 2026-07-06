@@ -63,16 +63,16 @@ export function PtProposals({ rows, locale }: { rows: ProposalRow[]; locale: str
               <Button size="sm" data-testid="proposal-accept" disabled={pending}
                 className="bg-green-600 hover:bg-green-700"
                 onClick={() => respond(r.id, 'accept')}>
-                <CheckCircle2 className="mr-1 h-4 w-4" /> {t('acceptBtn')}
+                <CheckCircle2 className="me-1 h-4 w-4" /> {t('acceptBtn')}
               </Button>
               <Button size="sm" variant="outline" data-testid="proposal-counter-open" disabled={pending}
                 onClick={() => setCounterFor(counterFor === r.id ? null : r.id)}>
-                <Clock className="mr-1 h-4 w-4" /> {t('counterBtn')}
+                <Clock className="me-1 h-4 w-4" /> {t('counterBtn')}
               </Button>
               <Button size="sm" variant="outline" data-testid="proposal-decline" disabled={pending}
                 className="text-red-600 hover:bg-red-50"
                 onClick={() => respond(r.id, 'decline')}>
-                <XCircle className="mr-1 h-4 w-4" /> {t('declineBtn')}
+                <XCircle className="me-1 h-4 w-4" /> {t('declineBtn')}
               </Button>
             </div>
           </div>
@@ -84,7 +84,7 @@ export function PtProposals({ rows, locale }: { rows: ProposalRow[]; locale: str
               <Button size="sm" data-testid="proposal-counter-send" disabled={pending || !counterAt}
                 onClick={() => respond(r.id, 'counter', new Date(counterAt).toISOString())}
                 className={cn('bg-[#cd1419] hover:bg-[#a81014]')}>
-                {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('sendCounter')}
+                {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('sendCounter')}
               </Button>
             </div>
           )}

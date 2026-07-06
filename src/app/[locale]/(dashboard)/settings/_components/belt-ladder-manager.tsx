@@ -164,7 +164,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
                   if (!nameEn.trim()) setNameEn(r.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
                 }}
                 className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                  rank === r ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700')}>
+                  rank === r ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                 {r.replace(/_/g, ' ')}
               </button>
             ))}
@@ -203,7 +203,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
         <Button size="sm" data-testid="belt-add-btn" disabled={busy || !discId || unusedRanks.length === 0}
           onClick={() => openWizard(null)} className="bg-[#cd1419] hover:bg-[#a81014]">
-          <Plus className="mr-1 h-4 w-4" /> {t('addRank')}
+          <Plus className="me-1 h-4 w-4" /> {t('addRank')}
         </Button>
       </div>
       {error && <p data-testid="belt-ladder-error" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}

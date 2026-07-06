@@ -115,9 +115,9 @@ export function NotificationBell({ locale }: NotificationBellProps) {
           <span
             data-testid="notification-bell-badge"
             className={cn(
-              'absolute -top-1 -right-1 min-w-[18px] h-[18px]',
+              'absolute -top-1 -end-1 min-w-[18px] h-[18px]',
               'flex items-center justify-center',
-              'rounded-full bg-red-500 text-white text-[10px] font-bold',
+              'rounded-full bg-red-500 text-primary-foreground text-[10px] font-bold',
               'leading-none px-1',
               'animate-in fade-in-0 zoom-in-95 duration-200'
             )}

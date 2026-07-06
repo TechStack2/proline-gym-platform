@@ -42,7 +42,7 @@ function DropdownMenu({ children }: DropdownMenuProps) {
   const [open, setOpen] = React.useState(false)
   return (
     <DropdownMenuContext.Provider value={{ open, setOpen }}>
-      <div className="relative inline-block text-left">
+      <div className="relative inline-block text-start">
         {children}
       </div>
     </DropdownMenuContext.Provider>
@@ -94,8 +94,8 @@ function DropdownMenuContent({
       ref={ref}
       className={cn(
         'absolute z-50 mt-1 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95',
-        align === 'end' && 'right-0',
-        align === 'start' && 'left-0',
+        align === 'end' && 'end-0',
+        align === 'start' && 'start-0',
         align === 'center' && 'left-1/2 -translate-x-1/2',
         className
       )}
@@ -115,7 +115,7 @@ const DropdownMenuItem = React.forwardRef<
       ref={ref}
       className={cn(
         'relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-        inset && 'pl-8',
+        inset && 'ps-8',
         className
       )}
       onClick={(e) => {
@@ -139,7 +139,7 @@ function DropdownMenuLabel({
     <div
       className={cn(
         'px-2 py-1.5 text-sm font-semibold',
-        inset && 'pl-8',
+        inset && 'ps-8',
         className
       )}
     >

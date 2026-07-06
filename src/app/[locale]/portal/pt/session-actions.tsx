@@ -43,7 +43,7 @@ export function MemberProposalActions({ sessionId }: { sessionId: string }) {
   return (
     <span className="flex items-center gap-1">
       <button type="button" data-testid="pt-proposal-accept-member" disabled={pending} onClick={() => respond('accept')}
-        className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-medium text-white disabled:opacity-50">
+        className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-medium text-primary-foreground disabled:opacity-50">
         {t('acceptCounter')}
       </button>
       <button type="button" data-testid="pt-proposal-decline-member" disabled={pending} onClick={() => respond('decline')}

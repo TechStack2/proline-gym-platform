@@ -106,7 +106,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       {/* Avatar + Name Card */}
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
-        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-[#cd1419] text-white text-3xl font-bold mb-3">
+        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-[#cd1419] text-primary-foreground text-3xl font-bold mb-3">
           {firstName?.charAt(0) || '?'}
         </div>
         <h2 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')}>
@@ -126,7 +126,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
 
         {/* Belt Rank Badge */}
         {beltLabel && (
-          <span className="inline-flex items-center gap-1.5 mt-2 ml-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+          <span className="inline-flex items-center gap-1.5 mt-2 ms-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
             <Award className="h-3.5 w-3.5" />
             {beltLabel}
           </span>

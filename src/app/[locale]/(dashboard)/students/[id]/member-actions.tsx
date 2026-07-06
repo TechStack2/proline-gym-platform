@@ -168,7 +168,7 @@ export function MemberActions({
   return (
     <div className="flex flex-wrap gap-2" data-testid="member-quick-actions">
       <button type="button" data-testid="m360-pay-open" onClick={() => setPayOpen(true)}
-        className="inline-flex items-center gap-1 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#a81014]">
+        className="inline-flex items-center gap-1 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
         <DollarSign className="h-3.5 w-3.5" /> {t('recordPayment')}
       </button>
       <button type="button" data-testid="m360-register-open" onClick={() => setRegOpen(true)}
@@ -200,7 +200,7 @@ export function MemberActions({
                     <span className="text-xs text-gray-500">
                       {c.monthly_fee_usd != null ? `$${Number(c.monthly_fee_usd).toFixed(0)}/${t('mo')}` : '—'}
                       {c.max_capacity != null && (
-                        <span className="ml-1.5 inline-flex items-center gap-0.5"><Users className="h-3 w-3" />{c.max_capacity}</span>
+                        <span className="ms-1.5 inline-flex items-center gap-0.5"><Users className="h-3 w-3" />{c.max_capacity}</span>
                       )}
                     </span>
                   </button>
@@ -213,7 +213,7 @@ export function MemberActions({
               </div>
               <Button data-testid="m360-register-submit" onClick={submitRegister} disabled={pending || !classId}
                 className="w-full bg-[#cd1419] hover:bg-[#a81014]">
-                {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('registerConfirm')}
+                {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('registerConfirm')}
               </Button>
             </div>
           )}
@@ -235,12 +235,12 @@ export function MemberActions({
                       onClick={() => setCampId(c.id)}
                       className={cn('flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm',
                         campId === c.id ? 'border-[#cd1419] bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
-                      <span className="min-w-0 truncate text-left font-medium text-gray-900">{cname}</span>
+                      <span className="min-w-0 truncate text-start font-medium text-gray-900">{cname}</span>
                       <span className="shrink-0 text-xs text-gray-500" dir="ltr">
                         ${Number(c.price_usd).toFixed(0)}
                         {full
-                          ? <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{t('campFull')}</span>
-                          : <span className="ml-1.5">{t('spotsLeft', { count: c.spots })}</span>}
+                          ? <span className="ms-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{t('campFull')}</span>
+                          : <span className="ms-1.5">{t('spotsLeft', { count: c.spots })}</span>}
                       </span>
                     </button>
                   )
@@ -254,7 +254,7 @@ export function MemberActions({
               )}
               <Button data-testid="m360-camp-submit" onClick={submitCamp} disabled={pending || !campId}
                 className="w-full bg-[#cd1419] hover:bg-[#a81014]">
-                {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('campConfirm')}
+                {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('campConfirm')}
               </Button>
             </div>
           )}
@@ -297,7 +297,7 @@ export function MemberActions({
               </div>
               <Button data-testid="m360-pay-submit" onClick={submitPayment} disabled={pending}
                 className="w-full bg-[#cd1419] hover:bg-[#a81014]">
-                {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('payConfirm')}
+                {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('payConfirm')}
               </Button>
             </div>
           )}

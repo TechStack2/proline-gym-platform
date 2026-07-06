@@ -216,9 +216,9 @@ export function AttendanceDashboardClient({
           disabled={loading === 'all'}
         >
           {loading === 'all' ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin me-2" />
           ) : (
-            <Check className="h-4 w-4 mr-2" />
+            <Check className="h-4 w-4 me-2" />
           )}
           {t('dashboard.markAllPresent')}
         </Button>

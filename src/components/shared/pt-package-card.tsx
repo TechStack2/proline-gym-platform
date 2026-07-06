@@ -87,7 +87,7 @@ export function PtPackageCard({
           <div className="min-w-0">
             <p className={cn('truncate text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
               {data.packageName}
-              {data.disciplineName ? <span className="ml-1.5 text-xs font-normal text-gray-400">· {data.disciplineName}</span> : null}
+              {data.disciplineName ? <span className="ms-1.5 text-xs font-normal text-gray-400">· {data.disciplineName}</span> : null}
             </p>
             {data.coachName && (
               <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">

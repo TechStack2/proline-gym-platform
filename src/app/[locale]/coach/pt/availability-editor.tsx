@@ -92,7 +92,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale 
             <button key={d} type="button" data-testid="avail-day-pill" data-dow={d}
               onClick={() => setDay(d)}
               className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                day === d ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-600')}>
+                day === d ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-600')}>
               {dayLabel(d)}
             </button>
           ))}
@@ -104,7 +104,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale 
           <input type="time" data-testid="avail-end" value={end} onChange={(e) => setEnd(e.target.value)}
             className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
           <Button size="sm" data-testid="avail-add" disabled={busy} onClick={addWindow} className="bg-[#cd1419] hover:bg-[#a81014]">
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />} {t('publish')}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="me-1 h-4 w-4" />} {t('publish')}
           </Button>
         </div>
       </div>
@@ -117,7 +117,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale 
               className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 text-sm">
               <span className="text-gray-800">
                 <span className="font-medium">{dayLabel(w.day_of_week)}</span>
-                <span className="ml-2 text-xs text-gray-500" dir="ltr">{hhmm(w.start_time)}–{hhmm(w.end_time)}</span>
+                <span className="ms-2 text-xs text-gray-500" dir="ltr">{hhmm(w.start_time)}–{hhmm(w.end_time)}</span>
               </span>
               <button type="button" data-testid="avail-remove" disabled={busy} onClick={() => removeWindow(w.id)}
                 className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
@@ -153,7 +153,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale 
             </>
           )}
           <Button size="sm" variant="outline" data-testid="ov-add" disabled={busy} onClick={addOverride}>
-            <Plus className="mr-1 h-3.5 w-3.5" /> {t('add')}
+            <Plus className="me-1 h-3.5 w-3.5" /> {t('add')}
           </Button>
         </div>
         {overrides.length > 0 && (

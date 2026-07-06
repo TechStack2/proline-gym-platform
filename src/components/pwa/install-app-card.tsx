@@ -32,7 +32,7 @@ export function InstallAppCard({ locale }: { locale: string }) {
       className="rounded-2xl border border-[#cd1419]/20 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#cd1419] text-sm font-extrabold text-white">PL</div>
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#cd1419] text-sm font-extrabold text-primary-foreground">PL</div>
           <div>
             <p className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('cardTitle')}</p>
             <p className="mt-0.5 text-xs text-gray-500">{t('cardDescription')}</p>
@@ -47,7 +47,7 @@ export function InstallAppCard({ locale }: { locale: string }) {
       {canPrompt ? (
         // Chromium with a captured prompt → one-tap native install.
         <button type="button" data-testid="install-app-btn" onClick={() => void onInstall()}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-2 text-xs font-semibold text-white hover:bg-[#b01216]">
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-[#b01216]">
           <Download className="h-4 w-4" /> {t('installButton')}
         </button>
       ) : (

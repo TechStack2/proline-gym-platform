@@ -396,7 +396,7 @@ export function OfflineQRScanner({
                     <p className="text-xs text-muted-foreground">
                       {result.checkInTime}
                       {!result.synced && (
-                        <span className="ml-2 text-amber-600">({d.offlineQueued})</span>
+                        <span className="ms-2 text-amber-600">({d.offlineQueued})</span>
                       )}
                     </p>
                   </div>

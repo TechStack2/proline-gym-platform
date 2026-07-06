@@ -110,7 +110,7 @@ export default async function CoachesPage({
           {canInviteStaff && <InviteStaffButton locale={locale} gymId={gymId} />}
           <Link href={`/${locale}/coaches/add`}>
             <Button>
-              <Plus className="w-4 h-4 ml-2" />
+              <Plus className="w-4 h-4 ms-2" />
               {t('add_coach')}
             </Button>
           </Link>

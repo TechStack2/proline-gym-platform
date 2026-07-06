@@ -100,7 +100,7 @@ export function VendorLanding({ locale }: { locale: string }) {
             <a
               href={demoHref}
               data-testid="vendor-cta"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-white shadow-glow-primary transition-all hover:scale-105 hover:bg-primary-700 active:scale-95 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-primary-foreground shadow-glow-primary transition-all hover:scale-105 hover:bg-primary-700 active:scale-95 sm:w-auto"
             >
               {t('hero.ctaPrimary')}
               <ArrowRight className={cn('h-5 w-5', isRTL && 'rotate-180')} />
@@ -204,7 +204,7 @@ export function VendorLanding({ locale }: { locale: string }) {
                   href={demoHref}
                   className={cn(
                     'mt-8 block rounded-xl px-6 py-3 text-center text-sm font-semibold transition-all hover:scale-105 active:scale-95',
-                    featured ? 'bg-primary-600 text-white shadow-glow-primary hover:bg-primary-700' : 'bg-secondary-900 text-white hover:bg-secondary-800',
+                    featured ? 'bg-primary-600 text-primary-foreground shadow-glow-primary hover:bg-primary-700' : 'bg-secondary-900 text-white hover:bg-secondary-800',
                   )}
                 >
                   {t('pricing.cta')}
@@ -225,7 +225,7 @@ export function VendorLanding({ locale }: { locale: string }) {
             <a
               href={demoHref}
               data-testid="vendor-cta-bottom"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-white shadow-glow-primary transition-all hover:scale-105 hover:bg-primary-700 active:scale-95 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-primary-foreground shadow-glow-primary transition-all hover:scale-105 hover:bg-primary-700 active:scale-95 sm:w-auto"
             >
               {t('cta.button')}
               <ArrowRight className={cn('h-5 w-5', isRTL && 'rotate-180')} />

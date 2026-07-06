@@ -84,7 +84,7 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
   if (!open) {
     return (
       <Button variant="outline" data-testid="invite-staff-btn" onClick={() => setOpen(true)}>
-        <UserPlus className="mr-1 h-4 w-4" /> {t('inviteStaff')}
+        <UserPlus className="me-1 h-4 w-4" /> {t('inviteStaff')}
       </Button>
     )
   }
@@ -118,13 +118,13 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
               <button key={r} type="button" data-testid="staff-role" data-value={r}
                 onClick={() => setRole(r)}
                 className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                  role === r ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                  role === r ? 'border-primary-600 bg-primary-600 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                 {t(`role.${r}` as Parameters<typeof t>[0])}
               </button>
             ))}
           </div>
           <Button data-testid="staff-invite-submit" disabled={!valid || busy} onClick={submit} className="w-full">
-            {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <UserPlus className="mr-1 h-4 w-4" />}
+            {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <UserPlus className="me-1 h-4 w-4" />}
             {t('invite')}
           </Button>
           {error && <p className="text-xs text-red-600" data-testid="invite-error">{error}</p>}

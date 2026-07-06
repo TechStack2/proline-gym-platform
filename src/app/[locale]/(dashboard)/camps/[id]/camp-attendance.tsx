@@ -50,7 +50,7 @@ export function CampAttendance({ campId, day, days, kids, locale }: {
         {days.map((d) => (
           <Link key={d} href={`${pathname}?tab=attendance&date=${d}`} data-testid="camp-day-pill" data-date={d}
             className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-              d === day ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
+              d === day ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
             {fmtPill(d)}
           </Link>
         ))}
@@ -67,13 +67,13 @@ export function CampAttendance({ campId, day, days, kids, locale }: {
                 <button type="button" data-testid="camp-att-present" disabled={busy !== null}
                   onClick={() => mark(k.studentId, 'present')}
                   className={cn('inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium',
-                    k.status === 'present' ? 'bg-green-600 text-white' : 'border text-gray-600 hover:bg-green-50')}>
+                    k.status === 'present' ? 'bg-green-600 text-primary-foreground' : 'border text-gray-600 hover:bg-green-50')}>
                   <Check className="h-3.5 w-3.5" /> {t('present')}
                 </button>
                 <button type="button" data-testid="camp-att-absent" disabled={busy !== null}
                   onClick={() => mark(k.studentId, 'absent')}
                   className={cn('inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium',
-                    k.status === 'absent' ? 'bg-red-600 text-white' : 'border text-gray-600 hover:bg-red-50')}>
+                    k.status === 'absent' ? 'bg-red-600 text-primary-foreground' : 'border text-gray-600 hover:bg-red-50')}>
                   <X className="h-3.5 w-3.5" /> {t('absent')}
                 </button>
               </span>

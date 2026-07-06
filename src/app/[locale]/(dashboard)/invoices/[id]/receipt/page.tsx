@@ -101,9 +101,9 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
 
         <table className="mb-4 w-full text-sm">
           <tbody>
-            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</td><td className="py-1 text-right">${Number(inv.amount_usd).toFixed(2)}</td></tr>
-            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)', 'TVA (11%)')}</td><td className="py-1 text-right">${Number(inv.tax_amount_usd).toFixed(2)}</td></tr>
-            <tr className="border-b font-bold"><td className="py-1">{t('Total', 'الإجمالي', 'Total')}</td><td className="py-1 text-right">${Number(inv.total_usd).toFixed(2)}{inv.total_lbp ? ` · ${Number(inv.total_lbp).toLocaleString()} LBP` : ''}</td></tr>
+            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</td><td className="py-1 text-end">${Number(inv.amount_usd).toFixed(2)}</td></tr>
+            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)', 'TVA (11%)')}</td><td className="py-1 text-end">${Number(inv.tax_amount_usd).toFixed(2)}</td></tr>
+            <tr className="border-b font-bold"><td className="py-1">{t('Total', 'الإجمالي', 'Total')}</td><td className="py-1 text-end">${Number(inv.total_usd).toFixed(2)}{inv.total_lbp ? ` · ${Number(inv.total_lbp).toLocaleString()} LBP` : ''}</td></tr>
           </tbody>
         </table>
 
@@ -113,7 +113,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
             {(payments ?? []).map((p: any) => (
               <tr key={p.id} className="border-b">
                 <td className="py-1">{fmtDate(p.payment_date)} · {(locale === 'ar' ? METHOD_LABEL[p.payment_method]?.ar : locale === 'fr' ? METHOD_LABEL[p.payment_method]?.fr : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}{p.reference_number ? ` · ${p.reference_number}` : ''}</td>
-                <td className="py-1 text-right">${Number(p.amount_usd).toFixed(2)}{p.amount_lbp ? ` · ${Number(p.amount_lbp).toLocaleString()} LBP` : ''}</td>
+                <td className="py-1 text-end">${Number(p.amount_usd).toFixed(2)}{p.amount_lbp ? ` · ${Number(p.amount_lbp).toLocaleString()} LBP` : ''}</td>
               </tr>
             ))}
           </tbody>

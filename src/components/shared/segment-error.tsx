@@ -72,7 +72,7 @@ export function SegmentError({ error, reset, notFound = false }: {
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         {reset && (
           <button type="button" onClick={reset} data-testid="error-retry"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#cd1419] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#a81014]">
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#cd1419] px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]">
             <RotateCcw className="h-4 w-4" /> {d.retry}
           </button>
         )}

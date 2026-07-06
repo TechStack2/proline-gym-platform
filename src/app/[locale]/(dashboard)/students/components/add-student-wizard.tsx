@@ -184,7 +184,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
             <Input dir="ltr" type="tel" data-testid="sw-guardian-phone" value={gPhone}
               onChange={(e) => { setGPhone(e.target.value); setGSearched(false) }} placeholder="+961…" className="flex-1" />
             <Button size="sm" variant="outline" data-testid="sw-guardian-search" onClick={() => void searchGuardian()}>
-              <Search className="mr-1 h-3.5 w-3.5" /> {t('search')}
+              <Search className="me-1 h-3.5 w-3.5" /> {t('search')}
             </Button>
           </div>
           {gFound && (
@@ -220,7 +220,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
               <button key={p.id} type="button" data-testid="sw-plan-chip" data-id={p.id}
                 onClick={() => setPlanId(p.id)}
                 className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                  planId === p.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700')}>
+                  planId === p.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                 {p.name} · ${p.price.toFixed(0)}
               </button>
             ))}

@@ -98,7 +98,7 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
                     ))}
                   </ul>
                   <div className="mt-8">
-                    <a href="#trial" className={cn('block text-center rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:scale-105 active:scale-95', isAnnual ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-glow-primary' : 'bg-secondary-900 text-white hover:bg-secondary-800')}>
+                    <a href="#trial" className={cn('block text-center rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:scale-105 active:scale-95', isAnnual ? 'bg-primary-600 text-primary-foreground hover:bg-primary-700 shadow-glow-primary' : 'bg-secondary-900 text-white hover:bg-secondary-800')}>
                       {t('getStarted')}
                     </a>
                   </div>

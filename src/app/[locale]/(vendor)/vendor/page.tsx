@@ -50,7 +50,7 @@ export default async function VendorConsolePage({ params: { locale } }: { params
         <Link
           href={`/${locale}/onboard`}
           data-testid="vendor-onboard-link"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[#cd1419] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#a81014]"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#cd1419] px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]"
         >
           <Plus className="h-4 w-4" /> Onboard a new gym
         </Link>
@@ -59,7 +59,7 @@ export default async function VendorConsolePage({ params: { locale } }: { params
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-gray-50 text-left text-gray-500">
+            <tr className="border-b bg-gray-50 text-start text-gray-500">
               <th className="p-3 font-medium">Gym</th>
               <th className="p-3 font-medium">Slug</th>
               <th className="p-3 font-medium">Status</th>

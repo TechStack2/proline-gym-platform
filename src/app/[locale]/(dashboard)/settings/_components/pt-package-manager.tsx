@@ -109,7 +109,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
         <Input data-testid="ptpkg-add-price" type="number" min="0" step="0.01" placeholder={t('priceUsd')} value={add.price} onChange={(e) => setAdd((p) => ({ ...p, price: e.target.value }))} className="h-9 w-24" />
         <Input data-testid="ptpkg-add-validity" type="number" min="1" placeholder={t('validityDays')} value={add.validity} onChange={(e) => setAdd((p) => ({ ...p, validity: e.target.value }))} className="h-9 w-24" />
         <Button size="sm" data-testid="ptpkg-add-btn" disabled={busy} onClick={create} className="bg-[#cd1419] hover:bg-[#a81014]">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />} {t('add')}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="me-1 h-4 w-4" />} {t('add')}
         </Button>
       </div>
       {/* Optional discipline chips for the add row */}
@@ -120,7 +120,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
             <button key={d.id} type="button" data-testid="ptpkg-disc-chip" data-id={d.id}
               onClick={() => setAdd((p) => ({ ...p, disciplineId: p.disciplineId === d.id ? '' : d.id }))}
               className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                add.disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
+                add.disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
               {lname(d)}
             </button>
           ))}
@@ -148,7 +148,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
                 <span className={cn('text-sm font-medium', p.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800')}>
                   {lname(p)}
                 </span>
-                <span className="ml-2 text-xs text-gray-500">
+                <span className="ms-2 text-xs text-gray-500">
                   {p.session_count} {t('sessionsShort')} · ${Number(p.price_usd ?? 0).toFixed(0)}
                   {p.validity_days ? ` · ${p.validity_days}${t('daysShort')}` : ''}
                   {p.discipline_id ? ` · ${lname(disciplines.find((d) => d.id === p.discipline_id) ?? {})}` : ''}

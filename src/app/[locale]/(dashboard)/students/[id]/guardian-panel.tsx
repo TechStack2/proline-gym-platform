@@ -133,7 +133,7 @@ export function GuardianPanel({
           <Users className="h-4 w-4 text-primary-600" /> {t('guardians')}
         </h2>
         <Button size="sm" variant="outline" data-testid="guardian-link-btn" onClick={() => setOpen((v) => !v)}>
-          <UserPlus className="mr-1 h-3.5 w-3.5" /> {t('linkGuardian')}
+          <UserPlus className="me-1 h-3.5 w-3.5" /> {t('linkGuardian')}
         </Button>
       </div>
 
@@ -168,7 +168,7 @@ export function GuardianPanel({
               onChange={(e) => { setPhone(e.target.value); setSearched(false); setMatch(null) }} className="h-9" />
             <Button size="sm" data-testid="guardian-search-btn" disabled={busy || !phone.trim()} onClick={search}
               className="bg-[#cd1419] hover:bg-[#a81014]">
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="mr-1 h-3.5 w-3.5" />} {t('search')}
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="me-1 h-3.5 w-3.5" />} {t('search')}
             </Button>
           </div>
           {searched && match && (

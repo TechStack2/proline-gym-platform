@@ -59,7 +59,7 @@ export function Sidebar({ locale, role }: SidebarProps) {
           {item.key === 'inbox' && inboxCount > 0 && (
             <span
               data-testid="inbox-badge"
-              className="min-w-[20px] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white"
+              className="min-w-[20px] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-primary-foreground"
             >
               {inboxCount > 99 ? '99+' : inboxCount}
             </span>

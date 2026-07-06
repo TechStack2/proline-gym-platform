@@ -191,7 +191,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                       </Link>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="font-bold text-gray-900">${inv.total_usd?.toFixed(2)}</p>
                     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[inv.status])} data-testid="portal-invoice-status">{statusLabels[inv.status]}</span>
                     <p className="mt-0.5 text-xs" data-testid="portal-invoice-balance">

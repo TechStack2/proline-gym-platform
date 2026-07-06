@@ -142,7 +142,7 @@ export function NativeTabBar({
               >
                 <Icon className="h-[22px] w-[22px] min-[420px]:h-[27px] min-[420px]:w-[27px]" aria-hidden="true" />
                 {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[#cd1419] text-white text-[10px] font-bold leading-none">
+                  <span className="absolute -top-1.5 -end-2 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[#cd1419] text-primary-foreground text-[10px] font-bold leading-none">
                     {tab.badge > 99 ? '99+' : tab.badge}
                   </span>
                 )}

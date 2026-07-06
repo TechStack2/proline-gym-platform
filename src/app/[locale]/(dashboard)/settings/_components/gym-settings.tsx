@@ -162,7 +162,7 @@ export function GymSettings({ gym, locale }: Props) {
                   <Building2 className="h-7 w-7 text-primary-500" />
                 </div>
               )}
-              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#cd1419] text-white ring-2 ring-white">
+              <span className="absolute -bottom-1 -end-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#cd1419] text-primary-foreground ring-2 ring-white">
                 {logoBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
               </span>
               <input type="file" accept="image/*" className="hidden" data-testid="gym-logo-input" onChange={onPickLogo} />

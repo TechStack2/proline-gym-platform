@@ -90,8 +90,8 @@ export async function InvoicesView({ locale, searchParams }: Props) {
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div className="flex items-center justify-end">
         <Link href={`/${locale}/invoices/new`} data-testid="new-invoice-btn"
-          className="inline-flex items-center rounded-md bg-[#cd1419] px-4 py-2 text-sm font-medium text-white hover:bg-[#a81014]">
-          <Plus className="mr-2 h-4 w-4" /> {t('New invoice', 'فاتورة جديدة', 'Nouvelle facture')}
+          className="inline-flex items-center rounded-md bg-[#cd1419] px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-[#a81014]">
+          <Plus className="me-2 h-4 w-4" /> {t('New invoice', 'فاتورة جديدة', 'Nouvelle facture')}
         </Link>
       </div>
 
@@ -133,7 +133,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
       ) : (
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead><tr className="border-b bg-muted/50 text-left">
+            <thead><tr className="border-b bg-muted/50 text-start">
               <th className="p-3">{t('Number', 'الرقم', 'Numéro')}</th><th className="p-3">{t('Member', 'العضو', 'Membre')}</th>
               <th className="p-3">{t('Total', 'الإجمالي', 'Total')}</th><th className="p-3">{t('Balance', 'الرصيد', 'Solde')}</th>
               <th className="p-3">{t('Due', 'الاستحقاق', 'Échéance')}</th><th className="p-3">{t('Status', 'الحالة', 'Statut')}</th>

@@ -84,7 +84,7 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
           <ActionRow key={`${r.kind}-${r.studentId}-${i}`} href={`/${locale}/students/${r.studentId}`} testid="renewals-week-row"
             action={
               <Link href={`/${locale}/students/${r.studentId}`} data-testid="renewals-week-renew"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
                 <RefreshCw className="h-3.5 w-3.5" /> {t('week.renew')}
               </Link>
             }>
@@ -119,7 +119,7 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
           <ActionRow key={r.assignmentId} href={`/${locale}/students/${r.studentId}`} testid="pt-low-week-row"
             action={
               <Link href={`/${locale}/students/${r.studentId}?sellpt=${r.packageId}`} data-testid="pt-low-week-resell"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#a81014]">
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
                 <RefreshCw className="h-3.5 w-3.5" /> {t('week.resell')}
               </Link>
             }>

@@ -145,7 +145,7 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSection
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href={`/${locale}/auth/login`}
-            className="w-full sm:w-auto rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-white shadow-glow-primary hover:bg-primary-700 transition-all hover:scale-105 active:scale-95"
+            className="w-full sm:w-auto rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-primary-foreground shadow-glow-primary hover:bg-primary-700 transition-all hover:scale-105 active:scale-95"
           >
             {t('ctaTrial')}
           </Link>

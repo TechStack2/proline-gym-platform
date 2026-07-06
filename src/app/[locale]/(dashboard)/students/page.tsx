@@ -193,7 +193,7 @@ export default async function StudentsPage({
           {Tabs}
           <Link href={`/${locale}/students/add`}>
             <Button>
-              <Plus className="w-4 h-4 ml-2" />
+              <Plus className="w-4 h-4 ms-2" />
               {t('add_student')}
             </Button>
           </Link>
@@ -218,7 +218,7 @@ export default async function StudentsPage({
             data-testid={`chip-${k}`}
             data-count={chipCounts[k]}
             className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-              chip === k ? 'border-[#cd1419] bg-[#cd1419] text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}
+              chip === k ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}
           >
             {t(`chips.${k}`)} · {chipCounts[k]}
           </Link>

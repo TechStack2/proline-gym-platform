@@ -168,7 +168,7 @@ export function PwaInstallPrompt({
           )}
         >
           <div className="flex-shrink-0">
-            <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-[#cd1419] text-white font-extrabold text-lg shadow-md">
+            <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-[#cd1419] text-primary-foreground font-extrabold text-lg shadow-md">
               PL
             </div>
           </div>
@@ -185,7 +185,7 @@ export function PwaInstallPrompt({
             </button>
             <button
               onClick={handleInstall}
-              className="rounded-lg bg-[#cd1419] px-4 py-2 text-xs font-medium text-white hover:bg-[#b01216] transition-colors shadow-sm"
+              className="rounded-lg bg-[#cd1419] px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-[#b01216] transition-colors shadow-sm"
             >
               {d.installButton}
             </button>

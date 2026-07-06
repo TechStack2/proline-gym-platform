@@ -82,12 +82,12 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
     const beltColors: Record<string, string> = {
       white: 'bg-white border border-gray-300 text-gray-800',
       yellow: 'bg-yellow-400 text-yellow-900',
-      orange: 'bg-orange-500 text-white',
-      green: 'bg-green-600 text-white',
-      blue: 'bg-blue-600 text-white',
-      purple: 'bg-purple-600 text-white',
-      brown: 'bg-amber-800 text-white',
-      red: 'bg-red-700 text-white',
+      orange: 'bg-orange-500 text-primary-foreground',
+      green: 'bg-green-600 text-primary-foreground',
+      blue: 'bg-blue-600 text-primary-foreground',
+      purple: 'bg-purple-600 text-primary-foreground',
+      brown: 'bg-amber-800 text-primary-foreground',
+      red: 'bg-red-700 text-primary-foreground',
       black: 'bg-gray-900 text-white',
     }
     return beltColors[base] || 'bg-gray-100 text-gray-800'

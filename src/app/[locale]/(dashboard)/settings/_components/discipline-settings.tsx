@@ -137,7 +137,7 @@ export function DisciplineSettings({ disciplines, locale }: Props) {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" size="sm" className="text-2xs">
-                          <GripVertical className="h-3 w-3 mr-0.5" />
+                          <GripVertical className="h-3 w-3 me-0.5" />
                           {t('discipline.order')} #{disc.sort_order || 0}
                         </Badge>
                         <Badge variant="success" size="sm">
@@ -173,7 +173,7 @@ export function DisciplineSettings({ disciplines, locale }: Props) {
                                 </span>
                               )}
                               {belt.is_black_belt && (
-                                <span className="text-2xs opacity-80 ml-0.5">★</span>
+                                <span className="text-2xs opacity-80 ms-0.5">★</span>
                               )}
                             </div>
                           ))}
@@ -190,7 +190,7 @@ export function DisciplineSettings({ disciplines, locale }: Props) {
                               <span className="text-2xs text-gray-400">
                                 {beltLabel(belt.rank, belt.is_black_belt)}
                               </span>
-                              <div className="flex gap-3 ml-auto">
+                              <div className="flex gap-3 ms-auto">
                                 {belt.min_months_in_rank && (
                                   <span className="text-2xs">
                                     {belt.min_months_in_rank} {t('discipline.mo')}

@@ -124,7 +124,7 @@ export function WaiverSign({
             <div className="flex items-center justify-end border-t px-5 py-3">
               <Button size="sm" data-testid="waiver-submit" disabled={!canSubmit} onClick={() => void submit()}
                 className="bg-[#cd1419] hover:bg-[#a81014]">
-                {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />}
                 {t('submitSign')}
               </Button>
             </div>

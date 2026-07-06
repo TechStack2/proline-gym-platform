@@ -133,7 +133,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
   return (
     <div className="space-y-4">
       <Button data-testid="camp-add-btn" onClick={openCreate} className="bg-[#cd1419] hover:bg-[#a81014]">
-        <Plus className="mr-1 h-4 w-4" /> {t('addCamp')}
+        <Plus className="me-1 h-4 w-4" /> {t('addCamp')}
       </Button>
 
       {camps.length === 0 ? (
@@ -182,7 +182,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
                   </Button>
                 )}
                 <Link href={`/${locale}/camps/${c.id}`} data-testid="camp-roster-link"
-                  className="ml-auto inline-flex items-center gap-0.5 text-xs font-medium text-primary-600 hover:underline">
+                  className="ms-auto inline-flex items-center gap-0.5 text-xs font-medium text-primary-600 hover:underline">
                   {t('roster')} <ChevronRight className={cn('h-3 w-3', isRTL && 'rotate-180')} />
                 </Link>
               </div>
@@ -256,7 +256,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
                 </Button>
               ) : (
                 <Button size="sm" disabled={busy} onClick={save} data-testid="camp-submit" className="bg-[#cd1419] hover:bg-[#a81014]">
-                  {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {editing ? t('saveChanges') : t('createCamp')}
+                  {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {editing ? t('saveChanges') : t('createCamp')}
                 </Button>
               )}
             </div>

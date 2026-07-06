@@ -134,7 +134,7 @@ export function CoachProfileEditor({
           data-testid="coach-save-draft"
           onClick={submit}
           disabled={pendingTx}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-4 py-2 text-sm font-medium text-white hover:bg-[#a81014] disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-60"
         >
           {pendingTx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {t('save')}
         </button>

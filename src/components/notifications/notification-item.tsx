@@ -31,7 +31,7 @@ export function NotificationItem({
       data-testid="notification-item"
       data-notification-type={notificationType ?? undefined}
       className={cn(
-        'w-full text-left px-4 py-3 flex gap-3 items-start transition-all duration-150',
+        'w-full text-start px-4 py-3 flex gap-3 items-start transition-all duration-150',
         'hover:bg-gray-50 active:bg-gray-100',
         'animate-in fade-in-0 slide-in-from-top-1 duration-200',
         !isRead && 'bg-red-50/40 hover:bg-red-50/70',

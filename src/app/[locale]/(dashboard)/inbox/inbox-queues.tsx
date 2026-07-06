@@ -101,12 +101,12 @@ export function InboxQueues({
                   <Button size="sm" data-testid="inbox-camp-approve" disabled={pending}
                     className="bg-green-600 hover:bg-green-700"
                     onClick={() => run(r.id, async () => { const res = await registerToCamp({ studentId: r.studentId, campId: r.campId, requestId: r.id }); return res.ok ? { ok: true } : res })}>
-                    <CheckCircle2 className="mr-1 h-4 w-4" /> {t('approve')}
+                    <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
                   </Button>
                   <Button size="sm" variant="outline" data-testid="inbox-camp-decline" disabled={pending}
                     className="text-red-600 hover:bg-red-50"
                     onClick={() => run(r.id, async () => { const res = await declineCampRequest(r.id); return res.ok ? { ok: true } : res })}>
-                    <XCircle className="mr-1 h-4 w-4" /> {t('decline')}
+                    <XCircle className="me-1 h-4 w-4" /> {t('decline')}
                   </Button>
                 </div>
               </div>
@@ -149,12 +149,12 @@ export function InboxQueues({
                           discountPct: d.pct ? parseFloat(d.pct) : 0,
                           discountAmountUsd: d.amt ? parseFloat(d.amt) : 0,
                         }))}>
-                        <CheckCircle2 className="mr-1 h-4 w-4" /> {t('approve')}
+                        <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
                       </Button>
                       <Button size="sm" variant="outline" data-testid="inbox-decline" disabled={pending}
                         className="text-red-600 hover:bg-red-50"
                         onClick={() => run(r.id, () => rejectRegistration(r.id, r.classId))}>
-                        <XCircle className="mr-1 h-4 w-4" /> {t('decline')}
+                        <XCircle className="me-1 h-4 w-4" /> {t('decline')}
                       </Button>
                     </div>
                   </div>
@@ -187,12 +187,12 @@ export function InboxQueues({
                   <Button size="sm" data-testid="inbox-pt-approve" disabled={pending}
                     className="bg-green-600 hover:bg-green-700"
                     onClick={() => run(r.id, async () => { const res = await approvePtRequest(r.id); return res.ok ? { ok: true } : res })}>
-                    <CheckCircle2 className="mr-1 h-4 w-4" /> {t('approve')}
+                    <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
                   </Button>
                   <Button size="sm" variant="outline" data-testid="inbox-pt-decline" disabled={pending}
                     className="text-red-600 hover:bg-red-50"
                     onClick={() => run(r.id, async () => { const res = await rejectPtRequest(r.id, ''); return res.ok ? { ok: true } : res })}>
-                    <XCircle className="mr-1 h-4 w-4" /> {t('decline')}
+                    <XCircle className="me-1 h-4 w-4" /> {t('decline')}
                   </Button>
                 </div>
               </div>

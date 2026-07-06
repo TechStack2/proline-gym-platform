@@ -91,7 +91,7 @@ export function LandingNav({ locale, gymName, logoUrl }: LandingNavProps) {
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-semibold transition-all',
                 scrolled
-                  ? 'bg-primary-600 text-white hover:bg-primary-700'
+                  ? 'bg-primary-600 text-primary-foreground hover:bg-primary-700'
                   : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
               )}
             >
@@ -133,7 +133,7 @@ export function LandingNav({ locale, gymName, logoUrl }: LandingNavProps) {
             <Link
               href={`/${locale}/auth/login`}
               onClick={() => setMobileOpen(false)}
-              className="block rounded-lg bg-primary-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-primary-700 mt-2"
+              className="block rounded-lg bg-primary-600 px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-700 mt-2"
             >
               {t('nav.login') || 'Login'}
             </Link>

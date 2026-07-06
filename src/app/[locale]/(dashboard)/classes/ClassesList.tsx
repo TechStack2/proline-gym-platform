@@ -90,7 +90,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
           <div className="flex items-center justify-between">
             <CardTitle>{t('title')}</CardTitle>
             <Button data-testid="add-class-btn" onClick={() => setShowAddModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t('addClass')}
             </Button>
           </div>
@@ -203,7 +203,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
                     
                     {classItem.coach && (
                       <div className="flex items-center text-sm text-muted-foreground mb-2" data-testid="class-coach">
-                        <Users className="h-4 w-4 mr-2" />
+                        <Users className="h-4 w-4 me-2" />
                         {localizedName(classItem.coach.profiles, locale)}
                       </div>
                     )}
@@ -212,7 +212,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
                       <div className="space-y-1 mb-3">
                         {classItem.schedules.map((schedule: any) => (
                           <div key={schedule.id} className="flex items-center text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4 mr-2" />
+                            <Calendar className="h-4 w-4 me-2" />
                             <span>{getDayName(schedule.day_of_week)}</span>
                             <Clock className="h-4 w-4 mx-2" />
                             <span>{schedule.start_time} - {schedule.end_time}</span>
@@ -229,7 +229,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
 
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground" data-testid="class-count">
-                        <Users className="h-4 w-4 inline mr-1" />
+                        <Users className="h-4 w-4 inline me-1" />
                         {classItem.enrollments_count || 0}/{classItem.max_capacity}
                       </span>
                       {/* CYCLE-VIZ: recurring monthly cycle + fee (catalog framing). */}

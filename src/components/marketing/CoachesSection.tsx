@@ -93,7 +93,7 @@ export async function CoachesSection({ locale, gymSlug }: CoachesSectionProps) {
                   {comingSoon && (
                     <span
                       data-testid="coach-coming-soon-badge"
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary-600 px-3 py-1 text-[11px] font-semibold text-white shadow-md"
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary-600 px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow-md"
                     >
                       <Clock className="h-3 w-3" /> {t('comingSoon')}
                     </span>

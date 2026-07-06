@@ -186,7 +186,7 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
             <Button data-testid="enroll-confirm" onClick={handleEnroll} disabled={!selectedStudent || enrolling}>
-              {enrolling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {enrolling && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {t('confirmEnroll')}
             </Button>
           </div>

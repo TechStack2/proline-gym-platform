@@ -98,7 +98,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
       <Button size="sm" data-testid={triggerTestid} onClick={openModal}
         className={cn(staff ? 'h-7 border bg-white text-xs text-gray-700 hover:bg-gray-50' : 'bg-[#cd1419] hover:bg-[#a81014]')}
         variant={staff ? 'outline' : 'primary'}>
-        <CalendarPlus className="mr-1 h-3.5 w-3.5" /> {triggerLabel ?? t('book')}
+        <CalendarPlus className="me-1 h-3.5 w-3.5" /> {triggerLabel ?? t('book')}
       </Button>
 
       {open && (
@@ -125,7 +125,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" />
                 <Button data-testid="pt-propose-submit" onClick={submitPropose} disabled={pending}
                   className="w-full bg-[#cd1419] hover:bg-[#a81014]">
-                  {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />} {t('sendProposal')}
+                  {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Send className="me-1 h-4 w-4" />} {t('sendProposal')}
                 </Button>
                 <button type="button" className="w-full text-center text-xs text-gray-500 hover:underline" onClick={() => setPropose(false)}>
                   {t('backToSlots')}
@@ -154,7 +154,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                     <Button data-testid="pt-override-book" disabled={pending || !overrideAt}
                       onClick={() => book(new Date(overrideAt).toISOString(), true)}
                       className="w-full bg-[#cd1419] hover:bg-[#a81014]">
-                      {pending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} {t('bookOverride')}
+                      {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('bookOverride')}
                     </Button>
                   </div>
                 ) : days.length === 0 ? (

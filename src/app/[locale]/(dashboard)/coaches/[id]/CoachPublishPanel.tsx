@@ -132,7 +132,7 @@ export function CoachPublishPanel({
         <div className="mt-4 flex flex-wrap items-center gap-2" data-testid="coach360-admin-controls">
           <button type="button" data-testid="coach360-publish" disabled={tx}
             onClick={() => run(() => publishCoachProfile({ coachId }))}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3.5 py-2 text-sm font-medium text-white hover:bg-[#a81014] disabled:opacity-60">
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-60">
             {tx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />} {t('publish')}
           </button>
           <button type="button" data-testid="coach360-toggle-comingsoon" disabled={tx}

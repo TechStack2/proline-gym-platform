@@ -85,7 +85,7 @@ export function WhatsAppSettings({ initial, locale }: { initial: WhatsAppStatus;
 
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" data-testid="wa-save" disabled={busy} onClick={save} className="bg-[#cd1419] hover:bg-[#a81014]">
-          {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />} {t('save')}
+          {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />} {t('save')}
         </Button>
         {saved && <span data-testid="wa-saved" className="text-xs font-medium text-green-600">{t('savedOk')}</span>}
       </div>
@@ -94,7 +94,7 @@ export function WhatsAppSettings({ initial, locale }: { initial: WhatsAppStatus;
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <Input data-testid="wa-test-phone" dir="ltr" placeholder="+961…" value={testPhone} onChange={(e) => setTestPhone(e.target.value)} className="h-9 w-44" />
           <Button size="sm" variant="outline" data-testid="wa-send-test" disabled={busy || !testPhone} onClick={test}>
-            <MessageCircle className="mr-1 h-3.5 w-3.5" /> {t('sendTest')}
+            <MessageCircle className="me-1 h-3.5 w-3.5" /> {t('sendTest')}
           </Button>
           {testResult && <span data-testid="wa-test-result" className="text-xs text-gray-600">{testResult}</span>}
         </div>
