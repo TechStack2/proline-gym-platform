@@ -14,6 +14,11 @@
 -- one RETURNS column + one SELECT column added; nothing else changes.
 -- ============================================================
 
+-- Adding a RETURNS TABLE column changes the return type, which CREATE OR REPLACE
+-- cannot do (42P13) — DROP first. Grants are re-asserted at the tail. It is a leaf
+-- RPC (called only via .rpc() from the app), so no DB object depends on it.
+DROP FUNCTION IF EXISTS get_landing_coaches(UUID);
+
 CREATE OR REPLACE FUNCTION get_landing_coaches(p_gym_id UUID)
 RETURNS TABLE (
   id                UUID,
