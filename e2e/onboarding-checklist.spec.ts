@@ -46,12 +46,21 @@ test.describe('ONBOARDING-CHECKLIST', () => {
     await page.goto('/en/today', { waitUntil: 'domcontentloaded' })
     const card = page.locator('[data-testid="setup-checklist"]:visible').first()
     await expect(card, 'checklist shows while setup is incomplete').toBeVisible({ timeout: 15_000 })
-    await expect(card).toHaveAttribute('data-total', '8') // membership + PT both enabled by default
-    await expect(card).toHaveAttribute('data-done', '7')
-    // the one missing item is branding; it deep-links to Settings to complete it
+    // J4 CLASS-SURFACE: the denominator gained a `class` item (9 total). The seed
+    // ships an active class with weekday schedules (000029), so that item is DONE →
+    // branding is still the only missing one → 8/9.
+    await expect(card).toHaveAttribute('data-total', '9') // profile+branding+discipline+coach+class+plan+ptpackage+exchange+member
+    await expect(card).toHaveAttribute('data-done', '8')
+    // the one missing item is branding; it deep-links to the Settings Branding section
     const branding = page.locator('[data-testid="setup-item-branding"]:visible').first()
     await expect(branding).toHaveAttribute('data-done', 'false')
-    await expect(branding).toHaveAttribute('href', '/en/settings')
+    await expect(branding).toHaveAttribute('href', '/en/settings?tab=gym#branding')
+    // the new class item is ticked (the seed's class-with-schedule) and lands on /classes
+    const klass = page.locator('[data-testid="setup-item-class"]:visible').first()
+    await expect(klass).toHaveAttribute('data-done', 'true')
+    await expect(klass).toHaveAttribute('href', '/en/classes')
+    // the coach item now deep-links to the Add-Coach form (not the roster)
+    await expect(page.locator('[data-testid="setup-item-coach"]:visible').first()).toHaveAttribute('href', '/en/coaches/add')
     // a seeded item is ticked (proves the derivation reads real data, not a stub)
     await expect(page.locator('[data-testid="setup-item-member"]:visible').first()).toHaveAttribute('data-done', 'true')
 

@@ -21,6 +21,7 @@
  *     gym_id resolution kept). Zero schema changes.
  */
 import { useState } from 'react'
+import Link from 'next/link'
 import { ModalPortal } from '@/components/shared/modal-portal'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -305,20 +306,32 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
 
               <div>
                 <p className="mb-2 text-sm font-medium">{t('coach')} *</p>
-                <div className="flex flex-wrap gap-2">
-                  {coaches.map((c) => {
-                    const name = localizedName(c.profiles, locale)
-                    return (
-                      <button key={c.id} type="button" data-testid="wizard-coach-chip" data-id={c.id}
-                        onClick={() => setCoachId(c.id)}
-                        className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
-                          coachId === c.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
-                        <Avatar url={one(c.profiles)?.avatar_url} name={name} size="sm" />
-                        {name}
-                      </button>
-                    )
-                  })}
-                </div>
+                {coaches.length === 0 ? (
+                  // J4 CLASS-SURFACE: a class REQUIRES a coach — a fresh gym has none, so
+                  // instead of a blank required field, guide the owner to add one first.
+                  <div data-testid="wizard-no-coaches" className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className={cn('text-sm text-amber-800', isRTL && 'font-arabic text-right')}>{t('noCoachesHint')}</p>
+                    <Link href={`/${locale}/coaches/add`} data-testid="wizard-add-coach-cta"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]">
+                      <Plus className="h-4 w-4" /> {t('addCoachCta')}
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {coaches.map((c) => {
+                      const name = localizedName(c.profiles, locale)
+                      return (
+                        <button key={c.id} type="button" data-testid="wizard-coach-chip" data-id={c.id}
+                          onClick={() => setCoachId(c.id)}
+                          className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
+                            coachId === c.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                          <Avatar url={one(c.profiles)?.avatar_url} name={name} size="sm" />
+                          {name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </>
           ) : step === 2 ? (

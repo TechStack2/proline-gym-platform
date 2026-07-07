@@ -15,7 +15,7 @@ import { parseEnabledProducts } from './products'
  *    when THIS gym has a rate (RLS gym-scopes the read; the `.eq` is defense-in-depth).
  */
 export type SetupItemKey =
-  | 'profile' | 'branding' | 'discipline' | 'coach'
+  | 'profile' | 'branding' | 'discipline' | 'coach' | 'class'
   | 'plan' | 'ptpackage' | 'exchange' | 'member'
 
 export type SetupItem = { key: SetupItemKey; done: boolean }
@@ -66,11 +66,27 @@ export async function getSetupChecklist(
     return (count ?? 0) > 0
   }
 
-  // Batch 1 (3 concurrent): the always-applicable gym-scoped catalogs.
-  const [discipline, coach, member] = await Promise.all([
+  // The `class` item = an ACTIVE, non-deleted class in THIS gym that has ≥1
+  // class_schedules row (a class with no schedule never appears on the timetable /
+  // portal, so it doesn't count). class_schedules has NO gym_id and its `_read`
+  // policy is blanket-authenticated, so the scope MUST go through classes!inner +
+  // `.eq('classes.gym_id', …)` (the class_schedules-leak pattern) or it counts every
+  // gym's schedules. head:true — no rows over the wire.
+  const classHasSchedule = async (): Promise<boolean> => {
+    const { count } = await supabase
+      .from('class_schedules')
+      .select('id, classes!inner(gym_id)', { count: 'exact', head: true })
+      .eq('classes.gym_id', gymId)
+      .eq('classes.is_active', true)
+      .is('classes.deleted_at', null)
+    return (count ?? 0) > 0
+  }
+
+  // Batch 1 (3 concurrent): the always-applicable gym-scoped catalogs + the class check.
+  const [discipline, coach, klass] = await Promise.all([
     scopedExists('disciplines'),
     scopedExists('coaches'),
-    scopedExists('students'),
+    classHasSchedule(),
   ])
 
   // Batch 2 (≤3 concurrent): the two product-gated catalogs (skipped when the
@@ -82,11 +98,15 @@ export async function getSetupChecklist(
       .then(({ count }) => (count ?? 0) > 0),
   ])
 
+  // Batch 3 (1): members (kept last so batches stay ≤3 after adding `class`).
+  const member = await scopedExists('students')
+
   const all: Array<SetupItem | null> = [
     { key: 'profile', done: profileDone },
     { key: 'branding', done: brandingDone },
     { key: 'discipline', done: discipline },
     { key: 'coach', done: coach },
+    { key: 'class', done: klass },
     products.membership ? { key: 'plan', done: plan } : null,
     products.pt ? { key: 'ptpackage', done: ptpackage } : null,
     { key: 'exchange', done: exchange },

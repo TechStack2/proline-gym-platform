@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { getSetupChecklist, type SetupItemKey } from '@/lib/gym/setup-checklist'
 import {
   Sparkles, Check, ChevronRight,
-  Building2, Palette, Dumbbell, Users, CreditCard, Zap, DollarSign, UserPlus,
+  Building2, Palette, Dumbbell, Users, CalendarDays, CreditCard, Zap, DollarSign, UserPlus,
 } from 'lucide-react'
 
 /**
@@ -15,11 +15,16 @@ import {
  * it. DS-1/2/3: neutral tokens flip in dark, crimson uses text-primary-foreground,
  * and spacing/chevron are RTL-correct via logical props.
  */
+// J4 CLASS-SURFACE: every item deep-links to the EXACT form that completes it —
+// coach → the Add-Coach form (not the roster), branding → the Settings Branding
+// section (gym tab + #branding anchor, distinct from the profile fields), class →
+// the Classes tab (the Add-Class wizard's home).
 const ITEM_META: Record<SetupItemKey, { icon: typeof Building2; href: (locale: string) => string }> = {
   profile:    { icon: Building2,   href: (l) => `/${l}/settings` },
-  branding:   { icon: Palette,     href: (l) => `/${l}/settings` },
+  branding:   { icon: Palette,     href: (l) => `/${l}/settings?tab=gym#branding` },
   discipline: { icon: Dumbbell,    href: (l) => `/${l}/disciplines` },
-  coach:      { icon: Users,       href: (l) => `/${l}/coaches` },
+  coach:      { icon: Users,       href: (l) => `/${l}/coaches/add` },
+  class:      { icon: CalendarDays, href: (l) => `/${l}/classes` },
   plan:       { icon: CreditCard,  href: (l) => `/${l}/settings?tab=plans` },
   ptpackage:  { icon: Zap,         href: (l) => `/${l}/settings?tab=ptpackages` },
   exchange:   { icon: DollarSign,  href: (l) => `/${l}/settings?tab=rates` },

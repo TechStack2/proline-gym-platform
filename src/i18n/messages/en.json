@@ -460,10 +460,12 @@
       "titleEdit": "Edit class",
       "save": "Save changes",
       "successEdit": "Class updated!",
-      "showOnLanding": "Show on public landing",
-      "showOnLandingHint": "Staged until you flip this — only published classes appear on the public site.",
-      "published": "Published",
-      "staged": "Staged"
+      "showOnLanding": "Show on your public website",
+      "showOnLandingHint": "Controls your public website only — members always see active classes in the app.",
+      "published": "On public website",
+      "staged": "Staged",
+      "noCoachesHint": "You need a coach first — add one so you can assign this class.",
+      "addCoachCta": "Add a coach"
     },
     "admin": {
       "edit": "Edit",
@@ -1728,12 +1730,13 @@
     "items": {
       "profile": "Add your gym's contact details",
       "branding": "Set up your landing & branding",
-      "discipline": "Add a class or discipline",
+      "discipline": "Add your disciplines (class types)",
       "coach": "Add a coach",
       "plan": "Create a membership plan",
       "ptpackage": "Create a PT package",
       "exchange": "Set the exchange rate",
-      "member": "Add your first member"
+      "member": "Add your first member",
+      "class": "Create your first class"
     }
   },
   "today": {
@@ -2034,7 +2037,9 @@
       "thu": "Thursday",
       "fri": "Friday",
       "sat": "Saturday"
-    }
+    },
+    "noClassesYet": "No classes yet",
+    "createFirstClass": "Create your first class"
   },
   "family": {
     "me": "Me",

@@ -43,6 +43,22 @@ const DISCIPLINE_PALETTE = [
 
 const hhmm = (v: string | null) => (v || '').slice(0, 5)
 
+// J4 CLASS-SURFACE: the schedule empty state is no longer a dead end — for staff it
+// offers a friendly path into the Add-Class wizard. Module-scope (FORM-FOCUS rule).
+function ScheduleEmpty({ locale, canCreate, label, cta }: { locale: string; canCreate: boolean; label: string; cta: string }) {
+  return (
+    <div className="rounded-2xl border bg-white p-10 text-center shadow-sm" data-testid="schedule-empty">
+      <p className="text-sm text-gray-500">{label}</p>
+      {canCreate && (
+        <Link href={`/${locale}/classes`} data-testid="schedule-empty-create-class"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#cd1419] px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]">
+          <CalendarClock className="h-4 w-4" /> {cta}
+        </Link>
+      )}
+    </div>
+  )
+}
+
 export default async function SchedulePage({ params: { locale }, searchParams }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('scheduleView')
@@ -57,6 +73,12 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   const gymId = me?.gym_id
   if (!gymId) return null
+
+  // J4 CLASS-SURFACE: /schedule is reachable by any authenticated user (the middleware
+  // only bounces members off /dashboard, not /schedule), so gate the "create a class"
+  // empty-state CTA to the roles that can actually create one.
+  const { data: myRole } = await supabase.rpc('get_user_role')
+  const canCreateClass = ['owner', 'head_coach', 'receptionist'].includes((myRole as string | null) ?? '')
 
   const [{ data: disciplines }, { data: coaches }, { data: classesRaw }] = await Promise.all([
     supabase.from('disciplines').select('id, name_ar, name_en, name_fr, sort_order')
@@ -283,7 +305,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
       {view === 'week' ? (
         /* ── Week · Timetable ── */
         weekRows.length === 0 ? (
-          <p className="rounded-2xl border bg-white p-10 text-center text-sm text-gray-400 shadow-sm">{t('noEvents')}</p>
+          <ScheduleEmpty locale={locale} canCreate={canCreateClass} label={t('noClassesYet')} cta={t('createFirstClass')} />
         ) : (
           <div className="overflow-x-auto" dir={isRTL ? 'rtl' : 'ltr'}>
             <table className="w-full min-w-[760px] border-separate border-spacing-1.5" data-testid="week-grid">
@@ -338,7 +360,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
             {fmtDay.toLocaleDateString(dateLocale(locale), { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           {diary.length === 0 ? (
-            <p className="rounded-2xl border bg-white p-10 text-center text-sm text-gray-400 shadow-sm">{t('noEvents')}</p>
+            <ScheduleEmpty locale={locale} canCreate={canCreateClass} label={t('noClassesYet')} cta={t('createFirstClass')} />
           ) : (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3" data-testid="coach-diary">
               {diary.map((col) => (
