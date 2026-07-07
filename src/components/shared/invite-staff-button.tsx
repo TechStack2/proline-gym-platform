@@ -23,7 +23,12 @@ import { inviteToPortal } from '@/lib/provisioning/invite'
 import { InviteResultCard, type InviteResult } from './invite-button'
 
 type StaffRole = 'receptionist' | 'head_coach' | 'coach'
-const ROLES: StaffRole[] = ['receptionist', 'head_coach', 'coach']
+// J2 COACH-UNIFY: coaches are now created through the unified /coaches/add flow
+// (with an optional login), so this surface no longer offers the `coach` role — it
+// mints only NON-coach staff logins: front-desk (receptionist) and senior
+// (head_coach). Keeping it here (the only role-picker create+adopt surface) is what
+// keeps receptionist/head_coach invites reachable — removing it would orphan them.
+const ROLES: StaffRole[] = ['receptionist', 'head_coach']
 
 export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: string }) {
   const t = useTranslations('invite')
@@ -84,7 +89,7 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
   if (!open) {
     return (
       <Button variant="outline" data-testid="invite-staff-btn" onClick={() => setOpen(true)}>
-        <UserPlus className="me-1 h-4 w-4" /> {t('inviteStaff')}
+        <UserPlus className="me-1 h-4 w-4" /> {t('inviteStaffFrontDesk')}
       </Button>
     )
   }
@@ -94,13 +99,15 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
       data-testid="invite-staff-form">
       <div className="mb-2 flex items-center justify-between">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-          <UserPlus className="h-4 w-4 text-primary-600" /> {t('inviteStaff')}
+          <UserPlus className="h-4 w-4 text-primary-600" /> {t('inviteStaffFrontDesk')}
         </p>
         <button type="button" aria-label="close" onClick={() => { setOpen(false); setResult(null) }}
           className="rounded p-1 text-gray-400 hover:bg-gray-100">
           <X className="h-4 w-4" />
         </button>
       </div>
+
+      {!result && <p className={cn('mb-2 text-xs text-gray-500', isRTL && 'font-arabic')}>{t('staffFrontDeskHint')}</p>}
 
       {result ? (
         <InviteResultCard result={result} locale={locale} />
