@@ -58,8 +58,12 @@ test('PT delivery: schedule → complete (E1) → exhausted-block (E2) → resto
       await o.page.goto('/en/pt');
       const pending = o.page.locator('[data-testid="pt-pending-request"]:visible').first();
       await expect(pending, 'the pending request should surface to staff').toBeVisible({ timeout: 15_000 });
-      await pending.locator('select').selectOption({ label: COACH_EN }).catch(() => {});
-      await pending.getByRole('button', { name: /^approve$/i }).click();
+      // J3 PT-GUARDS: coach picked via chips now (raw select removed) + required to
+      // approve. This request carries a preferred coach, so the picker won't render;
+      // click the chip only if a coach-less request surfaced it.
+      const coachChip = pending.getByTestId('pt-req-coach-chip').filter({ hasText: COACH_EN }).first();
+      if (await coachChip.count()) await coachChip.click();
+      await pending.getByTestId('pt-req-approve').click();
       await expect(
         o.page.locator('[data-sonner-toast]').first(),
         'approval should confirm',

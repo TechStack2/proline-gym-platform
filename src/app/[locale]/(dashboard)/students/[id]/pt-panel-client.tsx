@@ -13,15 +13,17 @@
  */
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ModalPortal } from '@/components/shared/modal-portal'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
+import { createClient } from '@/lib/supabase/client'
 import { Avatar } from '@/components/shared/avatar'
 import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/shared/pt-package-card'
-import { Loader2, Plus, X, AlarmClock, AlertTriangle } from 'lucide-react'
+import { Loader2, Plus, X, AlarmClock, AlertTriangle, CalendarPlus } from 'lucide-react'
 import { sellPtPackage, extendPtPackage } from './actions'
 import { BookPtModal } from '@/components/shared/book-pt-modal'
 
@@ -53,6 +55,10 @@ export function MemberPtPanel({
   const [coachId, setCoachId] = useState('')
   const [pct, setPct] = useState('')
   const [fixed, setFixed] = useState('')
+  // J3 PT-GUARDS: warn-and-allow — the coach with no published availability the
+  // desk is about to sell for (null = no warning). Selling is NEVER blocked.
+  const [warnCoach, setWarnCoach] = useState<{ id: string; name: string } | null>(null)
+  const [checking, setChecking] = useState(false)
 
   useEffect(() => {
     if (autoSellPackageId) { setTypeId(autoSellPackageId); setOpen(true) }
@@ -70,8 +76,9 @@ export function MemberPtPanel({
     : coaches
   const pickableCoaches = matching.length > 0 ? matching : coaches
 
-  const sell = () => {
-    if (!typeId || !coachId) { toast({ title: t('errPickBoth'), variant: 'destructive' }); return }
+  // The actual sale — proceeds unconditionally (called directly when the coach has
+  // availability, or via "Sell anyway" in the warn dialog).
+  const doSell = () =>
     startTransition(async () => {
       const res = await sellPtPackage({
         studentId, packageId: typeId, coachId,
@@ -80,12 +87,32 @@ export function MemberPtPanel({
       })
       if (res.ok) {
         toast({ title: t('sold'), variant: 'success' })
-        setOpen(false); setTypeId(''); setCoachId(''); setPct(''); setFixed('')
+        setOpen(false); setWarnCoach(null); setTypeId(''); setCoachId(''); setPct(''); setFixed('')
         router.refresh()
       } else {
         toast({ title: t('sellFailed'), description: res.error, variant: 'destructive' })
       }
     })
+
+  // J3 PT-GUARDS: warn-and-allow. A light count query — if the chosen coach has
+  // ZERO active availability windows, surface the warn dialog ("members can't book
+  // until it's set") with Set-availability + Sell-anyway; otherwise sell straight
+  // through. Selling is never blocked (owner's call).
+  const sell = async () => {
+    if (!typeId || !coachId) { toast({ title: t('errPickBoth'), variant: 'destructive' }); return }
+    setChecking(true)
+    const { count } = await createClient()
+      .from('coach_availability')
+      .select('id', { count: 'exact', head: true })
+      .eq('coach_id', coachId)
+      .eq('is_active', true)
+    setChecking(false)
+    if ((count ?? 0) === 0) {
+      const c = pickableCoaches.find((x) => x.id === coachId)
+      setWarnCoach({ id: coachId, name: c?.name ?? '' })
+      return
+    }
+    doSell()
   }
 
   const extend = (assignmentId: string) =>
@@ -206,12 +233,41 @@ export function MemberPtPanel({
                       onChange={(e) => setFixed(e.target.value)} placeholder="0" className="h-9" />
                   </div>
                 </div>
-                <Button data-testid="pt-sell-submit" onClick={sell} disabled={pending || !typeId || !coachId}
+                <Button data-testid="pt-sell-submit" onClick={() => void sell()} disabled={pending || checking || !typeId || !coachId}
                   className="w-full bg-[#cd1419] hover:bg-[#a81014]">
-                  {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('sellConfirm')}
+                  {pending || checking ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('sellConfirm')}
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+        </ModalPortal>
+      )}
+
+      {/* J3 PT-GUARDS: warn-and-allow dialog — coach has no published availability.
+          Modern, plain-language: two clear actions (set it now / sell anyway). */}
+      {warnCoach && (
+        <ModalPortal>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setWarnCoach(null)}>
+          <div data-testid="pt-sell-warn-modal" onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <div className={cn('mb-2 flex items-center gap-2', isRTL && 'flex-row-reverse text-right')}>
+              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+              <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('warnNoAvailTitle')}</h3>
+            </div>
+            <p className={cn('mb-4 text-sm text-gray-600', isRTL && 'font-arabic text-right')}>
+              {t('warnNoAvailBody', { coach: warnCoach.name })}
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link href={`/${locale}/coaches/${warnCoach.id}#panel-availability`} data-testid="pt-sell-set-availability"
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <CalendarPlus className="h-4 w-4" /> {t('warnSetAvailability')}
+              </Link>
+              <Button data-testid="pt-sell-anyway" onClick={doSell} disabled={pending}
+                className="flex-1 bg-[#cd1419] hover:bg-[#a81014]">
+                {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('warnSellAnyway')}
+              </Button>
+            </div>
           </div>
         </div>
         </ModalPortal>

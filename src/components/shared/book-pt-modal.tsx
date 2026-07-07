@@ -11,6 +11,7 @@
  */
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -39,6 +40,10 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
   const [loading, setLoading] = useState(false)
   const [days, setDays] = useState<SlotDay[]>([])
   const [coachName, setCoachName] = useState<string | undefined>()
+  // J3 PT-GUARDS (staff diagnostic): the assigned coach + whether they have zero
+  // published availability, so an empty staff slot list explains WHY + deep-links.
+  const [coachId, setCoachId] = useState<string | undefined>()
+  const [noAvail, setNoAvail] = useState(false)
   const [propose, setPropose] = useState(false)
   const [proposeAt, setProposeAt] = useState('')
   const [override, setOverride] = useState(false)
@@ -50,6 +55,8 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
     const res = await getPtSlots(assignmentId, locale)
     setDays(res.slots)
     setCoachName(res.coachName)
+    setCoachId(res.coachId)
+    setNoAvail(!!res.noAvailability)
     setLoading(false)
   }
 
@@ -158,7 +165,23 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                     </Button>
                   </div>
                 ) : days.length === 0 ? (
-                  <p data-testid="pt-no-slots" className="py-4 text-center text-sm text-gray-400">{t('noSlots')}</p>
+                  staff && noAvail && coachId ? (
+                    // J3 PT-GUARDS: staff diagnostic — say WHY (no published availability)
+                    // + deep-link to this coach's Coach-360 availability panel. The
+                    // member surface never sees this (its branch stays generic below).
+                    <div data-testid="pt-no-availability" className="space-y-2 rounded-lg bg-amber-50 px-3 py-3 text-center">
+                      <p className="flex items-center justify-center gap-1.5 text-xs text-amber-700">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        {t('noAvailabilityStaff', { coach: coachName ?? t('theCoach') })}
+                      </p>
+                      <Link href={`/${locale}/coaches/${coachId}#panel-availability`} data-testid="pt-set-availability-link"
+                        className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[#a81014]">
+                        <CalendarPlus className="h-3.5 w-3.5" /> {t('setAvailability')}
+                      </Link>
+                    </div>
+                  ) : (
+                    <p data-testid="pt-no-slots" className="py-4 text-center text-sm text-gray-400">{t('noSlots')}</p>
+                  )
                 ) : (
                   <div className="space-y-3">
                     {days.map((d) => (

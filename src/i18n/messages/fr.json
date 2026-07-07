@@ -1173,7 +1173,11 @@
     "conflict_pt_event": "une séance PT",
     "days_left": "{days} jours restants",
     "expired_ago": "expiré il y a {days} jours",
-    "status_expired": "Expiré"
+    "status_expired": "Expiré",
+    "coach_required": "Choisissez un coach pour approuver — la formule ne peut pas être réservée sans coach.",
+    "coach_label": "Coach : {coach}",
+    "assign_coach_to_book": "Assignez un coach pour que le membre puisse réserver",
+    "no_coaches_to_assign": "Ajoutez d'abord un coach, puis approuvez."
   },
   "rentals": {
     "title": "Location Espaces",
@@ -1904,7 +1908,11 @@
     "renewalDays": "{days} j avant expiration",
     "resell": "Revendre",
     "campRequests": "Demandes de camp",
-    "ptProposals": "Propositions d’horaires PT"
+    "ptProposals": "Propositions d’horaires PT",
+    "coachRequired": "Choisissez un coach pour approuver — la formule ne peut pas être réservée sans coach.",
+    "coachLabel": "Coach : {coach}",
+    "assignCoachToBook": "Assignez un coach pour que le membre puisse réserver",
+    "noCoachesToAssign": "Ajoutez d'abord un coach, puis approuvez."
   },
   "member360": {
     "age": "{age} ans",
@@ -2182,7 +2190,11 @@
       "cancelled": "Annulée",
       "no_show": "Absence"
     },
-    "bookSession": "Réserver une séance"
+    "bookSession": "Réserver une séance",
+    "warnNoAvailTitle": "Pas encore de disponibilités",
+    "warnNoAvailBody": "{coach} n'a pas publié de disponibilités — les membres ne peuvent pas réserver de séances tant qu'elles ne sont pas définies.",
+    "warnSetAvailability": "Définir les disponibilités",
+    "warnSellAnyway": "Vendre quand même"
   },
   "seo": {
     "title": "PRO LINE Gym — Muay Thaï, Boxe & Fitness à Baabda",
@@ -2255,7 +2267,10 @@
       "counterBtn": "Contre-proposer",
       "declineBtn": "Refuser",
       "sendCounter": "Envoyer"
-    }
+    },
+    "noAvailabilityStaff": "{coach} n'a pas publié de disponibilités — les membres ne peuvent pas réserver tant qu'elles ne sont pas définies.",
+    "setAvailability": "Définir les disponibilités",
+    "theCoach": "Ce coach"
   },
   "lifecycle": {
     "noMembership": "Aucun abonnement",
@@ -2690,7 +2705,9 @@
     "actions": {
       "assignClass": "Assigner à un cours",
       "reactivate": "Réactiver"
-    }
+    },
+    "bookableChip": "Réservable",
+    "noAvailabilityChip": "Aucune disponibilité"
   },
   "team": {
     "diary": {

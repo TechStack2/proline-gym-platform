@@ -58,7 +58,7 @@ export async function getBookableSlots(
   supabase: SupabaseClient<any>,
   assignmentId: string,
   locale = 'en',
-): Promise<{ slots: SlotDay[]; coachName?: string; error?: string }> {
+): Promise<{ slots: SlotDay[]; coachName?: string; coachId?: string; noAvailability?: boolean; error?: string }> {
   const { data: a } = await supabase
     .from('pt_assignments')
     .select(`id, coach_id, status, sessions_remaining, expires_at,
@@ -163,5 +163,10 @@ export async function getBookableSlots(
   const coachName = coachProf
     ? (locale === 'ar' ? coachProf.first_name_ar : locale === 'fr' ? coachProf.first_name_fr : coachProf.first_name_en) || coachProf.first_name_en
     : undefined
-  return { slots: days, coachName }
+  // J3 PT-GUARDS: expose the assigned coach + whether they have ZERO active
+  // availability windows, so the STAFF booking surface can diagnose an empty
+  // slot list ("coach has no published availability → set it") vs a genuinely
+  // full calendar. The member surface ignores these (stays generic).
+  const noAvailability = ((windows ?? []) as any[]).length === 0
+  return { slots: days, coachName, coachId: a.coach_id, noAvailability }
 }

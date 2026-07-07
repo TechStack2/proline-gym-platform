@@ -128,6 +128,10 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
         bio_fr: bioFr.trim() || null,
       }
 
+      // J3 PT-GUARDS: on a NEW coach, land the desk straight on that coach's
+      // availability panel (members can't book PT until it's set) — the guided
+      // next step, instead of the anonymous coaches list.
+      let createdCoachId: string | null = null
       if (initialData) {
         const { error: pErr } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profileId)
         if (pErr) throw pErr
@@ -144,17 +148,22 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
           .select('id')
           .single()
         if (pErr) throw pErr
-        const { error: cErr } = await supabase
+        const { data: newCoach, error: cErr } = await supabase
           .from('coaches')
           .insert({ profile_id: newProfile.id, gym_id: prof.gym_id, is_active: true, ...coachPayload })
+          .select('id')
+          .single()
         if (cErr) throw cErr
+        createdCoachId = newCoach?.id ?? null
         if (pendingPhoto) {
           // Best-effort: a failed photo upload must not lose the saved coach.
           try { await uploadAvatar(prof.gym_id, newProfile.id, pendingPhoto) } catch { /* noop */ }
         }
       }
 
-      router.push(`/${locale}/coaches`)
+      // New coach → deep-link to their availability panel (the guided next step);
+      // edits return to the roster as before.
+      router.push(createdCoachId ? `/${locale}/coaches/${createdCoachId}#panel-availability` : `/${locale}/coaches`)
       router.refresh()
     } catch (err: any) {
       setError(err?.message || t('errSaveFailed'))

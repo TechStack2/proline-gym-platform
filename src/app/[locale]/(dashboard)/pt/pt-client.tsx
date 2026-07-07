@@ -383,7 +383,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
     try {
       const coachId = reqCoach[req.id] || req.coach_id || null;
       const result = await approvePtRequest(req.id, { coachId });
-      if (!result.ok) throw new Error(result.error);
+      if (!result.ok) throw new Error(result.error === 'coach_required' ? t('coach_required') : result.error);
       setPending((prev) => prev.filter((p) => p.id !== req.id));
       toast.success(t('approve_success'));
       router.refresh();
@@ -511,34 +511,56 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
             {pending.map((req) => {
               const student = students.find((s) => s.id === req.student_id);
               const pkg = packages.find((p) => p.id === req.package_id);
+              // J3 PT-GUARDS: a coach must be resolvable to approve (else the package
+              // is permanently unbookable). Effective = the request's own coach or the
+              // one picked here (chips, not a raw select).
+              const effectiveCoach = reqCoach[req.id] || req.coach_id || null;
+              const preferredCoach = req.coach_id ? coaches.find((c) => c.id === req.coach_id) : null;
               return (
-                <div key={req.id} data-testid="pt-pending-request" data-package={req.package_id} className="flex flex-col gap-2 rounded-xl border bg-amber-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className={cn('text-sm font-medium text-gray-900 truncate', isRTL && 'font-arabic')}>
-                      {student ? getStudentName(student) : req.student_id.slice(0, 8)}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {pkg ? getLocalizedName(pkg, locale) : req.package_id.slice(0, 8)} · {req.sessions_total} {t('sessions')}
-                    </p>
+                <div key={req.id} data-testid="pt-pending-request" data-package={req.package_id} className="flex flex-col gap-2 rounded-xl border bg-amber-50/40 p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className={cn('text-sm font-medium text-gray-900 truncate', isRTL && 'font-arabic')}>
+                        {student ? getStudentName(student) : req.student_id.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {pkg ? getLocalizedName(pkg, locale) : req.package_id.slice(0, 8)} · {req.sessions_total} {t('sessions')}
+                      </p>
+                      {preferredCoach && (
+                        <p className="mt-0.5 text-xs font-medium text-gray-600" data-testid="pt-req-coach">{t('coach_label', { coach: getCoachName(preferredCoach) })}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" data-testid="pt-req-approve" disabled={processing === req.id || !effectiveCoach} onClick={() => handleApprove(req)}>
+                        <CheckCircle className="h-3.5 w-3.5 me-1" />
+                        {t('approve')}
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-red-600" disabled={processing === req.id} onClick={() => handleReject(req)}>
+                        <X className="h-3.5 w-3.5 me-1" />
+                        {t('reject')}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      className="px-2 py-1.5 text-xs border rounded-lg max-w-[140px]"
-                      value={reqCoach[req.id] ?? req.coach_id ?? ''}
-                      onChange={(e) => setReqCoach((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                    >
-                      <option value="">{t('select_coach')}</option>
-                      {coaches.map((c) => (<option key={c.id} value={c.id}>{getCoachName(c)}</option>))}
-                    </select>
-                    <Button size="sm" disabled={processing === req.id} onClick={() => handleApprove(req)}>
-                      <CheckCircle className="h-3.5 w-3.5 me-1" />
-                      {t('approve')}
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-red-600" disabled={processing === req.id} onClick={() => handleReject(req)}>
-                      <X className="h-3.5 w-3.5 me-1" />
-                      {t('reject')}
-                    </Button>
-                  </div>
+                  {/* No preferred coach → pick one (chips) before approving. */}
+                  {!req.coach_id && (
+                    <div data-testid="pt-req-coach-picker" className="rounded-lg bg-white/70 px-2.5 py-2">
+                      <p className={cn('mb-1.5 text-xs font-medium text-amber-800', isRTL && 'font-arabic text-right')}>{t('assign_coach_to_book')}</p>
+                      {coaches.length === 0 ? (
+                        <p className="text-xs text-amber-700">{t('no_coaches_to_assign')}</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {coaches.map((c) => (
+                            <button key={c.id} type="button" data-testid="pt-req-coach-chip" data-id={c.id}
+                              onClick={() => setReqCoach((prev) => ({ ...prev, [req.id]: c.id }))}
+                              className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
+                                reqCoach[req.id] === c.id ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                              {getCoachName(c)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

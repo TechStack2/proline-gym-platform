@@ -208,6 +208,15 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
                 <span className={cn('rounded-full px-2 py-0.5 font-medium', (coach as any).is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')} data-testid="coach-active-badge">
                   {(coach as any).is_active ? tc('status.active') : tc('status.inactive')}
                 </span>
+                {/* J3 PT-GUARDS: at-a-glance PT bookability — derived from published
+                    availability windows; links straight to the availability panel. */}
+                <Link href={`/${locale}/coaches/${id}#panel-availability`} data-testid="coach-bookable-chip"
+                  data-bookable={(availWindows ?? []).length > 0 ? 'yes' : 'no'}
+                  className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium',
+                    (availWindows ?? []).length > 0 ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200')}>
+                  <CalendarCheck className="h-3 w-3" />
+                  {(availWindows ?? []).length > 0 ? t('bookableChip') : t('noAvailabilityChip')}
+                </Link>
               </p>
               {prof?.phone && (
                 <p className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-500">

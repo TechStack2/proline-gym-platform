@@ -6,7 +6,7 @@ import { getRenewalsDue } from '@/lib/pt/refill'
 import { PtProposals } from '@/components/shared/pt-proposals'
 import { RefreshCw } from 'lucide-react'
 import { localizedName, one } from '@/lib/names'
-import { InboxQueues, type RegRequestRow, type PtRequestRow, type PromotionRow } from './inbox-queues'
+import { InboxQueues, type RegRequestRow, type PtRequestRow, type PromotionRow, type InboxCoach } from './inbox-queues'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,10 +54,13 @@ export default async function InboxPage({ params: { locale } }: Props) {
   }))
 
   // ── Queue 2: pending PT requests (22R) ──
+  // J3 PT-GUARDS: pull the request's preferred coach (may be null → staff must pick
+  // one at approval) so the inbox can require + resolve a coach before approving.
   const { data: ptRaw } = await supabase
     .from('pt_assignments')
-    .select(`id, requested_at, sessions_total,
+    .select(`id, requested_at, sessions_total, coach_id,
       pt_packages:package_id (name_ar, name_en, name_fr, price_usd),
+      coaches:coach_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
       students:student_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
     .eq('status', 'requested')
     .order('requested_at', { ascending: true })
@@ -69,7 +72,19 @@ export default async function InboxPage({ params: { locale } }: Props) {
     sessions: r.sessions_total,
     studentName: localizedName(one(r.students)?.profiles, locale),
     requestedAt: r.requested_at,
+    coachId: r.coach_id ?? null,
+    coachName: r.coach_id ? localizedName(one(r.coaches)?.profiles, locale) : null,
   }))
+
+  // J3 PT-GUARDS: the gym's active coaches, for the approve-time coach picker on
+  // requests that arrived without a preferred coach. Gym scope via RLS (coaches_staff).
+  const { data: coachRaw } = await supabase
+    .from('coaches')
+    .select(`id, profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
+    .eq('is_active', true)
+  const inboxCoaches: InboxCoach[] = (coachRaw ?? [])
+    .map((c: any) => ({ id: c.id, name: localizedName(one(c.profiles), locale) }))
+    .filter((c: InboxCoach) => c.name)
 
   // ── Feed: recent waitlist auto-promotions (informational, last 7 days) ──
   // Source = the existing audit trail written by the B2 promote path. RLS limits
@@ -166,6 +181,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
         ptRequests={ptRequests}
         campRequests={campRequests}
         promotions={promotions}
+        coaches={inboxCoaches}
       />
 
       {/* ── PT-2: pending time proposals (accept books / counter / decline) ── */}

@@ -1173,7 +1173,11 @@
     "conflict_pt_event": "a PT session",
     "days_left": "{days} days left",
     "expired_ago": "expired {days} days ago",
-    "status_expired": "Expired"
+    "status_expired": "Expired",
+    "coach_required": "Pick a coach to approve — the package can't be booked without one.",
+    "coach_label": "Coach: {coach}",
+    "assign_coach_to_book": "Assign a coach so the member can book",
+    "no_coaches_to_assign": "Add a coach first, then approve."
   },
   "rentals": {
     "title": "Coach Rentals",
@@ -1904,7 +1908,11 @@
     "renewalDays": "{days}d to expiry",
     "resell": "Re-sell",
     "campRequests": "Camp requests",
-    "ptProposals": "PT time proposals"
+    "ptProposals": "PT time proposals",
+    "coachRequired": "Pick a coach to approve — the package can't be booked without one.",
+    "coachLabel": "Coach: {coach}",
+    "assignCoachToBook": "Assign a coach so the member can book",
+    "noCoachesToAssign": "Add a coach first, then approve."
   },
   "member360": {
     "age": "{age} yrs",
@@ -2182,7 +2190,11 @@
       "cancelled": "Cancelled",
       "no_show": "No-show"
     },
-    "bookSession": "Book session"
+    "bookSession": "Book session",
+    "warnNoAvailTitle": "No availability yet",
+    "warnNoAvailBody": "{coach} hasn't published availability — members can't book sessions until it's set.",
+    "warnSetAvailability": "Set availability",
+    "warnSellAnyway": "Sell anyway"
   },
   "seo": {
     "title": "PRO LINE Gym — Muay Thai, Boxing & Fitness in Baabda",
@@ -2255,7 +2267,10 @@
       "counterBtn": "Counter",
       "declineBtn": "Decline",
       "sendCounter": "Send counter"
-    }
+    },
+    "noAvailabilityStaff": "{coach} has no published availability — members can't book until it's set.",
+    "setAvailability": "Set availability",
+    "theCoach": "This coach"
   },
   "lifecycle": {
     "noMembership": "No membership",
@@ -2690,7 +2705,9 @@
     "actions": {
       "assignClass": "Assign to class",
       "reactivate": "Reactivate"
-    }
+    },
+    "bookableChip": "Bookable",
+    "noAvailabilityChip": "No availability"
   },
   "team": {
     "diary": {

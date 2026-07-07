@@ -1173,7 +1173,11 @@
     "conflict_pt_event": "جلسة تدريب خاص",
     "days_left": "{days} يوماً متبقية",
     "expired_ago": "انتهت منذ {days} يوماً",
-    "status_expired": "منتهية"
+    "status_expired": "منتهية",
+    "coach_required": "اختر مدربًا للموافقة — لا يمكن حجز الباقة بدون مدرب.",
+    "coach_label": "المدرب: {coach}",
+    "assign_coach_to_book": "عيّن مدربًا حتى يتمكن العضو من الحجز",
+    "no_coaches_to_assign": "أضف مدربًا أولًا ثم وافق."
   },
   "rentals": {
     "title": "تأجير المساحات",
@@ -1904,7 +1908,11 @@
     "renewalDays": "{days}ي للانتهاء",
     "resell": "إعادة بيع",
     "campRequests": "طلبات المخيمات",
-    "ptProposals": "اقتراحات مواعيد التدريب الخاص"
+    "ptProposals": "اقتراحات مواعيد التدريب الخاص",
+    "coachRequired": "اختر مدربًا للموافقة — لا يمكن حجز الباقة بدون مدرب.",
+    "coachLabel": "المدرب: {coach}",
+    "assignCoachToBook": "عيّن مدربًا حتى يتمكن العضو من الحجز",
+    "noCoachesToAssign": "أضف مدربًا أولًا ثم وافق."
   },
   "member360": {
     "age": "{age} سنة",
@@ -2182,7 +2190,11 @@
       "cancelled": "ملغاة",
       "no_show": "غياب"
     },
-    "bookSession": "حجز جلسة"
+    "bookSession": "حجز جلسة",
+    "warnNoAvailTitle": "لا توجد أوقات متاحة بعد",
+    "warnNoAvailBody": "لم ينشر {coach} أوقاته المتاحة — لا يمكن للأعضاء حجز الجلسات حتى يتم تحديدها.",
+    "warnSetAvailability": "تحديد الأوقات المتاحة",
+    "warnSellAnyway": "البيع على أي حال"
   },
   "seo": {
     "title": "نادي برو لاين — ملاكمة تايلاندية وملاكمة ولياقة في بعبدا",
@@ -2255,7 +2267,10 @@
       "counterBtn": "اقتراح بديل",
       "declineBtn": "رفض",
       "sendCounter": "إرسال البديل"
-    }
+    },
+    "noAvailabilityStaff": "{coach} ليس لديه أوقات متاحة منشورة — لا يمكن للأعضاء الحجز حتى يتم تحديدها.",
+    "setAvailability": "تحديد الأوقات المتاحة",
+    "theCoach": "هذا المدرب"
   },
   "lifecycle": {
     "noMembership": "لا اشتراك",
@@ -2690,7 +2705,9 @@
     "actions": {
       "assignClass": "إسناد إلى حصة",
       "reactivate": "إعادة تفعيل"
-    }
+    },
+    "bookableChip": "قابل للحجز",
+    "noAvailabilityChip": "لا توجد أوقات متاحة"
   },
   "team": {
     "diary": {

@@ -81,8 +81,13 @@ test('PT slice: student request → staff approve+invoice → coach delivers →
     await expect(pendingCard, 'a pending request should be visible to staff (request propagated)').toBeVisible({ timeout: 15_000 });
     await expect(pendingCard, 'the pending request should be for this package').toContainText(PACKAGE_EN);
 
-    await pendingCard.locator('select').selectOption({ label: COACH_EN }).catch(() => {});
-    await pendingCard.getByRole('button', { name: /^approve$/i }).click();
+    // J3 PT-GUARDS: the coach is picked via CHIPS now (the raw select was removed)
+    // and a coach is REQUIRED to approve. This request carries a preferred coach, so
+    // the picker won't render (approve is already enabled); click the chip only if a
+    // coach-less request surfaced it.
+    const coachChip = pendingCard.getByTestId('pt-req-coach-chip').filter({ hasText: COACH_EN }).first();
+    if (await coachChip.count()) await coachChip.click();
+    await pendingCard.getByTestId('pt-req-approve').click();
 
     // Capture the toast (success or error) so a failed approval surfaces its cause.
     const toast = owner.page.locator('[data-sonner-toast]');
