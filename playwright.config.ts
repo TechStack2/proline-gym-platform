@@ -78,6 +78,13 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // J3 PT-GUARDS — anchored ($) so it never collides with pt/pt1/pt2 by substring.
+      name: 'pt-guards',
+      dependencies: ['setup'],
+      testMatch: /pt-guards\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Notification read-path slice (Prompt F2 / Workstream B): asserts the
       // RECIPIENT (student → pt_approved, coach → pt_assigned) SEES the
       // notification on the RLS-scoped /notifications page. ISO-DB: self-seeds

@@ -13,10 +13,15 @@ export type { SlotDay } from './slots'
 
 type Result = { ok: true } | { ok: false; error: string }
 
-export async function getPtSlots(assignmentId: string, locale = 'en'): Promise<{ slots: SlotDay[]; coachName?: string }> {
+export async function getPtSlots(
+  assignmentId: string,
+  locale = 'en',
+): Promise<{ slots: SlotDay[]; coachName?: string; coachId?: string; noAvailability?: boolean }> {
   const supabase = await createClient()
-  const { slots, coachName } = await getBookableSlots(supabase, assignmentId, locale)
-  return { slots, coachName }
+  // J3 PT-GUARDS: coachId + noAvailability let the STAFF booking modal show WHY an
+  // empty slot list happened + deep-link to the coach's availability panel.
+  const { slots, coachName, coachId, noAvailability } = await getBookableSlots(supabase, assignmentId, locale)
+  return { slots, coachName, coachId, noAvailability }
 }
 
 export async function bookPtSlot(input: {

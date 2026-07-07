@@ -34,18 +34,25 @@ export type PtRequestRow = {
   sessions: number
   studentName: string
   requestedAt: string
+  // J3 PT-GUARDS: the request's preferred coach (null → staff must pick one to
+  // approve — a coach-less approval is permanently unbookable).
+  coachId: string | null
+  coachName: string | null
 }
+export type InboxCoach = { id: string; name: string }
 export type PromotionRow = { id: string; className: string; studentName: string; at: string }
 export type CampRequestRow = { id: string; campId: string; studentId: string; campName: string; studentName: string; requestedAt: string }
 
 export function InboxQueues({
-  locale, regRequests, ptRequests, campRequests = [], promotions,
+  locale, regRequests, ptRequests, campRequests = [], promotions, coaches = [],
 }: {
   locale: string
   regRequests: RegRequestRow[]
   ptRequests: PtRequestRow[]
   campRequests?: CampRequestRow[]
   promotions: PromotionRow[]
+  // J3 PT-GUARDS: the gym's active coaches, for the approve-time coach picker.
+  coaches?: InboxCoach[]
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('inbox')
@@ -53,6 +60,8 @@ export function InboxQueues({
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [discounts, setDiscounts] = useState<Record<string, { pct: string; amt: string }>>({})
+  // J3 PT-GUARDS: per-request picked coach (for requests with no preferred coach).
+  const [ptCoach, setPtCoach] = useState<Record<string, string>>({})
   // PERF-2: OPTIMISTIC — hide a row the instant it's actioned; the refresh drops it
   // from the server props on success, or we roll the hide back on failure (React 18.3
   // has no useOptimistic, so this is the repo's optimistic-state + rollback pattern).
@@ -79,7 +88,7 @@ export function InboxQueues({
 
   return (
     <div className="space-y-6">
-      {error && <div data-testid="inbox-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+      {error && <div data-testid="inbox-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error === 'coach_required' ? t('coachRequired') : error}</div>}
 
       {/* ── Class-registration requests (B2) ── */}
       <section>
@@ -175,28 +184,58 @@ export function InboxQueues({
           <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
         ) : (
           <div className="space-y-2">
-            {visPt.map((r) => (
-              <div key={r.id} data-testid="inbox-pt-row" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4 shadow-sm">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{r.studentName}</p>
-                  <p className="text-xs text-gray-500">
-                    {r.packageName} · {r.sessions} {t('sessions')}{r.priceUsd != null ? ` · $${r.priceUsd.toFixed(0)}` : ''} · {fmtDate(r.requestedAt)}
-                  </p>
+            {visPt.map((r) => {
+              // J3 PT-GUARDS: a request with no preferred coach needs one chosen
+              // before approve (else the package is permanently unbookable). The
+              // effective coach = the request's own, or the one picked here.
+              const effectiveCoach = r.coachId ?? ptCoach[r.id] ?? null
+              return (
+              <div key={r.id} data-testid="inbox-pt-row" className="flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{r.studentName}</p>
+                    <p className="text-xs text-gray-500">
+                      {r.packageName} · {r.sessions} {t('sessions')}{r.priceUsd != null ? ` · $${r.priceUsd.toFixed(0)}` : ''} · {fmtDate(r.requestedAt)}
+                    </p>
+                    {r.coachId && r.coachName && (
+                      <p className="mt-0.5 text-xs font-medium text-gray-600" data-testid="inbox-pt-coach">{t('coachLabel', { coach: r.coachName })}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" data-testid="inbox-pt-approve" disabled={pending || !effectiveCoach}
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => run(r.id, async () => { const res = await approvePtRequest(r.id, { coachId: effectiveCoach }); return res.ok ? { ok: true } : res })}>
+                      <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
+                    </Button>
+                    <Button size="sm" variant="outline" data-testid="inbox-pt-decline" disabled={pending}
+                      className="text-red-600 hover:bg-red-50"
+                      onClick={() => run(r.id, async () => { const res = await rejectPtRequest(r.id, ''); return res.ok ? { ok: true } : res })}>
+                      <XCircle className="me-1 h-4 w-4" /> {t('decline')}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" data-testid="inbox-pt-approve" disabled={pending}
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => run(r.id, async () => { const res = await approvePtRequest(r.id); return res.ok ? { ok: true } : res })}>
-                    <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
-                  </Button>
-                  <Button size="sm" variant="outline" data-testid="inbox-pt-decline" disabled={pending}
-                    className="text-red-600 hover:bg-red-50"
-                    onClick={() => run(r.id, async () => { const res = await rejectPtRequest(r.id, ''); return res.ok ? { ok: true } : res })}>
-                    <XCircle className="me-1 h-4 w-4" /> {t('decline')}
-                  </Button>
-                </div>
+                {/* No preferred coach → pick one (chips) before approving. */}
+                {!r.coachId && (
+                  <div data-testid="inbox-pt-coach-picker" className="rounded-xl bg-amber-50/60 px-3 py-2">
+                    <p className={cn('mb-1.5 text-xs font-medium text-amber-800', isRTL && 'font-arabic text-right')}>{t('assignCoachToBook')}</p>
+                    {coaches.length === 0 ? (
+                      <p className="text-xs text-amber-700">{t('noCoachesToAssign')}</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {coaches.map((c) => (
+                          <button key={c.id} type="button" data-testid="inbox-pt-coach-chip" data-id={c.id}
+                            onClick={() => setPtCoach((p) => ({ ...p, [r.id]: c.id }))}
+                            className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
+                              ptCoach[r.id] === c.id ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                            {c.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+            )})}
           </div>
         )}
       </section>

@@ -30,9 +30,14 @@ export async function approvePtRequest(
     .single();
   if (aErr || !assignment) return { ok: false, error: 'assignment_not_found' };
 
-  // Coach may be NULL on a 22R approval (no preferred coach on the request) —
-  // the RPC permits it on the request path; binding happens at scheduling.
+  // J3 PT-GUARDS: a PT package with NO coach is permanently unbookable — the slot
+  // engine hard-fails 'no_assignment', so the member can never schedule (the silent
+  // dead-end the owner hit). HARD BLOCK: approving requires a resolvable coach
+  // (from the picker or the request's preferred coach). The UI presents a coach
+  // picker; this is the server backstop. `coach_required` is a stable key the
+  // approving surfaces translate.
   const finalCoachId = opts?.coachId ?? assignment.coach_id ?? null;
+  if (!finalCoachId) return { ok: false, error: 'coach_required' };
 
   const { data: sold, error } = await supabase.rpc('sell_pt_package', {
     p_student_id: assignment.student_id,
