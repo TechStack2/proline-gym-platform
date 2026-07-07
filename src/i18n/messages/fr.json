@@ -460,10 +460,12 @@
       "titleEdit": "Modifier le cours",
       "save": "Enregistrer",
       "successEdit": "Cours mis à jour !",
-      "showOnLanding": "Afficher sur le site public",
-      "showOnLandingHint": "Masqué jusqu'à activation — seuls les cours publiés apparaissent sur le site public.",
-      "published": "Publié",
-      "staged": "Non publié"
+      "showOnLanding": "Afficher sur votre site public",
+      "showOnLandingHint": "Contrôle uniquement votre site public — les membres voient toujours les cours actifs dans l'application.",
+      "published": "Sur le site public",
+      "staged": "Non publié",
+      "noCoachesHint": "Il vous faut d'abord un coach — ajoutez-en un pour assigner ce cours.",
+      "addCoachCta": "Ajouter un coach"
     },
     "admin": {
       "edit": "Modifier",
@@ -1728,12 +1730,13 @@
     "items": {
       "profile": "Ajoutez les coordonnées de votre salle",
       "branding": "Configurez votre page d'accueil et votre identité",
-      "discipline": "Ajoutez un cours ou une discipline",
+      "discipline": "Ajoutez vos disciplines (types de cours)",
       "coach": "Ajoutez un coach",
       "plan": "Créez un forfait d'abonnement",
       "ptpackage": "Créez un forfait de coaching privé",
       "exchange": "Définissez le taux de change",
-      "member": "Ajoutez votre premier membre"
+      "member": "Ajoutez votre premier membre",
+      "class": "Créez votre premier cours"
     }
   },
   "today": {
@@ -2034,7 +2037,9 @@
       "thu": "Jeudi",
       "fri": "Vendredi",
       "sat": "Samedi"
-    }
+    },
+    "noClassesYet": "Aucun cours pour l'instant",
+    "createFirstClass": "Créez votre premier cours"
   },
   "family": {
     "me": "Moi",

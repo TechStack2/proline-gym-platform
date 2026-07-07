@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
@@ -100,6 +100,15 @@ export function GymSettings({ gym, locale }: Props) {
   const [error, setError] = useState('');
   const [logoBusy, setLogoBusy] = useState(false);
   const [logoUrl, setLogoUrl] = useState(gym?.logo_url ?? '');
+
+  // J4 CLASS-SURFACE: land the checklist's Branding deep-link (?tab=gym#branding) ON
+  // the Branding section. Native hash-scroll can miss because this tab's content
+  // mounts client-side after the browser's initial scroll, so scroll it in on mount.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#branding') {
+      document.getElementById('branding')?.scrollIntoView({ block: 'start' });
+    }
+  }, []);
 
   if (!gym) {
     return (
@@ -305,8 +314,10 @@ export function GymSettings({ gym, locale }: Props) {
             <Input data-testid="gym-currency" value={form.currency_preference} onChange={set('currency_preference')} className="rounded-lg border p-2" placeholder="USD / LBP / BOTH" />
           </F>
 
-          {/* ── Branding (000072) ── */}
-          <p className={cn('flex items-center gap-1.5 pt-1 text-xs font-semibold text-gray-700', isRTL && 'font-arabic')}>
+          {/* ── Branding (000072) ── J4: #branding is the checklist branding item's
+              deep-link target (distinct from the profile fields above). scroll-mt keeps
+              the heading clear of the sticky chrome when the anchor scrolls to it. */}
+          <p id="branding" className={cn('flex items-center gap-1.5 pt-1 text-xs font-semibold text-gray-700 scroll-mt-24', isRTL && 'font-arabic')}>
             <Palette className="h-3.5 w-3.5 text-primary-600" /> {t('gym.branding')}
           </p>
           <div className="grid grid-cols-2 gap-3">

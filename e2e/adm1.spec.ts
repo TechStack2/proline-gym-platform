@@ -148,7 +148,11 @@ test('ADM-1 · coach lifecycle: repaired add → wizard chips → warn-on-assign
     await vis(owner.page, '[data-testid="coach-bio-en"]').fill('ADM-1 e2e coach');
     await vis(owner.page, '[data-testid="wizard-next"]').click();
     await vis(owner.page, '[data-testid="wizard-submit"]').click();
-    await expect(owner.page).toHaveURL(/\/en\/coaches$/, { timeout: 15_000 });
+    // J3 PT-GUARDS: a NEW coach now lands on their availability panel (the guided
+    // next step — members can't book PT until it's set), not the roster. Assert we
+    // reached the new coach's page, then open the roster to check the card.
+    await expect(owner.page).toHaveURL(/\/en\/coaches\/[0-9a-f-]{36}/, { timeout: 15_000 });
+    await owner.page.goto('/en/coaches');
     await expect(vis(owner.page, '[data-testid="coach-card"]').filter({ hasText: COACH_NAME }).first())
       .toBeVisible({ timeout: 15_000 });
 
