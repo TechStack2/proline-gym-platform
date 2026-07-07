@@ -196,7 +196,7 @@ test('G1 · settings token-security + record-mode dispatch routing (active→sen
     await expect(res, 'inactive gym → no WhatsApp dispatch').toHaveAttribute('data-dispatched', 'false')
 
     // ── 2. Save credentials → status active; the token is NEVER client-exposed ──
-    await page.goto('/en/settings')
+    await page.goto('/en/settings?tab=comms') // J5b: WhatsApp config re-homed to the comms tab
     const card = vis(page, '[data-testid="whatsapp-settings"]').first()
     await expect(card.getByTestId('whatsapp-status')).toHaveAttribute('data-status', 'not_configured')
     await card.getByTestId('wa-phone-id').fill('123456789')
@@ -205,7 +205,7 @@ test('G1 · settings token-security + record-mode dispatch routing (active→sen
     await expect(vis(page, '[data-testid="wa-saved"]').first()).toBeVisible({ timeout: 15_000 })
     await expect(vis(page, '[data-testid="whatsapp-status"]').first()).toHaveAttribute('data-status', 'active', { timeout: 15_000 })
 
-    await page.goto('/en/settings')
+    await page.goto('/en/settings?tab=comms') // J5b: re-check the token isn't exposed on the comms tab
     await page.waitForLoadState('networkidle').catch(() => {})
     const body = await page.locator('body').innerText()
     expect(body, 'the access token must NEVER appear in the client HTML').not.toContain(SECRET)

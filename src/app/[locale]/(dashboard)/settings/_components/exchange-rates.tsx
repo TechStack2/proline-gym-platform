@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Calendar, CircleDollarSign, Plus, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Calendar, CircleDollarSign, Plus, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 
 type ExchangeRate = {
   id?: string;
@@ -90,44 +90,39 @@ export function ExchangeRates({ rates, locale }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Current Rate Highlight Card */}
-      <Card className="rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-primary-foreground">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={cn('text-sm opacity-90', isRTL && 'font-arabic')}>
-                {t('exchange.currentRate')}
-              </p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-bold">
-                  {currentRate ? currentRate.rate.toLocaleString() : '—'}
+      {/* J5b: current rate — a compact stat card (value + date), not the oversized red
+          gradient banner. Trend delta stays as a small subdued chip; no gradient adventure. */}
+      <Card className="rounded-2xl shadow-sm">
+        <CardContent className="flex items-center justify-between gap-3 p-4">
+          <div className="min-w-0">
+            <p className={cn('text-xs font-medium text-gray-500', isRTL && 'font-arabic')}>
+              {t('exchange.currentRate')}
+            </p>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-2xl font-bold text-gray-900">
+                {currentRate ? currentRate.rate.toLocaleString() : '—'}
+              </span>
+              <span className="text-xs text-gray-400">LBP/USD</span>
+            </div>
+            {currentRate && (
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(currentRate.rate_date).toLocaleDateString(dateLocale(locale))}
                 </span>
-                <span className="text-sm opacity-80">LBP/USD</span>
+                {currentRate.source && (
+                  <Badge variant="outline" size="sm" className="text-2xs">{currentRate.source}</Badge>
+                )}
               </div>
-            </div>
-            <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center">
-              <TrendingUp className="h-7 w-7" />
-            </div>
+            )}
           </div>
-          {currentRate && (
-            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/20">
-              <div className="flex items-center gap-1 text-xs opacity-90">
-                <Calendar className="h-3 w-3" />
-                <span>{new Date(currentRate.rate_date).toLocaleDateString(dateLocale(locale))}</span>
-              </div>
-              {currentRate.source && (
-                <Badge className="bg-white/20 text-white border-0 text-2xs">
-                  {currentRate.source}
-                </Badge>
-              )}
-              {rateDiff !== 0 && (
-                <span className="text-xs ms-auto opacity-90">
-                  {rateDiff > 0 ? '+' : ''}{rateDiff.toFixed(2)} ({rateDiffPercent}%)
-                </span>
-              )}
-            </div>
+          {currentRate && rateDiff !== 0 && (
+            <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium', directionStyles[direction])}>
+              <DirectionIcon className="h-3.5 w-3.5" />
+              {rateDiff > 0 ? '+' : ''}{rateDiff.toFixed(2)} ({rateDiffPercent}%)
+            </span>
           )}
-        </div>
+        </CardContent>
       </Card>
 
       {/* Add New Rate Form */}
@@ -182,7 +177,7 @@ export function ExchangeRates({ rates, locale }: Props) {
           {saveError && (
             <div data-testid="rate-save-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</div>
           )}
-          <Button data-testid="rate-save" onClick={() => void saveRate()} disabled={saving} className="w-full rounded-lg" size="lg">
+          <Button data-testid="rate-save" onClick={() => void saveRate()} disabled={saving} className="rounded-lg">
             {saving ? t('exchange.saving') : t('exchange.saveRate')}
           </Button>
           {savedOk && (

@@ -1227,7 +1227,9 @@
       "exchangeRates": "أسعار الصرف",
       "membershipPlans": "خطط العضوية",
       "disciplinesBelts": "التخصصات والأحزمة",
-      "ptPackages": "باقات التدريب الخاص"
+      "ptPackages": "باقات التدريب الخاص",
+      "personalTraining": "التدريب الشخصي",
+      "comms": "المراسلة والمستندات"
     },
     "gym": {
       "noData": "لم يتم العثور على بيانات الصالة",
@@ -1272,7 +1274,9 @@
       "enterArabicName": "أدخل الاسم بالعربية",
       "enterEnglishName": "أدخل الاسم بالإنجليزية",
       "enterFrenchName": "أدخل الاسم بالفرنسية",
-      "unnamed": "برو لاين جيم"
+      "unnamed": "برو لاين جيم",
+      "interfaceLanguage": "لغة الواجهة",
+      "interfaceLanguageHint": "لهذا الجهاز فقط — تحدّد لغة العرض لديك، وليست إعداداً عاماً للنادي."
     },
     "exchange": {
       "currentRate": "سعر الصرف الحالي",
@@ -1365,7 +1369,8 @@
       "preset90": "فصلي",
       "preset180": "6 أشهر",
       "preset365": "سنوي",
-      "reviewDuration": "{days} يوماً"
+      "reviewDuration": "{days} يوماً",
+      "archived": "مؤرشَف"
     },
     "beltLadder": {
       "title": "سلالم الأحزمة",

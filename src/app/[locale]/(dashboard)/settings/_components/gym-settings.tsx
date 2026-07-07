@@ -8,13 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Building2, Phone, Mail, Globe, Clock, CreditCard, MapPin, Camera, Loader2, Palette,
+  Building2, Mail, Globe, Camera, Loader2, Palette,
   ImageIcon, type LucideIcon,
 } from 'lucide-react';
 import { downscaleImage } from '@/components/shared/avatar-upload';
 import { storagePublicUrl } from '@/lib/storage/public-url';
 import { saveGymSettings } from './gym-actions';
 import { TimezonePicker } from './timezone-picker';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 type GymData = {
   id?: string;
@@ -233,114 +234,31 @@ export function GymSettings({ gym, locale }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Gym Identity display card (logo upload + at-a-glance) — PRESERVED */}
-      <Card className="rounded-2xl shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            {/* SETTINGS-LIVE: the logo is now editable in place (avatar-upload pattern). */}
-            <label className="group relative cursor-pointer" data-testid="gym-logo-upload">
-              {logoUrl ? (
-                <img
-                  src={storagePublicUrl('avatars', logoUrl)}
-                  alt={gymName || 'Gym logo'}
-                  className="h-14 w-14 rounded-xl object-cover border"
-                />
-              ) : (
-                <div className="h-14 w-14 rounded-xl bg-primary-50 flex items-center justify-center">
-                  <Building2 className="h-7 w-7 text-primary-500" />
-                </div>
-              )}
-              <span className="absolute -bottom-1 -end-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#cd1419] text-primary-foreground ring-2 ring-white">
-                {logoBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
-              </span>
-              <input type="file" accept="image/*" className="hidden" data-testid="gym-logo-input" onChange={onPickLogo} />
-            </label>
-            <div>
-              <CardTitle className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="gym-header-name">
-                {gymName || t('gym.unnamed')}
-              </CardTitle>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {t('gym.information')}
-              </p>
+      {/* J5b: compact identity header — logo (editable in place) + gym name. The legacy
+          read-only "Gym Information" card is removed; the sectioned form below is the
+          single source of truth for every field (zero duplicated data). */}
+      <div className="flex items-center gap-3">
+        <label className="group relative cursor-pointer" data-testid="gym-logo-upload">
+          {logoUrl ? (
+            <img
+              src={storagePublicUrl('avatars', logoUrl)}
+              alt={gymName || 'Gym logo'}
+              className="h-14 w-14 rounded-xl object-cover border"
+            />
+          ) : (
+            <div className="h-14 w-14 rounded-xl bg-primary-50 flex items-center justify-center">
+              <Building2 className="h-7 w-7 text-primary-500" />
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-          {/* Address */}
-          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-            <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-            <div>
-              <p className={cn('text-xs font-medium text-gray-500', isRTL && 'font-arabic')}>
-                {t('gym.address')}
-              </p>
-              <p className={cn('text-sm text-gray-900', isRTL && 'font-arabic')}>
-                {address || '—'}
-              </p>
-              {gym.city && (
-                <p className="text-xs text-gray-500">
-                  {gym.city}{gym.country ? `, ${gym.country}` : ''}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Contact Info Row */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl">
-              <Phone className="h-4 w-4 text-gray-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-2xs text-gray-500">{t('gym.phone')}</p>
-                <p className={cn('text-sm font-medium text-gray-900 truncate', isRTL && 'font-arabic')}>
-                  {gym.phone || '—'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl">
-              <Mail className="h-4 w-4 text-gray-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-2xs text-gray-500">Email</p>
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {gym.email || '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl">
-              <Globe className="h-4 w-4 text-gray-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-2xs text-gray-500">{t('gym.website')}</p>
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {gym.website || '—'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl">
-              <Clock className="h-4 w-4 text-gray-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-2xs text-gray-500">{t('gym.timezone')}</p>
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {gym.timezone || '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Currency Preference */}
-          <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl">
-            <CreditCard className="h-4 w-4 text-gray-400 shrink-0" />
-            <div>
-              <p className="text-2xs text-gray-500">
-                {t('gym.currencyPreference')}
-              </p>
-              <Badge variant="default" size="sm" className="mt-0.5">
-                {gym.currency_preference || 'BOTH'}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+          <span className="absolute -bottom-1 -end-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#cd1419] text-primary-foreground ring-2 ring-white">
+            {logoBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
+          </span>
+          <input type="file" accept="image/*" className="hidden" data-testid="gym-logo-input" onChange={onPickLogo} />
+        </label>
+        <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="gym-header-name">
+          {gymName || t('gym.unnamed')}
+        </h2>
+      </div>
 
       {/* ── Identity ── */}
       <Section icon={Building2} title={t('gym.sectionIdentity')} rtl={isRTL}>
@@ -410,6 +328,14 @@ export function GymSettings({ gym, locale }: Props) {
             <p data-testid="gym-err-currency" className="text-xs text-red-600">{t('gym.err.invalid_currency')}</p>
           )}
         </F>
+        {/* J5b: interface-language switcher — re-homed from the old always-visible card.
+            It sets the per-DEVICE UI locale (NEXT_LOCALE cookie + route), NOT a gym-wide
+            default, so the copy says "this device". Keeps the settings-language testid. */}
+        <div data-testid="settings-language" className="space-y-1.5">
+          <label className={cn('text-xs font-medium text-gray-600', isRTL && 'font-arabic')}>{t('gym.interfaceLanguage')}</label>
+          <p className={cn('text-2xs text-gray-400', isRTL && 'font-arabic')}>{t('gym.interfaceLanguageHint')}</p>
+          <LanguageSwitcher locale={locale} variant="inline" />
+        </div>
       </Section>
 
       {/* ── Branding (000072) — id="branding" is the checklist deep-link target ── */}

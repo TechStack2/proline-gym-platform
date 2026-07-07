@@ -1227,7 +1227,9 @@
       "exchangeRates": "Exchange Rates",
       "membershipPlans": "Membership Plans",
       "disciplinesBelts": "Disciplines & Belts",
-      "ptPackages": "PT Packages"
+      "ptPackages": "PT Packages",
+      "personalTraining": "Personal Training",
+      "comms": "Messaging & Docs"
     },
     "gym": {
       "noData": "No gym data found",
@@ -1272,7 +1274,9 @@
       "enterArabicName": "Enter Arabic name",
       "enterEnglishName": "Enter English name",
       "enterFrenchName": "Enter French name",
-      "unnamed": "PRO LINE Gym"
+      "unnamed": "PRO LINE Gym",
+      "interfaceLanguage": "Interface language",
+      "interfaceLanguageHint": "This device only — sets your display language, not a gym-wide default."
     },
     "exchange": {
       "currentRate": "Current Exchange Rate",
@@ -1365,7 +1369,8 @@
       "preset90": "Quarterly",
       "preset180": "6 months",
       "preset365": "Annual",
-      "reviewDuration": "{days} days"
+      "reviewDuration": "{days} days",
+      "archived": "Archived"
     },
     "beltLadder": {
       "title": "Belt ladders",

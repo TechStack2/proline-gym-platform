@@ -89,11 +89,10 @@ test('NO-MEMBERSHIP-GAPS · the six audit leaks are gated on the disabled gym', 
   test.setTimeout(180_000)
   const { ctx, page } = await ownerCtx(browser)
   try {
-    // ── 1. Settings: no Membership-plans config link; no plans tab; the ?tab=plans
-    //       deep link falls back (no plan manager renders). ──
+    // ── 1. Settings: no plans tab; the ?tab=plans deep link falls back (no plan
+    //       manager renders). J5b removed the config-row chips — the tab bar is the
+    //       only nav, so "no membership surface" now means the plans tab is absent. ──
     await page.goto('/en/settings')
-    await expect(vis(page, '[data-testid="settings-config-row"]').first()).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('[data-testid="settings-config-row"] a[href*="tab=plans"]'), 'no Membership-plans config link').toHaveCount(0)
     await expect(page.locator('[data-testid="settings-tab-plans"]'), 'no plans tab in Settings').toHaveCount(0)
     await page.goto('/en/settings?tab=plans')
     await expect(page.locator('[data-testid="settings-tab-plans"]'), 'the plans deep link falls back (tab still absent)').toHaveCount(0)

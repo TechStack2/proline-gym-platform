@@ -156,8 +156,11 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
       <ul className="divide-y">
         {plans.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-2 py-2" data-testid="plan-row" data-name-en={p.name_en} data-active={p.is_active !== false}>
-            <span className={cn('text-sm font-medium', p.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800')}>
+            <span className={cn('flex items-center gap-1.5 text-sm font-medium', p.is_active === false ? 'text-gray-400' : 'text-gray-800')}>
               {lname(p)} <span className="text-xs font-normal text-gray-400">· ${p.price_usd?.toLocaleString()} · {p.duration_days}d</span>
+              {p.is_active === false && (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-2xs font-medium text-gray-500">{t('archived')}</span>
+              )}
             </span>
             <span className="flex items-center gap-1.5">
               <Button size="sm" variant="ghost" data-testid="plan-edit-btn" disabled={busy} onClick={() => openWizard(p)}>
