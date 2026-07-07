@@ -336,7 +336,9 @@ export default defineConfig({
       // (hermetic). Proves the home redirect + the gate (owner 404, anon → login).
       name: 'vendor-console',
       dependencies: ['setup'],
-      testMatch: /vendor-console\.spec\.ts$/,
+      // VENDOR-WIRE: anchor to the path separator ($ + leading /) so nothing else
+      // can substring-match this project's spec.
+      testMatch: /\/vendor-console\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {

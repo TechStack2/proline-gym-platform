@@ -51,6 +51,12 @@ test('TEAM-1 · diary floor lens + Coach 360 hub + reception-manage / owner-deac
     await owner.page.locator('[data-testid="pt-type-chip"]').filter({ hasText: PACK }).first().click();
     await owner.page.locator('[data-testid="pt-coach-chip"]').filter({ hasText: COACH_EN }).first().click();
     await owner.page.getByTestId('pt-sell-submit').click();
+    // J3 SALE GUARD: Sami has no published availability in the e2e seed, so the sale
+    // (correctly) raises the warn-and-allow dialog. team1 tests the coach FILE +
+    // PT-client link, not booking, so "Sell anyway" completes it (a clean sale isn't
+    // needed here). This is the intentional product behavior, not a bug.
+    await expect(owner.page.getByTestId('pt-sell-warn-modal'), 'no-availability sale warns').toBeVisible({ timeout: 15_000 });
+    await owner.page.getByTestId('pt-sell-anyway').click();
     await expect(
       vis(owner.page, '[data-testid="member-pt-row"][data-status="active"]').filter({ hasText: PACK }).first(),
       'the package is sold to Karim with Sami',

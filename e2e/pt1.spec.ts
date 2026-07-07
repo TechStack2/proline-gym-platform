@@ -73,6 +73,10 @@ test('PT-1 · catalog → publish gate → desk sale → package-first cards (no
     await owner.page.locator('[data-testid="pt-coach-chip"]').first().click();
     await owner.page.getByTestId('pt-sell-discount-pct').fill('10');
     await owner.page.getByTestId('pt-sell-submit').click();
+    // J3 SALE GUARD: the seeded coach (Sami) has no published availability, so the
+    // sale raises the warn-and-allow dialog → "Sell anyway" completes it. Tolerant
+    // (catch) so it's a no-op if the sale ever goes straight through.
+    await owner.page.getByTestId('pt-sell-anyway').click({ timeout: 10_000 }).catch(() => {});
 
     const card = vis(owner.page, '[data-testid="member-pt-row"]').filter({ hasText: TYPE_NAME }).first();
     await expect(card, 'the sold package lands on the file as a card').toBeVisible({ timeout: 20_000 });
@@ -138,6 +142,8 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
     await expect(vis(owner.page, '[data-testid="pt-sell-modal"]').first()).toBeVisible({ timeout: 15_000 });
     await vis(owner.page, '[data-testid="pt-coach-chip"]').first().click();
     await vis(owner.page, '[data-testid="pt-sell-submit"]').first().click();
+    // J3 SALE GUARD: Sami has no availability → warn-and-allow → "Sell anyway".
+    await owner.page.getByTestId('pt-sell-anyway').click({ timeout: 10_000 }).catch(() => {});
     await expect(
       vis(owner.page, '[data-testid="member-pt-row"]').filter({ hasText: TYPE_NAME }),
       'the re-sell issues a SECOND package of the same type',

@@ -3057,6 +3057,35 @@
     "footer": {
       "tagline": "La plateforme en marque blanche pour salles d'arts martiaux et boutiques.",
       "rights": "Gym 360 Pro. Tous droits réservés."
+    },
+    "console": {
+      "brand": "Gym 360 Pro",
+      "signOut": "Se déconnecter",
+      "title": "Gym 360 Pro — Console fournisseur",
+      "summary": "{gyms} salles · {active} actives",
+      "onboardCta": "Ajouter une nouvelle salle",
+      "colGym": "Salle",
+      "colSlug": "Identifiant",
+      "colStatus": "Statut",
+      "colMembers": "Membres",
+      "colCreated": "Créée",
+      "colActions": "Actions",
+      "statusActive": "Active",
+      "statusSuspended": "Suspendue",
+      "empty": "Aucune salle pour l'instant.",
+      "openLanding": "Ouvrir le site public",
+      "copyLogin": "Copier l'URL de connexion",
+      "copied": "Copié",
+      "suspend": "Suspendre",
+      "reactivate": "Réactiver",
+      "suspendTitle": "Suspendre cette salle ?",
+      "reactivateTitle": "Réactiver cette salle ?",
+      "suspendBody": "Suspendre {gym} masque son site public — sa page publique et son catalogue cessent d'apparaître aux visiteurs. Le personnel peut toujours se connecter et utiliser l'application ; rien n'est supprimé.",
+      "reactivateBody": "La réactivation restaure le site public de {gym} (page publique + catalogue).",
+      "confirmSuspend": "Suspendre la salle",
+      "confirmReactivate": "Réactiver la salle",
+      "cancel": "Annuler",
+      "suspendFailed": "Impossible de mettre à jour la salle. Réessayez."
     }
   }
 }
