@@ -3057,6 +3057,35 @@
     "footer": {
       "tagline": "The white-label platform for martial-arts & boutique gyms.",
       "rights": "Gym 360 Pro. All rights reserved."
+    },
+    "console": {
+      "brand": "Gym 360 Pro",
+      "signOut": "Sign out",
+      "title": "Gym 360 Pro — Vendor Console",
+      "summary": "{gyms} gyms · {active} active",
+      "onboardCta": "Onboard a new gym",
+      "colGym": "Gym",
+      "colSlug": "Slug",
+      "colStatus": "Status",
+      "colMembers": "Members",
+      "colCreated": "Created",
+      "colActions": "Actions",
+      "statusActive": "Active",
+      "statusSuspended": "Suspended",
+      "empty": "No gyms yet.",
+      "openLanding": "Open landing",
+      "copyLogin": "Copy login URL",
+      "copied": "Copied",
+      "suspend": "Suspend",
+      "reactivate": "Reactivate",
+      "suspendTitle": "Suspend this gym?",
+      "reactivateTitle": "Reactivate this gym?",
+      "suspendBody": "Suspending hides {gym}'s public website — its landing page and public catalog stop showing to visitors. Staff can still log in and use the app; nothing is deleted.",
+      "reactivateBody": "Reactivating restores {gym}'s public website (landing page + catalog).",
+      "confirmSuspend": "Suspend gym",
+      "confirmReactivate": "Reactivate gym",
+      "cancel": "Cancel",
+      "suspendFailed": "Couldn't update the gym. Please try again."
     }
   }
 }
