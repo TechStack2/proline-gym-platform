@@ -19,6 +19,7 @@ import { WaiverConsentFields } from '@/components/shared/waiver-sign'
 import { signWaiver } from '@/lib/waivers/actions'
 import { CalendarDays, CreditCard, Dumbbell, ClipboardList } from 'lucide-react'
 import { completeOnboarding } from './actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 // PWD-FOCUS: these MUST be module-level (stable component types). When they lived
 // inside OnboardingClient's render body, every keystroke → setPw → re-render →
@@ -61,6 +62,7 @@ export function OnboardingClient({
   waiver?: { studentId: string; title: string; body: string } | null
 }) {
   const t = useTranslations('onboarding')
+  const errText = useErrorText()
   const router = useRouter()
   const supabase = createClient()
   const isRTL = locale === 'ar'
@@ -98,7 +100,7 @@ export function OnboardingClient({
     // 4. Clear the forced-change flag + accept the invite + refresh JWT.
     const res = await completeOnboarding()
     setBusy(false)
-    if (!res.ok) { setError(res.error); return }
+    if (!res.ok) { setError(errText(res.error)); return }
     router.push(`/${lang}${res.home}`)
     router.refresh()
   }

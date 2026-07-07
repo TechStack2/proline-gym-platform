@@ -8,6 +8,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 const SOURCES = ['instagram', 'facebook', 'whatsapp', 'walk_in', 'phone', 'referral', 'website', 'other']
 
@@ -33,7 +34,7 @@ export async function createCampaign(input: {
   const { error } = await supabase.from('campaigns').insert({
     gym_id: gymId, name: input.name.trim(), source, code, is_active: true,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
 
   revalidatePath('/[locale]/(dashboard)/campaigns', 'page')
   return { ok: true, code }
@@ -44,7 +45,7 @@ export async function setCampaignActive(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient()
   const { error } = await supabase.from('campaigns').update({ is_active: active, updated_at: new Date().toISOString() }).eq('id', id)
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/[locale]/(dashboard)/campaigns', 'page')
   return { ok: true }
 }

@@ -10,10 +10,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { refundInvoice, voidInvoice } from '../actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export function InvoiceActions({ invoiceId, status, locale }: { invoiceId: string; status: string; locale: string }) {
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
+  const errText = useErrorText();
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
@@ -26,7 +28,7 @@ export function InvoiceActions({ invoiceId, status, locale }: { invoiceId: strin
     setError('')
     startTransition(async () => {
       const res = kind === 'refund' ? await refundInvoice(invoiceId, reason) : await voidInvoice(invoiceId, reason)
-      if (!res.ok) { setError(res.error); return }
+      if (!res.ok) { setError(errText(res.error)); return }
       router.refresh()
     })
   }

@@ -18,6 +18,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -73,6 +74,7 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
 export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) {
   const router = useRouter()
   const t = useTranslations('coaches.form')
+  const errCaught = useCaughtErrorText();
   const isRTL = locale === 'ar'
 
   const [loading, setLoading] = useState(false)
@@ -184,7 +186,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
       setCreated({ coachId: newCoach.id, gymId: prof.gym_id, name: `${firstEn.trim()} ${lastEn.trim()}`.trim(), invite })
       setLoading(false)
     } catch (err: any) {
-      setError(err?.message || t('errSaveFailed'))
+      setError(errCaught(err))
       setLoading(false)
     }
   }

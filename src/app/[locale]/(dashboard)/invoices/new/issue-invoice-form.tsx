@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { issueInvoice } from '../actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type InvoiceType = 'membership' | 'pt_package' | 'pt_session' | 'camp' | 'rental' | 'event' | 'other'
 
@@ -38,6 +39,7 @@ export function IssueInvoiceForm({
   const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
+  const errText = useErrorText();
   const [pending, startTransition] = useTransition()
 
   const [studentId, setStudentId] = useState('')
@@ -72,7 +74,7 @@ export function IssueInvoiceForm({
         notesAr: notes || null,
         notesFr: notes || null,
       })
-      if (!res.ok) { setError(res.error); return }
+      if (!res.ok) { setError(errText(res.error)); return }
       router.push(`/${locale}/invoices/${res.data.id}`)
       router.refresh()
     })

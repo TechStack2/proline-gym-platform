@@ -9,6 +9,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 export type GymSettingsInput = {
   name_ar?: string
@@ -67,7 +68,7 @@ export async function saveGymSettings(
   // silently-filtered write (RLS returns 0 rows for non-staff).
   const { data: updated, error } = await supabase
     .from('gyms').update(payload).eq('id', prof.gym_id).select('id')
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   if (!updated || updated.length === 0) return { ok: false, error: 'not_allowed' }
 
   revalidatePath('/', 'layout') // gym name/branding surfaces app-wide (header, landing, login)

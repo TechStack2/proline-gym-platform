@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { RotateCcw } from 'lucide-react';
 import { restorePtCredit } from './actions';
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type ProfileShape = {
   first_name_ar: string | null; first_name_en: string | null;
@@ -33,6 +34,7 @@ function studentName(a: PtRestoreAssignment, locale: string): string {
 
 export function PtRestorePanel({ assignments, locale }: { assignments: PtRestoreAssignment[]; locale: string }) {
   const t = useTranslations('pt');
+  const errText = useErrorText();
   const router = useRouter();
   const isRTL = locale === 'ar';
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function PtRestorePanel({ assignments, locale }: { assignments: PtRestore
     const res = await restorePtCredit({ assignmentId: id, reason: 'staff correction' });
     setBusy(null);
     if (res.ok) { toast.success(t('credit_restored')); router.refresh(); }
-    else toast.error(res.error || t('restore_error'));
+    else toast.error(errText(res.error));
   };
 
   return (

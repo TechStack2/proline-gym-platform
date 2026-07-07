@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getBookableSlots, type SlotDay } from './slots'
+import { actionError } from '@/lib/errors/action-error';
 export type { SlotDay } from './slots'
 
 type Result = { ok: true } | { ok: false; error: string }
@@ -37,7 +38,7 @@ export async function bookPtSlot(input: {
     p_override: input.override ?? false,
     p_propose: false,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/portal/pt')
   revalidatePath('/schedule')
   return { ok: true }
@@ -52,7 +53,7 @@ export async function proposePtTime(input: { assignmentId: string; scheduledAt: 
     p_override: false,
     p_propose: true,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/portal/pt')
   revalidatePath('/inbox')
   return { ok: true }
@@ -69,7 +70,7 @@ export async function respondPtProposal(input: {
     p_action: input.action,
     p_counter_at: input.counterAt ?? null,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/portal/pt')
   revalidatePath('/inbox')
   return { ok: true }
@@ -78,7 +79,7 @@ export async function respondPtProposal(input: {
 export async function cancelPtBooking(sessionId: string): Promise<Result> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('cancel_pt_booking', { p_session_id: sessionId })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/portal/pt')
   return { ok: true }
 }

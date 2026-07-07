@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { recordPayment, referenceExists } from '../../invoices/actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Method = 'cash_usd' | 'cash_lbp' | 'omt' | 'whish' | 'bank_transfer' | 'bob_finance'
 
@@ -43,6 +44,7 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
   const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
+  const errText = useErrorText();
   const [pending, startTransition] = useTransition()
 
   const settled = ['paid', 'cancelled', 'refunded'].includes(invoice.status)
@@ -78,7 +80,7 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
         paymentDate: date,
       })
       if (!res.ok) {
-        setError(res.error)
+        setError(errText(res.error))
         return
       }
       // Full settlement → jump to the printable receipt (walk-in "issue & pay").

@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
 import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react'
 import { respondPtProposal } from '@/lib/pt/booking-actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export type ProposalRow = {
   id: string
@@ -25,6 +26,7 @@ export type ProposalRow = {
 export function PtProposals({ rows, locale }: { rows: ProposalRow[]; locale: string }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('ptBooking.proposals')
+  const errText = useErrorText();
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [counterFor, setCounterFor] = useState<string | null>(null)
@@ -38,7 +40,7 @@ export function PtProposals({ rows, locale }: { rows: ProposalRow[]; locale: str
         setCounterFor(null)
         router.refresh()
       } else {
-        toast({ title: t('failed'), description: res.error, variant: 'destructive' })
+        toast({ title: t('failed'), description: errText(res.error), variant: 'destructive' })
       }
     })
 

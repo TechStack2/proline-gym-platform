@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
+import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -135,6 +136,7 @@ const ModalBackdrop = ({ children, onClose }: { children: React.ReactNode; onClo
 
 export function PTPackagesClient({ packages: initialPkgs, students, coaches, assignments: initialAssignments, pendingRequests: initialPending, locale, gymId }: Props) {
   const t = useTranslations('pt');
+  const errCaught = useCaughtErrorText();
   const router = useRouter();
   const [packages, setPackages] = useState(initialPkgs);
   const [assignments, setAssignments] = useState(initialAssignments);
@@ -215,7 +217,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
       reset();
       toast.success(t('create_success'));
     } catch (err: any) {
-      toast.error(err?.message || t('create_error'));
+      toast.error(errCaught(err));
     } finally {
       setSubmitting(false);
     }
@@ -279,7 +281,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
       setEditTarget(null);
       toast.success(t('update_success'));
     } catch (err: any) {
-      toast.error(err?.message || t('update_error'));
+      toast.error(errCaught(err));
     } finally {
       setSubmitting(false);
     }
@@ -303,7 +305,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
       setDeleteTarget(null);
       toast.success(t('delete_success'));
     } catch (err: any) {
-      toast.error(err?.message || t('delete_error'));
+      toast.error(errCaught(err));
     } finally {
       setSubmitting(false);
     }
@@ -327,7 +329,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
       if (error) throw error;
     } catch (err: any) {
       setPackages(previousPackages);
-      toast.error(err?.message || t('update_error'));
+      toast.error(errCaught(err));
     }
   };
 
@@ -371,7 +373,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
       setAssignCoach('');
       toast.success(t('assign_success'));
     } catch (err: any) {
-      toast.error(err?.message || t('assign_error'));
+      toast.error(errCaught(err));
     } finally {
       setSubmitting(false);
     }
@@ -383,12 +385,12 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
     try {
       const coachId = reqCoach[req.id] || req.coach_id || null;
       const result = await approvePtRequest(req.id, { coachId });
-      if (!result.ok) throw new Error(result.error === 'coach_required' ? t('coach_required') : result.error);
+      if (!result.ok) throw new Error(result.error);
       setPending((prev) => prev.filter((p) => p.id !== req.id));
       toast.success(t('approve_success'));
       router.refresh();
     } catch (err: any) {
-      toast.error(err?.message || t('approve_error'));
+      toast.error(err?.message === 'coach_required' ? t('coach_required') : errCaught(err));
     } finally {
       setProcessing(null);
     }
@@ -404,7 +406,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
       toast.success(t('reject_success'));
       router.refresh();
     } catch (err: any) {
-      toast.error(err?.message || t('reject_error'));
+      toast.error(errCaught(err));
     } finally {
       setProcessing(null);
     }
@@ -427,7 +429,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
       setAssignments((prev) =>
         prev.map((a) => (a.id === assignment.id ? { ...a, sessions_used: a.sessions_used - 1, sessions_remaining: a.sessions_remaining + 1 } : a)),
       );
-      toast.error(err?.message || t('log_session_error'));
+      toast.error(errCaught(err));
     } finally {
       setProcessing(null);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useErrorText, useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -108,8 +109,14 @@ async function uploadGymHero(gymId: string, file: File): Promise<string> {
   return path; // RELATIVE path — the form state + persistence use it; preview resolves it
 }
 
+// ERROR-COPY: keys owned by the gym.err namespace keep their tailored copy; any other
+// key (the stable keys from actionError) falls back to friendly, shared errors.* copy.
+const GYM_ERR_KEYS = new Set(['invalid_color', 'invalid_currency', 'not_allowed', 'nothing_to_save', 'no_gym', 'not_signed_in']);
+
 export function GymSettings({ gym, locale }: Props) {
   const t = useTranslations('settings');
+  const errText = useErrorText();
+  const errCaught = useCaughtErrorText();
   const router = useRouter();
   const isRTL = locale === 'ar';
 
@@ -192,7 +199,7 @@ export function GymSettings({ gym, locale }: Props) {
       setTimeout(() => setSaved(false), 2500);
       router.refresh();
     } else {
-      setError(t(`gym.err.${res.error}` as Parameters<typeof t>[0]) || res.error);
+      setError(GYM_ERR_KEYS.has(res.error) ? t(`gym.err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error));
       if (res.error === 'invalid_color') setFieldError('brand_color');
       else if (res.error === 'invalid_currency') setFieldError('currency_preference');
     }
@@ -207,7 +214,7 @@ export function GymSettings({ gym, locale }: Props) {
       setLogoUrl(url);
       router.refresh();
     } catch (err: any) {
-      setError(err?.message || t('gym.saveFailed'));
+      setError(errCaught(err));
     } finally {
       setLogoBusy(false);
       e.target.value = '';
@@ -225,7 +232,7 @@ export function GymSettings({ gym, locale }: Props) {
       router.refresh();
     } catch (err: any) {
       // gym-landing write RLS is is_gym_admin() — a non-admin surfaces here, not silently.
-      setError(err?.message || t('gym.saveFailed'));
+      setError(errCaught(err));
     } finally {
       setHeroBusy(false);
       e.target.value = '';

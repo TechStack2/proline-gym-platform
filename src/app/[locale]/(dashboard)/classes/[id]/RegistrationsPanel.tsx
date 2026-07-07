@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Loader2 } from 'lucide-react'
 import { approveRegistration, rejectRegistration, cancelRegistration, registerWalkIn } from './registration-actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Reg = {
   id: string; status: string; waitlist_position: number | null
@@ -29,6 +30,7 @@ export function RegistrationsPanel({
 }) {
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
+  const errText = useErrorText();
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [discount, setDiscount] = useState<Record<string, string>>({})
@@ -43,7 +45,7 @@ export function RegistrationsPanel({
     setError('')
     startTransition(async () => {
       const res = await fn()
-      if (!res.ok) { setError(res.error); return }
+      if (!res.ok) { setError(errText(res.error)); return }
       router.refresh()
     })
   }

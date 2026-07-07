@@ -9,6 +9,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 type Outcome = 'no_answer' | 'not_interested' | 'thinking' | 'promised_visit' | 'reactivated'
 const OUTCOMES: Outcome[] = ['no_answer', 'not_interested', 'thinking', 'promised_visit', 'reactivated']
@@ -37,7 +38,7 @@ export async function logWinbackFollowup(input: {
     next_action_date: input.nextActionDate || null,
     created_by: user.id,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
 
   revalidatePath('/[locale]/(dashboard)/money', 'page')
   revalidatePath('/[locale]/(dashboard)/today', 'page')

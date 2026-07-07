@@ -6,6 +6,7 @@ import { Calendar, Clock, DollarSign, Loader2, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { requestClassRegistration, cancelMyRegistration } from './actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DAYS_AR = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
@@ -28,6 +29,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
   const renewsWord = locale === 'ar' ? 'يتجدد' : locale === 'fr' ? 'renouvelé le' : 'renews'
   const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
   const router = useRouter()
+  const errText = useErrorText();
   const [pending, startTransition] = useTransition()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -49,7 +51,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
     startTransition(async () => {
       const res = await requestClassRegistration(classId, kidId)
       setBusyId(null)
-      if (!res.ok) { setError(res.error); return }
+      if (!res.ok) { setError(errText(res.error)); return }
       router.refresh()
     })
   }
@@ -59,7 +61,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
     startTransition(async () => {
       const res = await cancelMyRegistration(regId)
       setBusyId(null)
-      if (!res.ok) { setError(res.error); return }
+      if (!res.ok) { setError(errText(res.error)); return }
       router.refresh()
     })
   }

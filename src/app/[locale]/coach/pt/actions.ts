@@ -13,6 +13,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createNotification, createNotificationForRole } from '@/lib/notifications/create';
 import { studentNotificationRecipients } from '@/lib/notifications/recipients';
+import { actionError } from '@/lib/errors/action-error';
 
 type Ctx = { supabase: Awaited<ReturnType<typeof createClient>>; userId: string; gymId: string };
 
@@ -79,7 +80,7 @@ export async function schedulePtSession(input: {
     .single();
   if (error || !session) {
     console.error('[schedulePtSession] RPC failed:', error?.message);
-    return { ok: false, error: error?.message ?? 'schedule_failed' };
+    return { ok: false, error: actionError(error) };
   }
   const s = session as SessionRow;
   try {
@@ -103,7 +104,7 @@ export async function completePtSession(input: {
     .single();
   if (error || !session) {
     console.error('[completePtSession] RPC failed:', error?.message);
-    return { ok: false, error: error?.message ?? 'complete_failed' };
+    return { ok: false, error: actionError(error) };
   }
   const s = session as SessionRow;
   try {
@@ -159,7 +160,7 @@ export async function logPtDelivery(input: {
     .single();
   if (error || !session) {
     console.error('[logPtDelivery] schedule RPC failed:', error?.message);
-    return { ok: false, error: error?.message ?? 'schedule_failed' };
+    return { ok: false, error: actionError(error) };
   }
   return completePtSession({ sessionId: (session as SessionRow).id });
 }
@@ -177,7 +178,7 @@ export async function cancelOrNoShowPtSession(input: {
     .single();
   if (error || !session) {
     console.error('[cancelOrNoShowPtSession] RPC failed:', error?.message);
-    return { ok: false, error: error?.message ?? 'cancel_failed' };
+    return { ok: false, error: actionError(error) };
   }
   const s = session as SessionRow;
   const type = input.outcome === 'no_show' ? 'pt_session_no_show' : 'pt_session_cancelled';
@@ -204,7 +205,7 @@ export async function reschedulePtSession(input: {
     .single();
   if (error || !session) {
     console.error('[reschedulePtSession] RPC failed:', error?.message);
-    return { ok: false, error: error?.message ?? 'reschedule_failed' };
+    return { ok: false, error: actionError(error) };
   }
   const s = session as SessionRow;
   try {

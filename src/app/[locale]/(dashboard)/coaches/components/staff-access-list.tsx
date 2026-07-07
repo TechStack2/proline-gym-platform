@@ -13,6 +13,7 @@ import { UserCheck, UserX, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/shared/avatar'
 import { setStaffActive } from '../staff-actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export type StaffMember = {
   userId: string
@@ -41,6 +42,7 @@ export function StaffAccessList({
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const roleLabel = (r: string) => ROLE_LABEL[r]?.[(locale as 'en' | 'ar' | 'fr')] ?? ROLE_LABEL[r]?.en ?? r
   const router = useRouter()
+  const errText = useErrorText();
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState('')
@@ -50,7 +52,7 @@ export function StaffAccessList({
     startTransition(async () => {
       const res = await setStaffActive(m.userId, !m.isActive)
       setBusyId('')
-      if (!res.ok) { setError(res.error); return }
+      if (!res.ok) { setError(errText(res.error)); return }
       router.refresh()
     })
   }

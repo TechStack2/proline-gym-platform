@@ -23,6 +23,7 @@ import { DollarSign, CalendarDays, Dumbbell, X, Loader2, Users, Tent, AlertTrian
 import { recordPayment } from '../../invoices/actions'
 import { registerMemberToClass } from './actions'
 import { registerToCamp } from '../../camps/actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export type PickableClass = {
   id: string; name_ar: string | null; name_en: string | null; name_fr: string | null
@@ -75,6 +76,7 @@ export function MemberActions({
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('member360.actions')
+  const errText = useErrorText();
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -114,7 +116,7 @@ export function MemberActions({
         setRegOpen(false); setClassId(''); setDiscount('')
         router.refresh()
       } else {
-        toast({ title: t('registerFailed'), description: res.error, variant: 'destructive' })
+        toast({ title: t('registerFailed'), description: errText(res.error), variant: 'destructive' })
       }
     })
   }
@@ -140,7 +142,7 @@ export function MemberActions({
         router.refresh()
       } else {
         setPayOpen(true) // ROLLBACK: reopen so the desk can retry
-        toast({ title: t('paymentFailed'), description: res.error, variant: 'destructive' })
+        toast({ title: t('paymentFailed'), description: errText(res.error), variant: 'destructive' })
       }
     })
   }
@@ -160,7 +162,7 @@ export function MemberActions({
         setCampOpen(false); setCampId('')
         router.refresh()
       } else {
-        toast({ title: t('campFailed'), description: res.error, variant: 'destructive' })
+        toast({ title: t('campFailed'), description: errText(res.error), variant: 'destructive' })
       }
     })
   }

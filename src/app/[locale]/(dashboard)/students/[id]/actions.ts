@@ -9,6 +9,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 type Result = { ok: true; status: string } | { ok: false; error: string }
 
@@ -22,14 +23,14 @@ export async function registerMemberToClass(input: {
     p_class_id: input.classId,
     p_student_id: input.studentId,
   })
-  if (reqErr) return { ok: false, error: reqErr.message }
+  if (reqErr) return { ok: false, error: actionError(reqErr) }
 
   const { error: appErr } = await supabase.rpc('approve_class_registration', {
     p_reg_id: (reg as any).id,
     p_discount_pct: input.discountPct ?? 0,
     p_discount_amount_usd: 0,
   })
-  if (appErr) return { ok: false, error: appErr.message }
+  if (appErr) return { ok: false, error: actionError(appErr) }
 
   const { data: after } = await supabase
     .from('class_registrations').select('status').eq('id', (reg as any).id).single()
@@ -59,7 +60,7 @@ export async function sellPtPackage(input: {
     p_discount_amount_usd: input.discountAmountUsd ?? 0,
     p_request_id: input.requestId ?? null,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath(`/students/${input.studentId}`)
   revalidatePath('/inbox')
   return { ok: true, status: 'active' }
@@ -76,7 +77,7 @@ export async function extendPtPackage(input: {
     p_assignment_id: input.assignmentId,
     p_days: input.days ?? 30,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath(`/students/${input.studentId}`)
   return { ok: true, status: 'active' }
 }

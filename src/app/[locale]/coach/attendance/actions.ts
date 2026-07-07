@@ -12,6 +12,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createNotification } from '@/lib/notifications/create';
 import { studentNotificationRecipients } from '@/lib/notifications/recipients';
+import { actionError } from '@/lib/errors/action-error';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 
@@ -56,7 +57,7 @@ export async function saveAttendance(input: {
       },
       { onConflict: 'class_id, student_id, attendance_date' },
     );
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: actionError(error) };
   }
 
   // Transition-guarded attendance_absent. Only students newly absent/late.

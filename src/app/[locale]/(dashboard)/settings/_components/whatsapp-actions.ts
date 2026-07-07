@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { encryptToken } from '@/lib/whatsapp/crypto'
 import { dispatchWhatsApp } from '@/lib/whatsapp/dispatch'
 import { whatsappTestBody, type MessagingGym } from '@/lib/whatsapp/identity'
+import { actionError } from '@/lib/errors/action-error';
 
 const STAFF = ['owner', 'head_coach', 'receptionist']
 
@@ -63,7 +64,7 @@ export async function saveWhatsAppConfig(input: {
     default_country_code: (input.defaultCountryCode || '961').replace(/\D/g, '') || '961',
     updated_at: new Date().toISOString(),
   }, { onConflict: 'gym_id' })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   return { ok: true, status }
 }
 

@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { actionError } from '@/lib/errors/action-error';
 
 type Result = { ok: true; active: boolean } | { ok: false; error: string };
 
@@ -41,7 +42,7 @@ export async function setGymActive(input: { gymId: string; active: boolean }): P
     .eq('id', input.gymId)
     .select('slug, name_en')
     .maybeSingle();
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   if (!updated) return { ok: false, error: 'gym-not-found' };
 
   // 3) Audit trail (at minimum a server log: actor + action + target).

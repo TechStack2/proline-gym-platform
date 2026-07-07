@@ -12,6 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createNotification } from '@/lib/notifications/create';
 import { studentNotificationRecipients } from '@/lib/notifications/recipients';
+import { actionError } from '@/lib/errors/action-error';
 
 export async function promoteStudent(input: {
   studentId: string;
@@ -44,7 +45,7 @@ export async function promoteStudent(input: {
     .single();
   if (error || !promo) {
     console.error('[promoteStudent] promote_student RPC failed:', error?.message);
-    return { ok: false, error: error?.message ?? 'promote_failed' };
+    return { ok: false, error: actionError(error) };
   }
   const toRank = (promo as { to_rank: string }).to_rank;
 

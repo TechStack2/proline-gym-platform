@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
@@ -15,6 +16,7 @@ type Props = {
 export default function VerifyPage({ params }: Props) {
   const { locale } = params;
   const t = useTranslations('auth');
+  const errCaught = useCaughtErrorText();
   const router = useRouter();
   const supabase = createClient();
   const isRTL = locale === 'ar';
@@ -83,7 +85,7 @@ export default function VerifyPage({ params }: Props) {
       // Success — redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || t('invalidCode'));
+      setError(errCaught(err));
     } finally {
       setLoading(false);
     }

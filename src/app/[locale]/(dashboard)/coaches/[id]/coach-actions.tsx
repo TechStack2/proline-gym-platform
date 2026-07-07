@@ -19,6 +19,7 @@ import { InviteButton } from '@/components/shared/invite-button'
 import { DiaryBookPt, type DiaryAssignment } from '../../schedule/diary-book-pt'
 import { setCoachActive } from './actions'
 import { toast } from 'sonner'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export function CoachActions({
   coachId, coachName, locale, isActive, canDeactivate,
@@ -37,6 +38,7 @@ export function CoachActions({
   phone: string | null
 }) {
   const t = useTranslations('coach360')
+  const errText = useErrorText();
   const ta = useTranslations('coaches.admin')
   const router = useRouter()
   const [confirmDeact, setConfirmDeact] = useState(false)
@@ -49,7 +51,7 @@ export function CoachActions({
     const res = await setCoachActive({ coachId, active: false })
     setBusy(false)
     if (res.ok) { router.push(`/${locale}/coaches`); router.refresh() }
-    else toast.error(res.error)
+    else toast.error(errText(res.error))
   }
 
   const reactivate = async () => {
@@ -57,7 +59,7 @@ export function CoachActions({
     const res = await setCoachActive({ coachId, active: true })
     setBusy(false)
     if (res.ok) router.refresh()
-    else toast.error(res.error)
+    else toast.error(errText(res.error))
   }
 
   return (

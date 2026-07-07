@@ -21,6 +21,7 @@ import type {
 import { LEAD_STATUSES, LEAD_SOURCES, LEADS_LIMIT } from './leads-types';
 import { leadStatusUpdateSchema } from '@/lib/validators/leads.schema';
 import { addLead, scheduleTrial, recordTrialOutcome, convertLead } from './actions';
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Props = {
   leads: Lead[];
@@ -535,6 +536,7 @@ function TrialPanel({
   onDone: () => void;
 }) {
   const t = useTranslations('leads');
+  const errText = useErrorText();
   const [date, setDate] = useState('');
   const [time, setTime] = useState(TIME_SLOTS[0]);
   const [coachId, setCoachId] = useState(coaches[0]?.id ?? '');
@@ -560,7 +562,7 @@ function TrialPanel({
       toast.success(t('toast.trial_scheduled'));
       onDone();
     } else {
-      toast.error(`${t('toast.trial_error')}: ${res.error}`);
+      toast.error(errText(res.error));
     }
   };
 
@@ -573,7 +575,7 @@ function TrialPanel({
       toast.success(t('toast.outcome_recorded'));
       onDone();
     } else {
-      toast.error(`${t('toast.outcome_error')}: ${res.error}`);
+      toast.error(errText(res.error));
     }
   };
 
@@ -664,6 +666,7 @@ function AddLeadModal({
   onCreated: () => void;
 }) {
   const t = useTranslations('leads');
+  const errText = useErrorText();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -684,7 +687,7 @@ function AddLeadModal({
     });
     setBusy(false);
     if (res.ok) { toast.success(t('toast.lead_added')); onCreated(); }
-    else toast.error(`${t('toast.add_error')}: ${res.error}`);
+    else toast.error(errText(res.error));
   };
 
   // UX-2: the prototype modal became the FormWizard (contact → interest+source
@@ -808,6 +811,7 @@ function ConvertModal({
   gymId: string;
 }) {
   const t = useTranslations('leads');
+  const errText = useErrorText();
   const supabase = createClient();
   const [planId, setPlanId] = useState(plans[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
@@ -844,7 +848,7 @@ function ConvertModal({
       await supabase.from('guardian_students').insert({ guardian_id: g!.id, student_id: studentId });
       toast.success(t('toast.guardian_linked'));
     } catch (e: any) {
-      toast.error(`${t('toast.guardian_link_failed')}: ${e?.message ?? ''}`);
+      toast.error(`${t('toast.guardian_link_failed')}`);
     }
   };
 
@@ -876,7 +880,7 @@ function ConvertModal({
         inviteStatus: res.inviteStatus,
       });
     } else {
-      toast.error(`${t('toast.convert_error')}: ${res.error}`);
+      toast.error(errText(res.error));
     }
   };
 
