@@ -80,6 +80,10 @@ export default async function SettingsPage({ params, searchParams }: Props) {
 
       {/* IA-1: Configuration row — the config destinations re-homed out of the nav. */}
       <div className="flex flex-wrap gap-2" data-testid="settings-config-row">
+        {/* J6 — the go-live panel (per-class/coach public visibility + share links). */}
+        <Link href={`/${locale}/publish`} data-testid="settings-publish-link" className="rounded-full border border-primary-200 bg-primary-50 px-4 py-1.5 text-sm font-medium text-primary-700 hover:bg-primary-100">
+          {locale === 'ar' ? 'النشر والظهور' : locale === 'fr' ? 'Publication' : 'Publish & go live'}
+        </Link>
         <Link href={`/${locale}/disciplines`} className="rounded-full border px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
           {locale === 'ar' ? 'التخصصات' : locale === 'fr' ? 'Disciplines' : 'Disciplines'}
         </Link>
