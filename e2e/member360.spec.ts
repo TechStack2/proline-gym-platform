@@ -53,6 +53,10 @@ test('IA-2 · member file answers paid?/PT-left?/registered-where? from live dat
     await owner.page.goto('/en/inbox');
     const ptRow = vis(owner.page, '[data-testid="inbox-pt-row"]').filter({ hasText: PT_PACKAGE }).filter({ hasText: 'Karim' }).first();
     await expect(ptRow).toBeVisible({ timeout: 15_000 });
+    // J3 PT-GUARDS: this request has no preferred coach → the inbox now requires one
+    // (chips) before approving; pick the first coach to unlock approve.
+    const coachChip = ptRow.getByTestId('inbox-pt-coach-chip').first();
+    if (await coachChip.count()) await coachChip.click();
     await ptRow.getByTestId('inbox-pt-approve').click();
     await expect(
       vis(owner.page, '[data-testid="inbox-pt-row"]').filter({ hasText: PT_PACKAGE }),

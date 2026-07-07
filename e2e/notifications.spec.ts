@@ -65,8 +65,11 @@ async function seedPtApproval(browser: Browser, testInfo: import('@playwright/te
     await owner.page.goto('/en/pt');
     const pendingCard = owner.page.locator('[data-testid="pt-pending-request"]:visible').first();
     await expect(pendingCard, 'a pending request should surface for staff').toBeVisible({ timeout: 15_000 });
-    await pendingCard.locator('select').selectOption({ label: COACH_EN }).catch(() => {});
-    await pendingCard.getByRole('button', { name: /^approve$/i }).click();
+    // J3 PT-GUARDS: coach picked via chips now (raw select removed) + required to
+    // approve. Click the coach chip if a coach-less request surfaced the picker.
+    const coachChip = pendingCard.getByTestId('pt-req-coach-chip').filter({ hasText: COACH_EN }).first();
+    if (await coachChip.count()) await coachChip.click();
+    await pendingCard.getByTestId('pt-req-approve').click();
     const toast = owner.page.locator('[data-sonner-toast]');
     await toast.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
     const toastText = (await toast.allTextContents()).join(' | ');
