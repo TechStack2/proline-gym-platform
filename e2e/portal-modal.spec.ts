@@ -67,6 +67,9 @@ async function sellPtToKarim(page: Page, name: string) {
   await page.locator('[data-testid="pt-type-chip"]').filter({ hasText: name }).first().click()
   await page.locator('[data-testid="pt-coach-chip"]').first().click()
   await page.getByTestId('pt-sell-submit').click()
+  // J3 SALE GUARD: the seeded coach (Sami) has no availability → warn-and-allow
+  // dialog → "Sell anyway" completes it. Tolerant: no-op if the sale went straight through.
+  await page.getByTestId('pt-sell-anyway').click({ timeout: 10_000 }).catch(() => {})
   await expect(vis(page, '[data-testid="member-pt-row"][data-status="active"]').filter({ hasText: name }).first()).toBeVisible({ timeout: 20_000 })
 }
 
