@@ -143,10 +143,11 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
     (locale === 'ar' ? ar : locale === 'fr' ? fr : en) || en || undefined;
   const branding = {
     name: gym ? (pick(gym.name_ar, gym.name_en, gym.name_fr) || undefined) : undefined,
-    // AVATAR-PATHS: logo_url is a stored bucket path → resolve to a public URL
-    // (feeds the Nav/Hero/Footer). hero_image_url is a free-text URL field → as-is.
+    // AVATAR-PATHS: logo_url (avatars) + hero_image_url (gym-landing, J5) are stored
+    // bucket paths → resolve to public URLs (feed the Nav/Hero/Footer). A pasted
+    // absolute URL passes through storagePublicUrl unchanged (the hero escape hatch).
     logoUrl: storagePublicUrl('avatars', gym?.logo_url) || undefined,
-    heroImageUrl: gym?.hero_image_url || undefined,
+    heroImageUrl: storagePublicUrl('gym-landing', gym?.hero_image_url) || undefined,
     brandColor: safeBrandColor(gym?.brand_color),
     tagline: gym ? pick(gym.tagline_ar, gym.tagline_en, gym.tagline_fr) : undefined,
   };
