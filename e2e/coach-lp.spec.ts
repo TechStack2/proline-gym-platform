@@ -144,7 +144,8 @@ test.describe.serial('COACH-LP · landing showcase + coach-edit→admin-publish'
       await vis(owner.page, '[data-testid="coach360-publish"]').first().click()
       await expect(vis(owner.page, '[data-testid="coach360-landing-status"]').first()).toHaveAttribute('data-visible', 'true', { timeout: 15_000 })
 
-      // ── The NEW photo is now LIVE on the anon landing ──
+      // ── The NEW photo is now LIVE on the anon landing (FIRST publish) ──
+      let firstPublishedSrc = ''
       await untilConsistent(async () => {
         await openLanding(anon.page)
         const img = samiCard(anon.page).locator('img').first()
@@ -153,6 +154,36 @@ test.describe.serial('COACH-LP · landing showcase + coach-edit→admin-publish'
         expect(src && src !== beforeSrc, 'landing avatar updated to the published photo').toBeTruthy()
         expect(src, 'published from the public avatars bucket').toContain('/avatars/')
         expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth), 'published photo loads (no 404)').toBeGreaterThan(0)
+        firstPublishedSrc = src ?? ''
+      }, { timeout: 45_000 })
+
+      // ── AVATAR-VERSION RE-PUBLISH REGRESSION: Sami now has a PRE-EXISTING published
+      //    photo. Upload+publish AGAIN — the live storage object is the SAME contract
+      //    path (<gym>/<profile>.jpg), overwritten in place, so the stored relative
+      //    avatar_url is byte-identical. Without a version signal the landing URL never
+      //    changes → the CDN serves the STALE old photo (the verified gate-red bug that
+      //    bit only when the coach already had a photo). Assert the rendered URL CHANGES
+      //    via the ?v=updated_at buster despite the identical storage path. ──
+      await coach.page.goto('/en/coach/profile')
+      await expect(vis(coach.page, '[data-testid="coach-profile-editor"]').first()).toBeVisible({ timeout: 15_000 })
+      await coach.page.locator('[data-testid="coach-photo-draft-input"]').first().setInputFiles(FIXTURE)
+      await expect(vis(coach.page, '[data-testid="coach-photo-pending"]').first(), 'the re-upload is marked pending').toBeVisible({ timeout: 20_000 })
+      await owner.page.goto(`/en/coaches/${coachId}`)
+      await expect(vis(owner.page, '[data-testid="coach360-photo-diff"]').first()).toBeVisible({ timeout: 15_000 })
+      await vis(owner.page, '[data-testid="coach360-publish"]').first().click()
+      await expect(vis(owner.page, '[data-testid="coach360-landing-status"]').first()).toHaveAttribute('data-visible', 'true', { timeout: 15_000 })
+
+      await untilConsistent(async () => {
+        await openLanding(anon.page)
+        const img = samiCard(anon.page).locator('img').first()
+        await expect(img, 'Sami still has a live photo after re-publish').toBeVisible({ timeout: 6_000 })
+        const reSrc = await img.getAttribute('src')
+        expect(reSrc, 're-publish still serves from the avatars bucket').toContain('/avatars/')
+        // THE FIX: same storage object path, fresh ?v=updated_at → the URL MUST differ
+        // from the first-published URL (byte-identical without the version buster = stale).
+        expect(reSrc && reSrc !== firstPublishedSrc,
+          're-published photo busts the CDN: landing URL changed despite the identical storage path').toBeTruthy()
+        expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth), 're-published photo loads (no 404)').toBeGreaterThan(0)
       }, { timeout: 45_000 })
     } finally {
       await coach.ctx.close(); await reception.ctx.close(); await owner.ctx.close(); await anon.ctx.close()
