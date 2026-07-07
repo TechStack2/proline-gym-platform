@@ -15,9 +15,13 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const PW = process.env.E2E_PASSWORD || 'E2eTestPass!23'
 const BASE = process.env.E2E_GYM_SLUG_BASE || 'local'
 const ADMIN_EMAIL = `vc-admin-${BASE}@e2e.local`
+// VENDOR-CONSOLE-1: a throwaway gym to suspend/reactivate + prove the landing toggles.
+const GYM_SLUG = `vc-gym-${BASE}`
+const GYM_NAME = `VC Console Gym ${BASE}`
 
 const svcHeaders = { apikey: KEY!, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 let adminId = ''
+let gymId = ''
 
 async function createAuthUser(email: string): Promise<string> {
   const res = await fetch(`${URL}/auth/v1/admin/users`, {
@@ -51,14 +55,38 @@ test.beforeAll(async () => {
   adminId = await createAuthUser(ADMIN_EMAIL)
   const res = await svc('platform_admins', { method: 'POST', body: JSON.stringify({ user_id: adminId }) })
   if (!res.ok && res.status !== 409) throw new Error(`seed platform_admin failed: ${res.status} ${await res.text()}`)
+  // VENDOR-CONSOLE-1: a throwaway, ACTIVE gym for the suspend/reactivate test.
+  const g = await svc('gyms', {
+    method: 'POST', headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({ name_ar: GYM_NAME, name_en: GYM_NAME, name_fr: GYM_NAME, slug: GYM_SLUG, is_active: true }),
+  })
+  if (!g.ok) throw new Error(`seed gym failed: ${g.status} ${await g.text()}`)
+  gymId = ((await g.json()) as Array<{ id: string }>)[0].id
 })
 
 test.afterAll(async () => {
+  if (gymId) await svc(`gyms?id=eq.${gymId}`, { method: 'DELETE' }).catch(() => {})
   if (adminId) {
     await svc(`platform_admins?user_id=eq.${adminId}`, { method: 'DELETE' })
     await deleteAuthUser(adminId)
   }
 })
+
+/** The gym name the PUBLIC (anon) landing renders for a slug — the resolved gym's
+ *  name while active, the DEFAULT brand once suspended (get_public_gym filters
+ *  is_active, so a suspended slug no longer resolves). */
+async function landingHeroName(browser: Browser, slug: string): Promise<string> {
+  const ctx = await browser.newContext({ locale: 'en' }) // anon → the public landing
+  const page = await ctx.newPage()
+  try {
+    await page.goto(`/en?gym=${slug}`, { waitUntil: 'domcontentloaded' })
+    const hero = page.getByTestId('hero-gym-name').first()
+    await expect(hero).toBeVisible({ timeout: 15_000 })
+    return (await hero.textContent())?.trim() ?? ''
+  } finally {
+    await ctx.close()
+  }
+}
 
 test('VENDOR-CONSOLE · a platform admin lands on /vendor as HOME and sees the multi-gym list + onboard CTA', async ({ browser }) => {
   test.setTimeout(120_000)
@@ -111,5 +139,59 @@ test('VENDOR-CONSOLE · anon is redirected to login', async ({ browser }) => {
     await expect(page.getByTestId('vendor-console')).toHaveCount(0)
   } finally {
     await ctx.close()
+  }
+})
+
+// ── VENDOR-CONSOLE-1: logout control + per-gym suspend/reactivate ──────────────
+test('VENDOR-CONSOLE-1 · the platform admin sees a header + working Sign-out control', async ({ browser }) => {
+  test.setTimeout(60_000)
+  const admin = await loginAs(browser, ADMIN_EMAIL)
+  try {
+    await admin.page.goto('/en/vendor')
+    await expect(admin.page.getByTestId('vendor-console')).toBeVisible({ timeout: 15_000 })
+    await expect(admin.page.getByTestId('vendor-header'), 'the vendor header renders').toBeVisible()
+    await expect(admin.page.getByTestId('vendor-user-email'), 'shows the signed-in email').toHaveText(ADMIN_EMAIL)
+    await expect(admin.page.getByTestId('vendor-signout'), 'a Sign-out control exists').toBeVisible()
+    await admin.page.getByTestId('vendor-signout').click()
+    await expect(admin.page, 'sign out → app login').toHaveURL(/\/auth\/login/, { timeout: 15_000 })
+  } finally {
+    await admin.ctx.close()
+  }
+})
+
+test('VENDOR-CONSOLE-1 · Suspend flips the chip + darkens the landing; Reactivate restores it', async ({ browser }) => {
+  test.setTimeout(120_000)
+  // Active → the public landing renders THIS gym's name.
+  expect(await landingHeroName(browser, GYM_SLUG), 'active gym landing shows its name').toBe(GYM_NAME)
+
+  const admin = await loginAs(browser, ADMIN_EMAIL)
+  try {
+    await admin.page.goto('/en/vendor')
+    const row = admin.page.locator(`[data-testid="vendor-gym-row"][data-slug="${GYM_SLUG}"]`)
+    await expect(row, 'the fixture gym is listed').toBeVisible({ timeout: 15_000 })
+    await expect(row.getByTestId('vendor-gym-status')).toHaveAttribute('data-active', 'true')
+
+    // ── Suspend (via the confirm dialog) ──
+    await row.getByTestId('vendor-suspend-toggle').click()
+    await expect(admin.page.getByTestId('vendor-suspend-modal')).toBeVisible()
+    await admin.page.getByTestId('vendor-suspend-confirm').click()
+    await expect(row.getByTestId('vendor-gym-status'), 'chip flips to suspended')
+      .toHaveAttribute('data-active', 'false', { timeout: 15_000 })
+
+    // The public landing no longer resolves THIS gym (get_public_gym filters is_active
+    // → the default brand shows instead of the gym's name).
+    expect(await landingHeroName(browser, GYM_SLUG), 'suspended gym landing no longer shows its name')
+      .not.toBe(GYM_NAME)
+
+    // ── Reactivate ──
+    await row.getByTestId('vendor-suspend-toggle').click()
+    await expect(admin.page.getByTestId('vendor-suspend-modal')).toBeVisible()
+    await admin.page.getByTestId('vendor-suspend-confirm').click()
+    await expect(row.getByTestId('vendor-gym-status'), 'chip flips back to active')
+      .toHaveAttribute('data-active', 'true', { timeout: 15_000 })
+
+    expect(await landingHeroName(browser, GYM_SLUG), 'reactivated gym landing shows its name again').toBe(GYM_NAME)
+  } finally {
+    await admin.ctx.close()
   }
 })
