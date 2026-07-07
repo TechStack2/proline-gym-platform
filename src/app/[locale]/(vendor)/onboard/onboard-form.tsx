@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { onboardGym, type OnboardResult } from './actions';
+import { ShareableLink } from '@/components/shared/shareable-link';
 
 /**
  * Minimal super-admin onboarding form (single page — a polished multi-step UI is a
@@ -49,6 +50,26 @@ export function OnboardForm({ locale }: { locale: string }) {
           <p className="mt-2 text-xs text-gray-500">
             Share these with the owner — they must change the password on first login.
           </p>
+          {/* J1 SETUP-HUB vendor handoff: the new gym's public landing + owner login
+              links, ready to copy/share (English-only, like the rest of this tool). */}
+          <div className="mt-3 space-y-2 border-t border-green-200 pt-3">
+            <ShareableLink
+              path={`/${locale}?gym=${result.slug}`}
+              label="Gym landing page"
+              copyLabel="Copy"
+              copiedLabel="Copied"
+              shareMessage="Check out our gym:"
+              shareLabel="Share on WhatsApp"
+              testid="onboard-landing"
+            />
+            <ShareableLink
+              path={`/${locale}/auth/login`}
+              label="Owner login page"
+              copyLabel="Copy"
+              copiedLabel="Copied"
+              testid="onboard-login"
+            />
+          </div>
         </div>
       ) : (
         <form action={onSubmit} className="mt-6 space-y-4" data-testid="onboard-form">

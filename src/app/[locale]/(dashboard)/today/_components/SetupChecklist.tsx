@@ -2,46 +2,34 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { getSetupChecklist, type SetupItemKey } from '@/lib/gym/setup-checklist'
-import {
-  Sparkles, Check, ChevronRight,
-  Building2, Palette, Dumbbell, Users, CalendarDays, CreditCard, Zap, DollarSign, UserPlus,
-} from 'lucide-react'
+import { getSetupMilestones } from '@/lib/gym/setup-checklist'
+import { Sparkles, Check, ChevronRight } from 'lucide-react'
 
 /**
- * ONBOARDING-CHECKLIST — the derived first-run setup card on /today. Shown only
- * while setup is INCOMPLETE (returns null once every applicable item is done), so
- * a configured gym never sees it. Each row deep-links to the page that completes
- * it. DS-1/2/3: neutral tokens flip in dark, crimson uses text-primary-foreground,
- * and spacing/chevron are RTL-correct via logical props.
+ * ONBOARDING-CHECKLIST → J1 SETUP-HUB summary. The /today card is now a COMPACT,
+ * derived progress summary that links to the full guided hub at /setup (six
+ * milestones), instead of the old inline item list. Still derived (no stored
+ * state) and still self-hiding once every milestone is done, so a configured gym
+ * never sees it. Dark + RTL safe via the neutral channel-var palette + logical
+ * direction handling.
  */
-// J4 CLASS-SURFACE: every item deep-links to the EXACT form that completes it —
-// coach → the Add-Coach form (not the roster), branding → the Settings Branding
-// section (gym tab + #branding anchor, distinct from the profile fields), class →
-// the Classes tab (the Add-Class wizard's home).
-const ITEM_META: Record<SetupItemKey, { icon: typeof Building2; href: (locale: string) => string }> = {
-  profile:    { icon: Building2,   href: (l) => `/${l}/settings` },
-  branding:   { icon: Palette,     href: (l) => `/${l}/settings?tab=gym#branding` },
-  discipline: { icon: Dumbbell,    href: (l) => `/${l}/disciplines` },
-  coach:      { icon: Users,       href: (l) => `/${l}/coaches/add` },
-  class:      { icon: CalendarDays, href: (l) => `/${l}/classes` },
-  plan:       { icon: CreditCard,  href: (l) => `/${l}/settings?tab=plans` },
-  ptpackage:  { icon: Zap,         href: (l) => `/${l}/settings?tab=ptpackages` },
-  exchange:   { icon: DollarSign,  href: (l) => `/${l}/settings?tab=rates` },
-  member:     { icon: UserPlus,    href: (l) => `/${l}/students/add` },
-}
-
 export async function SetupChecklist({ locale, gymId }: { locale: string; gymId: string }) {
   const supabase = await createClient()
-  const { items, doneCount, total, allDone } = await getSetupChecklist(supabase, gymId)
-  if (allDone) return null // hide once the gym is fully set up
+  const { milestones, doneCount, total, allDone } = await getSetupMilestones(supabase, gymId)
+  if (allDone) return null // hide once every milestone is done
 
   const t = await getTranslations('setupChecklist')
   const isRTL = locale === 'ar'
 
   return (
-    <div data-testid="setup-checklist" data-done={doneCount} data-total={total} dir={isRTL ? 'rtl' : 'ltr'}
-      className="rounded-2xl border border-[#cd1419]/20 bg-white p-4 shadow-sm">
+    <Link
+      href={`/${locale}/setup`}
+      data-testid="setup-checklist"
+      data-done={doneCount}
+      data-total={total}
+      dir={isRTL ? 'rtl' : 'ltr'}
+      className="block rounded-2xl border border-[#cd1419]/20 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50"
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[#cd1419]/10 text-primary-600">
@@ -54,28 +42,31 @@ export async function SetupChecklist({ locale, gymId }: { locale: string; gymId:
         </span>
       </div>
 
-      <ul className="mt-3 space-y-1">
-        {items.map((item) => {
-          const Icon = ITEM_META[item.key].icon
-          return (
-            <li key={item.key}>
-              <Link href={ITEM_META[item.key].href(locale)}
-                data-testid={`setup-item-${item.key}`} data-done={item.done}
-                className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-gray-50">
-                <span className={cn('flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full',
-                  item.done ? 'bg-green-600 text-primary-foreground' : 'border-2 border-gray-200 text-gray-400')}>
-                  {item.done ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3 w-3" />}
-                </span>
-                <span className={cn('flex-1 text-sm', isRTL && 'font-arabic',
-                  item.done ? 'text-gray-400 line-through' : 'text-gray-700')}>
-                  {t(`items.${item.key}`)}
-                </span>
-                {!item.done && <ChevronRight className={cn('h-4 w-4 flex-shrink-0 text-gray-300', isRTL && 'rotate-180')} />}
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        {/* six milestone dots — a compact, guided at-a-glance of the /setup hub */}
+        <div className="flex items-center gap-1.5">
+          {milestones.map((m) => (
+            <span
+              key={m.key}
+              data-testid={`setup-dot-${m.key}`}
+              data-done={m.done}
+              className={cn(
+                'flex h-5 w-5 items-center justify-center rounded-full',
+                m.done ? 'bg-green-600 text-primary-foreground' : 'border-2 border-gray-200',
+              )}
+            >
+              {m.done && <Check className="h-3 w-3" />}
+            </span>
+          ))}
+        </div>
+        <span
+          data-testid="setup-hub-link"
+          className={cn('flex flex-shrink-0 items-center gap-0.5 text-xs font-semibold text-primary-600', isRTL && 'font-arabic')}
+        >
+          {t('cta')}
+          <ChevronRight className={cn('h-4 w-4', isRTL && 'rotate-180')} />
+        </span>
+      </div>
+    </Link>
   )
 }

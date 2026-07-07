@@ -216,6 +216,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // J1 SETUP-HUB: the guided /setup hub. Hermetic — seeds its OWN fresh gym via
+      // service role (seed_e2e_wl_gym), logs in as its owner, asserts the six milestone
+      // cards render incomplete, service-role-flips one milestone (branding → the gym
+      // card) to done, and checks the /today summary links to /setup. Tears the gym
+      // down. Anchored with a leading slash (house style) so it never substring-collides.
+      name: 'setup-hub',
+      dependencies: ['setup'],
+      testMatch: /\/setup-hub\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PWA-MOBILE-UX: installed-mobile-PWA shell polish — NativeTabBar items scale
       // up on Pro-Max widths (#2); language switcher in Settings + the mobile More
       // menu, tail not clipped (#3). Opens its own Pro-Max-viewport owner context.
