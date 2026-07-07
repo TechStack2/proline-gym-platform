@@ -30,7 +30,7 @@ jobs:
       - name: Trigger the dunning sweep
         env:
           # STEP 1 — set these repo secrets. APP_URL defaults to the Railway prod host.
-          APP_URL: ${{ secrets.APP_URL || 'https://proline-gym-production.up.railway.app' }}
+          APP_URL: ${{ secrets.APP_URL || 'https://proline.up.railway.app' }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           if [ -z "${CRON_SECRET}" ]; then
