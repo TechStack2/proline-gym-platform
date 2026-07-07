@@ -1725,6 +1725,7 @@
   "setupChecklist": {
     "title": "Terminez la configuration de votre salle",
     "progress": "{done} sur {total} effectué",
+    "cta": "Continuer la configuration",
     "items": {
       "profile": "Ajoutez les coordonnées de votre salle",
       "branding": "Configurez votre page d'accueil et votre identité",
@@ -1734,6 +1735,61 @@
       "ptpackage": "Créez un forfait de coaching privé",
       "exchange": "Définissez le taux de change",
       "member": "Ajoutez votre premier membre"
+    }
+  },
+  "setupHub": {
+    "title": "Préparons votre salle",
+    "subtitle": "Quelques étapes rapides et vous êtes en ligne. Touchez une carte pour commencer.",
+    "progress": "{done} sur {total} effectué",
+    "doneChip": "Fait",
+    "done": {
+      "title": "Votre salle est prête",
+      "subtitle": "Toutes les étapes sont terminées — vous êtes prêt à gérer votre journée.",
+      "banner": "Bravo ! Votre salle est entièrement configurée et en ligne."
+    },
+    "milestones": {
+      "gym": {
+        "title": "Votre salle",
+        "desc": "Ajoutez vos coordonnées et une touche de votre marque.",
+        "cta": "Configurer votre salle"
+      },
+      "team": {
+        "title": "Votre équipe",
+        "desc": "Ajoutez les coachs qui animent vos cours et séances.",
+        "cta": "Ajouter un coach",
+        "bookable": "Vos coachs sont réservables pour le coaching privé.",
+        "notBookable": "Coachs ajoutés. Définissez leurs disponibilités pour que les membres puissent les réserver.",
+        "setAvailability": "Définir les disponibilités"
+      },
+      "classes": {
+        "title": "Vos cours",
+        "desc": "Créez un cours et ajoutez-le à l'emploi du temps hebdomadaire.",
+        "cta": "Ajouter un cours"
+      },
+      "offers": {
+        "title": "Vos offres",
+        "desc": "Configurez les abonnements et forfaits que vous vendez.",
+        "cta": "Ajouter un abonnement",
+        "ctaPt": "Ajouter un forfait PT"
+      },
+      "members": {
+        "title": "Vos membres",
+        "desc": "Ajoutez votre premier membre pour démarrer.",
+        "cta": "Ajouter un membre"
+      },
+      "golive": {
+        "title": "Mise en ligne",
+        "desc": "Partagez la page de votre salle et laissez les membres se connecter.",
+        "statusReady": "Vous êtes visible — partagez votre page largement !",
+        "statusPending": "Ajoutez votre identité et affichez un cours ou un coach sur votre page pour être en ligne.",
+        "landingLabel": "Votre page publique",
+        "loginLabel": "Connexion des membres",
+        "copy": "Copier",
+        "copied": "Copié",
+        "share": "Partager sur WhatsApp",
+        "shareText": "Découvrez notre salle — venez vous entraîner :",
+        "preview": "Ouvrir votre page"
+      }
     }
   },
   "today": {

@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { roleHomePath } from './role-home'
 import { isPlatformAdmin, VENDOR_HOME } from '@/lib/auth/platform-admin'
+import { getSetupMilestones } from '@/lib/gym/setup-checklist'
 
 export async function completeOnboarding(): Promise<{ ok: true; home: string } | { ok: false; error: string }> {
   const supabase = await createClient()
@@ -35,5 +36,19 @@ export async function completeOnboarding(): Promise<{ ok: true; home: string } |
   if (await isPlatformAdmin(supabase)) return { ok: true, home: VENDOR_HOME }
   const { data: roleRow } = await supabase
     .from('user_roles').select('role').eq('user_id', user.id).limit(1).maybeSingle()
-  return { ok: true, home: roleHomePath(roleRow?.role) }
+  const home = roleHomePath(roleRow?.role)
+
+  // J1 SETUP-HUB: send a freshly-onboarded OWNER into the guided setup hub while it's
+  // still incomplete — a new gym starts empty (the wizard no longer seeds), so this is
+  // the first-run funnel. Scoped to the owner only: receptionists run the front desk
+  // (/today), not setup, and coaches/members keep their own homes — "do not change
+  // other roles' home".
+  if (roleRow?.role === 'owner') {
+    const { data: prof } = await supabase.from('profiles').select('gym_id').eq('id', user.id).maybeSingle()
+    if (prof?.gym_id) {
+      const { allDone } = await getSetupMilestones(supabase, prof.gym_id)
+      if (!allDone) return { ok: true, home: '/setup' }
+    }
+  }
+  return { ok: true, home }
 }

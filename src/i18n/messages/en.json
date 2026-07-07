@@ -1725,6 +1725,7 @@
   "setupChecklist": {
     "title": "Finish setting up your gym",
     "progress": "{done} of {total} done",
+    "cta": "Continue setup",
     "items": {
       "profile": "Add your gym's contact details",
       "branding": "Set up your landing & branding",
@@ -1734,6 +1735,61 @@
       "ptpackage": "Create a PT package",
       "exchange": "Set the exchange rate",
       "member": "Add your first member"
+    }
+  },
+  "setupHub": {
+    "title": "Let's get your gym ready",
+    "subtitle": "A few quick steps and you're live. Tap any card to jump in.",
+    "progress": "{done} of {total} done",
+    "doneChip": "Done",
+    "done": {
+      "title": "Your gym is all set",
+      "subtitle": "Every milestone is complete — you're ready to run the day.",
+      "banner": "Nicely done! Your gym is fully set up and live."
+    },
+    "milestones": {
+      "gym": {
+        "title": "Your gym",
+        "desc": "Add your contact details and a splash of your brand.",
+        "cta": "Set up your gym"
+      },
+      "team": {
+        "title": "Your team",
+        "desc": "Add the coaches who run your classes and sessions.",
+        "cta": "Add a coach",
+        "bookable": "Your coaches are bookable for PT.",
+        "notBookable": "Coaches added. Set their availability so members can book them.",
+        "setAvailability": "Set availability"
+      },
+      "classes": {
+        "title": "Your classes",
+        "desc": "Create a class and add it to the weekly timetable.",
+        "cta": "Add a class"
+      },
+      "offers": {
+        "title": "Your offers",
+        "desc": "Set up the plans and packages you sell.",
+        "cta": "Add a plan",
+        "ctaPt": "Add a PT package"
+      },
+      "members": {
+        "title": "Your members",
+        "desc": "Add your first member to get rolling.",
+        "cta": "Add a member"
+      },
+      "golive": {
+        "title": "Go live",
+        "desc": "Share your gym's page and let members sign in.",
+        "statusReady": "You're visible — share your page far and wide!",
+        "statusPending": "Add branding and put a class or coach on your page to go live.",
+        "landingLabel": "Your public page",
+        "loginLabel": "Member login",
+        "copy": "Copy",
+        "copied": "Copied",
+        "share": "Share on WhatsApp",
+        "shareText": "Check out our gym — come train with us:",
+        "preview": "Open your page"
+      }
     }
   },
   "today": {
