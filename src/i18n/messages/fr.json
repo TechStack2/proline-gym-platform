@@ -32,7 +32,22 @@
     "signInPlatform": "Connexion à la plateforme",
     "demoAccounts": "Comptes de démonstration",
     "demoPassword": "Mot de passe pour tous les comptes :",
-    "emailOrPhoneLabel": "Email ou téléphone"
+    "emailOrPhoneLabel": "Email ou téléphone",
+    "forgotPassword": "Mot de passe oublié ?",
+    "forgotTitle": "Réinitialiser le mot de passe",
+    "forgotSubtitle": "Saisissez votre e-mail et nous vous enverrons un lien de réinitialisation.",
+    "forgotSent": "Si un compte existe pour cet e-mail, un lien de réinitialisation arrive. Vérifiez votre boîte de réception.",
+    "forgotSubmit": "Envoyer le lien",
+    "resetTitle": "Définir un nouveau mot de passe",
+    "resetSubtitle": "Choisissez un nouveau mot de passe pour votre compte.",
+    "resetNewLabel": "Nouveau mot de passe",
+    "resetConfirmLabel": "Confirmer le mot de passe",
+    "resetTooShort": "Utilisez au moins 10 caractères.",
+    "resetMismatch": "Les mots de passe ne correspondent pas.",
+    "resetSubmit": "Mettre à jour",
+    "resetDone": "Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter.",
+    "resetError": "Impossible de mettre à jour votre mot de passe. Le lien a peut-être expiré — demandez-en un nouveau.",
+    "resetInvalid": "Ce lien est invalide ou a expiré. Demandez-en un nouveau depuis la page de connexion."
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -1806,7 +1821,8 @@
         "copied": "Copié",
         "share": "Partager sur WhatsApp",
         "shareText": "Découvrez notre salle — venez vous entraîner :",
-        "preview": "Ouvrir votre page"
+        "preview": "Ouvrir votre page",
+        "manage": "Gérer ce qui est public"
       }
     }
   },
@@ -3087,5 +3103,32 @@
       "cancel": "Annuler",
       "suspendFailed": "Impossible de mettre à jour la salle. Réessayez."
     }
+  },
+  "publish": {
+    "title": "Publier et mettre en ligne",
+    "subtitle": "Choisissez ce qui apparaît sur votre site public, puis partagez le lien.",
+    "backToSetup": "Retour à la configuration",
+    "coachFallback": "Coach",
+    "statusTitle": "Ce que montre votre page publique",
+    "statClasses": "Cours",
+    "statCoaches": "Coachs",
+    "statPlans": "Forfaits",
+    "statPt": "Forfaits PT",
+    "classesTitle": "Cours",
+    "classesHint": "Activez un cours pour l'afficher dans votre horaire public.",
+    "noClasses": "Aucun cours actif pour le moment.",
+    "coachesTitle": "Coachs",
+    "coachesHint": "Activez un coach pour l’afficher sur votre site public.",
+    "noCoaches": "Aucun coach actif pour le moment.",
+    "visible": "Visible",
+    "hidden": "Masqué",
+    "linksTitle": "Partagez votre salle",
+    "landingLabel": "Votre site public",
+    "loginLabel": "Connexion membre",
+    "copy": "Copier",
+    "copied": "Copié",
+    "shareText": "Découvrez notre salle :",
+    "share": "Partager",
+    "preview": "Ouvrir votre page"
   }
 }

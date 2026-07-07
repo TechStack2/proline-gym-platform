@@ -238,6 +238,11 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
                 {golive.done ? t('milestones.golive.statusReady') : t('milestones.golive.statusPending')}
               </p>
 
+              {/* J6 — the go-live panel: per-class/coach visibility + the share links. */}
+              <div className="mt-3">
+                <Cta href={`/${locale}/publish`} label={t('milestones.golive.manage')} testid="milestone-golive-cta" isRTL={isRTL} />
+              </div>
+
               {slug && (
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <ShareableLink

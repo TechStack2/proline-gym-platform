@@ -263,6 +263,17 @@ export default function LoginPage({ params }: Props) {
             </div>
           </div>
 
+          {/* J6 — forgot-password entry (platform-wide gap, ships with go-live) */}
+          <div className={cn('flex', isRTL ? 'justify-start' : 'justify-end')}>
+            <Link
+              href={`/${locale}/auth/forgot`}
+              data-testid="forgot-password-link"
+              className="text-sm font-medium text-primary-600 hover:underline"
+            >
+              {t('forgotPassword')}
+            </Link>
+          </div>
+
           {error && (
             <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
               {error}

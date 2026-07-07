@@ -227,6 +227,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // J6 GO-LIVE-PANEL: the /publish page (owner/head_coach). Toggles a seeded
+      // class's landing visibility and proves the anon ?gym= landing reflects it
+      // (get_landing_schedule's show_on_landing gate) both via the definer RPC and
+      // the rendered page, flips + persists a coach toggle, checks the share-links
+      // panel, and smokes the platform-wide forgot-password → generic success. Runs
+      // on the per-worker seed gym; restores the seed baseline. Anchored (leading
+      // slash) so it never substring-collides.
+      name: 'publish',
+      dependencies: ['setup'],
+      testMatch: /\/publish\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PWA-MOBILE-UX: installed-mobile-PWA shell polish — NativeTabBar items scale
       // up on Pro-Max widths (#2); language switcher in Settings + the mobile More
       // menu, tail not clipped (#3). Opens its own Pro-Max-viewport owner context.

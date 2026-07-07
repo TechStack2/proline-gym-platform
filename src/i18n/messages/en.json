@@ -24,7 +24,7 @@
     "loginSuccess": "Login successful",
     "loginError": "An error occurred during login",
     "tooManyAttempts": "Too many attempts — please wait a minute and try again",
-    "backToLogin": "Back to Login",
+    "backToLogin": "Back to login",
     "emailLabel": "Email Address",
     "passwordLabel": "Password",
     "errEmailPassword": "Please enter email and password",
@@ -32,7 +32,22 @@
     "signInPlatform": "Sign in to the platform",
     "demoAccounts": "Demo Accounts",
     "demoPassword": "Password for all accounts:",
-    "emailOrPhoneLabel": "Email or phone"
+    "emailOrPhoneLabel": "Email or phone",
+    "forgotPassword": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotSubtitle": "Enter your email and we'll send you a reset link.",
+    "forgotSent": "If an account exists for that email, a reset link is on its way. Check your inbox.",
+    "forgotSubmit": "Send reset link",
+    "resetTitle": "Set a new password",
+    "resetSubtitle": "Choose a new password for your account.",
+    "resetNewLabel": "New password",
+    "resetConfirmLabel": "Confirm password",
+    "resetTooShort": "Use at least 10 characters.",
+    "resetMismatch": "Passwords don't match.",
+    "resetSubmit": "Update password",
+    "resetDone": "Your password has been updated. You can now sign in.",
+    "resetError": "We couldn't update your password. The link may have expired — request a new one.",
+    "resetInvalid": "This reset link is invalid or has expired. Request a new one from the login page."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -1806,7 +1821,8 @@
         "copied": "Copied",
         "share": "Share on WhatsApp",
         "shareText": "Check out our gym — come train with us:",
-        "preview": "Open your page"
+        "preview": "Open your page",
+        "manage": "Manage what's public"
       }
     }
   },
@@ -3087,5 +3103,32 @@
       "cancel": "Cancel",
       "suspendFailed": "Couldn't update the gym. Please try again."
     }
+  },
+  "publish": {
+    "title": "Publish & go live",
+    "subtitle": "Choose what shows on your public website, then share the link.",
+    "backToSetup": "Back to setup",
+    "coachFallback": "Coach",
+    "statusTitle": "What your public page shows",
+    "statClasses": "Classes",
+    "statCoaches": "Coaches",
+    "statPlans": "Plans",
+    "statPt": "PT packages",
+    "classesTitle": "Classes",
+    "classesHint": "Turn a class on to show it in your public schedule.",
+    "noClasses": "No active classes yet.",
+    "coachesTitle": "Coaches",
+    "coachesHint": "Turn a coach on to show them on your public website.",
+    "noCoaches": "No active coaches yet.",
+    "visible": "Visible",
+    "hidden": "Hidden",
+    "linksTitle": "Share your gym",
+    "landingLabel": "Your public website",
+    "loginLabel": "Member login",
+    "copy": "Copy",
+    "copied": "Copied",
+    "shareText": "Check out our gym:",
+    "share": "Share",
+    "preview": "Open your landing"
   }
 }
