@@ -274,7 +274,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           coachId={coach.id}
           locale={locale}
           name={[firstName, lastName].filter(Boolean).join(' ').trim() || (profile?.first_name_en ?? '')}
-          avatarUrl={storagePublicUrl('avatars', profile?.avatar_url) || null}
+          avatarUrl={storagePublicUrl('avatars', profile?.avatar_url, profile?.updated_at) || null}
           gymId={coach.gym_id}
           profileId={user.id}
           draftPhotoUrl={draftPhotoUrl}

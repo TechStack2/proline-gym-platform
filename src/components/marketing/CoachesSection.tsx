@@ -18,6 +18,10 @@ type LandingCoach = {
   specialization_ar: string | null; specialization_en: string | null; specialization_fr: string | null;
   bio_ar: string | null; bio_en: string | null; bio_fr: string | null;
   landing_status: string;
+  // AVATAR-VERSION: profiles.updated_at (bumped on the publish avatar UPDATE) — the
+  // read-time cache-buster so a coach-photo RE-publish (same storage path) isn't
+  // served stale by the CDN.
+  updated_at: string | null;
 };
 
 const pick = (row: any, base: string, locale: string): string =>
@@ -86,7 +90,7 @@ export async function CoachesSection({ locale, gymSlug }: CoachesSectionProps) {
                   )}>
                     {c.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={storagePublicUrl('avatars', c.avatar_url)} alt={name} className={cn('h-full w-full object-cover', comingSoon && 'grayscale')} />
+                      <img src={storagePublicUrl('avatars', c.avatar_url, c.updated_at)} alt={name} className={cn('h-full w-full object-cover', comingSoon && 'grayscale')} />
                     ) : (
                       <span className="text-3xl font-extrabold text-primary-300">{initials(name)}</span>
                     )}
