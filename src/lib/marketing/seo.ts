@@ -60,12 +60,16 @@ export async function getLandingMeta(
 
   // OG image: the gym's hero (or logo) when set, else the committed default card.
   // width/height 1200×630 are only truthful for that committed asset.
-  // AVATAR-PATHS: a set logo_url is a stored bucket path → resolve to an absolute
-  // URL (hero_image_url is free-text http, OG_IMAGE_PATH is a '/…' asset → both
-  // pass through storagePublicUrl unchanged, so the default branch is byte-identical).
+  // AVATAR-PATHS: hero_image_url is a gym-landing path (J5), logo_url an avatars path —
+  // resolve each against ITS bucket. A pasted absolute URL or a '/…' asset passes
+  // through storagePublicUrl unchanged, so the default/passthrough branches are stable.
   const ogImagePath = isDefault
     ? OG_IMAGE_PATH
-    : storagePublicUrl('avatars', gym?.hero_image_url || gym?.logo_url || OG_IMAGE_PATH);
+    : gym?.hero_image_url
+      ? storagePublicUrl('gym-landing', gym.hero_image_url)
+      : gym?.logo_url
+        ? storagePublicUrl('avatars', gym.logo_url)
+        : OG_IMAGE_PATH;
   const ogImages =
     ogImagePath === OG_IMAGE_PATH
       ? [{ url: OG_IMAGE_PATH, width: 1200, height: 630, alt: ogAlt }]

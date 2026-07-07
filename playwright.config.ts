@@ -689,6 +689,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // J5 SETTINGS-REFIT: the regrouped gym form's NEW closed-set pickers (currency
+      // chips + searchable timezone) + hero UPLOAD to the gym-landing bucket (relative
+      // path), and that a relative hero path resolves via that bucket at the landing
+      // og:image. Hermetic own gym. Anchored (leading slash) so it never collides.
+      name: 'settings-refit',
+      dependencies: ['setup'],
+      testMatch: /\/settings-refit\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // DOUBLE-SHELL: the staff dashboard mounts every page ONCE (single responsive
       // shell). Asserts DOM-wide COUNTS (one main, one mounted bell, one
       // #pay-amount-usd on invoice detail) on desktop AND mobile viewports.

@@ -100,15 +100,37 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
       </div>
       {error && <p data-testid="ptpkg-error" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
 
-      {/* Add row */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Input data-testid="ptpkg-add-en" placeholder={t('nameEn')} value={add.en} onChange={(e) => setAdd((p) => ({ ...p, en: e.target.value }))} className="h-9 w-36" />
-        <Input data-testid="ptpkg-add-ar" dir="rtl" placeholder={t('nameAr')} value={add.ar} onChange={(e) => setAdd((p) => ({ ...p, ar: e.target.value }))} className="h-9 w-32" />
-        <Input data-testid="ptpkg-add-fr" placeholder={t('nameFr')} value={add.fr} onChange={(e) => setAdd((p) => ({ ...p, fr: e.target.value }))} className="h-9 w-32" />
-        <Input data-testid="ptpkg-add-sessions" type="number" min="1" placeholder={t('sessions')} value={add.sessions} onChange={(e) => setAdd((p) => ({ ...p, sessions: e.target.value }))} className="h-9 w-24" />
-        <Input data-testid="ptpkg-add-price" type="number" min="0" step="0.01" placeholder={t('priceUsd')} value={add.price} onChange={(e) => setAdd((p) => ({ ...p, price: e.target.value }))} className="h-9 w-24" />
-        <Input data-testid="ptpkg-add-validity" type="number" min="1" placeholder={t('validityDays')} value={add.validity} onChange={(e) => setAdd((p) => ({ ...p, validity: e.target.value }))} className="h-9 w-24" />
-        <Button size="sm" data-testid="ptpkg-add-btn" disabled={busy} onClick={create} className="bg-[#cd1419] hover:bg-[#a81014]">
+      {/* Add row — J5: persistent labels in a grid (was placeholder-only + wrapping). */}
+      <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className="block">
+            <span className="mb-1 block text-2xs font-medium text-gray-500">{t('nameEn')}</span>
+            <Input data-testid="ptpkg-add-en" value={add.en} onChange={(e) => setAdd((p) => ({ ...p, en: e.target.value }))} className="h-9 w-full" />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-2xs font-medium text-gray-500">{t('nameAr')}</span>
+            <Input data-testid="ptpkg-add-ar" dir="rtl" value={add.ar} onChange={(e) => setAdd((p) => ({ ...p, ar: e.target.value }))} className="h-9 w-full" />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-2xs font-medium text-gray-500">{t('nameFr')}</span>
+            <Input data-testid="ptpkg-add-fr" value={add.fr} onChange={(e) => setAdd((p) => ({ ...p, fr: e.target.value }))} className="h-9 w-full" />
+          </label>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <label className="block">
+            <span className="mb-1 block text-2xs font-medium text-gray-500">{t('sessions')}</span>
+            <Input data-testid="ptpkg-add-sessions" type="number" min="1" value={add.sessions} onChange={(e) => setAdd((p) => ({ ...p, sessions: e.target.value }))} className="h-9 w-full" />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-2xs font-medium text-gray-500">{t('priceUsd')}</span>
+            <Input data-testid="ptpkg-add-price" type="number" min="0" step="0.01" value={add.price} onChange={(e) => setAdd((p) => ({ ...p, price: e.target.value }))} className="h-9 w-full" />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-2xs font-medium text-gray-500">{t('validityDays')}</span>
+            <Input data-testid="ptpkg-add-validity" type="number" min="1" value={add.validity} onChange={(e) => setAdd((p) => ({ ...p, validity: e.target.value }))} className="h-9 w-full" />
+          </label>
+        </div>
+        <Button size="sm" data-testid="ptpkg-add-btn" disabled={busy} onClick={create} className="w-full bg-[#cd1419] hover:bg-[#a81014] sm:w-auto">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="me-1 h-4 w-4" />} {t('add')}
         </Button>
       </div>
