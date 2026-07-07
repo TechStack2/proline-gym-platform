@@ -148,9 +148,13 @@ test('ADM-1 · coach lifecycle: repaired add → wizard chips → warn-on-assign
     await vis(owner.page, '[data-testid="coach-bio-en"]').fill('ADM-1 e2e coach');
     await vis(owner.page, '[data-testid="wizard-next"]').click();
     await vis(owner.page, '[data-testid="wizard-submit"]').click();
-    // J3 PT-GUARDS: a NEW coach now lands on their availability panel (the guided
-    // next step — members can't book PT until it's set), not the roster. Assert we
-    // reached the new coach's page, then open the roster to check the card.
+    // J2 COACH-UNIFY: the unified add-coach flow ends on the post-create panel
+    // (credentials when a login is granted + inline availability). ADM-1 keeps the
+    // login OFF (default) and skips availability via "Done" → lands on the new coach
+    // (subsumes the J3 "guide to availability" redirect).
+    await expect(vis(owner.page, '[data-testid="coach-created-panel"]').first(), 'the post-create panel appears')
+      .toBeVisible({ timeout: 15_000 });
+    await vis(owner.page, '[data-testid="coach-created-done"]').click();
     await expect(owner.page).toHaveURL(/\/en\/coaches\/[0-9a-f-]{36}/, { timeout: 15_000 });
     await owner.page.goto('/en/coaches');
     await expect(vis(owner.page, '[data-testid="coach-card"]').filter({ hasText: COACH_NAME }).first())

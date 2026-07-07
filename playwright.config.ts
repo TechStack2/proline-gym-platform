@@ -509,6 +509,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // J2 COACH-UNIFY: the unified add-coach flow (Who → Login? → inline
+      // Availability). Hermetic own gym; proves the login toggle ON yields a working
+      // coach login and setting availability makes the coach bookable. Anchored with
+      // a leading slash so it never substring-collides.
+      name: 'coach-unify',
+      dependencies: ['setup'],
+      testMatch: /\/coach-unify\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // B3 (family/household): guardian switcher → request-for-kid → payer
       // invoice → household billing → desk payment + the RLS negative.
       // Switches roles internally (owner + parent).

@@ -25,6 +25,9 @@ import { cn } from '@/lib/utils'
 import { Camera } from 'lucide-react'
 import { AvatarUpload, uploadAvatar } from '@/components/shared/avatar-upload'
 import { FormWizard } from '@/components/shared/form-wizard'
+import { inviteToPortal } from '@/lib/provisioning/invite'
+import { CoachCreatedPanel } from './coach-created-panel'
+import type { InviteResult } from '@/components/shared/invite-button'
 
 type DisciplineRow = { id: string; name_ar: string; name_en: string; name_fr: string }
 
@@ -77,6 +80,11 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
   // ADM-2: on ADD there's no profile id yet — stash the picked photo and upload
   // it right after the profiles insert (edit mode uploads immediately).
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null)
+  // J2 COACH-UNIFY: the "Login?" toggle + the post-create hand-off. Once `created`
+  // is set the wizard yields to <CoachCreatedPanel> (credentials + inline
+  // availability); the create path is terminal so a re-submit can't duplicate.
+  const [giveAccess, setGiveAccess] = useState(false)
+  const [created, setCreated] = useState<{ coachId: string; gymId: string; name: string; invite: InviteResult | null } | null>(null)
 
   const [firstEn, setFirstEn] = useState(initialData?.first_name_en ?? '')
   const [lastEn, setLastEn] = useState(initialData?.last_name_en ?? '')
@@ -102,6 +110,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
     setError(null)
     if (!firstEn.trim()) { setError(t('errNameRequired')); return }
     if (selected.length === 0) { setError(t('errSpecialtyRequired')); return }
+    if (!initialData && giveAccess && !phone.trim()) { setError(t('addPhoneForAccess')); return }
     setLoading(true)
 
     try {
@@ -128,43 +137,52 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
         bio_fr: bioFr.trim() || null,
       }
 
-      // J3 PT-GUARDS: on a NEW coach, land the desk straight on that coach's
-      // availability panel (members can't book PT until it's set) — the guided
-      // next step, instead of the anonymous coaches list.
-      let createdCoachId: string | null = null
       if (initialData) {
         const { error: pErr } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profileId)
         if (pErr) throw pErr
         const { error: cErr } = await supabase.from('coaches').update(coachPayload).eq('id', initialData.coachId)
         if (cErr) throw cErr
-      } else {
-        // Login-less identity (000018): profiles.id defaults to gen_random_uuid().
-        const { data: { user } } = await supabase.auth.getUser()
-        const { data: prof } = await supabase.from('profiles').select('gym_id').eq('id', user?.id ?? '').single()
-        if (!prof?.gym_id) throw new Error(t('errNoGym'))
-        const { data: newProfile, error: pErr } = await supabase
-          .from('profiles')
-          .insert({ gym_id: prof.gym_id, ...profilePayload })
-          .select('id')
-          .single()
-        if (pErr) throw pErr
-        const { data: newCoach, error: cErr } = await supabase
-          .from('coaches')
-          .insert({ profile_id: newProfile.id, gym_id: prof.gym_id, is_active: true, ...coachPayload })
-          .select('id')
-          .single()
-        if (cErr) throw cErr
-        createdCoachId = newCoach?.id ?? null
-        if (pendingPhoto) {
-          // Best-effort: a failed photo upload must not lose the saved coach.
-          try { await uploadAvatar(prof.gym_id, newProfile.id, pendingPhoto) } catch { /* noop */ }
-        }
+        router.push(`/${locale}/coaches`)
+        router.refresh()
+        return
       }
 
-      // New coach → deep-link to their availability panel (the guided next step);
-      // edits return to the roster as before.
-      router.push(createdCoachId ? `/${locale}/coaches/${createdCoachId}#panel-availability` : `/${locale}/coaches`)
-      router.refresh()
+      // ── Add: one login-less identity (000018: profiles.id defaults gen_random_uuid). ──
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: prof } = await supabase.from('profiles').select('gym_id').eq('id', user?.id ?? '').single()
+      if (!prof?.gym_id) throw new Error(t('errNoGym'))
+      const { data: newProfile, error: pErr } = await supabase
+        .from('profiles')
+        .insert({ gym_id: prof.gym_id, ...profilePayload })
+        .select('id')
+        .single()
+      if (pErr) throw pErr
+      const { data: newCoach, error: cErr } = await supabase
+        .from('coaches')
+        .insert({ profile_id: newProfile.id, gym_id: prof.gym_id, is_active: true, ...coachPayload })
+        .select('id')
+        .single()
+      if (cErr) throw cErr
+      if (pendingPhoto) {
+        // Best-effort: a failed photo upload must not lose the saved coach.
+        try { await uploadAvatar(prof.gym_id, newProfile.id, pendingPhoto) } catch { /* noop */ }
+      }
+
+      // "Login?" ON → adopt THIS profile into a real login via the SAME provisioning
+      // path as staff-invite (inviteToPortal — never a fork). The login attaches to
+      // the coaches row we just created: ONE identity, never a duplicate.
+      let invite: InviteResult | null = null
+      if (giveAccess) {
+        const res = await inviteToPortal({ coachId: newCoach.id })
+        if (res.ok) invite = { tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName }
+        else console.error('[coach-unify] invite failed:', res.error) // coach exists — upgrade later from Coach-360
+      }
+
+      // Hand off to the post-create phase (credentials + inline availability — the
+      // J3 "guide them to availability" step, now inline). The create is TERMINAL:
+      // no redirect and no re-submit (a re-submit would duplicate the identity).
+      setCreated({ coachId: newCoach.id, gymId: prof.gym_id, name: `${firstEn.trim()} ${lastEn.trim()}`.trim(), invite })
+      setLoading(false)
     } catch (err: any) {
       setError(err?.message || t('errSaveFailed'))
       setLoading(false)
@@ -241,21 +259,79 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
         </div>
       ),
     },
-    {
-      key: 'review',
-      title: t('stepReview'),
-      content: (
-        <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-700" data-testid="coach-review">
-          {error && (
-            <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
-          )}
-          <p className="font-semibold text-gray-900">{firstEn} {lastEn}</p>
-          {phone && <p dir="ltr">{phone}</p>}
-          <p>{disciplines.filter((d) => selected.includes(d.id)).map(dName).join(SEP) || '—'}</p>
-        </div>
-      ),
-    },
+    initialData
+      ? {
+          key: 'review',
+          title: t('stepReview'),
+          content: (
+            <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-700" data-testid="coach-review">
+              {error && (
+                <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+              )}
+              <p className="font-semibold text-gray-900">{firstEn} {lastEn}</p>
+              {phone && <p dir="ltr">{phone}</p>}
+              <p>{disciplines.filter((d) => selected.includes(d.id)).map(dName).join(SEP) || '—'}</p>
+            </div>
+          ),
+        }
+      : {
+          // J2 COACH-UNIFY: "Login?" — one clear toggle. ON adopts the coach into a
+          // real app login (same provisioning path as staff-invite); OFF keeps the
+          // login-less identity the desk manages on their behalf.
+          key: 'login',
+          title: t('stepLogin'),
+          valid: !giveAccess || phone.trim() !== '',
+          content: (
+            <div className="space-y-3">
+              {error && (
+                <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+              )}
+              <div className="rounded-xl border border-gray-200 p-3">
+                <p className={cn('text-sm font-medium text-gray-900', isRTL && 'font-arabic')}>
+                  {t('giveAccessLabel', { name: firstEn.trim() || t('thisCoach') })}
+                </p>
+                <p className={cn('mt-0.5 text-xs text-gray-500', isRTL && 'font-arabic')}>
+                  {giveAccess ? t('giveAccessOn') : t('giveAccessOff', { name: firstEn.trim() || t('thisCoach') })}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button type="button" data-testid="coach-access-yes" data-active={giveAccess}
+                    onClick={() => setGiveAccess(true)}
+                    className={cn('flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                      giveAccess ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                    {t('accessYes')}
+                  </button>
+                  <button type="button" data-testid="coach-access-no" data-active={!giveAccess}
+                    onClick={() => setGiveAccess(false)}
+                    className={cn('flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                      !giveAccess ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                    {t('accessNo')}
+                  </button>
+                </div>
+                {giveAccess && phone.trim() === '' && (
+                  <p data-testid="coach-access-needs-phone" className={cn('mt-2 text-xs text-amber-600', isRTL && 'font-arabic')}>
+                    {t('addPhoneForAccess')}
+                  </p>
+                )}
+              </div>
+            </div>
+          ),
+        },
   ]
+
+  // J2 COACH-UNIFY: a successful create hands off to the post-create phase
+  // (credentials when a login was granted + inline availability). Terminal — the
+  // wizard is gone, so a stray re-submit can't create a second identity.
+  if (created) {
+    return (
+      <CoachCreatedPanel
+        coachId={created.coachId}
+        gymId={created.gymId}
+        coachName={created.name}
+        locale={locale}
+        inviteResult={created.invite}
+      />
+    )
+  }
 
   return (
     <FormWizard
@@ -264,7 +340,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
       title={initialData ? t('editTitle') : t('addTitle')}
       steps={steps}
       onSubmit={handleSubmit}
-      submitLabel={initialData ? t('save') : t('save')}
+      submitLabel={initialData ? t('save') : t('createCoach')}
       busy={loading}
       locale={locale}
       testid="coach-form"

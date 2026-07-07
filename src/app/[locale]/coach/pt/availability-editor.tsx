@@ -19,12 +19,15 @@ import { Plus, Trash2, CalendarOff, CalendarPlus, Loader2 } from 'lucide-react'
 export type AvailabilityRow = { id: string; day_of_week: number; start_time: string; end_time: string; is_active: boolean }
 export type OverrideRow = { id: string; date: string; kind: 'block' | 'extra'; start_time: string | null; end_time: string | null }
 
-export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale }: {
+export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale, onChanged }: {
   coachId: string
   gymId: string
   windows: AvailabilityRow[]
   overrides: OverrideRow[]
   locale: string
+  /** J2 COACH-UNIFY: optional hook so a client-fed embed (the add-coach wizard) can
+   *  re-fetch its own window list after a write. Coach-360/coach-pt omit it → no-op. */
+  onChanged?: () => void
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('ptBooking.editor')
@@ -48,7 +51,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale 
     const { error } = await fn()
     setBusy(false)
     if (error) { console.error('[availability-editor]', error); toast.error(tc('genericError')) } // ERROR-HARDEN
-    else router.refresh()
+    else { router.refresh(); onChanged?.() }
   }
 
   const addWindow = () =>
