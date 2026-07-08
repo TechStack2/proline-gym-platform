@@ -1242,7 +1242,9 @@
       "exchangeRates": "Taux de change",
       "membershipPlans": "Abonnements",
       "disciplinesBelts": "Disciplines & Ceintures",
-      "ptPackages": "Forfaits PT"
+      "ptPackages": "Forfaits PT",
+      "personalTraining": "Coaching personnel",
+      "comms": "Messagerie et documents"
     },
     "gym": {
       "noData": "Aucune donnée de salle trouvée",
@@ -1287,7 +1289,9 @@
       "enterArabicName": "Entrez le nom arabe",
       "enterEnglishName": "Entrez le nom anglais",
       "enterFrenchName": "Entrez le nom français",
-      "unnamed": "PRO LINE Gym"
+      "unnamed": "PRO LINE Gym",
+      "interfaceLanguage": "Langue de l'interface",
+      "interfaceLanguageHint": "Cet appareil uniquement — définit votre langue d'affichage, pas un réglage global du club."
     },
     "exchange": {
       "currentRate": "Taux de change actuel",
@@ -1380,7 +1384,8 @@
       "preset90": "Trimestriel",
       "preset180": "6 mois",
       "preset365": "Annuel",
-      "reviewDuration": "{days} jours"
+      "reviewDuration": "{days} jours",
+      "archived": "Archivé"
     },
     "beltLadder": {
       "title": "Échelles de ceintures",

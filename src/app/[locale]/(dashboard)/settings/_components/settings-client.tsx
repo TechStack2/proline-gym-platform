@@ -3,13 +3,18 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { Building2, TrendingUp, CreditCard, Swords, Dumbbell } from 'lucide-react';
+import { Building2, TrendingUp, CreditCard, Swords, Dumbbell, MessageSquare } from 'lucide-react';
 import { GymSettings } from './gym-settings';
 import { ExchangeRates } from './exchange-rates';
 import { DisciplineManager } from './discipline-manager';
 import { PlanManager } from './plan-manager';
 import { BeltLadderManager } from './belt-ladder-manager';
 import { PtPackageManager, type PtTypeRow } from './pt-package-manager';
+import { PtPolicySettings } from './pt-policy-settings';
+import { WhatsAppSettings } from './whatsapp-settings';
+import { type WhatsAppStatus } from './whatsapp-actions';
+import { WaiverSettings } from './waiver-settings';
+import { type WaiverTemplate } from './waiver-actions';
 
 type GymData = Parameters<typeof GymSettings>[0]['gym'];
 type ExchangeRate = Parameters<typeof ExchangeRates>[0]['rates'][number];
@@ -20,7 +25,12 @@ type ExchangeRate = Parameters<typeof ExchangeRates>[0]['rates'][number];
 type MembershipPlan = Record<string, unknown>;
 type Discipline = Record<string, unknown>;
 
-type TabId = 'gym' | 'rates' | 'plans' | 'disciplines' | 'ptpackages';
+// J5b SETTINGS-IA: one coherent page — every card lives in exactly ONE tab. `comms`
+// (Messaging & Docs) is new; it homes the WhatsApp + waiver cards that used to render
+// under EVERY tab. PT Session Policy moved under the ptpackages tab; the interface-
+// language switcher into Gym Profile. Preserved ids gym/rates/plans/disciplines/
+// ptpackages keep the checklist + setup-hub deep-links working.
+type TabId = 'gym' | 'rates' | 'plans' | 'disciplines' | 'ptpackages' | 'comms';
 
 type Props = {
   locale: string;
@@ -29,15 +39,26 @@ type Props = {
   plans: MembershipPlan[];
   disciplines: Discipline[];
   ptTypes: PtTypeRow[];
+  // The WhatsApp + waiver cards now render inside the comms tab (page.tsx still
+  // fetches both in its parallel wave and threads them here).
+  whatsappStatus: WhatsAppStatus;
+  waiverTemplate: WaiverTemplate;
+  // PT Session Policy (ptpackages tab) — the two fields ride on the gyms row.
+  ptNoShowForfeits: boolean;
+  ptLateCancelWindowHours: number;
   /** NO-MEMBERSHIP-GAPS: false hides the membership-plans tab entirely. */
   showMembership?: boolean;
 };
 
-export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes, initialTab, showMembership = true }: Props & { initialTab?: string }) {
+export function SettingsClient({
+  locale, gym, rates, plans, disciplines, ptTypes, initialTab,
+  whatsappStatus, waiverTemplate, ptNoShowForfeits, ptLateCancelWindowHours,
+  showMembership = true,
+}: Props & { initialTab?: string }) {
   const t = useTranslations('settings');
   // NO-MEMBERSHIP-GAPS: with membership off, the plans tab neither renders nor is
   // deep-linkable (?tab=plans falls back to gym).
-  const availableTabs: TabId[] = (['gym', 'rates', 'plans', 'disciplines', 'ptpackages'] as TabId[])
+  const availableTabs: TabId[] = (['gym', 'rates', 'plans', 'disciplines', 'ptpackages', 'comms'] as TabId[])
     .filter((tab) => tab !== 'plans' || showMembership);
   const [activeTab, setActiveTab] = useState<TabId>(
     availableTabs.includes(initialTab as TabId) ? (initialTab as TabId) : 'gym'
@@ -49,7 +70,8 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
     rates: t('tabs.exchangeRates'),
     plans: t('tabs.membershipPlans'),
     disciplines: t('tabs.disciplinesBelts'),
-    ptpackages: t('tabs.ptPackages'),
+    ptpackages: t('tabs.personalTraining'),
+    comms: t('tabs.comms'),
   };
 
   const TAB_ICONS: Record<TabId, React.ReactNode> = {
@@ -58,13 +80,14 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
     plans: <CreditCard className="h-4 w-4" />,
     disciplines: <Swords className="h-4 w-4" />,
     ptpackages: <Dumbbell className="h-4 w-4" />,
+    comms: <MessageSquare className="h-4 w-4" />,
   };
 
   const tabIds: TabId[] = availableTabs;
 
   return (
     <div className="space-y-4">
-      {/* Tab Bar */}
+      {/* Tab Bar — the ONLY navigation for settings (J5b: the quick-chips row is gone). */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto">
         {tabIds.map(tab => (
           <button
@@ -85,7 +108,7 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
         ))}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content — exactly one home per card */}
       <div>
         {activeTab === 'gym' && <GymSettings gym={gym} locale={locale} />}
         {activeTab === 'rates' && <ExchangeRates rates={rates} locale={locale} />}
@@ -93,13 +116,29 @@ export function SettingsClient({ locale, gym, rates, plans, disciplines, ptTypes
           <PlanManager plans={plans as any} gymId={gym.id} locale={locale} />
         )}
         {activeTab === 'ptpackages' && gym?.id && (
-          <PtPackageManager types={ptTypes} disciplines={(disciplines as any[]).filter((d: any) => d.is_active !== false)} gymId={gym.id} locale={locale} />
+          <div className="space-y-4">
+            <PtPackageManager types={ptTypes} disciplines={(disciplines as any[]).filter((d: any) => d.is_active !== false)} gymId={gym.id} locale={locale} />
+            {/* PT Session Policy — re-homed here (was rendered under every tab). */}
+            <PtPolicySettings
+              locale={locale}
+              gymId={gym.id}
+              noShowForfeits={ptNoShowForfeits}
+              lateCancelWindowHours={ptLateCancelWindowHours}
+            />
+          </div>
         )}
         {activeTab === 'disciplines' && (
           <>
             {gym?.id && <DisciplineManager disciplines={disciplines as any} gymId={gym.id} locale={locale} />}
             <BeltLadderManager disciplines={disciplines as any} locale={locale} />
           </>
+        )}
+        {activeTab === 'comms' && (
+          <div className="space-y-4">
+            {/* Messaging & Docs — WhatsApp config + the liability waiver, re-homed here. */}
+            <WhatsAppSettings initial={whatsappStatus} locale={locale} />
+            <WaiverSettings initial={waiverTemplate} locale={locale} />
+          </div>
         )}
       </div>
     </div>

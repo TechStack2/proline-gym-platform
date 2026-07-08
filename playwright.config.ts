@@ -712,6 +712,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // J5b SETTINGS-IA: visual EVIDENCE — full-page screenshots of every settings tab
+      // (en) + Gym Profile (ar RTL) into screenshots/ (the e2e-screenshots artifact the
+      // auditor reviews). Anchored (leading slash) so it never collides.
+      name: 'settings-shots',
+      dependencies: ['setup'],
+      testMatch: /\/settings-shots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // DOUBLE-SHELL: the staff dashboard mounts every page ONCE (single responsive
       // shell). Asserts DOM-wide COUNTS (one main, one mounted bell, one
       // #pay-amount-usd on invoice detail) on desktop AND mobile viewports.
