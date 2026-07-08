@@ -28,7 +28,7 @@ type Props = {
 // fell back to "Today" on money/team/settings/profile + every out-of-nav page).
 const TITLE_KEYS = new Set([
   'today', 'inbox', 'students', 'schedule', 'money', 'coaches', 'settings',
-  'profile', 'belts', 'pt', 'rentals', 'camps', 'reports', 'attendance',
+  'profile', 'belts', 'pt', 'camps', 'reports', 'attendance',
   'classes', 'leads', 'payments', 'invoices', 'disciplines', 'notifications',
   'campaigns', 'desk',
 ]);

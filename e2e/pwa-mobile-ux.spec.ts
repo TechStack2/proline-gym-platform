@@ -38,7 +38,7 @@ test('PWA-MOBILE-UX #3 · language switcher in Settings + the mobile More menu (
   const { ctx, page } = await ownerMobile(browser)
   try {
     // ── #3a: Settings exposes the language switcher (ar/en/fr) ──
-    await page.goto('/en/settings')
+    await page.goto('/en/settings?tab=gym')
     const langSection = vis(page, '[data-testid="settings-language"]').first()
     await expect(langSection, 'Settings has a Language section').toBeVisible({ timeout: 15_000 })
     await expect(langSection.getByRole('button', { name: 'Français' }), 'FR option in Settings').toBeVisible()

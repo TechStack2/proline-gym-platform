@@ -28,7 +28,7 @@ test('SETTINGS-LIVE · gym editor persists (name + brand color), then restores t
   test.setTimeout(120_000)
   const { ctx, page } = await ownerCtx(browser)
   try {
-    await page.goto('/en/settings')
+    await page.goto('/en/settings?tab=gym') // M2-A: /settings root is the card index; open the gym section
     const nameEn = vis(page, '[data-testid="gym-name-en"]').first()
     await expect(nameEn).toBeVisible({ timeout: 15_000 })
     const originalName = await nameEn.inputValue()
@@ -69,8 +69,7 @@ test('SETTINGS-LIVE · add exchange rate → current + history + new-invoice LBP
   const { ctx, page } = await ownerCtx(browser)
   try {
     // Add 89,500 dated TOMORROW (strictly the latest; today/manual 89,000 untouched).
-    await page.goto('/en/settings')
-    await vis(page, '[data-testid="settings-tab-rates"]').first().click()
+    await page.goto('/en/settings?tab=rates') // M2-A: ?tab=rates opens the Offers section (exchange rates live there)
     await expect(vis(page, '[data-testid="rate-input"]').first()).toBeVisible({ timeout: 15_000 })
     await vis(page, '[data-testid="rate-input"]').first().fill('89500')
     await vis(page, '[data-testid="rate-date"]').first().fill(tomorrowISO())
@@ -78,8 +77,7 @@ test('SETTINGS-LIVE · add exchange rate → current + history + new-invoice LBP
     await expect(vis(page, '[data-testid="rate-save-ok"]').first(), 'rate saved via the RPC').toBeVisible({ timeout: 15_000 })
 
     // It is now the CURRENT rate + in the history table (server re-read).
-    await page.reload()
-    await vis(page, '[data-testid="settings-tab-rates"]').first().click()
+    await page.reload() // reload preserves ?tab=rates → back on the Offers section
     await expect(vis(page, 'body').first(), 'new rate is the current rate').toContainText('89,500', { timeout: 15_000 })
 
     // Derivation: /invoices/new derives LBP from the LATEST rate → 10 × 89,500.
@@ -92,8 +90,7 @@ test('SETTINGS-LIVE · add exchange rate → current + history + new-invoice LBP
 
     // CORRECTION (same day+source upsert): put the steady-state 89,000 back so the
     // global current rate is value-identical for every other spec in the gate.
-    await page.goto('/en/settings')
-    await vis(page, '[data-testid="settings-tab-rates"]').first().click()
+    await page.goto('/en/settings?tab=rates') // M2-A: Offers section (exchange rates)
     await vis(page, '[data-testid="rate-input"]').first().fill('89000')
     await vis(page, '[data-testid="rate-date"]').first().fill(tomorrowISO())
     await vis(page, '[data-testid="rate-save"]').first().click()

@@ -1,9 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { Building2, TrendingUp, CreditCard, Swords, Dumbbell, MessageSquare } from 'lucide-react';
+import {
+  Building2, Swords, Tag, FileText, MessageSquare, Tent, UserCog, BarChart3, Rocket,
+  ChevronRight, ChevronLeft, ExternalLink, CalendarDays, GraduationCap, Award,
+  type LucideIcon,
+} from 'lucide-react';
 import { GymSettings } from './gym-settings';
 import { ExchangeRates } from './exchange-rates';
 import { DisciplineManager } from './discipline-manager';
@@ -18,19 +23,25 @@ import { type WaiverTemplate } from './waiver-actions';
 
 type GymData = Parameters<typeof GymSettings>[0]['gym'];
 type ExchangeRate = Parameters<typeof ExchangeRates>[0]['rates'][number];
-// J5 SETTINGS-REFIT: the legacy read-only MembershipPlans/DisciplineSettings blocks
-// (that these types were derived from) are removed — the editor managers own each tab
-// now. The rows are supabase select('*') results handed to the managers via `as any`,
-// so a permissive row type is both truthful and non-rippling.
 type MembershipPlan = Record<string, unknown>;
 type Discipline = Record<string, unknown>;
 
-// J5b SETTINGS-IA: one coherent page — every card lives in exactly ONE tab. `comms`
-// (Messaging & Docs) is new; it homes the WhatsApp + waiver cards that used to render
-// under EVERY tab. PT Session Policy moved under the ptpackages tab; the interface-
-// language switcher into Gym Profile. Preserved ids gym/rates/plans/disciplines/
-// ptpackages keep the checklist + setup-hub deep-links working.
-type TabId = 'gym' | 'rates' | 'plans' | 'disciplines' | 'ptpackages' | 'comms';
+// M2-A MANAGE-INDEX: /settings is a card INDEX (no default section). Each card either
+// OPENS a section in place (the existing tab content, re-grouped) or LINKS to another
+// surface. Legacy `?tab=` deep-links (gym/rates/plans/disciplines/ptpackages/comms) all
+// resolve to the right section so the setup-hub CTAs + specs keep working; the new ids
+// (offers/documents/messaging) are added only where a card has no legacy tab.
+type SectionId = 'gym' | 'disciplines' | 'offers' | 'documents' | 'messaging';
+
+const TAB_TO_SECTION: Record<string, SectionId> = {
+  gym: 'gym',
+  disciplines: 'disciplines',
+  // Offers & pricing groups the three legacy money tabs.
+  plans: 'offers', ptpackages: 'offers', rates: 'offers', offers: 'offers',
+  documents: 'documents',
+  // comms split into Messaging (WhatsApp) + Documents (waiver); g1→messaging, f3→documents.
+  messaging: 'messaging', comms: 'messaging',
+};
 
 type Props = {
   locale: string;
@@ -39,108 +50,195 @@ type Props = {
   plans: MembershipPlan[];
   disciplines: Discipline[];
   ptTypes: PtTypeRow[];
-  // The WhatsApp + waiver cards now render inside the comms tab (page.tsx still
-  // fetches both in its parallel wave and threads them here).
   whatsappStatus: WhatsAppStatus;
   waiverTemplate: WaiverTemplate;
-  // PT Session Policy (ptpackages tab) — the two fields ride on the gyms row.
   ptNoShowForfeits: boolean;
   ptLateCancelWindowHours: number;
-  /** NO-MEMBERSHIP-GAPS: false hides the membership-plans tab entirely. */
+  /** NO-MEMBERSHIP-GAPS: false hides the plan manager inside the Offers section. */
   showMembership?: boolean;
+  /** products.camp — hides the Camps card entirely for a gym that doesn't run camps. */
+  showCamps?: boolean;
+  /** LIVE chip (head:true count, gym-scoped) — the only new query M2-A adds. */
+  campsCount?: number;
 };
+
+type ChipTone = 'ready' | 'todo' | 'neutral';
+function Chip({ tone, children }: { tone: ChipTone; children: React.ReactNode }) {
+  const styles: Record<ChipTone, string> = {
+    ready: 'bg-green-50 text-green-700 border-green-200',
+    todo: 'bg-amber-50 text-amber-700 border-amber-200',
+    neutral: 'bg-gray-100 text-gray-600 border-gray-200',
+  };
+  return (
+    <span data-testid="settings-card-chip" className={cn('shrink-0 rounded-full border px-2 py-0.5 text-2xs font-medium', styles[tone])}>
+      {children}
+    </span>
+  );
+}
 
 export function SettingsClient({
   locale, gym, rates, plans, disciplines, ptTypes, initialTab,
   whatsappStatus, waiverTemplate, ptNoShowForfeits, ptLateCancelWindowHours,
-  showMembership = true,
+  showMembership = true, showCamps = true, campsCount = 0,
 }: Props & { initialTab?: string }) {
   const t = useTranslations('settings');
-  // NO-MEMBERSHIP-GAPS: with membership off, the plans tab neither renders nor is
-  // deep-linkable (?tab=plans falls back to gym).
-  const availableTabs: TabId[] = (['gym', 'rates', 'plans', 'disciplines', 'ptpackages', 'comms'] as TabId[])
-    .filter((tab) => tab !== 'plans' || showMembership);
-  const [activeTab, setActiveTab] = useState<TabId>(
-    availableTabs.includes(initialTab as TabId) ? (initialTab as TabId) : 'gym'
-  );
   const isRTL = locale === 'ar';
+  const [section, setSection] = useState<SectionId | null>(
+    initialTab && TAB_TO_SECTION[initialTab] ? TAB_TO_SECTION[initialTab] : null,
+  );
 
-  const TAB_LABELS: Record<TabId, string> = {
-    gym: t('tabs.gymProfile'),
-    rates: t('tabs.exchangeRates'),
-    plans: t('tabs.membershipPlans'),
-    disciplines: t('tabs.disciplinesBelts'),
-    ptpackages: t('tabs.personalTraining'),
-    comms: t('tabs.comms'),
-  };
+  // ── LIVE chips, derived from data the page already fetched (zero extra queries) ──
+  const branded = !!(gym?.logo_url || gym?.brand_color || gym?.hero_image_url);
+  const disciplineCount = disciplines.length;
+  const planCount = plans.length;
+  const ptCount = ptTypes.length;
+  const waiverV = waiverTemplate?.version ?? null;
+  const waConfigured = whatsappStatus?.configured ?? false;
+  const Back = isRTL ? ChevronRight : ChevronLeft;
+  const Fwd = isRTL ? ChevronLeft : ChevronRight;
 
-  const TAB_ICONS: Record<TabId, React.ReactNode> = {
-    gym: <Building2 className="h-4 w-4" />,
-    rates: <TrendingUp className="h-4 w-4" />,
-    plans: <CreditCard className="h-4 w-4" />,
-    disciplines: <Swords className="h-4 w-4" />,
-    ptpackages: <Dumbbell className="h-4 w-4" />,
-    comms: <MessageSquare className="h-4 w-4" />,
-  };
+  // ── SECTION DETAIL ──
+  if (section) {
+    const TITLES: Record<SectionId, string> = {
+      gym: t('manage.cards.gym.title'),
+      disciplines: t('manage.cards.programs.title'),
+      offers: t('manage.cards.offers.title'),
+      documents: t('manage.cards.documents.title'),
+      messaging: t('manage.cards.messaging.title'),
+    };
+    return (
+      <div className="space-y-4">
+        <button
+          type="button"
+          data-testid="settings-back"
+          onClick={() => setSection(null)}
+          className={cn('inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800', isRTL && 'font-arabic')}
+        >
+          <Back className="h-4 w-4" /> {t('manage.back')}
+        </button>
+        <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')} data-testid={`settings-section-${section}`}>
+          {TITLES[section]}
+        </h2>
 
-  const tabIds: TabId[] = availableTabs;
+        {section === 'gym' && <GymSettings gym={gym} locale={locale} />}
 
-  return (
-    <div className="space-y-4">
-      {/* Tab Bar — the ONLY navigation for settings (J5b: the quick-chips row is gone). */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto">
-        {tabIds.map(tab => (
-          <button
-            key={tab}
-            data-testid={`settings-tab-${tab}`}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0',
-              isRTL && 'font-arabic',
-              activeTab === tab
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            )}
-          >
-            {TAB_ICONS[tab]}
-            <span className="hidden sm:inline">{TAB_LABELS[tab]}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content — exactly one home per card */}
-      <div>
-        {activeTab === 'gym' && <GymSettings gym={gym} locale={locale} />}
-        {activeTab === 'rates' && <ExchangeRates rates={rates} locale={locale} />}
-        {activeTab === 'plans' && showMembership && gym?.id && (
-          <PlanManager plans={plans as any} gymId={gym.id} locale={locale} />
-        )}
-        {activeTab === 'ptpackages' && gym?.id && (
+        {section === 'offers' && gym?.id && (
           <div className="space-y-4">
+            {showMembership && <PlanManager plans={plans as any} gymId={gym.id} locale={locale} />}
             <PtPackageManager types={ptTypes} disciplines={(disciplines as any[]).filter((d: any) => d.is_active !== false)} gymId={gym.id} locale={locale} />
-            {/* PT Session Policy — re-homed here (was rendered under every tab). */}
-            <PtPolicySettings
-              locale={locale}
-              gymId={gym.id}
-              noShowForfeits={ptNoShowForfeits}
-              lateCancelWindowHours={ptLateCancelWindowHours}
-            />
+            <PtPolicySettings locale={locale} gymId={gym.id} noShowForfeits={ptNoShowForfeits} lateCancelWindowHours={ptLateCancelWindowHours} />
+            <ExchangeRates rates={rates} locale={locale} />
           </div>
         )}
-        {activeTab === 'disciplines' && (
-          <>
+
+        {section === 'disciplines' && (
+          <div className="space-y-4">
             {gym?.id && <DisciplineManager disciplines={disciplines as any} gymId={gym.id} locale={locale} />}
             <BeltLadderManager disciplines={disciplines as any} locale={locale} />
-          </>
-        )}
-        {activeTab === 'comms' && (
-          <div className="space-y-4">
-            {/* Messaging & Docs — WhatsApp config + the liability waiver, re-homed here. */}
-            <WhatsAppSettings initial={whatsappStatus} locale={locale} />
-            <WaiverSettings initial={waiverTemplate} locale={locale} />
+            {/* Entry links out of Settings: class CRUD, the weekly timetable, and the
+                belt-PROMOTION engine (distinct from the "Belt ladders" config above). */}
+            <div className="grid gap-2 sm:grid-cols-3">
+              <SubLink href={`/${locale}/classes`} icon={GraduationCap} label={t('manage.links.classes')} isRTL={isRTL} />
+              <SubLink href={`/${locale}/schedule`} icon={CalendarDays} label={t('manage.links.schedule')} isRTL={isRTL} />
+              <SubLink href={`/${locale}/belts`} icon={Award} label={t('manage.links.promotions')} isRTL={isRTL} />
+            </div>
           </div>
         )}
+
+        {section === 'documents' && <WaiverSettings initial={waiverTemplate} locale={locale} />}
+        {section === 'messaging' && <WhatsAppSettings initial={whatsappStatus} locale={locale} />}
+      </div>
+    );
+  }
+
+  // ── CARD INDEX ──
+  const sectionCards: Array<{ id: SectionId; icon: LucideIcon; chip: React.ReactNode }> = [
+    {
+      id: 'gym', icon: Building2,
+      chip: branded ? <Chip tone="ready">{t('manage.chips.ready')}</Chip> : <Chip tone="todo">{t('manage.chips.addBranding')}</Chip>,
+    },
+    {
+      id: 'disciplines', icon: Swords,
+      chip: disciplineCount > 0
+        ? <Chip tone="ready">{t('manage.chips.ready')}</Chip>
+        : <Chip tone="todo">{t('manage.chips.addDisciplines')}</Chip>,
+    },
+    {
+      id: 'offers', icon: Tag,
+      chip: (planCount > 0 || ptCount > 0)
+        ? <Chip tone="ready">{t('manage.chips.ready')}</Chip>
+        : <Chip tone="todo">{t('manage.chips.setup')}</Chip>,
+    },
+    {
+      id: 'documents', icon: FileText,
+      chip: waiverV != null ? <Chip tone="ready">{t('manage.chips.waiver', { v: waiverV })}</Chip> : <Chip tone="todo">{t('manage.chips.waiverNone')}</Chip>,
+    },
+    {
+      id: 'messaging', icon: MessageSquare,
+      chip: waConfigured ? <Chip tone="ready">{t('manage.chips.connected')}</Chip> : <Chip tone="neutral">{t('manage.chips.notConnected')}</Chip>,
+    },
+  ];
+
+  const cardKey: Record<SectionId, string> = {
+    gym: 'gym', disciplines: 'programs', offers: 'offers', documents: 'documents', messaging: 'messaging',
+  };
+
+  const linkCards: Array<{ id: string; icon: LucideIcon; href: string; chip?: React.ReactNode }> = [
+    ...(showCamps ? [{
+      id: 'camps', icon: Tent, href: `/${locale}/camps`,
+      chip: campsCount > 0 ? <Chip tone="neutral">{t('manage.chips.active')}</Chip> : undefined,
+    }] : []),
+    { id: 'team', icon: UserCog, href: `/${locale}/coaches` },
+    { id: 'reports', icon: BarChart3, href: `/${locale}/reports` },
+    { id: 'golive', icon: Rocket, href: `/${locale}/publish` },
+  ];
+
+  const cardClass = 'group flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-start shadow-sm transition-colors hover:border-gray-200 hover:bg-gray-50';
+
+  return (
+    <div className="space-y-4" data-testid="settings-index">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {sectionCards.map(({ id, icon: Icon, chip }) => {
+          const k = cardKey[id];
+          return (
+            <button key={id} type="button" data-testid={`settings-card-${id}`} onClick={() => setSection(id)} className={cardClass}>
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Icon className="h-5 w-5" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2">
+                  <span className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t(`manage.cards.${k}.title` as Parameters<typeof t>[0])}</span>
+                  {chip}
+                </span>
+                <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${k}.desc` as Parameters<typeof t>[0])}</span>
+              </span>
+              <Fwd className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
+            </button>
+          );
+        })}
+
+        {linkCards.map(({ id, icon: Icon, href, chip }) => (
+          <Link key={id} href={href} data-testid={`settings-card-${id}`} className={cardClass}>
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600"><Icon className="h-5 w-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center justify-between gap-2">
+                <span className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t(`manage.cards.${id}.title` as Parameters<typeof t>[0])}</span>
+                {chip}
+              </span>
+              <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${id}.desc` as Parameters<typeof t>[0])}</span>
+            </span>
+            <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
+          </Link>
+        ))}
       </div>
     </div>
+  );
+}
+
+function SubLink({ href, icon: Icon, label, isRTL }: { href: string; icon: LucideIcon; label: string; isRTL: boolean }) {
+  return (
+    <Link href={href} className="inline-flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+      <Icon className="h-4 w-4 text-primary-600" />
+      <span className={cn('flex-1', isRTL && 'font-arabic')}>{label}</span>
+      <ExternalLink className="h-3.5 w-3.5 text-gray-300" />
+    </Link>
   );
 }

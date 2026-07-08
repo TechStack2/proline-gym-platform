@@ -1402,6 +1402,63 @@
       "nameEn": "Name (English)",
       "nameAr": "Name (Arabic)",
       "nameFr": "Name (French)"
+    },
+    "manage": {
+      "back": "Back to Manage",
+      "cards": {
+        "gym": {
+          "title": "Your gym & public page",
+          "desc": "Name, contact, branding, hero image & language"
+        },
+        "programs": {
+          "title": "Programs",
+          "desc": "Disciplines & belt ladders — plus classes, schedule & promotions"
+        },
+        "offers": {
+          "title": "Offers & pricing",
+          "desc": "Membership plans, PT packages & policy, exchange rates"
+        },
+        "documents": {
+          "title": "Documents",
+          "desc": "The liability waiver members sign"
+        },
+        "messaging": {
+          "title": "Messaging",
+          "desc": "WhatsApp reminders & sender setup"
+        },
+        "camps": {
+          "title": "Camps",
+          "desc": "Summer camps & registrations"
+        },
+        "team": {
+          "title": "Team",
+          "desc": "Coaches, receptionists & their access"
+        },
+        "reports": {
+          "title": "Reports",
+          "desc": "Attendance & fill-rate reports"
+        },
+        "golive": {
+          "title": "Go public",
+          "desc": "Publish your classes & coaches to your page"
+        }
+      },
+      "chips": {
+        "ready": "Ready",
+        "setup": "Set up",
+        "addBranding": "Add branding",
+        "addDisciplines": "Add disciplines",
+        "waiver": "v{v}",
+        "waiverNone": "Add waiver",
+        "connected": "Connected",
+        "notConnected": "Not set up",
+        "active": "Active"
+      },
+      "links": {
+        "classes": "Classes",
+        "schedule": "Weekly schedule",
+        "promotions": "Promotions"
+      }
     }
   },
   "reportsDashboard": {

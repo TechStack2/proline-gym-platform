@@ -67,7 +67,7 @@ test('EH #3 · a receptionist cannot persist gym settings (gyms UPDATE is owner/
   const page = await ctx.newPage()
   const HACK = `Recep Hack ${RUN}`
   try {
-    await page.goto('/en/settings')
+    await page.goto('/en/settings?tab=gym')
     const nameEn = vis(page, '[data-testid="gym-name-en"]').first()
     await expect(nameEn).toBeVisible({ timeout: 15_000 })
     await nameEn.fill(HACK)

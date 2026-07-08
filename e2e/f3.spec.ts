@@ -66,7 +66,7 @@ async function signFlow(page: Page, prefix: string, name: string) {
 
 /** Staff: edit the waiver body in Settings → the version bumps. */
 async function bumpWaiverBody(page: Page, newBodyEn: string) {
-  await page.goto('/en/settings?tab=comms') // J5b: waiver card re-homed to the comms tab
+  await page.goto('/en/settings?tab=documents') // M2-A: waiver lives in the Documents section
   await vis(page, '[data-testid="wv-edit-open"]').first().click()
   const ed = vis(page, '[data-testid="waiver-editor"]').first()
   await expect(ed).toBeVisible({ timeout: 10_000 })
@@ -84,7 +84,7 @@ test('F3 · member signs → Signed vN (artifact persists) → body edit bumps �
   const member = await ctxFor(browser, 'student') // Karim Mourad (own student record)
   try {
     // ── 1. The seeded template exists at v1 (staff view) ──
-    await owner.page.goto('/en/settings?tab=comms') // J5b: waiver card re-homed to the comms tab
+    await owner.page.goto('/en/settings?tab=documents') // M2-A: waiver lives in the Documents section
     await expect(vis(owner.page, '[data-testid="waiver-template-version"]').first()).toContainText('v1', { timeout: 15_000 })
 
     // ── 2. The member reads + signs their own waiver from the portal ──

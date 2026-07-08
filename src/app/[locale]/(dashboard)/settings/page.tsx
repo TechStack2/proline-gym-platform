@@ -39,6 +39,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     { data: disciplines },
     whatsappStatus,
     waiverTemplate,
+    { count: campsCount },
   ] = await Promise.all([
     // Exchange rates, ordered by date desc
     supabase.from('exchange_rates').select('*').eq('gym_id', gymId).order('rate_date', { ascending: false }).limit(50),
@@ -57,6 +58,8 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     getWhatsAppStatus(),
     // F3: gym-configurable waiver template — was `await getWaiverTemplate()` inline in the JSX
     getWaiverTemplate(),
+    // M2-A MANAGE-INDEX: LIVE Camps chip — one gym-scoped head:true count (product-gated card).
+    supabase.from('camps').select('id', { count: 'exact', head: true }).eq('gym_id', gymId).is('deleted_at', null),
   ]);
 
   return (
@@ -93,6 +96,8 @@ export default async function SettingsPage({ params, searchParams }: Props) {
           ptNoShowForfeits={!!gymData?.pt_no_show_forfeits}
           ptLateCancelWindowHours={gymData?.pt_late_cancel_window_hours ?? 0}
           showMembership={products.membership}
+          showCamps={products.camp}
+          campsCount={campsCount ?? 0}
         />
       </Suspense>
     </div>

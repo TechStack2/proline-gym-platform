@@ -89,13 +89,14 @@ test('NO-MEMBERSHIP-GAPS · the six audit leaks are gated on the disabled gym', 
   test.setTimeout(180_000)
   const { ctx, page } = await ownerCtx(browser)
   try {
-    // ── 1. Settings: no plans tab; the ?tab=plans deep link falls back (no plan
-    //       manager renders). J5b removed the config-row chips — the tab bar is the
-    //       only nav, so "no membership surface" now means the plans tab is absent. ──
-    await page.goto('/en/settings')
-    await expect(page.locator('[data-testid="settings-tab-plans"]'), 'no plans tab in Settings').toHaveCount(0)
+    // ── 1. Settings: the plans deep-link resolves to the Offers section (never 404),
+    //       but NO membership plan manager renders there for a no-membership gym; PT +
+    //       exchange rates still show. (M2-A: /settings is a card index; ?tab=plans →
+    //       the Offers section, which gates the plan manager on showMembership.) ──
     await page.goto('/en/settings?tab=plans')
-    await expect(page.locator('[data-testid="settings-tab-plans"]'), 'the plans deep link falls back (tab still absent)').toHaveCount(0)
+    await expect(vis(page, '[data-testid="settings-section-offers"]').first(), 'plans deep-link opens the Offers section (no 404)').toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="plan-manager"]'), 'no membership plan surface for a no-membership gym').toHaveCount(0)
+    await expect(vis(page, '[data-testid="rate-input"]').first(), 'PT + exchange rates remain in Offers').toBeVisible({ timeout: 15_000 })
 
     // ── 2. Money: no Winback tab; no Renewals-outstanding card / ProcessRenewals. ──
     await page.goto('/en/money')

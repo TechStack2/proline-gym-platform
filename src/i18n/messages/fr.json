@@ -1402,6 +1402,63 @@
       "nameEn": "Nom (anglais)",
       "nameAr": "Nom (arabe)",
       "nameFr": "Nom (français)"
+    },
+    "manage": {
+      "back": "Retour à la gestion",
+      "cards": {
+        "gym": {
+          "title": "Votre club & page publique",
+          "desc": "Nom, contact, identité visuelle, image d'en-tête & langue"
+        },
+        "programs": {
+          "title": "Programmes",
+          "desc": "Disciplines & grades de ceinture — plus cours, planning & promotions"
+        },
+        "offers": {
+          "title": "Offres & tarifs",
+          "desc": "Plans d'adhésion, forfaits coaching & politique, taux de change"
+        },
+        "documents": {
+          "title": "Documents",
+          "desc": "La décharge de responsabilité signée par les membres"
+        },
+        "messaging": {
+          "title": "Messagerie",
+          "desc": "Rappels WhatsApp & configuration de l'expéditeur"
+        },
+        "camps": {
+          "title": "Stages",
+          "desc": "Stages d'été & inscriptions"
+        },
+        "team": {
+          "title": "Équipe",
+          "desc": "Coachs, réceptionnistes & leurs accès"
+        },
+        "reports": {
+          "title": "Rapports",
+          "desc": "Rapports de présence & taux de remplissage"
+        },
+        "golive": {
+          "title": "Rendre public",
+          "desc": "Publiez vos cours & coachs sur votre page"
+        }
+      },
+      "chips": {
+        "ready": "Prêt",
+        "setup": "À configurer",
+        "addBranding": "Ajouter l'identité",
+        "addDisciplines": "Ajouter des disciplines",
+        "waiver": "v{v}",
+        "waiverNone": "Ajouter une décharge",
+        "connected": "Connecté",
+        "notConnected": "Non configuré",
+        "active": "Actif"
+      },
+      "links": {
+        "classes": "Cours",
+        "schedule": "Planning hebdo",
+        "promotions": "Promotions"
+      }
     }
   },
   "reportsDashboard": {
