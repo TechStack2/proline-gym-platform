@@ -19,6 +19,7 @@ import {
 } from '@/lib/notifications/create';
 import { provisioning } from '@/lib/provisioning/simulated';
 import { leadInsertSchema, type LeadInsert } from '@/lib/validators/leads.schema';
+import { actionError } from '@/lib/errors/action-error';
 
 type StaffCtx = { supabase: Awaited<ReturnType<typeof createClient>>; userId: string; gymId: string };
 
@@ -87,7 +88,7 @@ export async function addLead(
         .from('leads').select('id').eq('client_uuid' as 'id', clientUuid).maybeSingle();
       if (dup) return { ok: true, leadId: dup.id };
     }
-    return { ok: false, error: error.message };
+    return { ok: false, error: actionError(error) };
   }
 
   // lead_new → the whole front desk (owner + receptionist), sanctioned pattern.
@@ -137,7 +138,7 @@ export async function scheduleTrial(input: {
       p_coach_id: input.coachId || null,
     })
     .single();
-  if (error || !trial) return { ok: false, error: error?.message ?? 'schedule_failed' };
+  if (error || !trial) return { ok: false, error: actionError(error) };
 
   // trial_scheduled → the assigned coach (recipient = coach profile_id).
   // Best-effort: a notification failure must never abort the trial write.
@@ -200,7 +201,7 @@ export async function recordTrialOutcome(input: {
     p_feedback: input.feedback || null,
     p_interested: input.interested ?? null,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
 
   revalidatePath('/[locale]/(dashboard)/leads', 'page');
   revalidatePath('/[locale]/coach/trials', 'page');
@@ -225,7 +226,7 @@ export async function convertLead(input: {
   });
   if (error) {
     console.error('[convertLead] convert_lead_to_member RPC failed:', error.message);
-    return { ok: false, error: error.message };
+    return { ok: false, error: actionError(error) };
   }
   const result = Array.isArray(rows) ? rows[0] : rows;
   if (!result) return { ok: false, error: 'convert_returned_no_row' };
@@ -314,6 +315,6 @@ export async function discardOfflineLead(input: {
     p_name: input.name,
     p_reason: input.reason,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   return { ok: true };
 }

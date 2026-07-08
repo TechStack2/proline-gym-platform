@@ -16,6 +16,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { useErrorText } from '@/lib/errors/use-error-text'
 import { cn } from '@/lib/utils'
 import { Send, Copy, Check, MessageCircle, KeyRound, Phone } from 'lucide-react'
 import { inviteToPortal } from '@/lib/provisioning/invite'
@@ -79,8 +80,13 @@ type Props =
   | { kind: 'student'; id: string; name: string; locale: string; phone?: string | null; editHref?: string }
   | { kind: 'coach'; id: string; name: string; locale: string; phone?: string | null; editHref?: string }
 
+// ERROR-COPY: invite.err owns the invite-specific keys (authz/target); any other key
+// (the stable keys from actionError) falls back to friendly, shared errors.* copy.
+export const INVITE_ERR_KEYS = new Set(['forbidden', 'target_not_found', 'cross_gym', 'no_phone', 'unauthenticated'])
+
 export function InviteButton({ kind, id, locale, phone, editHref }: Props) {
   const t = useTranslations('invite')
+  const errText = useErrorText()
   const isRTL = locale === 'ar'
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<InviteResult | null>(null)
@@ -91,7 +97,7 @@ export function InviteButton({ kind, id, locale, phone, editHref }: Props) {
     const res = await inviteToPortal(kind === 'student' ? { studentId: id } : { coachId: id })
     setBusy(false)
     if (res.ok) setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName })
-    else setError(t(`err.${res.error}` as Parameters<typeof t>[0]) || res.error)
+    else setError(INVITE_ERR_KEYS.has(res.error) ? t(`err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error))
   }
 
   // STAFF-INVITE (phone-required UX): a caller that KNOWS the target has no phone

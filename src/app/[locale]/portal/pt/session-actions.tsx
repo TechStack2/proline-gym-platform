@@ -11,16 +11,18 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { cancelPtBooking, respondPtProposal } from '@/lib/pt/booking-actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export function CancelBookingButton({ sessionId }: { sessionId: string }) {
   const t = useTranslations('ptBooking')
+  const errText = useErrorText();
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const cancel = () =>
     startTransition(async () => {
       const res = await cancelPtBooking(sessionId)
       if (res.ok) { toast.success(t('cancelled')); router.refresh() }
-      else toast.error(res.error)
+      else toast.error(errText(res.error))
     })
   return (
     <button type="button" data-testid="pt-cancel-booking" disabled={pending} onClick={cancel}
@@ -32,13 +34,14 @@ export function CancelBookingButton({ sessionId }: { sessionId: string }) {
 
 export function MemberProposalActions({ sessionId }: { sessionId: string }) {
   const t = useTranslations('ptBooking')
+  const errText = useErrorText()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const respond = (action: 'accept' | 'decline') =>
     startTransition(async () => {
       const res = await respondPtProposal({ sessionId, action })
       if (res.ok) { toast.success(t(action === 'accept' ? 'booked' : 'cancelled')); router.refresh() }
-      else toast.error(res.error)
+      else toast.error(errText(res.error))
     })
   return (
     <span className="flex items-center gap-1">

@@ -14,6 +14,7 @@ import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { gymDisplayName } from '@/lib/whatsapp/identity'
+import { actionError } from '@/lib/errors/action-error';
 
 type InviteInput =
   | { studentId: string }
@@ -113,7 +114,7 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
       password: temp,
       app_metadata: { ...(existing.user.app_metadata ?? {}), must_change_password: true },
     })
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: actionError(error) }
   } else {
     // First adoption: create the auth user WITH the profile id (trigger NO-OPs).
     const { error } = await admin.auth.admin.createUser({
@@ -125,13 +126,13 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
       phone_confirm: true,
       app_metadata: { must_change_password: true },
     } as any) // supabase-js type omits `id`; GoTrue accepts it (STEP-0 confirmed)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: actionError(error) }
   }
 
   // ── user_roles: login-less profiles have none — required for routing/RLS ──
   const { error: roleErr } = await admin.from('user_roles')
     .upsert({ user_id: profileId, gym_id: gymId, role }, { onConflict: 'user_id,role,gym_id' })
-  if (roleErr) return { ok: false, error: roleErr.message }
+  if (roleErr) return { ok: false, error: actionError(roleErr) }
 
   // ── account_invites: make the 23R simulated invite real (no new table) ──
   const { data: inv } = await admin.from('account_invites')

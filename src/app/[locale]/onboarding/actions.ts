@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { roleHomePath } from './role-home'
 import { isPlatformAdmin, VENDOR_HOME } from '@/lib/auth/platform-admin'
 import { getSetupMilestones } from '@/lib/gym/setup-checklist'
+import { actionError } from '@/lib/errors/action-error';
 
 export async function completeOnboarding(): Promise<{ ok: true; home: string } | { ok: false; error: string }> {
   const supabase = await createClient()
@@ -23,7 +24,7 @@ export async function completeOnboarding(): Promise<{ ok: true; home: string } |
   const { error } = await admin.auth.admin.updateUserById(user.id, {
     app_metadata: { ...(user.app_metadata ?? {}), must_change_password: false },
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
 
   // Mark the invite accepted (best-effort; the auth flag is the real gate).
   await admin.from('account_invites').update({ status: 'accepted', updated_at: new Date().toISOString() })

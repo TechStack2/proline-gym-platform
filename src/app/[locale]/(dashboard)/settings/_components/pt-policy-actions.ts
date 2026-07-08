@@ -7,6 +7,7 @@
  */
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { actionError } from '@/lib/errors/action-error';
 
 export async function updatePtPolicy(input: {
   gymId: string;
@@ -25,7 +26,7 @@ export async function updatePtPolicy(input: {
     .from('gyms')
     .update({ pt_no_show_forfeits: input.noShowForfeits, pt_late_cancel_window_hours: hours })
     .eq('id', input.gymId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
 
   revalidatePath('/[locale]/(dashboard)/settings', 'page');
   return { ok: true };

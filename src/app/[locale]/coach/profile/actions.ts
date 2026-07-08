@@ -11,6 +11,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 export async function saveCoachDraft(input: {
   coachId: string
@@ -49,7 +50,7 @@ export async function saveCoachDraft(input: {
     },
     { onConflict: 'coach_id' },
   )
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
 
   revalidatePath('/[locale]/coach/profile', 'page')
   revalidatePath('/[locale]/coaches/[id]', 'page')
@@ -90,7 +91,7 @@ export async function saveCoachDraftPhoto(input: {
     },
     { onConflict: 'coach_id' },
   )
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
 
   revalidatePath('/[locale]/coach/profile', 'page')
   revalidatePath('/[locale]/coaches/[id]', 'page')

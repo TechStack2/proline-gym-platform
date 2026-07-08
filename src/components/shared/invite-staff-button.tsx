@@ -14,13 +14,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useErrorText } from '@/lib/errors/use-error-text'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { UserPlus, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { inviteToPortal } from '@/lib/provisioning/invite'
-import { InviteResultCard, type InviteResult } from './invite-button'
+import { InviteResultCard, INVITE_ERR_KEYS, type InviteResult } from './invite-button'
 
 type StaffRole = 'receptionist' | 'head_coach' | 'coach'
 // J2 COACH-UNIFY: coaches are now created through the unified /coaches/add flow
@@ -32,6 +33,7 @@ const ROLES: StaffRole[] = ['receptionist', 'head_coach']
 
 export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: string }) {
   const t = useTranslations('invite')
+  const errText = useErrorText()
   const isRTL = locale === 'ar'
   const supabase = createClient()
   const router = useRouter()
@@ -78,7 +80,7 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
         setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName })
         router.refresh() // the new staff member appears on the roster behind the card
       } else {
-        setError(t(`err.${res.error}` as Parameters<typeof t>[0]) || res.error)
+        setError(INVITE_ERR_KEYS.has(res.error) ? t(`err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error))
       }
     } catch (e) {
       setBusy(false)

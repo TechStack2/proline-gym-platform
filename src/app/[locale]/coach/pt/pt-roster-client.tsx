@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Dumbbell, PlayCircle, CalendarPlus, CheckCircle2, XCircle, Ban } from 'lucide-react';
+import { useErrorText } from '@/lib/errors/use-error-text';
 import {
   schedulePtSession, logPtDelivery, completePtSession, cancelOrNoShowPtSession,
   checkPtScheduleConflicts, type PtConflict,
@@ -103,6 +104,7 @@ const SessionItem = ({ s, busy, run, t, locale }: {
 
 export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
   const t = useTranslations('pt');
+  const errText = useErrorText();
   const router = useRouter();
   const isRTL = locale === 'ar';
   const [busy, setBusy] = useState<string | null>(null);
@@ -154,7 +156,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
     const res = await fn();
     setBusy(null);
     if (res.ok) { toast.success(okMsg); router.refresh(); }
-    else toast.error(res.error || t('log_session_error'));
+    else toast.error(errText(res.error));
   };
 
   return (

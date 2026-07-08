@@ -15,6 +15,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 const PRIVILEGED = ['owner', 'head_coach']
 
@@ -43,7 +44,7 @@ export async function setCoachActive(input: {
     )
     .eq('id', input.coachId)
     .eq('gym_id', roleRow.gym_id) // tenant scope (RLS also enforces this)
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
 
   revalidatePath('/[locale]/coaches', 'page')
   revalidatePath('/[locale]/coaches/[id]', 'page')
@@ -87,12 +88,12 @@ export async function publishCoachProfile(input: {
   let liveAvatarUrl: string | null = null
   if (draftPath) {
     const { data: blob, error: dlErr } = await supabase.storage.from('coach-avatar-drafts').download(draftPath)
-    if (dlErr) return { ok: false, error: dlErr.message }
+    if (dlErr) return { ok: false, error: actionError(dlErr) }
     const livePath = `${(coach as any).gym_id}/${(coach as any).profile_id}.jpg`
     const { error: upErr } = await supabase.storage.from('avatars').upload(livePath, blob, {
       upsert: true, contentType: 'image/jpeg', cacheControl: '3600',
     })
-    if (upErr) return { ok: false, error: upErr.message }
+    if (upErr) return { ok: false, error: actionError(upErr) }
     // AVATAR-PATHS: hand the RELATIVE object path to the RPC (project-portable — no
     // host in the DB). publish_coach_profile pass-through-assigns it to
     // profiles.avatar_url (000061, unchanged); the read side resolves it.
@@ -103,7 +104,7 @@ export async function publishCoachProfile(input: {
     p_coach_id: input.coachId,
     p_live_avatar_url: liveAvatarUrl,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
 
   // The RPC cleared pending (incl. the photo ref) — best-effort remove the now-
   // orphaned private draft object.
@@ -129,7 +130,7 @@ export async function setCoachLanding(input: {
     p_visible: input.visible,
     p_status: input.status,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/[locale]/coaches/[id]', 'page')
   return { ok: true }
 }
@@ -165,7 +166,7 @@ export async function saveCoachDraftStaff(input: {
     },
     { onConflict: 'coach_id' },
   )
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/[locale]/coaches/[id]', 'page')
   return { ok: true }
 }

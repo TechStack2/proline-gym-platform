@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { Loader2, Award } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { promoteStudent } from '../../belts/actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Hierarchy = { id: string; discipline_id: string; rank: string; name_ar: string; name_en: string; name_fr: string; sort_order: number }
 type Disc = { id: string; name_ar: string; name_en: string; name_fr: string }
@@ -34,6 +35,7 @@ export function PromotePanel({
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('promote')
+  const errText = useErrorText();
   const router = useRouter()
 
   const [open, setOpen] = useState(false)
@@ -81,7 +83,7 @@ export function PromotePanel({
       setOpen(false); setDisciplineId(''); setHierarchyId(''); setNote('')
       router.refresh()
     } else {
-      toast({ title: t('errFailed'), description: res.error, variant: 'destructive' })
+      toast({ title: t('errFailed'), description: errText(res.error), variant: 'destructive' })
     }
   }
 

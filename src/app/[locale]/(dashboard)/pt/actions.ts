@@ -10,6 +10,7 @@
  * RPC, not here.
  */
 import { createClient } from '@/lib/supabase/server';
+import { actionError } from '@/lib/errors/action-error';
 
 type ActionResult = { ok: true; invoiceId: string | null } | { ok: false; error: string };
 
@@ -47,7 +48,7 @@ export async function approvePtRequest(
     p_discount_amount_usd: 0,
     p_request_id: assignmentId,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   return { ok: true, invoiceId: (sold as { invoice_id: string | null } | null)?.invoice_id ?? null };
 }
 
@@ -70,7 +71,7 @@ export async function rejectPtRequest(
       is_active: false,
     })
     .eq('id', assignmentId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
 
   return { ok: true, invoiceId: null };
 }
@@ -92,7 +93,7 @@ export async function restorePtCredit(input: {
   });
   if (error) {
     console.error('[restorePtCredit] RPC failed:', error.message);
-    return { ok: false, error: error.message };
+    return { ok: false, error: actionError(error) };
   }
   return { ok: true };
 }

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { Award, Clock, Loader2, Save, Eye } from 'lucide-react'
 import { saveCoachDraft } from './actions'
 import { CoachPhotoDraftUpload } from './CoachPhotoDraftUpload'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Fields = {
   specialization_ar: string; specialization_en: string; specialization_fr: string
@@ -41,6 +42,7 @@ export function CoachProfileEditor({
   hasPending: boolean
 }) {
   const t = useTranslations('coachEdit')
+  const errText = useErrorText();
   const router = useRouter()
   const isRTL = locale === 'ar'
   const [pendingTx, startTx] = useTransition()
@@ -64,7 +66,7 @@ export function CoachProfileEditor({
     startTx(async () => {
       const res = await saveCoachDraft({ coachId, ...f })
       if (res.ok) { setSaved(true); router.refresh() }
-      else setError(res.error)
+      else setError(errText(res.error))
     })
   }
 

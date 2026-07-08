@@ -8,6 +8,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 type Result = { ok: true } | { ok: false; error: string }
 
@@ -22,7 +23,7 @@ export async function registerToCamp(input: {
     p_camp_id: input.campId,
     p_request_id: input.requestId ?? null,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath(`/camps/${input.campId}`)
   revalidatePath(`/students/${input.studentId}`)
   revalidatePath('/inbox')
@@ -36,7 +37,7 @@ export async function declineCampRequest(regId: string): Promise<Result> {
     .update({ status: 'cancelled' })
     .eq('id', regId)
     .eq('status', 'pending')
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/inbox')
   return { ok: true }
 }

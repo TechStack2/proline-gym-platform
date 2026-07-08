@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { ModalPortal } from './modal-portal'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useErrorText } from '@/lib/errors/use-error-text'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -62,6 +63,7 @@ export function WaiverSign({
   label: string; outdated?: boolean; testidPrefix?: string
 }) {
   const t = useTranslations('waiver')
+  const errText = useErrorText()
   const router = useRouter()
   const isRTL = locale === 'ar'
   const [open, setOpen] = useState(false)
@@ -118,7 +120,7 @@ export function WaiverSign({
                 agreed={agreed} onAgreed={setAgreed}
               />
               {result && !result.ok && (
-                <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600" data-testid="waiver-sign-error">{result.error}</p>
+                <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600" data-testid="waiver-sign-error">{errText(result.error)}</p>
               )}
             </div>
             <div className="flex items-center justify-end border-t px-5 py-3">

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CalendarClock, CheckCircle2, XCircle, Phone } from 'lucide-react';
 import { recordTrialOutcome } from '@/app/[locale]/(dashboard)/leads/actions';
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export type CoachTrial = {
   id: string;
@@ -22,6 +23,7 @@ export type CoachTrial = {
 
 export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; locale: string }) {
   const t = useTranslations('leads');
+  const errText = useErrorText();
   const tc = useTranslations('coachTrials');
   const router = useRouter();
   const isRTL = locale === 'ar';
@@ -43,7 +45,7 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
       toast.success(t('toast.outcome_recorded'));
       router.refresh();
     } else {
-      toast.error(`${t('toast.outcome_error')}: ${res.error}`);
+      toast.error(errText(res.error));
     }
   };
 

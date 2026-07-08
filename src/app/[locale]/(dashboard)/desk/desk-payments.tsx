@@ -21,6 +21,7 @@ import type { OutboxStats } from '@/lib/offline/outbox'
 import { recordPayment } from '../invoices/actions'
 import { addLead } from '../leads/actions'
 import { CloudOff, RefreshCw, Loader2, AlertTriangle, CheckCircle2, Banknote, Undo2, Trash2, WifiOff, UserPlus } from 'lucide-react'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export type InvoiceState = { status: string; totalUsd: number; balanceUsd: number }
 
@@ -52,6 +53,7 @@ export function RecordPaymentForm({
   onChange: () => void // refresh pending stats + (online) reload the mirror
 }) {
   const t = useTranslations('desk')
+  const errText = useErrorText();
   const isRTL = locale === 'ar'
   const [open, setOpen] = useState(false)
   const [amountUsd, setAmountUsd] = useState(invoice.balance_usd.toFixed(2))
@@ -75,7 +77,7 @@ export function RecordPaymentForm({
           invoiceId: invoice.id, amountUsd: usd, amountLbp: lbp, method,
           exchangeRate: invoice.exchange_rate, paymentDate, clientUuid: op_id,
         })
-        if (!res.ok) { setError(res.error); return }
+        if (!res.ok) { setError(errText(res.error)); return }
         setDone('online')
       } else {
         // Provisional — queued, reconciles on reconnect through record_payment.
@@ -171,6 +173,7 @@ export function CaptureLeadForm({
   onChange: () => void
 }) {
   const t = useTranslations('desk')
+  const errText = useErrorText()
   const isRTL = locale === 'ar'
   const [open, setOpen] = useState(false)
   const [firstName, setFirstName] = useState('')
@@ -193,7 +196,7 @@ export function CaptureLeadForm({
           email: '', source: 'walk_in', discipline_id: '', notes: interest.trim() || undefined,
           clientUuid: op_id,
         })
-        if (!res.ok) { setError(res.error); return }
+        if (!res.ok) { setError(errText(res.error)); return }
         setDone('online')
       } else {
         await queueLead({
@@ -340,6 +343,7 @@ function LeadConflictRow({
   onDiscard: (opId: string, reason: string) => Promise<{ ok: boolean; error?: string }>
 }) {
   const t = useTranslations('desk')
+  const errText = useErrorText()
   const isRTL = locale === 'ar'
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
@@ -355,7 +359,7 @@ function LeadConflictRow({
     setBusy(true); setErr('')
     try {
       const res = await onDiscard(item.op_id, reason.trim())
-      if (!res.ok) setErr(res.error || t('resolveFailed'))
+      if (!res.ok) setErr(errText(res.error))
     } finally { setBusy(false) }
   }
 
@@ -418,6 +422,7 @@ function ConflictRow({
   onDiscard: (opId: string, reason: string) => Promise<{ ok: boolean; error?: string }>
 }) {
   const t = useTranslations('desk')
+  const errText = useErrorText()
   const isRTL = locale === 'ar'
   const [open, setOpen] = useState(false)
   const [server, setServer] = useState<InvoiceState | null>(null)
@@ -443,7 +448,7 @@ function ConflictRow({
     setBusy(true); setErr('')
     try {
       const res = await onDiscard(item.op_id, reason.trim())
-      if (!res.ok) setErr(res.error || t('resolveFailed'))
+      if (!res.ok) setErr(errText(res.error))
     } finally { setBusy(false) }
   }
 

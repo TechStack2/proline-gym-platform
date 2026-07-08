@@ -6,13 +6,14 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 type Result = { ok: true; data?: unknown } | { ok: false; error: string }
 
 async function call(fn: string, args: Record<string, unknown>, paths: string[]): Promise<Result> {
   const supabase = await createClient()
   const { data, error } = await supabase.rpc(fn, args)
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   for (const p of paths) revalidatePath(p)
   return { ok: true, data }
 }

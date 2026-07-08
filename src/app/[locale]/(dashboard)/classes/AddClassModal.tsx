@@ -24,6 +24,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ModalPortal } from '@/components/shared/modal-portal'
 import { useTranslations } from 'next-intl'
+import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { useRouter } from 'next/navigation'
 import { X, Loader2, Minus, Plus, Check, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -71,6 +72,7 @@ function plusOneHour(hhmm: string): string {
 
 export default function AddClassModal({ disciplines, coaches, locale, onClose, onSuccess, editClass }: AddClassModalProps) {
   const t = useTranslations('classes.wizard')
+  const errCaught = useCaughtErrorText();
   const router = useRouter()
   const isRTL = locale === 'ar'
 
@@ -214,7 +216,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
       router.refresh()
       setTimeout(() => onSuccess(), 900)
     } catch (err: any) {
-      setError(err?.message || t('errCreateFailed'))
+      setError(errCaught(err))
       setCreating(false)
     }
   }

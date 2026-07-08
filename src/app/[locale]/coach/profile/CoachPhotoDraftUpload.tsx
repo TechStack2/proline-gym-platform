@@ -11,6 +11,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { createClient } from '@/lib/supabase/client'
 import { downscaleImage } from '@/components/shared/avatar-upload'
 import { Avatar } from '@/components/shared/avatar'
@@ -33,6 +34,7 @@ export function CoachPhotoDraftUpload({
   locale: string
 }) {
   const t = useTranslations('coachEdit')
+  const errCaught = useCaughtErrorText();
   const router = useRouter()
   const isRTL = locale === 'ar'
   const inputRef = useRef<HTMLInputElement>(null)
@@ -63,7 +65,7 @@ export function CoachPhotoDraftUpload({
       setHasDraft(true)
       router.refresh()
     } catch (err: any) {
-      setError(err?.message || t('photoFailed'))
+      setError(errCaught(err))
     } finally {
       setBusy(false)
       if (inputRef.current) inputRef.current.value = ''

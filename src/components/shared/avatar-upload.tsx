@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { createClient } from '@/lib/supabase/client'
 import { Avatar } from './avatar'
 import { storagePublicUrl } from '@/lib/storage/public-url'
@@ -76,6 +77,7 @@ export function AvatarUpload({
   locale: string
 }) {
   const t = useTranslations('avatar')
+  const errCaught = useCaughtErrorText();
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -100,7 +102,7 @@ export function AvatarUpload({
       setUrl(newUrl)
       router.refresh()
     } catch (err: any) {
-      setError(err?.message || t('failed'))
+      setError(errCaught(err))
     } finally {
       setBusy(false)
       if (inputRef.current) inputRef.current.value = ''

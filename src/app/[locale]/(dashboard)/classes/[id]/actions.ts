@@ -13,6 +13,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createNotification } from '@/lib/notifications/create';
 import { studentNotificationRecipients } from '@/lib/notifications/recipients';
+import { actionError } from '@/lib/errors/action-error';
 
 export async function enrollStudent(input: {
   classId: string;
@@ -35,7 +36,7 @@ export async function enrollStudent(input: {
       { class_id: input.classId, student_id: input.studentId, is_active: true },
       { onConflict: 'class_id, student_id' },
     );
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
 
   // enrollment_confirmed → student (+ guardians). Best-effort side-effect.
   try {

@@ -9,6 +9,7 @@
  */
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 export async function signWaiver(input: {
   studentId: string
@@ -47,7 +48,7 @@ export async function signWaiver(input: {
     typed_name: typed,
     user_agent: ua,
   })
-  if (error) return { ok: false, error: error.message } // RLS denial surfaces here
+  if (error) return { ok: false, error: actionError(error) } // RLS denial surfaces here
 
   return { ok: true, version: (tmpl as any).version }
 }

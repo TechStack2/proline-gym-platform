@@ -1680,6 +1680,13 @@
       }
     }
   },
+  "errors": {
+    "generic": "Une erreur est survenue — veuillez réessayer.",
+    "duplicate": "Ce nom est déjà utilisé.",
+    "in_use": "Cet élément est encore lié à d'autres enregistrements.",
+    "not_allowed": "Vous n'avez pas la permission pour cela.",
+    "overpayment": "Le montant dépasse le solde dû — le trop-perçu n'est pas autorisé."
+  },
   "validation": {
     "required": "Ce champ est obligatoire",
     "email": "Veuillez entrer un email valide",

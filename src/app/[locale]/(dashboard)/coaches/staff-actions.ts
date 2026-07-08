@@ -9,6 +9,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 export async function setStaffActive(
   targetUserId: string,
@@ -16,7 +17,7 @@ export async function setStaffActive(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('set_staff_active', { p_user_id: targetUserId, p_active: active })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/coaches')
   return { ok: true }
 }

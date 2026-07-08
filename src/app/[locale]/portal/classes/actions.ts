@@ -8,6 +8,7 @@
  */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 type Result = { ok: true } | { ok: false; error: string }
 
@@ -19,7 +20,7 @@ export async function requestClassRegistration(classId: string, studentId?: stri
     p_class_id: classId,
     ...(studentId ? { p_student_id: studentId } : {}),
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/portal/classes')
   return { ok: true }
 }
@@ -27,7 +28,7 @@ export async function requestClassRegistration(classId: string, studentId?: stri
 export async function cancelMyRegistration(regId: string): Promise<Result> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('cancel_class_registration', { p_reg_id: regId })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidatePath('/portal/classes')
   return { ok: true }
 }

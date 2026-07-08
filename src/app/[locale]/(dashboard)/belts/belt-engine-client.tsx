@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { promoteStudent } from './actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,6 +70,7 @@ export function BeltEngineClient({
   beltHierarchies: BeltHierarchy[]; promotions: Promotion[]; locale: string;
 }) {
   const t = useTranslations('belts');
+  const errCaught = useCaughtErrorText();
   const { toast } = useToast();
   const router = useRouter();
   const isRTL = locale === 'ar';
@@ -212,8 +214,7 @@ export function BeltEngineClient({
         currentStudent.current_belt_rank = prevRank ?? '';
         currentStudent.belt_promotion_date = prevDate;
       }
-      const message = err instanceof Error ? err.message : String(err);
-      toast({ title: t('error_title'), description: message || t('promotion_failed'), variant: 'destructive' });
+      toast({ title: t('error_title'), description: errCaught(err), variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }

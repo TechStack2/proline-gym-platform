@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { enrollStudent } from './actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 interface EnrollStudentModalProps {
   classId: string
@@ -38,6 +39,7 @@ function nameOf(s: StudentRow, locale: string): string {
 
 export default function EnrollStudentModal({ classId, locale, onClose, onSuccess }: EnrollStudentModalProps) {
   const t = useTranslations('classes')
+  const errText = useErrorText();
   const [search, setSearch] = useState('')
   const [allStudents, setAllStudents] = useState<StudentRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -107,7 +109,7 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
     if (res.ok) {
       onSuccess()
     } else {
-      setError(res.error || 'Failed to enroll student')
+      setError(errText(res.error))
     }
   }
 

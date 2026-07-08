@@ -26,6 +26,7 @@ import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/sh
 import { Loader2, Plus, X, AlarmClock, AlertTriangle, CalendarPlus } from 'lucide-react'
 import { sellPtPackage, extendPtPackage } from './actions'
 import { BookPtModal } from '@/components/shared/book-pt-modal'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 export type SellableType = {
   id: string; name_ar: string | null; name_en: string | null; name_fr: string | null
@@ -47,6 +48,7 @@ export function MemberPtPanel({
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('ptPanel')
+  const errText = useErrorText();
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -90,7 +92,7 @@ export function MemberPtPanel({
         setOpen(false); setWarnCoach(null); setTypeId(''); setCoachId(''); setPct(''); setFixed('')
         router.refresh()
       } else {
-        toast({ title: t('sellFailed'), description: res.error, variant: 'destructive' })
+        toast({ title: t('sellFailed'), description: errText(res.error), variant: 'destructive' })
       }
     })
 
@@ -119,7 +121,7 @@ export function MemberPtPanel({
     startTransition(async () => {
       const res = await extendPtPackage({ studentId, assignmentId, days: 30 })
       if (res.ok) { toast({ title: t('extended'), variant: 'success' }); router.refresh() }
-      else toast({ title: t('extendFailed'), description: res.error, variant: 'destructive' })
+      else toast({ title: t('extendFailed'), description: errText(res.error), variant: 'destructive' })
     })
 
   const sessionStatus = (s: string) => t(`session.${s}` as any)

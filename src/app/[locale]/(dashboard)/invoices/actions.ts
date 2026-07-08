@@ -18,6 +18,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
+import { actionError } from '@/lib/errors/action-error';
 
 type InvoiceRow = Database['public']['Tables']['invoices']['Row'];
 type PaymentMethod = Database['public']['Enums']['payment_method_enum'];
@@ -58,7 +59,7 @@ export async function issueInvoice(input: {
     p_notes_ar: input.notesAr ?? null,
     p_notes_fr: input.notesFr ?? null,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   revalidatePath('/invoices');
   return { ok: true, data: data as InvoiceRow };
 }
@@ -92,7 +93,7 @@ export async function recordPayment(input: {
     // Bridge: the generated Args type lags the additive p_client_uuid (000062);
     // the RPC accepts it. Same pattern as the repo's other Supabase-type bridges.
   } as unknown as Database['public']['Functions']['record_payment']['Args']);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${input.invoiceId}`);
   return { ok: true, data: data as InvoiceRow };
@@ -101,7 +102,7 @@ export async function recordPayment(input: {
 export async function refundInvoice(invoiceId: string, reason?: string): Promise<Result<InvoiceRow>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('refund_invoice', { p_invoice_id: invoiceId, p_reason: reason ?? null });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${invoiceId}`);
   return { ok: true, data: data as InvoiceRow };
@@ -110,7 +111,7 @@ export async function refundInvoice(invoiceId: string, reason?: string): Promise
 export async function voidInvoice(invoiceId: string, reason?: string): Promise<Result<InvoiceRow>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('void_invoice', { p_invoice_id: invoiceId, p_reason: reason ?? null });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${invoiceId}`);
   return { ok: true, data: data as InvoiceRow };
@@ -170,6 +171,6 @@ export async function discardOfflinePayment(input: {
     p_amount_usd: input.amountUsd,
     p_reason: input.reason,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: actionError(error) };
   return { ok: true, data: true };
 }

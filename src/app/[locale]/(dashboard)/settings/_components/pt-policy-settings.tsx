@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Dumbbell } from 'lucide-react';
 import { updatePtPolicy } from './pt-policy-actions';
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Props = {
   locale: string;
@@ -17,6 +18,7 @@ type Props = {
 
 export function PtPolicySettings({ locale, gymId, noShowForfeits, lateCancelWindowHours }: Props) {
   const t = useTranslations('settings');
+  const errText = useErrorText();
   const router = useRouter();
   const isRTL = locale === 'ar';
   const [forfeits, setForfeits] = useState(noShowForfeits);
@@ -28,7 +30,7 @@ export function PtPolicySettings({ locale, gymId, noShowForfeits, lateCancelWind
     const res = await updatePtPolicy({ gymId, noShowForfeits: forfeits, lateCancelWindowHours: parseInt(hours || '0', 10) });
     setBusy(false);
     if (res.ok) { toast.success(t('pt_policy_saved')); router.refresh(); }
-    else toast.error(res.error || t('pt_policy_error'));
+    else toast.error(errText(res.error));
   };
 
   return (

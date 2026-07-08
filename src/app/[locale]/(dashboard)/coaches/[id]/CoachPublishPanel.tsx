@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { Clock, Loader2, Rocket, Pencil, Eye, EyeOff, ArrowRight, ImageIcon } from 'lucide-react'
 import { Avatar } from '@/components/shared/avatar'
 import { publishCoachProfile, setCoachLanding, saveCoachDraftStaff } from './actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Fields = {
   specialization_ar: string; specialization_en: string; specialization_fr: string
@@ -40,6 +41,7 @@ export function CoachPublishPanel({
   hasPhotoDraft: boolean
 }) {
   const t = useTranslations('coachPublish')
+  const errText = useErrorText();
   const router = useRouter()
   const isRTL = locale === 'ar'
   const [tx, startTx] = useTransition()
@@ -60,7 +62,7 @@ export function CoachPublishPanel({
     startTx(async () => {
       const res = await fn()
       if (res.ok) router.refresh()
-      else setError(res.error || 'error')
+      else setError(errText(res.error))
     })
   }
 

@@ -1680,6 +1680,13 @@
       }
     }
   },
+  "errors": {
+    "generic": "Something went wrong — please try again.",
+    "duplicate": "That name is already in use.",
+    "in_use": "This item is still linked to other records.",
+    "not_allowed": "You don't have permission for that.",
+    "overpayment": "That's more than the balance due — overpayment isn't allowed."
+  },
   "validation": {
     "required": "This field is required",
     "email": "Please enter a valid email",

@@ -10,6 +10,7 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { dispatchWhatsApp } from '@/lib/whatsapp/dispatch'
 import { gymDisplayName } from '@/lib/whatsapp/identity'
+import { actionError } from '@/lib/errors/action-error';
 
 type Result = { ok: true } | { ok: false; error: string }
 
@@ -27,7 +28,7 @@ export async function approveRegistration(
     p_discount_pct: input.discountPct ?? 0,
     p_discount_amount_usd: input.discountAmountUsd ?? 0,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidate(input.classId)
 
   // G1 (additive, best-effort): the in-app notification fired in the RPC; when
@@ -57,7 +58,7 @@ export async function approveRegistration(
 export async function rejectRegistration(regId: string, classId: string, reason?: string): Promise<Result> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('reject_class_registration', { p_reg_id: regId, p_reason: reason ?? null })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidate(classId)
   return { ok: true }
 }
@@ -65,7 +66,7 @@ export async function rejectRegistration(regId: string, classId: string, reason?
 export async function cancelRegistration(regId: string, classId: string): Promise<Result> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('cancel_class_registration', { p_reg_id: regId })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidate(classId)
   return { ok: true }
 }
@@ -73,7 +74,7 @@ export async function cancelRegistration(regId: string, classId: string): Promis
 export async function registerWalkIn(classId: string, studentId: string): Promise<Result> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('request_class_registration', { p_class_id: classId, p_student_id: studentId })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   revalidate(classId)
   return { ok: true }
 }

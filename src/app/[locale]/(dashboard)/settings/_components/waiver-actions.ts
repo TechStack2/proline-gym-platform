@@ -8,6 +8,7 @@
  * (waiver_templates_staff_*). No service-role needed — nothing here is secret.
  */
 import { createClient } from '@/lib/supabase/server'
+import { actionError } from '@/lib/errors/action-error';
 
 const STAFF = ['owner', 'head_coach', 'receptionist']
 
@@ -61,7 +62,7 @@ export async function saveWaiverTemplate(input: {
 
   if (!existing) {
     const { error } = await supabase.from('waiver_templates').insert({ gym_id: ctx.gymId, ...row, version: 1 })
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: actionError(error) }
     return { ok: true, version: 1, bumped: false }
   }
 
@@ -70,6 +71,6 @@ export async function saveWaiverTemplate(input: {
   const version = bumped ? existing.version + 1 : existing.version
   const { error } = await supabase.from('waiver_templates')
     .update({ ...row, version, updated_at: new Date().toISOString() }).eq('id', existing.id)
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: actionError(error) }
   return { ok: true, version, bumped }
 }

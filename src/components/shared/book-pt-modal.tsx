@@ -21,6 +21,7 @@ import { CalendarPlus, X, Loader2, Send, AlertTriangle } from 'lucide-react'
 import { bookPtSlot, getPtSlots, proposePtTime } from '@/lib/pt/booking-actions'
 import type { SlotDay } from '@/lib/pt/slots'
 import { checkPtScheduleConflicts } from '@/app/[locale]/coach/pt/actions'
+import { useErrorText } from '@/lib/errors/use-error-text';
 
 // `getPtSlots` re-exported type
 export type { SlotDay } from '@/lib/pt/slots'
@@ -34,6 +35,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
   triggerLabel?: string
 }) {
   const t = useTranslations('ptBooking')
+  const errText = useErrorText();
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [open, setOpen] = useState(false)
@@ -70,7 +72,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
         setOpen(false)
         router.refresh()
       } else {
-        toast({ title: t('bookFailed'), description: res.error, variant: 'destructive' })
+        toast({ title: t('bookFailed'), description: errText(res.error), variant: 'destructive' })
         void load() // fresh slots for the race loser
       }
     })
@@ -84,7 +86,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
         setOpen(false)
         router.refresh()
       } else {
-        toast({ title: t('proposeFailed'), description: res.error, variant: 'destructive' })
+        toast({ title: t('proposeFailed'), description: errText(res.error), variant: 'destructive' })
       }
     })
 
