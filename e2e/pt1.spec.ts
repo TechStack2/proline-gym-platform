@@ -42,11 +42,14 @@ test('PT-1 · catalog → publish gate → desk sale → package-first cards (no
   try {
     // ── Settings: create the type ──
     await owner.page.goto('/en/settings?tab=ptpackages');
+    // M2-D: create is the shared FormWizard now (add-btn OPENS it; Basics -> Details).
+    await vis(owner.page, '[data-testid="ptpkg-add-btn"]').click();
     await vis(owner.page, '[data-testid="ptpkg-add-en"]').fill(TYPE_NAME);
+    await vis(owner.page, '[data-testid="wizard-next"]').click();
     await vis(owner.page, '[data-testid="ptpkg-add-sessions"]').fill('10');
     await vis(owner.page, '[data-testid="ptpkg-add-price"]').fill('300');
     await vis(owner.page, '[data-testid="ptpkg-add-validity"]').fill('60');
-    await vis(owner.page, '[data-testid="ptpkg-add-btn"]').click();
+    await vis(owner.page, '[data-testid="wizard-submit"]').click();
     const row = vis(owner.page, `[data-testid="ptpkg-row"][data-name-en="${TYPE_NAME}"]`).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
 

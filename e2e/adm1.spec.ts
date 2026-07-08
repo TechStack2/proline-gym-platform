@@ -97,7 +97,7 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
     await owner.page.getByTestId('wizard-next').click();
     await owner.page.getByTestId('wizard-next').click();
     await owner.page.getByTestId('wizard-next').click();
-    await owner.page.getByTestId('class-submit').click();
+    await owner.page.getByTestId('wizard-submit').click();
     await expect(owner.page.getByTestId('wizard-success')).toBeVisible({ timeout: 15_000 });
     await owner.page.goto('/en/schedule');
     await expect(vis(owner.page, `[data-testid="week-chip"][data-class-en="${CLASS_NAME_V2}"]`).first())
@@ -202,8 +202,10 @@ test('ADM-1 · disciplines SSOT: settings-created → wizard chips + anon landin
   try {
     // Create a discipline in Settings (the new CRUD).
     await owner.page.goto('/en/settings?tab=disciplines');
-    await vis(owner.page, '[data-testid="discipline-add-en"]').fill(DISC_NAME);
+    // M2-D: create is the shared FormWizard now (add-btn OPENS it; one Basics step).
     await vis(owner.page, '[data-testid="discipline-add-btn"]').click();
+    await vis(owner.page, '[data-testid="discipline-add-en"]').fill(DISC_NAME);
+    await vis(owner.page, '[data-testid="wizard-submit"]').click();
     await expect(
       vis(owner.page, `[data-testid="discipline-row"][data-name-en="${DISC_NAME}"]`).first(),
     ).toBeVisible({ timeout: 15_000 });

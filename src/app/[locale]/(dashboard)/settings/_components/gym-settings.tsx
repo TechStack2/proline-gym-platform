@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useErrorText, useCaughtErrorText } from '@/lib/errors/use-error-text';
@@ -113,6 +113,17 @@ async function uploadGymHero(gymId: string, file: File): Promise<string> {
 // key (the stable keys from actionError) falls back to friendly, shared errors.* copy.
 const GYM_ERR_KEYS = new Set(['invalid_color', 'invalid_currency', 'not_allowed', 'nothing_to_save', 'no_gym', 'not_signed_in']);
 
+// M2-D WIZARD-POLISH: each J5 section saves independently. saveGymSettings already
+// accepts a PARTIAL payload (it skips undefined keys), so a section save sends only its
+// own fields. Field lists mirror the JSX sections below.
+type SectionKey = 'identity' | 'contact' | 'localization' | 'branding';
+const SECTION_FIELDS: Record<SectionKey, string[]> = {
+  identity: ['name_en', 'name_ar', 'name_fr'],
+  contact: ['phone', 'email', 'website', 'address_en', 'address_ar', 'address_fr'],
+  localization: ['timezone', 'currency_preference'],
+  branding: ['brand_color', 'hero_image_url', 'tagline_en', 'tagline_ar', 'tagline_fr'],
+};
+
 export function GymSettings({ gym, locale }: Props) {
   const t = useTranslations('settings');
   const errText = useErrorText();
@@ -141,25 +152,18 @@ export function GymSettings({ gym, locale }: Props) {
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-  // J5: which single field a validation failure maps to (per-field inline error);
-  // form-level failures leave this null and only surface in the banner (the fallback).
+  // M2-D: per-section save state (was one shared save/saved/error).
+  const [savingSec, setSavingSec] = useState<SectionKey | null>(null);
+  const [savedSec, setSavedSec] = useState<SectionKey | null>(null);
+  const [sectionError, setSectionError] = useState<{ section: SectionKey; msg: string } | null>(null);
+  // Which single field a validation failure maps to (per-field inline error).
   const [fieldError, setFieldError] = useState<'brand_color' | 'currency_preference' | null>(null);
+  // The instant logo/hero uploads keep their own banner (they're not part of a section save).
+  const [uploadError, setUploadError] = useState('');
   const [logoBusy, setLogoBusy] = useState(false);
   const [logoUrl, setLogoUrl] = useState(gym?.logo_url ?? '');
   const [heroBusy, setHeroBusy] = useState(false);
   const [heroVersion, setHeroVersion] = useState<number | undefined>(undefined);
-
-  // J4 CLASS-SURFACE: land the checklist's Branding deep-link (?tab=gym#branding) ON
-  // the Branding section. Native hash-scroll can miss because this tab's content
-  // mounts client-side after the browser's initial scroll, so scroll it in on mount.
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash === '#branding') {
-      document.getElementById('branding')?.scrollIntoView({ block: 'start' });
-    }
-  }, []);
 
   if (!gym) {
     return (
@@ -177,44 +181,58 @@ export function GymSettings({ gym, locale }: Props) {
   const heroSrc = storagePublicUrl('gym-landing', form.hero_image_url, heroVersion);
   const reuseHint = t('gym.reuseEnglishHint');
 
-  const save = async () => {
-    setSaving(true); setSaved(false); setError(''); setFieldError(null);
-    // J5: en→ar/fr fallback at write time (the managers' pattern) — a blank ar/fr
-    // reuses the trimmed English value. Applied to the payload only; the form keeps
-    // showing blanks so the "leave blank to reuse English" hint stays truthful.
+  // M2-D: save ONE section — send only its fields (partial payload; the action skips
+  // undefined keys). The en→ar/fr write-time fallback applies to this section's
+  // trilingual fields only. Per-section busy/ok/error; per-field errors preserved.
+  const saveSection = async (section: SectionKey) => {
+    setSavingSec(section); setSavedSec(null); setSectionError(null); setFieldError(null);
     const fb = (val: string, en: string) => val.trim() || en.trim();
-    const payload = {
-      ...form,
-      name_ar: fb(form.name_ar, form.name_en),
-      name_fr: fb(form.name_fr, form.name_en),
-      address_ar: fb(form.address_ar, form.address_en),
-      address_fr: fb(form.address_fr, form.address_en),
-      tagline_ar: fb(form.tagline_ar, form.tagline_en),
-      tagline_fr: fb(form.tagline_fr, form.tagline_en),
-    };
-    const res = await saveGymSettings(payload);
-    setSaving(false);
+    const payload: Record<string, string> = {};
+    for (const k of SECTION_FIELDS[section]) payload[k] = (form as Record<string, string>)[k];
+    if (section === 'identity') { payload.name_ar = fb(form.name_ar, form.name_en); payload.name_fr = fb(form.name_fr, form.name_en); }
+    if (section === 'contact') { payload.address_ar = fb(form.address_ar, form.address_en); payload.address_fr = fb(form.address_fr, form.address_en); }
+    if (section === 'branding') { payload.tagline_ar = fb(form.tagline_ar, form.tagline_en); payload.tagline_fr = fb(form.tagline_fr, form.tagline_en); }
+    const res = await saveGymSettings(payload as Parameters<typeof saveGymSettings>[0]);
+    setSavingSec(null);
     if (res.ok) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      setSavedSec(section);
+      setTimeout(() => setSavedSec(null), 2500);
       router.refresh();
     } else {
-      setError(GYM_ERR_KEYS.has(res.error) ? t(`gym.err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error));
+      setSectionError({ section, msg: GYM_ERR_KEYS.has(res.error) ? t(`gym.err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error) });
       if (res.error === 'invalid_color') setFieldError('brand_color');
       else if (res.error === 'invalid_currency') setFieldError('currency_preference');
     }
   };
 
+  // A section's Save + ok/error footer (a render helper, NOT a component → no remount).
+  // Section-suffixed testids so a spec can target one section.
+  const saveBar = (section: SectionKey) => (
+    <div className="space-y-1.5 border-t pt-3">
+      {sectionError?.section === section && (
+        <div data-testid={`gym-save-error-${section}`} className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{sectionError.msg}</div>
+      )}
+      <div className="flex items-center gap-2">
+        <Button data-testid={`gym-save-${section}`} onClick={() => void saveSection(section)} disabled={savingSec === section} size="sm" className="rounded-lg">
+          {savingSec === section ? t('gym.saving') : t('gym.saveChanges')}
+        </Button>
+        {savedSec === section && (
+          <span data-testid={`gym-save-ok-${section}`} className={cn('text-xs font-medium text-green-700', isRTL && 'font-arabic')}>{t('gym.saved')}</span>
+        )}
+      </div>
+    </div>
+  );
+
   const onPickLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !gym.id) return;
-    setLogoBusy(true); setError('');
+    setLogoBusy(true); setUploadError('');
     try {
       const url = await uploadGymLogo(gym.id, file);
       setLogoUrl(url);
       router.refresh();
     } catch (err: any) {
-      setError(errCaught(err));
+      setUploadError(errCaught(err));
     } finally {
       setLogoBusy(false);
       e.target.value = '';
@@ -224,7 +242,7 @@ export function GymSettings({ gym, locale }: Props) {
   const onPickHero = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !gym.id) return;
-    setHeroBusy(true); setError('');
+    setHeroBusy(true); setUploadError('');
     try {
       const path = await uploadGymHero(gym.id, file);
       setForm((prev) => ({ ...prev, hero_image_url: path })); // relative path, mirrors the DB
@@ -232,7 +250,7 @@ export function GymSettings({ gym, locale }: Props) {
       router.refresh();
     } catch (err: any) {
       // gym-landing write RLS is is_gym_admin() — a non-admin surfaces here, not silently.
-      setError(errCaught(err));
+      setUploadError(errCaught(err));
     } finally {
       setHeroBusy(false);
       e.target.value = '';
@@ -266,6 +284,9 @@ export function GymSettings({ gym, locale }: Props) {
           {gymName || t('gym.unnamed')}
         </h2>
       </div>
+      {uploadError && (
+        <div data-testid="gym-upload-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{uploadError}</div>
+      )}
 
       {/* ── Identity ── */}
       <Section icon={Building2} title={t('gym.sectionIdentity')} rtl={isRTL}>
@@ -278,6 +299,7 @@ export function GymSettings({ gym, locale }: Props) {
         <F label={t('gym.nameFr')} hint={reuseHint}>
           <Input data-testid="gym-name-fr" value={form.name_fr} onChange={set('name_fr')} className="rounded-lg border p-2" placeholder={t('gym.enterFrenchName')} />
         </F>
+        {saveBar('identity')}
       </Section>
 
       {/* ── Contact ── */}
@@ -302,6 +324,7 @@ export function GymSettings({ gym, locale }: Props) {
         <F label={t('gym.addressFr')} hint={reuseHint}>
           <Input data-testid="gym-address-fr" value={form.address_fr} onChange={set('address_fr')} className="rounded-lg border p-2" />
         </F>
+        {saveBar('contact')}
       </Section>
 
       {/* ── Localization (pickers, no free-text for closed sets) ── */}
@@ -343,10 +366,11 @@ export function GymSettings({ gym, locale }: Props) {
           <p className={cn('text-2xs text-gray-400', isRTL && 'font-arabic')}>{t('gym.interfaceLanguageHint')}</p>
           <LanguageSwitcher locale={locale} variant="inline" />
         </div>
+        {saveBar('localization')}
       </Section>
 
-      {/* ── Branding (000072) — id="branding" is the checklist deep-link target ── */}
-      <Section icon={Palette} title={t('gym.branding')} rtl={isRTL} id="branding">
+      {/* ── Branding (000072) ── */}
+      <Section icon={Palette} title={t('gym.branding')} rtl={isRTL}>
         <div className="grid grid-cols-2 gap-3">
           <F label={t('gym.brandColor')} rtlLabel={isRTL}>
             <div className="flex items-center gap-2">
@@ -403,24 +427,8 @@ export function GymSettings({ gym, locale }: Props) {
         <F label={t('gym.taglineFr')} hint={reuseHint}>
           <Input data-testid="gym-tagline-fr" value={form.tagline_fr} onChange={set('tagline_fr')} className="rounded-lg border p-2" />
         </F>
+        {saveBar('branding')}
       </Section>
-
-      {/* ── Save (one data flow for every section) ── */}
-      <Card className="rounded-2xl shadow-sm">
-        <CardContent className="space-y-2 pt-4">
-          {error && (
-            <div data-testid="gym-save-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
-          )}
-          <Button data-testid="gym-save" onClick={() => void save()} disabled={saving} className="w-full rounded-lg" size="lg">
-            {saving ? t('gym.saving') : t('gym.saveChanges')}
-          </Button>
-          {saved && (
-            <p data-testid="gym-save-ok" className={cn('text-xs font-medium text-green-700 text-center', isRTL && 'font-arabic')}>
-              {t('gym.saved')}
-            </p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

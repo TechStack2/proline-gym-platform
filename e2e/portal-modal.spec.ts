@@ -54,11 +54,13 @@ async function expectViewportFixed(page: Page, modal: Locator, label: string) {
 /** Owner sells a fresh PT pack to Karim → /portal/pt shows a bookable assignment. */
 async function sellPtToKarim(page: Page, name: string) {
   await page.goto('/en/settings?tab=ptpackages')
+  await vis(page, '[data-testid="ptpkg-add-btn"]').click()
   await vis(page, '[data-testid="ptpkg-add-en"]').fill(name)
+  await vis(page, '[data-testid="wizard-next"]').click()
   await vis(page, '[data-testid="ptpkg-add-sessions"]').fill('10')
   await vis(page, '[data-testid="ptpkg-add-price"]').fill('100')
   await vis(page, '[data-testid="ptpkg-add-validity"]').fill('60')
-  await vis(page, '[data-testid="ptpkg-add-btn"]').click()
+  await vis(page, '[data-testid="wizard-submit"]').click()
   await expect(vis(page, `[data-testid="ptpkg-row"][data-name-en="${name}"]`).first()).toBeVisible({ timeout: 15_000 })
   await page.goto('/en/students?search=Karim')
   await vis(page, '[data-testid="student-card"]').filter({ hasText: 'Karim' }).first().click()

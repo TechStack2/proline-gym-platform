@@ -30,11 +30,13 @@ async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
 
 async function createType(page: Page, name: string, sessions: string, price: string) {
   await page.goto('/en/settings?tab=ptpackages');
+  await vis(page, '[data-testid="ptpkg-add-btn"]').click();
   await vis(page, '[data-testid="ptpkg-add-en"]').fill(name);
+  await vis(page, '[data-testid="wizard-next"]').click();
   await vis(page, '[data-testid="ptpkg-add-sessions"]').fill(sessions);
   await vis(page, '[data-testid="ptpkg-add-price"]').fill(price);
   await vis(page, '[data-testid="ptpkg-add-validity"]').fill('60');
-  await vis(page, '[data-testid="ptpkg-add-btn"]').click();
+  await vis(page, '[data-testid="wizard-submit"]').click();
   await expect(vis(page, `[data-testid="ptpkg-row"][data-name-en="${name}"]`).first()).toBeVisible({ timeout: 15_000 });
 }
 

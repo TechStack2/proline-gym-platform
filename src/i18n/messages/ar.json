@@ -1344,7 +1344,10 @@
       "nameAr": "الاسم (AR)",
       "nameFr": "الاسم (FR)",
       "add": "إضافة",
-      "errNameRequired": "الاسم الإنجليزي مطلوب."
+      "errNameRequired": "الاسم الإنجليزي مطلوب.",
+      "addTitle": "إضافة تخصص",
+      "editTitle": "تعديل التخصص",
+      "saveChanges": "حفظ التغييرات"
     },
     "pt_policy_title": "سياسة جلسات التدريب",
     "pt_policy_subtitle": "كيف تؤثر حالات عدم الحضور والإلغاء المتأخر على أرصدة التدريب.",
@@ -1369,7 +1372,10 @@
       "sessionsShort": "جلسات",
       "daysShort": "ي",
       "onLanding": "على الصفحة",
-      "staged": "مخفي"
+      "staged": "مخفي",
+      "addTitle": "إضافة باقة تدريب شخصي",
+      "editTitle": "تعديل الباقة",
+      "saveChanges": "حفظ التغييرات"
     },
     "planManager": {
       "title": "إدارة الخطط",

@@ -32,8 +32,10 @@ test('ADM-2 · archived discipline absent everywhere; Member-360 promotion saves
   try {
     // ── Create + archive a discipline (Settings CRUD; ADM-2 also seeds its ladder) ──
     await owner.page.goto('/en/settings?tab=disciplines');
-    await vis(owner.page, '[data-testid="discipline-add-en"]').fill(DISC_NAME);
+    // M2-D: create is the shared FormWizard now (add-btn OPENS it; one Basics step).
     await vis(owner.page, '[data-testid="discipline-add-btn"]').click();
+    await vis(owner.page, '[data-testid="discipline-add-en"]').fill(DISC_NAME);
+    await vis(owner.page, '[data-testid="wizard-submit"]').click();
     const row = vis(owner.page, `[data-testid="discipline-row"][data-name-en="${DISC_NAME}"]`).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     await row.getByTestId('discipline-archive-btn').click();

@@ -141,8 +141,10 @@ test('UX-2 · mobile Settings nav + wizard convention (student w/ guardian, lead
     // ── Belt ladders: new discipline → editor (archive/reorder/rename) ──
     const DISC = `UX2 Disc ${RUN}`;
     await owner.page.goto('/en/settings?tab=disciplines');
-    await vis(owner.page, '[data-testid="discipline-add-en"]').fill(DISC);
+    // M2-D: create is the shared FormWizard now (add-btn OPENS it; one Basics step).
     await vis(owner.page, '[data-testid="discipline-add-btn"]').click();
+    await vis(owner.page, '[data-testid="discipline-add-en"]').fill(DISC);
+    await vis(owner.page, '[data-testid="wizard-submit"]').click();
     await expect(
       vis(owner.page, `[data-testid="discipline-row"][data-name-en="${DISC}"]`).first(),
     ).toBeVisible({ timeout: 15_000 });
