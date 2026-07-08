@@ -1099,7 +1099,11 @@
     "regPending": "En attente d’approbation",
     "markFailed": "Échec du marquage",
     "present": "Présent",
-    "absent": "Absent"
+    "absent": "Absent",
+    "stepBasics": "Informations",
+    "stepDates": "Dates et capacité",
+    "stepPricing": "Tarifs",
+    "stepReview": "Révision"
   },
   "pt": {
     "title": "Forfaits PT",
@@ -1917,6 +1921,11 @@
         "shareText": "Découvrez notre salle — venez vous entraîner :",
         "preview": "Ouvrir votre page",
         "manage": "Gérer ce qui est public"
+      },
+      "camps": {
+        "title": "Vos stages",
+        "desc": "Créez un stage d'été auquel les familles peuvent s'inscrire.",
+        "cta": "Ajouter un stage"
       }
     }
   },
@@ -3223,6 +3232,10 @@
     "copied": "Copié",
     "shareText": "Découvrez notre salle :",
     "share": "Partager",
-    "preview": "Ouvrir votre page"
+    "preview": "Ouvrir votre page",
+    "campsTitle": "Stages",
+    "campsHint": "Choisissez les stages affichés sur votre page publique.",
+    "noCamps": "Aucun stage à venir pour le moment.",
+    "statCamps": "Stages"
   }
 }

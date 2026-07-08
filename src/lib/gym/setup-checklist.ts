@@ -16,7 +16,7 @@ import { parseEnabledProducts } from './products'
  */
 export type SetupItemKey =
   | 'profile' | 'branding' | 'discipline' | 'coach' | 'class'
-  | 'plan' | 'ptpackage' | 'exchange' | 'member'
+  | 'plan' | 'ptpackage' | 'camp' | 'exchange' | 'member'
 
 export type SetupItem = { key: SetupItemKey; done: boolean }
 
@@ -98,8 +98,27 @@ export async function getSetupChecklist(
       .then(({ count }) => (count ?? 0) > 0),
   ])
 
-  // Batch 3 (1): members (kept last so batches stay ≤3 after adding `class`).
-  const member = await scopedExists('students')
+  // M2-B: "≥1 upcoming active camp" — camps have NO is_active (they use `status`) and NO
+  // discipline; scope by gym (blanket-authenticated catalog RLS) + the live status set +
+  // not-yet-ended, mirroring the anon landing policy (000043). head:true — no rows over
+  // the wire.
+  const hasUpcomingCamp = async (): Promise<boolean> => {
+    const today = new Date().toISOString().slice(0, 10)
+    const { count } = await supabase
+      .from('camps')
+      .select('id', { count: 'exact', head: true })
+      .eq('gym_id', gymId)
+      .is('deleted_at', null)
+      .in('status', ['open', 'in_progress', 'full'])
+      .gte('end_date', today)
+    return (count ?? 0) > 0
+  }
+
+  // Batch 3 (≤3): members + the product-gated camp check (skipped when camps are off).
+  const [member, camp] = await Promise.all([
+    scopedExists('students'),
+    products.camp ? hasUpcomingCamp() : Promise.resolve(false),
+  ])
 
   const all: Array<SetupItem | null> = [
     { key: 'profile', done: profileDone },
@@ -109,6 +128,7 @@ export async function getSetupChecklist(
     { key: 'class', done: klass },
     products.membership ? { key: 'plan', done: plan } : null,
     products.pt ? { key: 'ptpackage', done: ptpackage } : null,
+    products.camp ? { key: 'camp', done: camp } : null,
     { key: 'exchange', done: exchange },
     { key: 'member', done: member },
   ]
@@ -130,7 +150,7 @@ export async function getSetupChecklist(
 // migration. New reads are head:true counts run in Promise.all batches of ≤3.
 // ============================================================================
 
-export type MilestoneKey = 'gym' | 'team' | 'classes' | 'offers' | 'members' | 'golive'
+export type MilestoneKey = 'gym' | 'team' | 'classes' | 'offers' | 'camps' | 'members' | 'golive'
 
 export type SetupMilestone = {
   key: MilestoneKey
@@ -146,6 +166,9 @@ export type SetupMilestone = {
     planDone?: boolean
     ptEnabled?: boolean
     ptDone?: boolean
+    // M2-B Your camps (product-gated card; present only when products.camp)
+    campEnabled?: boolean
+    campDone?: boolean
     // M6 Go live
     branded?: boolean
     landingVisible?: boolean
@@ -153,7 +176,7 @@ export type SetupMilestone = {
 }
 
 export type SetupMilestones = {
-  milestones: SetupMilestone[] // exactly 6, in M1..M6 display order
+  milestones: SetupMilestone[] // 6, or 7 when camps are enabled (product-gated), in display order
   doneCount: number
   total: number // always 6
   allDone: boolean
@@ -250,6 +273,8 @@ export async function getSetupMilestones(
   const ptEnabled = has('ptpackage')
   const planDone = done('plan')
   const ptDone = done('ptpackage')
+  const campEnabled = has('camp')
+  const campDone = done('camp')
   const landingVisible = landingClass || landingCoach
 
   const milestones: SetupMilestone[] = [
@@ -262,6 +287,10 @@ export async function getSetupMilestones(
       done: (membershipEnabled ? planDone : true) && (ptEnabled ? ptDone : true),
       detail: { membershipEnabled, planDone, ptEnabled, ptDone },
     },
+    // M2-B: "Your camps" — a product-gated milestone. Present ONLY when products.camp
+    // (spread → the array is 6 or 7; every consumer derives the total from length), done
+    // when ≥1 upcoming active camp exists (the `camp` checklist item, reused above).
+    ...(campEnabled ? [{ key: 'camps' as const, done: campDone, detail: { campEnabled, campDone } }] : []),
     { key: 'members', done: done('member'), detail: {} },
     { key: 'golive', done: branded && landingVisible, detail: { branded, landingVisible } },
   ]

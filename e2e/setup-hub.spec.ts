@@ -80,19 +80,19 @@ test('SETUP-HUB · /today links to /setup; the hub renders six milestones and on
     const summary = owner.page.locator('[data-testid="setup-checklist"]:visible').first()
     await expect(summary, 'the compact setup summary shows while incomplete').toBeVisible({ timeout: 15_000 })
     await expect(summary, 'it links to the guided hub').toHaveAttribute('href', '/en/setup')
-    await expect(summary, 'six milestones, not eight items').toHaveAttribute('data-total', '6')
+    await expect(summary, 'seven milestones (M2-B added the product-gated camps card)').toHaveAttribute('data-total', '7')
     await expect(summary.getByTestId('setup-hub-link'), 'the "continue setup" affordance').toBeVisible()
 
     // ── /setup: the guided hub renders six milestone cards; the gym is incomplete ──
     await owner.page.goto('/en/setup')
     const hub = owner.page.getByTestId('setup-hub')
     await expect(hub, 'the guided hub renders').toBeVisible({ timeout: 20_000 })
-    await expect(hub, 'six milestones, not eight items').toHaveAttribute('data-total', '6')
+    await expect(hub, 'seven milestones (M2-B added the product-gated camps card)').toHaveAttribute('data-total', '7')
     const gymCard = owner.page.getByTestId('milestone-gym')
     await expect(gymCard, 'the gym milestone starts incomplete (no brand)').toHaveAttribute('data-done', 'false')
     await expect(gymCard.getByTestId('milestone-gym-cta'), 'incomplete card shows its CTA').toBeVisible()
     const before = Number(await hub.getAttribute('data-done'))
-    expect(before, 'hub starts incomplete (< 6 of 6)').toBeLessThan(6)
+    expect(before, 'hub starts incomplete (< 7 of 7)').toBeLessThan(7)
 
     // ── FLIP one milestone via service role → the card ticks + progress increments ──
     await setBrandColor('#cd1419')

@@ -49,11 +49,11 @@ test.describe('ONBOARDING-CHECKLIST', () => {
     const card = page.locator('[data-testid="setup-checklist"]:visible').first()
     await expect(card, 'summary shows while setup is incomplete').toBeVisible({ timeout: 15_000 })
     await expect(card, 'it links to the guided hub').toHaveAttribute('href', '/en/setup')
-    await expect(card, 'six milestones, not eight items').toHaveAttribute('data-total', '6')
+    await expect(card, 'seven milestones (M2-B added the product-gated camps card)').toHaveAttribute('data-total', '7')
     // the gym milestone dot is not done (branding is the missing signal)
     await expect(page.locator('[data-testid="setup-dot-gym"]:visible').first()).toHaveAttribute('data-done', 'false')
     const before = Number(await card.getAttribute('data-done'))
-    expect(before, 'starts incomplete (< 6 of 6)').toBeLessThan(6)
+    expect(before, 'starts incomplete (< 7 of 7)').toBeLessThan(7)
 
     // ── COMPLETE the last blocker via service role. Branding completes BOTH the
     //    gym AND go-live milestones, so the seed gym (coach + classes + offers +

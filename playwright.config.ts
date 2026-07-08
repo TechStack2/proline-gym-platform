@@ -722,6 +722,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // M2-B PRODUCT-SETUP: visual EVIDENCE — the setup hub's camps milestone + the camp
+      // wizard steps (on the shared FormWizard) into screenshots/ (the e2e-screenshots
+      // artifact the auditor reviews). Anchored (leading slash) so it never collides.
+      name: 'camp-shots',
+      dependencies: ['setup'],
+      testMatch: /\/camp-shots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // DOUBLE-SHELL: the staff dashboard mounts every page ONCE (single responsive
       // shell). Asserts DOM-wide COUNTS (one main, one mounted bell, one
       // #pay-amount-usd on invoice detail) on desktop AND mobile viewports.
