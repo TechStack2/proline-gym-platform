@@ -278,6 +278,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // M2-C GALLERY: the "Public page photos" manager (Settings › gym section) +
+      // the anon landing render. Seeds/deletes the run gym's champion rows via
+      // service-role (restores the zero-images baseline) and uploads a real image
+      // through the manager. Anchored (leading slash) so it never substring-collides.
+      name: 'landing-photos',
+      dependencies: ['setup'],
+      testMatch: /\/landing-photos\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // WL-DOMAIN-ROUTING: the app resolves the gym by request Host (gym_domains).
       // A mapped custom domain (mocked via x-forwarded-host) renders that gym's
       // branded landing; ?gym= still works; an unmapped host → the default gym.

@@ -755,7 +755,8 @@
       "ifma": "Fédération Internationale de Muaythaï",
       "arab": "Fédération Arabe de Muaythaï",
       "lmmaf": "Fédération Libanaise de MMA",
-      "mmaLebanon": "MMA Liban"
+      "mmaLebanon": "MMA Liban",
+      "empty": "Affiliations bientôt disponibles."
     },
     "champions": {
       "title": "Nos Champions",
@@ -763,11 +764,13 @@
       "c1": "Champion PRO LINE",
       "c2": "Champion PRO LINE",
       "c3": "Champion PRO LINE",
-      "c4": "Champion PRO LINE"
+      "c4": "Champion PRO LINE",
+      "empty": "Photos des champions bientôt disponibles."
     },
     "gallery": {
       "title": "Dans la Salle",
-      "subtitle": "Là où s'écrit la saga"
+      "subtitle": "Là où s'écrit la saga",
+      "empty": "Galerie bientôt disponible."
     },
     "hero": {
       "tagline": "Commencez votre propre saga",
@@ -1458,6 +1461,21 @@
         "classes": "Cours",
         "schedule": "Planning hebdo",
         "promotions": "Promotions"
+      }
+    },
+    "landingPhotos": {
+      "title": "Photos de la page publique",
+      "desc": "Téléversez les photos des champions, de la galerie et des affiliations affichées sur votre site public.",
+      "add": "Ajouter une photo",
+      "empty": "Aucune photo pour le moment.",
+      "caption": "Légende",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "delete": "Supprimer",
+      "sections": {
+        "champions": "Champions",
+        "gallery": "Galerie",
+        "affiliations": "Affiliations"
       }
     }
   },

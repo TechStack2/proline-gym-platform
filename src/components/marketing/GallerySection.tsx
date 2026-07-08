@@ -1,8 +1,10 @@
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { LandingImage } from './LandingImage';
+import { LandingSectionEmpty } from './LandingSectionEmpty';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 import type { LandingImageRow } from './landing-images';
 import { pickCaption } from './landing-images';
 
@@ -25,6 +27,7 @@ export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
     ? await supabase.rpc('get_landing_images', { p_gym_id: gym.id, p_section: 'gallery' })
     : { data: null };
   const rows = (data || []) as LandingImageRow[];
+  const isDefault = gym?.slug === DEFAULT_GYM_SLUG;
 
   if (rows.length > 0) {
     return (
@@ -51,7 +54,7 @@ export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
                   )}
                 >
                   <LandingImage
-                    src={row.image_url}
+                    src={storagePublicUrl('gym-landing', row.image_url)}
                     alt={caption || t('title')}
                     fallbackLabel={caption || t('title')}
                     fallbackClassName={feature ? 'aspect-square md:aspect-[4/3]' : 'aspect-square'}
@@ -66,6 +69,14 @@ export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
           </div>
         </div>
       </section>
+    );
+  }
+
+  // M2-C: the built-in Proline gym mosaic is DEMO content — default gym only. A
+  // non-default gym with no gallery rows shows a tasteful empty state.
+  if (!isDefault) {
+    return (
+      <LandingSectionEmpty id="gallery" bgClass="bg-secondary-950" title={t('title')} subtitle={t('subtitle')} emptyLabel={t('empty')} isRTL={isRTL} />
     );
   }
 

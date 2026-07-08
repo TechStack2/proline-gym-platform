@@ -38,6 +38,11 @@ test('SETTINGS-SHOTS · Manage index + every section (en) + index (ar, RTL)', as
   try {
     for (const v of VIEWS) {
       await enPage.goto(v.path)
+      // M2-C GALLERY: the gym section now hosts the "Public page photos" manager
+      // (loads its rows async) — let it paint so the shot captures it, not a spinner.
+      if (v.name === 'gym') {
+        await enPage.getByTestId('landing-photos-manager').first().waitFor({ timeout: 10_000 }).catch(() => {})
+      }
       await shot(enPage, `settings-${v.name}-en`)
     }
   } finally {
