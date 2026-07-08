@@ -121,12 +121,15 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
       await expect(anon.page.locator('#schedule')).not.toContainText(CLASS_NAME_V2);
     });
 
-    // Affiliations: the four real logos respond 200 (no 404 placeholders).
+    // M2-C GALLERY: the four committed logo files still exist (they render on the
+    // DEFAULT gym), so keep the asset-load check — but the run gym is a NON-DEFAULT gym
+    // with no affiliation images, so it shows the empty state, NEVER Proline's logos.
     for (const f of ['lmf.jpg', 'ifma.png', 'lmmaf.png', 'mma-lebanon.jpg']) {
       const res = await anon.page.request.get(`/landing/affiliations/${f}`);
-      expect(res.status(), `${f} loads`).toBe(200);
+      expect(res.status(), `${f} asset exists`).toBe(200);
     }
-    await expect(anon.page.locator('[data-testid="affiliation-slot"]')).toHaveCount(4);
+    await expect(anon.page.getByTestId('landing-affiliations-empty'), 'affiliations empty state').toBeVisible();
+    await expect(anon.page.locator('[data-testid="affiliation-slot"]'), 'no Proline affiliation slots on a non-default gym').toHaveCount(0);
   } finally {
     await owner.ctx.close();
     await anon.ctx.close();

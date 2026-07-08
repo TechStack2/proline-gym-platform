@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { GymSettings } from './gym-settings';
+import { LandingPhotosManager } from './landing-photos-manager';
 import { ExchangeRates } from './exchange-rates';
 import { DisciplineManager } from './discipline-manager';
 import { PlanManager } from './plan-manager';
@@ -120,7 +121,13 @@ export function SettingsClient({
           {TITLES[section]}
         </h2>
 
-        {section === 'gym' && <GymSettings gym={gym} locale={locale} />}
+        {section === 'gym' && (
+          <div className="space-y-4">
+            <GymSettings gym={gym} locale={locale} />
+            {/* M2-C GALLERY: the "Public page photos" manager lives in this section. */}
+            {gym?.id && <LandingPhotosManager gymId={gym.id} locale={locale} />}
+          </div>
+        )}
 
         {section === 'offers' && gym?.id && (
           <div className="space-y-4">

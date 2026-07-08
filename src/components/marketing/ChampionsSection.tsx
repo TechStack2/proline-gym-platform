@@ -2,8 +2,10 @@ import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Trophy } from 'lucide-react';
 import { LandingImage } from './LandingImage';
+import { LandingSectionEmpty } from './LandingSectionEmpty';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 import type { LandingImageRow } from './landing-images';
 import { pickCaption } from './landing-images';
 
@@ -32,6 +34,7 @@ export async function ChampionsSection({ locale, gymSlug }: ChampionsSectionProp
     ? await supabase.rpc('get_landing_images', { p_gym_id: gym.id, p_section: 'champions' })
     : { data: null };
   const rows = (data || []) as LandingImageRow[];
+  const isDefault = gym?.slug === DEFAULT_GYM_SLUG;
 
   if (rows.length > 0) {
     return (
@@ -57,7 +60,7 @@ export async function ChampionsSection({ locale, gymSlug }: ChampionsSectionProp
                   className="group relative overflow-hidden rounded-2xl ring-1 ring-white/10 bg-secondary-950"
                 >
                   <LandingImage
-                    src={row.image_url}
+                    src={storagePublicUrl('gym-landing', row.image_url)}
                     alt={caption || t('title')}
                     fallbackLabel={caption || t('title')}
                     fallbackClassName="aspect-[3/4]"
@@ -76,6 +79,15 @@ export async function ChampionsSection({ locale, gymSlug }: ChampionsSectionProp
           </div>
         </div>
       </section>
+    );
+  }
+
+  // M2-C: the built-in Proline champions are DEMO content — render them ONLY on the
+  // default gym. A non-default gym with no champion rows shows a tasteful empty state,
+  // never Proline's athletes.
+  if (!isDefault) {
+    return (
+      <LandingSectionEmpty id="champions" bgClass="bg-secondary-900" title={t('title')} subtitle={t('subtitle')} emptyLabel={t('empty')} isRTL={isRTL} />
     );
   }
 
