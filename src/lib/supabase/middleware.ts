@@ -65,7 +65,7 @@ export async function updateSession(request: NextRequest) {
   // Protected routes — unauthenticated users redirected to login
   const protectedPaths = [
     '/dashboard', '/students', '/classes', '/schedule', '/attendance',
-    '/payments', '/invoices', '/pt', '/rentals', '/camps', '/leads',
+    '/payments', '/invoices', '/pt', '/camps', '/leads',
     '/reports', '/settings', '/profile', '/coach', '/portal',
   ];
   const pathname = request.nextUrl.pathname;

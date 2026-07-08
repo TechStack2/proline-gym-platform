@@ -10,7 +10,7 @@ import { SITE_URL } from '@/lib/seo';
 const PRIVATE_SEGMENTS = [
   'dashboard', 'today', 'inbox', 'students', 'money', 'schedule', 'coaches',
   'team', 'settings', 'profile', 'belts', 'disciplines', 'leads', 'classes',
-  'attendance', 'invoices', 'payments', 'pt', 'rentals', 'camps', 'reports',
+  'attendance', 'invoices', 'payments', 'pt', 'camps', 'reports',
   'notifications', 'portal', 'coach', 'auth',
 ];
 

@@ -55,7 +55,7 @@ test('SETTINGS-REFIT · currency chips + searchable timezone picker persist (no 
   test.setTimeout(90_000)
   const owner = await loginAs(browser, `owner+${SLUG}@e2e.local`)
   try {
-    await owner.page.goto('/en/settings')
+    await owner.page.goto('/en/settings?tab=gym')
     await expect(vis(owner.page, '[data-testid="gym-name-en"]').first()).toBeVisible({ timeout: 15_000 })
 
     // ── Currency: pick the "Both" chip (closed set, no free-text) → Save → persists ──
