@@ -30,11 +30,14 @@ const MESSAGE_INCLUDES: ReadonlyArray<readonly [string, ErrorKey]> = [
 ];
 
 /**
- * Server boundary: a raw error → a stable ErrorKey. Always logs the raw error first.
- * Mapped by SQLSTATE where possible; RAISE prose maps to 'generic' unless it's one of
- * our own known messages. Accepts `unknown` so every catch/`{ error }` shape works.
+ * Server boundary: a raw error → a stable key OR a passed-through curated message.
+ * Always logs the raw error first. SQLSTATE 23505/23503/42501 → a friendly key; a
+ * PL/pgSQL RAISE (SQLSTATE P0001) → its message verbatim (our own user-facing domain
+ * copy — see the P0001 note below); everything else unmapped → 'generic'. Accepts
+ * `unknown` so every catch/`{ error }` shape works. Returns `string` (a key or the
+ * passthrough prose); callers store it in `error: string`.
  */
-export function actionError(error: unknown): ErrorKey {
+export function actionError(error: unknown): string {
   // Operator trail: the raw error stays SERVER-SIDE only, never returned to the client.
   console.error('[action-error]', error);
   const e = (error ?? {}) as { code?: string; message?: string };
@@ -54,6 +57,14 @@ export function actionError(error: unknown): ErrorKey {
   for (const [needle, key] of MESSAGE_INCLUDES) {
     if (msg.includes(needle)) return key;
   }
+  // P0001 = a PL/pgSQL RAISE EXCEPTION — our OWN curated, user-facing domain message
+  // ("Slot taken — pick another time", "Camp is full", "Assignment has no remaining
+  // credits"). It is NOT SQLSTATE/constraint jargon, and both the UI and the e2e gate
+  // rely on the exact wording, so pass it through verbatim. (RAISE prose we DO map —
+  // overpayment/forbidden above — keeps its friendly key; localizing the rest is a
+  // separate effort.) This is the fix for the ERROR-COPY regression that flattened
+  // every RAISE — slot-taken / camp-full / exhausted-credits — to 'generic'.
+  if (e.code === 'P0001' && msg) return msg;
   return 'generic';
 }
 
@@ -63,5 +74,12 @@ export function actionError(error: unknown): ErrorKey {
  * Clients pass `res.error` straight in — they never interpolate the raw string.
  */
 export function errorText(t: (key: string) => string, key: string | null | undefined): string {
-  return t(key && ERROR_KEY_SET.has(key) ? key : 'generic');
+  if (!key) return t('generic');
+  if (ERROR_KEY_SET.has(key)) return t(key);
+  // A P0001 domain message passed through by actionError (curated prose, e.g. "Slot
+  // taken — pick another time") — show it as-is. Prose has whitespace/uppercase; an
+  // unknown snake_case key does NOT, so a stray key still collapses to 'generic' and
+  // never renders raw. actionError never emits a raw SQLSTATE string here.
+  if (/[\sA-Z]/.test(key)) return key;
+  return t('generic');
 }
