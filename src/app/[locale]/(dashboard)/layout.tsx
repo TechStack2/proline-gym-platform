@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardLayoutClient } from './_components/DashboardLayoutClient';
 import { FrontDeskOfflineLayer } from '@/components/offline/front-desk-offline-layer';
+import { SentryTags } from '@/components/observability/sentry-tags';
 
 // AX-1 shell identity: per-shell PWA theme-color (staff = brand red). DS-2: now
 // per light/dark — the meta theme-color media queries track the OS prefers-color-
@@ -42,8 +43,17 @@ export default async function DashboardLayout({ children, params }: Props) {
 
   const role = (await getUserRole(supabase, user.id)) as 'owner' | 'head_coach' | 'coach' | 'receptionist' | 'student' | 'parent' | 'external_coach';
 
+  // OBSERVE: the gym slug for Sentry tagging (non-identifying). Best-effort — a null
+  // never blocks the render, and SentryTags no-ops when the SDK is disabled.
+  const { data: gymRow } = await supabase.from('profiles').select('gyms(slug)').eq('id', user.id).maybeSingle();
+  const rawGym = (gymRow as { gyms?: unknown } | null)?.gyms;
+  const gymNode = Array.isArray(rawGym) ? rawGym[0] : rawGym;
+  const gymSlug = (gymNode as { slug?: string } | null | undefined)?.slug ?? null;
+
   return (
     <>
+      {/* OBSERVE: tag client Sentry events with gym slug + role (never user identity). */}
+      <SentryTags gym={gymSlug} role={role} />
       {/* OFF-1: one shared offline layer (banner + installable-PWA affordance) for
           the single shell on every viewport. */}
       <FrontDeskOfflineLayer locale={locale} />

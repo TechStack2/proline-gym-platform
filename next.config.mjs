@@ -1,7 +1,17 @@
 import createNextIntlPlugin from 'next-intl/plugin';
 import withPWAInit from 'next-pwa';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
+// OBSERVE — the Sentry ingest origin, derived from the PUBLIC DSN, added to CSP
+// connect-src ONLY when a DSN is configured (env-driven; no DSN → nothing added, so
+// the CSP is byte-identical to today until the owner sets NEXT_PUBLIC_SENTRY_DSN).
+const sentryIngestOrigin = (() => {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (!dsn) return '';
+  try { return new URL(dsn).origin; } catch { return ''; }
+})();
 
 const withPWA = withPWAInit({
   dest: 'public',
@@ -137,6 +147,10 @@ const supabaseRemotePattern = (() => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // OBSERVE — Next 14 needs this flag to load src/instrumentation.ts (where the
+  // Sentry server/edge init registers). Stable in Next 15; explicit here for 14.2.
+  experimental: { instrumentationHook: true },
+
   images: {
     remotePatterns: [
       {
@@ -167,7 +181,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self'",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+              `connect-src 'self' https://*.supabase.co wss://*.supabase.co${sentryIngestOrigin ? ' ' + sentryIngestOrigin : ''}`,
               // AX-3: allow the keyless OpenStreetMap embed (Facility map) in dev
               // too, so dev mirrors prod (the operative prod CSP is in middleware).
               "frame-src 'self' https://www.openstreetmap.org",
@@ -195,4 +209,30 @@ const nextConfig = {
   },
 };
 
-export default withPWA(withNextIntl(nextConfig));
+// OBSERVE — Sentry BUILD options. Source-map upload is OPTIONAL: it runs only when
+// SENTRY_AUTH_TOKEN is present (a CI secret) and is skipped cleanly otherwise, so a
+// tokenless build (local + the current CI) never fails. No tunnel route (we add the
+// ingest origin to CSP connect-src instead), no Vercel monitors (we deploy on Railway).
+const sentryBuildOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  silent: !process.env.CI,
+  telemetry: false,
+  disableLogger: true,
+  widenClientFileUpload: false,
+  automaticVercelMonitors: false,
+  reactComponentAnnotation: { enabled: false },
+};
+
+const baseConfig = withPWA(withNextIntl(nextConfig));
+
+// OBSERVE — apply the Sentry webpack layer (client SDK injection + source-map upload +
+// auto-instrumentation) ONLY when a DSN is configured. No DSN → the build is
+// byte-identical to today (no +60 kB SDK in the client bundle, no Sentry webpack), so
+// this merges cleanly before the owner opts in; setting NEXT_PUBLIC_SENTRY_DSN at build
+// activates it. (The inits/instrumentation stay compiled but are inert without a DSN.)
+export default process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(baseConfig, sentryBuildOptions)
+  : baseConfig;
