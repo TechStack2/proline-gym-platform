@@ -61,14 +61,17 @@ test('E1 · publish gate → desk registration (guardian payer, snapshot) → de
     const end = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
     await owner.page.goto('/en/camps');
     await vis(owner.page, '[data-testid="camp-add-btn"]').first().click();
+    // M2-B: the camp form now rides the shared FormWizard — Basics → Dates & capacity →
+    // Pricing → Review, nav = wizard-next/wizard-submit. Field testids are preserved.
     await owner.page.getByTestId('camp-name-en').fill(CAMP_NAME);
+    await owner.page.getByTestId('wizard-next').click(); // Basics → Dates & capacity
     await owner.page.getByTestId('camp-start').fill(today);
     await owner.page.getByTestId('camp-end').fill(end);
-    await owner.page.getByTestId('camp-wizard-next').click();
     await owner.page.getByTestId('camp-capacity').fill('5');
+    await owner.page.getByTestId('wizard-next').click(); // Dates & capacity → Pricing
     await owner.page.getByTestId('camp-price-usd').fill('200');
-    await owner.page.getByTestId('camp-wizard-next').click();
-    await owner.page.getByTestId('camp-submit').click();
+    await owner.page.getByTestId('wizard-next').click(); // Pricing → Review
+    await owner.page.getByTestId('wizard-submit').click();
     const card = vis(owner.page, `[data-testid="camp-card"][data-name-en="${CAMP_NAME}"]`).first();
     await expect(card).toBeVisible({ timeout: 15_000 });
 

@@ -8,7 +8,7 @@ import { roleHomePath } from '../../onboarding/role-home'
 import { ShareableLink } from '@/components/shared/shareable-link'
 import type { LucideIcon } from 'lucide-react'
 import {
-  Building2, Users, CalendarClock, CreditCard, UserPlus, Rocket,
+  Building2, Users, CalendarClock, CreditCard, Tent, UserPlus, Rocket,
   Check, ArrowRight, ArrowUpRight, Sparkles, PartyPopper,
 } from 'lucide-react'
 
@@ -29,6 +29,7 @@ const ICONS: Record<MilestoneKey, LucideIcon> = {
   team: Users,
   classes: CalendarClock,
   offers: CreditCard,
+  camps: Tent,
   members: UserPlus,
   golive: Rocket,
 }
@@ -60,6 +61,8 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
   const team = byKey.team
   const classes = byKey.classes
   const offers = byKey.offers
+  // M2-B: camps is product-gated → present only when products.camp (undefined otherwise).
+  const camps: SetupMilestone | undefined = byKey.camps
   const members = byKey.members
   const golive = byKey.golive
   const doneLabel = t('doneChip')
@@ -194,6 +197,23 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
             </div>
           )}
         </MilestoneCard>
+
+        {/* M2-B — Your camps (product-gated: the milestone exists only when products.camp) */}
+        {camps && (
+          <MilestoneCard
+            mKey="camps"
+            done={camps.done}
+            icon={ICONS.camps}
+            title={t('milestones.camps.title')}
+            desc={t('milestones.camps.desc')}
+            doneLabel={doneLabel}
+            isRTL={isRTL}
+          >
+            {!camps.done && (
+              <Cta href={`/${locale}/camps`} label={t('milestones.camps.cta')} testid="milestone-camps-cta" isRTL={isRTL} />
+            )}
+          </MilestoneCard>
+        )}
 
         {/* M5 — Your members */}
         <MilestoneCard

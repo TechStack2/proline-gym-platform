@@ -1096,7 +1096,11 @@
     "regPending": "Pending approval",
     "markFailed": "Marking failed",
     "present": "Present",
-    "absent": "Absent"
+    "absent": "Absent",
+    "stepBasics": "Basics",
+    "stepDates": "Dates & capacity",
+    "stepPricing": "Pricing",
+    "stepReview": "Review"
   },
   "pt": {
     "title": "Personal Training",
@@ -1899,6 +1903,11 @@
         "shareText": "Check out our gym — come train with us:",
         "preview": "Open your page",
         "manage": "Manage what's public"
+      },
+      "camps": {
+        "title": "Your camps",
+        "desc": "Create a summer camp families can register for.",
+        "cta": "Add a camp"
       }
     }
   },
@@ -3205,6 +3214,10 @@
     "copied": "Copied",
     "shareText": "Check out our gym:",
     "share": "Share",
-    "preview": "Open your landing"
+    "preview": "Open your landing",
+    "campsTitle": "Camps",
+    "campsHint": "Choose which camps appear on your public page.",
+    "noCamps": "No upcoming camps yet.",
+    "statCamps": "Camps"
   }
 }

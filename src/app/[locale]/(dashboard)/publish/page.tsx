@@ -52,12 +52,14 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
 
   // One parallel wave — every read is gym-scoped (the catalog *_read RLS is
   // all-authenticated, so the explicit .eq('gym_id') is the tenant boundary).
+  const today = new Date().toISOString().slice(0, 10)
   const [
     { data: gym },
     { data: classRows },
     { data: coachRows },
     { count: planCount },
     { data: ptRows },
+    { data: campRows },
   ] = await Promise.all([
     supabase.from('gyms').select('slug, name_ar, name_en, name_fr').eq('id', gymId).maybeSingle(),
     supabase
@@ -78,11 +80,20 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
       .from('pt_packages')
       .select('id, show_on_landing')
       .eq('gym_id', gymId).eq('is_active', true).is('deleted_at', null),
+    // M2-B: camps landing visibility (000043 show_on_landing). Camps have NO is_active —
+    // list the live, not-yet-ended ones (the set the landing policy can actually show).
+    supabase
+      .from('camps')
+      .select('id, name_ar, name_en, name_fr, show_on_landing')
+      .eq('gym_id', gymId).is('deleted_at', null)
+      .in('status', ['open', 'in_progress', 'full']).gte('end_date', today)
+      .order('start_date', { ascending: false }),
   ])
 
   type ClassRow = { id: string; name_ar: string | null; name_en: string | null; name_fr: string | null; show_on_landing: boolean | null }
   type CoachRow = { id: string; landing_visible: boolean | null; landing_status: string | null; profiles: Parameters<typeof localizedName>[0] }
   type PtRow = { id: string; show_on_landing: boolean | null }
+  type CampRow = { id: string; name_ar: string | null; name_en: string | null; name_fr: string | null; show_on_landing: boolean | null }
 
   const slug = gym?.slug ?? null
   const classes = ((classRows ?? []) as unknown as ClassRow[]).map((c) => ({
@@ -100,6 +111,11 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
   const ptRowsTyped = (ptRows ?? []) as unknown as PtRow[]
   const ptTotal = ptRowsTyped.length
   const ptVisible = ptRowsTyped.filter((p) => p.show_on_landing).length
+  const camps = ((campRows ?? []) as unknown as CampRow[]).map((c) => ({
+    id: c.id,
+    name: (locale === 'ar' ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en || '',
+    visible: !!c.show_on_landing,
+  }))
 
   return (
     <div
@@ -134,6 +150,7 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
         slug={slug}
         initialClasses={classes}
         initialCoaches={coaches}
+        initialCamps={camps}
         planCount={planCount ?? 0}
         ptVisible={ptVisible}
         ptTotal={ptTotal}

@@ -21,10 +21,11 @@ import { createClient } from '@/lib/supabase/client'
 import { setCoachLanding } from '../coaches/[id]/actions'
 import { ShareableLink } from '@/components/shared/shareable-link'
 import { cn } from '@/lib/utils'
-import { CalendarClock, Users, CreditCard, Dumbbell, ExternalLink, Loader2 } from 'lucide-react'
+import { CalendarClock, Users, CreditCard, Dumbbell, Tent, ExternalLink, Loader2 } from 'lucide-react'
 
 type ClassItem = { id: string; name: string; visible: boolean }
 type CoachItem = { id: string; name: string; visible: boolean; status: 'active' | 'coming_soon' }
+type CampItem = { id: string; name: string; visible: boolean }
 
 export function PublishPanel({
   locale,
@@ -32,6 +33,7 @@ export function PublishPanel({
   slug,
   initialClasses,
   initialCoaches,
+  initialCamps,
   planCount,
   ptVisible,
   ptTotal,
@@ -41,6 +43,7 @@ export function PublishPanel({
   slug: string | null
   initialClasses: ClassItem[]
   initialCoaches: CoachItem[]
+  initialCamps: CampItem[]
   planCount: number
   ptVisible: number
   ptTotal: number
@@ -49,11 +52,13 @@ export function PublishPanel({
   const supabase = createClient()
   const [classes, setClasses] = useState<ClassItem[]>(initialClasses)
   const [coaches, setCoaches] = useState<CoachItem[]>(initialCoaches)
+  const [camps, setCamps] = useState<CampItem[]>(initialCamps)
   const [busy, setBusy] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
   const classesVisible = classes.filter((c) => c.visible).length
   const coachesVisible = coaches.filter((c) => c.visible).length
+  const campsVisible = camps.filter((c) => c.visible).length
 
   async function toggleClass(id: string) {
     if (busy) return
@@ -83,6 +88,22 @@ export function PublishPanel({
     setBusy(null)
   }
 
+  // M2-B: camp visibility mirrors the CLASS path — a direct browser-client
+  // camps.show_on_landing update (staff RLS is the tenant boundary), optimistic-then-revert.
+  async function toggleCamp(id: string) {
+    if (busy) return
+    const cur = camps.find((c) => c.id === id)
+    if (!cur) return
+    const next = !cur.visible
+    setBusy(id)
+    setCamps((prev) => prev.map((c) => (c.id === id ? { ...c, visible: next } : c))) // optimistic
+    const { error } = await supabase.from('camps').update({ show_on_landing: next }).eq('id', id)
+    if (error) {
+      setCamps((prev) => prev.map((c) => (c.id === id ? { ...c, visible: cur.visible } : c))) // revert
+    }
+    setBusy(null)
+  }
+
   return (
     <div className="space-y-5" data-testid="publish-panel">
       {/* ── STATUS: a live read-out of what the public page shows ── */}
@@ -92,14 +113,16 @@ export function PublishPanel({
         data-coaches-visible={coachesVisible}
         data-plans={planCount}
         data-pt-visible={ptVisible}
+        data-camps-visible={campsVisible}
         className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
       >
         <p className={cn('mb-3 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('statusTitle')}</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <Stat icon={CalendarClock} value={`${classesVisible}/${classes.length}`} label={t('statClasses')} isRTL={isRTL} />
           <Stat icon={Users} value={`${coachesVisible}/${coaches.length}`} label={t('statCoaches')} isRTL={isRTL} />
           <Stat icon={CreditCard} value={String(planCount)} label={t('statPlans')} isRTL={isRTL} />
           <Stat icon={Dumbbell} value={`${ptVisible}/${ptTotal}`} label={t('statPt')} isRTL={isRTL} />
+          <Stat icon={Tent} value={`${campsVisible}/${camps.length}`} label={t('statCamps')} isRTL={isRTL} />
         </div>
       </section>
 
@@ -152,6 +175,35 @@ export function PublishPanel({
                 loading={busy === c.id}
                 disabled={!!busy && busy !== c.id}
                 onToggle={() => startTransition(() => { void toggleCoach(c.id) })}
+                onLabel={t('visible')}
+                offLabel={t('hidden')}
+                isRTL={isRTL}
+              />
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* ── Camps — per-camp visibility (M2-B: mirrors the class toggle path) ── */}
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h2 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+          <Tent className="h-4 w-4 text-primary-600" /> {t('campsTitle')}
+        </h2>
+        <p className={cn('mt-0.5 text-xs text-gray-500', isRTL && 'font-arabic')}>{t('campsHint')}</p>
+        <div className="mt-3 divide-y divide-gray-100" data-testid="publish-camps">
+          {camps.length === 0 ? (
+            <p className="py-2 text-sm text-gray-400">{t('noCamps')}</p>
+          ) : (
+            camps.map((c) => (
+              <ToggleRow
+                key={c.id}
+                testid="publish-camp-toggle"
+                id={c.id}
+                name={c.name}
+                on={c.visible}
+                loading={busy === c.id}
+                disabled={!!busy && busy !== c.id}
+                onToggle={() => startTransition(() => { void toggleCamp(c.id) })}
                 onLabel={t('visible')}
                 offLabel={t('hidden')}
                 isRTL={isRTL}
