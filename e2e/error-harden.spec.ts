@@ -71,7 +71,7 @@ test('EH #3 · a receptionist cannot persist gym settings (gyms UPDATE is owner/
     const nameEn = vis(page, '[data-testid="gym-name-en"]').first()
     await expect(nameEn).toBeVisible({ timeout: 15_000 })
     await nameEn.fill(HACK)
-    await vis(page, '[data-testid="gym-save"]').first().click()
+    await vis(page, '[data-testid="gym-save-identity"]').first().click()
     // RLS filters the UPDATE to zero rows — whatever the UI says, NOTHING persists.
     await page.waitForTimeout(1500) // let any write round-trip
     await page.reload()

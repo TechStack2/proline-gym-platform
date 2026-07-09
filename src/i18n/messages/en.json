@@ -1344,7 +1344,10 @@
       "nameAr": "Name (AR)",
       "nameFr": "Name (FR)",
       "add": "Add",
-      "errNameRequired": "The English name is required."
+      "errNameRequired": "The English name is required.",
+      "addTitle": "Add discipline",
+      "editTitle": "Edit discipline",
+      "saveChanges": "Save changes"
     },
     "pt_policy_title": "PT Session Policy",
     "pt_policy_subtitle": "How no-shows and late cancellations affect PT credits.",
@@ -1369,7 +1372,10 @@
       "sessionsShort": "sessions",
       "daysShort": "d",
       "onLanding": "On landing",
-      "staged": "Staged"
+      "staged": "Staged",
+      "addTitle": "Add PT package",
+      "editTitle": "Edit PT package",
+      "saveChanges": "Save changes"
     },
     "planManager": {
       "title": "Manage plans",

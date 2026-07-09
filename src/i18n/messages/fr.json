@@ -1344,7 +1344,10 @@
       "nameAr": "Nom (AR)",
       "nameFr": "Nom (FR)",
       "add": "Ajouter",
-      "errNameRequired": "Le nom anglais est requis."
+      "errNameRequired": "Le nom anglais est requis.",
+      "addTitle": "Ajouter une discipline",
+      "editTitle": "Modifier la discipline",
+      "saveChanges": "Enregistrer"
     },
     "pt_policy_title": "Politique des séances PT",
     "pt_policy_subtitle": "Comment les absences et annulations tardives affectent les crédits PT.",
@@ -1369,7 +1372,10 @@
       "sessionsShort": "séances",
       "daysShort": "j",
       "onLanding": "Publié",
-      "staged": "Masqué"
+      "staged": "Masqué",
+      "addTitle": "Ajouter un forfait",
+      "editTitle": "Modifier le forfait",
+      "saveChanges": "Enregistrer"
     },
     "planManager": {
       "title": "Gérer les plans",

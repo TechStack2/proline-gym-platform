@@ -602,6 +602,14 @@ export default defineConfig({
       testMatch: /pt2\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // M2-D PT-POLICY: a set late-cancel window bites the member cancel_pt_booking guard.
+      // Coach + member + staff contexts (reuses the pt2 booking idiom). Anchored ($).
+      name: 'pt-policy',
+      dependencies: ['setup'],
+      testMatch: /pt-policy\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
 
     {
       // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries

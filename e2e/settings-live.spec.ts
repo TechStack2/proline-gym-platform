@@ -38,8 +38,11 @@ test('SETTINGS-LIVE · gym editor persists (name + brand color), then restores t
     const TEST_COLOR = '#1a7f37'
     await nameEn.fill(TEST_NAME)
     await vis(page, '[data-testid="gym-brand-color"]').first().fill(TEST_COLOR)
-    await vis(page, '[data-testid="gym-save"]').first().click()
-    await expect(vis(page, '[data-testid="gym-save-ok"]').first(), 'save confirms').toBeVisible({ timeout: 15_000 })
+    // M2-D: per-section saves — name is the Identity section, brand color is Branding.
+    await vis(page, '[data-testid="gym-save-identity"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-identity"]').first(), 'identity save confirms').toBeVisible({ timeout: 15_000 })
+    await vis(page, '[data-testid="gym-save-branding"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-branding"]').first(), 'branding save confirms').toBeVisible({ timeout: 15_000 })
 
     // PERSISTENCE: a fresh server render (reload) shows the saved values.
     await page.reload()
@@ -47,16 +50,18 @@ test('SETTINGS-LIVE · gym editor persists (name + brand color), then restores t
     await expect(vis(page, '[data-testid="gym-brand-color"]').first(), 'brand color persisted').toHaveValue(TEST_COLOR)
     await expect(vis(page, '[data-testid="gym-header-name"]').first(), 'identity card reflects the save').toContainText(TEST_NAME)
 
-    // Validation: a malformed color is rejected (no partial write).
+    // Validation: a malformed color is rejected (no partial write) — the Branding save.
     await vis(page, '[data-testid="gym-brand-color"]').first().fill('red')
-    await vis(page, '[data-testid="gym-save"]').first().click()
-    await expect(vis(page, '[data-testid="gym-save-error"]').first(), 'bad hex rejected').toBeVisible({ timeout: 10_000 })
+    await vis(page, '[data-testid="gym-save-branding"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-error-branding"]').first(), 'bad hex rejected').toBeVisible({ timeout: 10_000 })
 
     // RESTORE the shared-gym name (+ clear the color) so no other spec sees the edit.
     await vis(page, '[data-testid="gym-name-en"]').first().fill(originalName)
     await vis(page, '[data-testid="gym-brand-color"]').first().fill('')
-    await vis(page, '[data-testid="gym-save"]').first().click()
-    await expect(vis(page, '[data-testid="gym-save-ok"]').first(), 'restore saves').toBeVisible({ timeout: 15_000 })
+    await vis(page, '[data-testid="gym-save-identity"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-identity"]').first(), 'name restore saves').toBeVisible({ timeout: 15_000 })
+    await vis(page, '[data-testid="gym-save-branding"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-branding"]').first(), 'color clear saves').toBeVisible({ timeout: 15_000 })
     await page.reload()
     await expect(vis(page, '[data-testid="gym-name-en"]').first(), 'name restored').toHaveValue(originalName, { timeout: 15_000 })
   } finally {

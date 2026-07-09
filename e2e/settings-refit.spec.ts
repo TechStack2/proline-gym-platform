@@ -64,8 +64,8 @@ test('SETTINGS-REFIT · currency chips + searchable timezone picker persist (no 
     await vis(owner.page, '[data-testid="gym-timezone"]').first().fill('Beirut')
     await vis(owner.page, '[data-testid="gym-timezone-option"][data-value="Asia/Beirut"]').first().click()
 
-    await vis(owner.page, '[data-testid="gym-save"]').first().click()
-    await expect(vis(owner.page, '[data-testid="gym-save-ok"]').first(), 'save confirms').toBeVisible({ timeout: 15_000 })
+    await vis(owner.page, '[data-testid="gym-save-localization"]').first().click()
+    await expect(vis(owner.page, '[data-testid="gym-save-ok-localization"]').first(), 'save confirms').toBeVisible({ timeout: 15_000 })
 
     // PERSISTENCE across a fresh server render.
     await owner.page.reload()

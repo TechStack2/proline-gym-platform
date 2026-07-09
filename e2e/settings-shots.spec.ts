@@ -45,6 +45,16 @@ test('SETTINGS-SHOTS · Manage index + every section (en) + index (ar, RTL)', as
       }
       await shot(enPage, `settings-${v.name}-en`)
     }
+    // M2-D WIZARD-POLISH: capture the new FormWizard editors (open each modal, then shoot).
+    await enPage.goto('/en/settings?tab=disciplines')
+    await enPage.getByTestId('discipline-add-btn').first().click().catch(() => {})
+    await shot(enPage, 'settings-discipline-wizard-en')
+    await enPage.goto('/en/settings?tab=ptpackages')
+    await enPage.getByTestId('ptpkg-add-btn').first().click().catch(() => {})
+    await shot(enPage, 'settings-ptpkg-wizard-en')
+    await enPage.goto('/en/classes')
+    await enPage.getByTestId('add-class-btn').first().click().catch(() => {})
+    await shot(enPage, 'settings-class-wizard-en')
   } finally {
     await en.close()
   }

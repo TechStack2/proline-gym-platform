@@ -94,7 +94,7 @@ export async function createClassViaWizard(
   await page.getByTestId('class-monthly-fee').fill(opts.fee);
   await page.getByTestId('wizard-next').click();
   // Step 4 — review → create
-  await page.getByTestId('class-submit').click();
+  await page.getByTestId('wizard-submit').click();
   await expect(page.getByTestId('wizard-success')).toBeVisible({ timeout: 15_000 });
   // The wizard auto-closes shortly after success.
   await expect(page.locator('[data-testid="class-wizard"]')).toHaveCount(0, { timeout: 10_000 });
