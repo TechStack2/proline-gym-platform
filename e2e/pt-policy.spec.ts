@@ -53,8 +53,17 @@ async function sellToKarim(page: Page, typeName: string) {
   await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
   await vis(page, '[data-testid="pt-sell-open"]').first().click();
   await page.locator('[data-testid="pt-type-chip"]').filter({ hasText: typeName }).first().click();
-  await page.locator('[data-testid="pt-coach-chip"]').first().click();
+  // UNION-FIX: pin the coach we seed availability for (Sami = ROLES.coach) — do NOT use
+  // .first(). This type carries no discipline, so pickableCoaches is the WHOLE roster,
+  // and in union order a sibling-created login-less coach ("Adopt Coachee", no published
+  // availability) can sort first. Picking it would (a) trip the J3 no-availability warn
+  // so the sale is gated behind "Sell anyway", and (b) leave the later book step with
+  // zero open slots. Pinning the availability-seeded coach makes both deterministic.
+  await page.locator('[data-testid="pt-coach-chip"]').filter({ hasText: 'Sami' }).first().click();
   await page.getByTestId('pt-sell-submit').click();
+  // Defensive backstop (team1 tolerant idiom): if the availability count query still
+  // races to zero, the warn-and-allow modal appears — click straight through it.
+  await page.getByTestId('pt-sell-anyway').click({ timeout: 3_000 }).catch(() => {});
   await expect(vis(page, '[data-testid="member-pt-row"][data-status="active"]').filter({ hasText: typeName }).first())
     .toBeVisible({ timeout: 20_000 });
 }
@@ -81,11 +90,10 @@ test('PT-POLICY · a set late-cancel window blocks the member cancel guard', asy
     await createType(owner.page, PACK);
     await sellToKarim(owner.page, PACK);
 
-    // ── Set a large late-cancel window (720h > the 14-day booking horizon) so ANY
-    //    bookable slot falls inside it. Proves the UI write reaches gyms.pt_*. ──
-    await setLateCancelWindow(owner.page, '720');
-
-    // ── Member books the nearest policy-bounded slot ──
+    // ── Member books the nearest slot under the DEFAULT policy (window still 0 — a
+    //    booking is never itself gated). We raise the window AFTER, right before the
+    //    cancel, so the gym-wide policy is live for the shortest possible span and no
+    //    sibling PT spec's member self-cancel overlaps it. ──
     const slots = student.page.locator('[data-testid="pt-slot"]');
     await untilConsistent(async () => {
       await student.page.goto('/en/portal/pt');
@@ -96,7 +104,14 @@ test('PT-POLICY · a set late-cancel window blocks the member cancel guard', asy
     await expect(student.page.locator('[data-testid="app-toast"]').filter({ hasText: /booked/i }).first())
       .toBeVisible({ timeout: 15_000 });
 
-    // ── The booked session is scheduled + INSIDE the window → member cancel is blocked ──
+    // ── Now raise the late-cancel window (720h > the booking horizon) so the freshly
+    //    booked session falls INSIDE it — proving the UI write reaches gyms.pt_* and
+    //    that the member self-cancel guard reads it. ──
+    await setLateCancelWindow(owner.page, '720');
+
+    // ── The booked session is scheduled + INSIDE the window → member cancel is blocked.
+    //    Re-read the portal so the card reflects state after the policy change. ──
+    await student.page.goto('/en/portal/pt');
     const session = portalCard(student.page, PACK).locator('[data-testid="portal-pt-session"][data-status="scheduled"]').first();
     await expect(session).toBeVisible({ timeout: 15_000 });
     await session.getByTestId('pt-cancel-booking').click();
