@@ -100,6 +100,20 @@ function extraSupabaseImgSrc(): string {
   const origin = localSupabaseOrigin();
   return origin ? ` ${origin}` : '';
 }
+// OBSERVE — the Sentry ingest origin (derived from the PUBLIC DSN) is added to
+// connect-src ONLY when a DSN is configured; no DSN → nothing added, so the prod CSP
+// is byte-identical to today until the owner sets NEXT_PUBLIC_SENTRY_DSN. The client
+// SDK bundles INLINE (no CDN loader), so script-src (strict-dynamic + nonce) is
+// unchanged — the ingest POST is the only new network egress.
+function extraSentryConnectSrc(): string {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (!dsn) return '';
+  try {
+    return ` ${new URL(dsn).origin}`;
+  } catch {
+    return '';
+  }
+}
 
 function buildProdCspHeader(nonce: string): string {
   return [
@@ -124,7 +138,7 @@ function buildProdCspHeader(nonce: string): string {
     "worker-src 'self'",
     `img-src 'self' data: https: blob:${extraSupabaseImgSrc()}`,
     "font-src 'self'",
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co${extraSupabaseConnectSrc()}`,
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co${extraSupabaseConnectSrc()}${extraSentryConnectSrc()}`,
     // AX-3: the Facility section embeds the keyless OpenStreetMap map (the
     // operator's "view our location" block). frame-src 'self' silently REFUSED
     // it in prod → the map rendered as a grey box (CI only checked the iframe
