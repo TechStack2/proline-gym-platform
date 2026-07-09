@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 
 type DisciplinesSectionProps = {
   locale: string;
@@ -40,12 +41,14 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
     ? await supabase.rpc('get_landing_disciplines', { p_gym_id: gym.id })
     : { data: null };
 
-  type DiscRow = { name_ar: string; name_en: string; name_fr: string };
+  type DiscRow = { name_ar: string; name_en: string; name_fr: string; icon_url?: string | null };
   const rows = (disciplines || []) as DiscRow[];
   const programs = rows.map((d) => ({
     name: (locale === 'ar' ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en,
     nameEn: d.name_en,
     icon: disciplineIcon(d.name_en),
+    // DISC-ICON: an uploaded icon (relative gym-landing path) overrides the emoji tile.
+    iconUrl: storagePublicUrl('gym-landing', d.icon_url),
   }));
 
   return (
@@ -75,15 +78,25 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
               data-icon={program.icon.key}
               className="group relative flex w-full flex-col items-center rounded-2xl bg-white p-8 text-center shadow-elevation-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-elevation-3 sm:w-72"
             >
-              <div
-                className={cn(
-                  'mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl shadow-lg',
-                  program.icon.gradient
-                )}
-                aria-hidden
-              >
-                <span className="leading-none">{program.icon.glyph}</span>
-              </div>
+              {program.iconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={program.iconUrl}
+                  alt=""
+                  aria-hidden
+                  className="mb-5 h-16 w-16 rounded-2xl object-cover shadow-lg"
+                />
+              ) : (
+                <div
+                  className={cn(
+                    'mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl shadow-lg',
+                    program.icon.gradient
+                  )}
+                  aria-hidden
+                >
+                  <span className="leading-none">{program.icon.glyph}</span>
+                </div>
+              )}
               <h3 className={cn('text-lg font-semibold text-secondary-900', isRTL && 'font-arabic')}>
                 {program.name}
               </h3>

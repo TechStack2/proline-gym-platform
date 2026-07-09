@@ -10,17 +10,19 @@
  * in-row edit). Disciplines are name-only, so it's a single chunked step. The write
  * paths are unchanged (insert + default-ladder seed on create; name update on edit).
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FormWizard, type WizardStep } from '@/components/shared/form-wizard'
+import { downscaleImage } from '@/components/shared/avatar-upload'
+import { DisciplineIcon } from '@/components/dashboard/discipline-icon'
 import { cn } from '@/lib/utils'
-import { Plus, Pencil, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, Pencil, Archive, ArchiveRestore, ImagePlus, Loader2, X } from 'lucide-react'
 
-type Row = { id?: string; name_ar?: string; name_en?: string; name_fr?: string; sort_order?: number; is_active?: boolean }
+type Row = { id?: string; name_ar?: string; name_en?: string; name_fr?: string; sort_order?: number; is_active?: boolean; icon_url?: string | null }
 
 // ADM-2: a discipline without belt_hierarchies makes belt promotion impossible (empty
 // target-rank picker). New disciplines get the standard 20-rank default ladder as
@@ -67,12 +69,42 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
   const [wizardOpen, setWizardOpen] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
   const [f, setF] = useState({ en: '', ar: '', fr: '' })
+  // DISC-ICON: the optional uploaded icon — a RELATIVE gym-landing path (or null),
+  // uploaded on pick (avatar/landing pattern) so submit only persists the path.
+  const [iconUrl, setIconUrl] = useState<string | null>(null)
+  const [iconBusy, setIconBusy] = useState(false)
+  const iconInputRef = useRef<HTMLInputElement>(null)
 
   const lname = (d: Row) => ((isRTL ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en || '')
   const sorted = [...disciplines].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
 
-  const openCreate = () => { setEditing(null); setF({ en: '', ar: '', fr: '' }); setError(''); setWizardOpen(true) }
-  const openEdit = (d: Row) => { setEditing(d); setF({ en: d.name_en || '', ar: d.name_ar || '', fr: d.name_fr || '' }); setError(''); setWizardOpen(true) }
+  const openCreate = () => { setEditing(null); setF({ en: '', ar: '', fr: '' }); setIconUrl(null); setError(''); setWizardOpen(true) }
+  const openEdit = (d: Row) => { setEditing(d); setF({ en: d.name_en || '', ar: d.name_ar || '', fr: d.name_fr || '' }); setIconUrl(d.icon_url ?? null); setError(''); setWizardOpen(true) }
+
+  // DISC-ICON: downscale (≤256px, HEIC-safe via the shared avatar pipeline) → upload
+  // to the public `gym-landing` bucket at <gym>/disciplines/<uuid>.jpg (the folder
+  // equals the caller's gym for the 000079 insert policy) → keep the RELATIVE path.
+  const pickIcon = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIconBusy(true)
+    setError('')
+    try {
+      const blob = await downscaleImage(file, 256, 0.85)
+      const path = `${gymId}/disciplines/${crypto.randomUUID()}.jpg`
+      const { error: upErr } = await createClient().storage.from('gym-landing').upload(path, blob, {
+        upsert: true, contentType: 'image/jpeg', cacheControl: '3600',
+      })
+      if (upErr) throw upErr
+      setIconUrl(path)
+    } catch (err) {
+      console.error('[discipline-manager] icon', err) // ERROR-HARDEN: no raw pg/storage errors
+      setError(tc('genericError'))
+    } finally {
+      setIconBusy(false)
+      if (iconInputRef.current) iconInputRef.current.value = ''
+    }
+  }
 
   const run = async (fn: () => Promise<{ error: any }>) => {
     setBusy(true)
@@ -92,13 +124,14 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
       if (editing?.id) {
         return supabase.from('disciplines').update({
           name_en: f.en.trim(), name_ar: f.ar.trim() || f.en.trim(), name_fr: f.fr.trim() || f.en.trim(),
+          icon_url: iconUrl, // DISC-ICON: relative path or null (cleared)
         }).eq('id', editing.id)
       }
       const maxSort = Math.max(0, ...disciplines.map((d) => d.sort_order || 0))
       const res = await supabase.from('disciplines').insert({
         gym_id: gymId,
         name_en: f.en.trim(), name_ar: f.ar.trim() || f.en.trim(), name_fr: f.fr.trim() || f.en.trim(),
-        sort_order: maxSort + 1, is_active: true,
+        sort_order: maxSort + 1, is_active: true, icon_url: iconUrl, // DISC-ICON
       }).select('id').single()
       if (!res.error && res.data) {
         // Seed the default ladder so promotion works immediately (editable data).
@@ -127,6 +160,24 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
             <F label={t('nameAr')}><Input dir="rtl" data-testid="discipline-add-ar" value={f.ar} onChange={(e) => setF((p) => ({ ...p, ar: e.target.value }))} /></F>
             <F label={t('nameFr')}><Input data-testid="discipline-add-fr" value={f.fr} onChange={(e) => setF((p) => ({ ...p, fr: e.target.value }))} /></F>
           </div>
+          {/* DISC-ICON: optional icon — upload-on-pick, emoji-free initial preview until set. */}
+          <F label={t('icon')}>
+            <div className="flex items-center gap-3">
+              <DisciplineIcon iconUrl={iconUrl} name={f.en || f.ar || f.fr} size="md" />
+              <input ref={iconInputRef} type="file" accept="image/*" className="hidden" data-testid="discipline-icon-input" onChange={pickIcon} />
+              <Button type="button" size="sm" variant="outline" data-testid="discipline-icon-btn" disabled={iconBusy} onClick={() => iconInputRef.current?.click()}>
+                {iconBusy ? <Loader2 className="me-1 h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="me-1 h-3.5 w-3.5" />}
+                {t('icon')}
+              </Button>
+              {iconUrl && (
+                <Button type="button" size="sm" variant="ghost" data-testid="discipline-icon-remove" disabled={iconBusy}
+                  className="text-red-500 hover:bg-red-50" onClick={() => setIconUrl(null)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400">{t('iconHint')}</p>
+          </F>
         </div>
       ),
     },
@@ -146,8 +197,11 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
       <ul className="divide-y">
         {sorted.map((d) => (
           <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2" data-testid="discipline-row" data-name-en={d.name_en} data-active={d.is_active !== false}>
-            <span className={cn('text-sm font-medium', d.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800')}>
-              {lname(d)}
+            <span className="flex min-w-0 items-center gap-2">
+              <DisciplineIcon iconUrl={d.icon_url} name={lname(d)} size="sm" className={cn(d.is_active === false && 'opacity-40')} />
+              <span className={cn('truncate text-sm font-medium', d.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800')}>
+                {lname(d)}
+              </span>
             </span>
             <span className="flex items-center gap-1.5">
               <Button size="sm" variant="ghost" data-testid="discipline-edit-btn" disabled={busy} onClick={() => openEdit(d)}>
