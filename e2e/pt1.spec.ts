@@ -115,11 +115,14 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
     // ── Coach logs 8 deliveries on the run's 10-pack (10 → 2 = the threshold) ──
     // ROOT RACE: the just-sold package (committed in test 1) can lag the coach
     // roster read (PostgREST replica/realtime) → re-navigate until it surfaces.
+    // Under heavy full-union write load the replica lag can exceed the default 40s
+    // budget (observed hitting the wall at ~41s), so give this first surfacing read
+    // a wider 90s window — the read is idempotent (re-navigates each attempt).
     const rosterSel = `[data-testid="pt-roster-row"][data-package-en="${TYPE_NAME}"]:visible`;
     await untilConsistent(async () => {
       await coach.page.goto('/en/coach/pt');
       await expect(coach.page.locator(rosterSel).first()).toBeVisible({ timeout: 6_000 });
-    });
+    }, { timeout: 90_000 });
     const roster = coach.page.locator(rosterSel).first();
     for (let remaining = 10; remaining > 2; remaining--) {
       await roster.getByTestId('pt-log').click();
