@@ -105,3 +105,31 @@ test('SETUP-HUB · /today links to /setup; the hub renders six milestones and on
     await owner.ctx.close()
   }
 })
+
+/**
+ * M2-E CLASS-HOME — classes are Proline's primary signup product, so they get a
+ * first-class home in Manage AND a guided onboarding shortcut:
+ *  · REQ1 — the /settings Manage index surfaces a Classes card linking to /classes
+ *    (before, classes were reachable only via Schedule).
+ *  · REQ2 — the setup-hub classes CTA deep-links to /classes?new=1, which opens the
+ *    create FormWizard straight away.
+ * Reuses this file's hermetic WL gym + owner login (deterministic — no shared gym).
+ */
+test('SETUP-HUB · M2-E: Manage index Classes card + the ?new=1 deep-link auto-opens the create wizard', async ({ browser }) => {
+  test.setTimeout(60_000)
+  const owner = await loginAs(browser, `owner+${SLUG}@e2e.local`)
+  try {
+    // REQ1 — the Manage index shows a Classes card that links to the classes surface.
+    await owner.page.goto('/en/settings')
+    const card = owner.page.getByTestId('settings-card-classes')
+    await expect(card, 'the Manage index surfaces a Classes card').toBeVisible({ timeout: 20_000 })
+    await expect(card, 'it links to the classes surface').toHaveAttribute('href', '/en/classes')
+
+    // REQ2 — the onboarding deep-link opens the create wizard on arrival.
+    await owner.page.goto('/en/classes?new=1')
+    await expect(owner.page.getByTestId('class-wizard'), 'the create wizard auto-opens on ?new=1')
+      .toBeVisible({ timeout: 20_000 })
+  } finally {
+    await owner.ctx.close()
+  }
+})
