@@ -17,7 +17,7 @@ import { Check } from 'lucide-react'
  * the expiring card · ML-1 dunning card (after Money).
  */
 export function ActionCard({
-  icon: Icon, title, count, badge, emptyText, testid, isRTL, footer, children,
+  icon: Icon, title, count, badge, emptyText, emptyHref, testid, isRTL, footer, children,
 }: {
   icon: any
   title: string
@@ -26,19 +26,38 @@ export function ActionCard({
   /** Headline next to the title; defaults to `count`. */
   badge?: string
   emptyText: string
+  /**
+   * DRILL-360: when set, the zero-state "✓ none" line becomes a drill link to the
+   * owning surface, so a quiet card is never a dead-end — every 360 card exposes a
+   * drill even at count 0 (e.g. conversion → /leads). Omit to keep a plain line.
+   */
+  emptyHref?: string
   testid: string
   isRTL: boolean
   footer?: React.ReactNode
   children?: React.ReactNode
 }) {
   if (count === 0 && !footer) {
-    return (
+    const body = (
+      <>
+        <Check className="h-4 w-4 text-green-500" />
+        <span className={cn(isRTL && 'font-arabic')}>{title} — {emptyText}</span>
+      </>
+    )
+    return emptyHref ? (
+      <Link
+        href={emptyHref}
+        data-testid={`card-empty-${testid}`}
+        className="flex items-center gap-2 rounded-2xl border bg-white px-5 py-3.5 text-sm text-gray-400 shadow-elevation-1 transition-colors hover:bg-gray-50"
+      >
+        {body}
+      </Link>
+    ) : (
       <p
         data-testid={`card-empty-${testid}`}
         className="flex items-center gap-2 rounded-2xl border bg-white px-5 py-3.5 text-sm text-gray-400 shadow-elevation-1"
       >
-        <Check className="h-4 w-4 text-green-500" />
-        <span className={cn(isRTL && 'font-arabic')}>{title} — {emptyText}</span>
+        {body}
       </p>
     )
   }
@@ -55,9 +74,16 @@ export function ActionCard({
         </span>
       </h2>
       {count === 0 ? (
-        <p data-testid={`card-empty-${testid}`} className="flex items-center gap-2 py-1 text-sm text-gray-400">
-          <Check className="h-4 w-4 text-green-500" /> {emptyText}
-        </p>
+        emptyHref ? (
+          <Link href={emptyHref} data-testid={`card-empty-${testid}`}
+            className="flex items-center gap-2 py-1 text-sm text-gray-400 transition-colors hover:text-gray-600">
+            <Check className="h-4 w-4 text-green-500" /> {emptyText}
+          </Link>
+        ) : (
+          <p data-testid={`card-empty-${testid}`} className="flex items-center gap-2 py-1 text-sm text-gray-400">
+            <Check className="h-4 w-4 text-green-500" /> {emptyText}
+          </p>
+        )
       ) : (
         <div className="space-y-2">{children}</div>
       )}

@@ -1347,7 +1347,9 @@
       "errNameRequired": "The English name is required.",
       "addTitle": "Add discipline",
       "editTitle": "Edit discipline",
-      "saveChanges": "Save changes"
+      "saveChanges": "Save changes",
+      "icon": "Icon",
+      "iconHint": "Optional — shown on the schedule, class picker and public page"
     },
     "pt_policy_title": "PT Session Policy",
     "pt_policy_subtitle": "How no-shows and late cancellations affect PT credits.",

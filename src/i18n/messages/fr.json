@@ -1347,7 +1347,9 @@
       "errNameRequired": "Le nom anglais est requis.",
       "addTitle": "Ajouter une discipline",
       "editTitle": "Modifier la discipline",
-      "saveChanges": "Enregistrer"
+      "saveChanges": "Enregistrer",
+      "icon": "Icône",
+      "iconHint": "Optionnel — affichée dans le planning, le sélecteur de cours et la page publique"
     },
     "pt_policy_title": "Politique des séances PT",
     "pt_policy_subtitle": "Comment les absences et annulations tardives affectent les crédits PT.",

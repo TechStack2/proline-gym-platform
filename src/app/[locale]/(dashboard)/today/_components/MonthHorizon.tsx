@@ -63,7 +63,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
       {/* ── Revenue MTD by product vs last month — each product expands to the
           payments that sum to it (RECONCILES) ── */}
       <ActionCard icon={BarChart3} title={t('month.revenue')} count={revProducts.length}
-        badge={`$${cur.total.toFixed(0)}`} emptyText={t('month.noneRevenue')} testid="revenue-product" isRTL={isRTL}
+        badge={`$${cur.total.toFixed(0)}`} emptyText={t('month.noneRevenue')} emptyHref={`/${locale}/money`} testid="revenue-product" isRTL={isRTL}
         footer={
           <div className="mt-3 flex items-center justify-between border-t pt-2" data-testid="revenue-product-total">
             <span className="text-xs font-medium text-gray-500">{t('month.vsLastMonth')}</span>
@@ -104,7 +104,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
           its member set (RECONCILES) ── */}
       <ActionCard icon={ArrowLeftRight} title={t('month.movement')} count={movement.newMembers + movement.churn + movement.recovered}
         badge={t('month.net', { count: movement.net >= 0 ? `+${movement.net}` : `${movement.net}` })}
-        emptyText={t('month.noneMovement')} testid="members-churn" isRTL={isRTL}
+        emptyText={t('month.noneMovement')} emptyHref={`/${locale}/students`} testid="members-churn" isRTL={isRTL}
         footer={
           <div className="mt-3 flex items-center justify-between border-t pt-2" data-testid="members-churn-net">
             <span className="text-xs font-medium text-gray-500">{t('month.netLabel')}</span>
@@ -126,7 +126,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
 
       {/* ── Lead → member conversion — expands to the converted leads this month ── */}
       <ActionCard icon={Target} title={t('month.conversion')} count={funnel.totalLeads}
-        badge={`${pct(funnel.conversionRate * 100)}%`} emptyText={t('month.noneConversion')} testid="conversion-month" isRTL={isRTL}
+        badge={`${pct(funnel.conversionRate * 100)}%`} emptyText={t('month.noneConversion')} emptyHref={`/${locale}/leads`} testid="conversion-month" isRTL={isRTL}
         footer={
           <div className="mt-3 flex items-center justify-between border-t pt-2" data-testid="conversion-month-rate">
             <span className="text-xs font-medium text-gray-500">{t('month.conversionLabel')}</span>
@@ -167,7 +167,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
 
       {/* ── Active-member trend — expands to the active members (RECONCILES) ── */}
       <ActionCard icon={Activity} title={t('month.activeTrend')} count={movement.activeNow}
-        badge={`${movement.activeNow}`} emptyText={t('month.noneActive')} testid="active-trend" isRTL={isRTL}
+        badge={`${movement.activeNow}`} emptyText={t('month.noneActive')} emptyHref={`/${locale}/students`} testid="active-trend" isRTL={isRTL}
         footer={
           <div className="mt-3 flex items-center justify-between border-t pt-2" data-testid="active-trend-delta">
             <span className="text-xs font-medium text-gray-500">{t('month.thisMonthLabel')}</span>

@@ -30,6 +30,7 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { Avatar } from '@/components/shared/avatar'
+import { DisciplineIcon } from '@/components/dashboard/discipline-icon'
 
 export type EditClass = {
   id: string
@@ -232,8 +233,9 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
               {disciplines.map((d) => (
                 <button key={d.id} type="button" data-testid="wizard-discipline-chip" data-id={d.id}
                   onClick={() => setDisciplineId(d.id)}
-                  className={cn('rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                  className={cn('inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
                     disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                  <DisciplineIcon iconUrl={d.icon_url} name={d[`name_${locale}`] || d.name_en} size="xs" />
                   {d[`name_${locale}`] || d.name_en}
                 </button>
               ))}
