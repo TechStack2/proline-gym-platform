@@ -133,6 +133,7 @@ export default async function ClassesPage({
           disciplines={disciplines}
           coaches={coaches}
           locale={locale}
+          autoNew={searchParams.new === '1'}
         />
       </Suspense>
     </div>

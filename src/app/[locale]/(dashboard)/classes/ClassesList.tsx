@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Calendar, Users, Clock, MapPin, Pencil, RefreshCw } from 'lucide-react'
@@ -30,11 +30,13 @@ interface ClassesListProps {
   disciplines: any[]
   coaches: any[]
   locale: string
+  /** M2-E CLASS-HOME: ?new=1 (the onboarding deep-link) auto-opens the create wizard. */
+  autoNew?: boolean
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function ClassesList({ classes, disciplines, coaches, locale }: ClassesListProps) {
+export default function ClassesList({ classes, disciplines, coaches, locale, autoNew = false }: ClassesListProps) {
   const t = useTranslations('classes')
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -45,6 +47,12 @@ export default function ClassesList({ classes, disciplines, coaches, locale }: C
   const [showAddModal, setShowAddModal] = useState(false)
   const [editTarget, setEditTarget] = useState<any | null>(null)
   const isRTL = locale === 'ar'
+  // M2-E CLASS-HOME: the onboarding CTA deep-links to /classes?new=1 to open the create
+  // wizard straight away. Mirrors the pt-panel autoSell idiom — a one-shot on arrival;
+  // router.refresh() after a create keeps the flag but does not re-open (dep unchanged).
+  useEffect(() => {
+    if (autoNew) setShowAddModal(true)
+  }, [autoNew])
   // CYCLE-VIZ: surface the recurring monthly product framing on the staff catalog.
   const monthlyWord = locale === 'ar' ? 'شهري' : locale === 'fr' ? 'Mensuel' : 'Monthly'
   const moWord = locale === 'ar' ? 'شهر' : locale === 'fr' ? 'mois' : 'mo'

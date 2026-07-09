@@ -172,7 +172,9 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
           isRTL={isRTL}
         >
           {!classes.done && (
-            <Cta href={`/${locale}/classes`} label={t('milestones.classes.cta')} testid="milestone-classes-cta" isRTL={isRTL} />
+            // M2-E CLASS-HOME: deep-link straight into class creation — ?new=1 auto-opens
+            // the FormWizard on the classes surface (the guided first-run shortcut).
+            <Cta href={`/${locale}/classes?new=1`} label={t('milestones.classes.cta')} testid="milestone-classes-cta" isRTL={isRTL} />
           )}
         </MilestoneCard>
 

@@ -61,6 +61,9 @@ type Props = {
   showCamps?: boolean;
   /** LIVE chip (head:true count, gym-scoped) — the only new query M2-A adds. */
   campsCount?: number;
+  /** M2-E CLASS-HOME: LIVE Classes chip — total active classes · how many on the public page. */
+  classesCount?: number;
+  classesOnLandingCount?: number;
 };
 
 type ChipTone = 'ready' | 'todo' | 'neutral';
@@ -81,6 +84,7 @@ export function SettingsClient({
   locale, gym, rates, plans, disciplines, ptTypes, initialTab,
   whatsappStatus, waiverTemplate, ptNoShowForfeits, ptLateCancelWindowHours,
   showMembership = true, showCamps = true, campsCount = 0,
+  classesCount = 0, classesOnLandingCount = 0,
 }: Props & { initialTab?: string }) {
   const t = useTranslations('settings');
   const isRTL = locale === 'ar';
@@ -159,45 +163,56 @@ export function SettingsClient({
   }
 
   // ── CARD INDEX ──
-  const sectionCards: Array<{ id: SectionId; icon: LucideIcon; chip: React.ReactNode }> = [
+  // One ordered list of index entries: SECTION cards open in place, LINK cards navigate.
+  // M2-E CLASS-HOME: Classes sits right after Programs — it was reachable only via
+  // Schedule before, yet class registration (not membership) is how members sign up.
+  const cardKey: Record<SectionId, string> = {
+    gym: 'gym', disciplines: 'programs', offers: 'offers', documents: 'documents', messaging: 'messaging',
+  };
+
+  type IndexEntry =
+    | { kind: 'section'; id: SectionId; icon: LucideIcon; chip: React.ReactNode }
+    | { kind: 'link'; id: string; icon: LucideIcon; href: string; chip?: React.ReactNode };
+
+  const entries: IndexEntry[] = [
     {
-      id: 'gym', icon: Building2,
+      kind: 'section', id: 'gym', icon: Building2,
       chip: branded ? <Chip tone="ready">{t('manage.chips.ready')}</Chip> : <Chip tone="todo">{t('manage.chips.addBranding')}</Chip>,
     },
     {
-      id: 'disciplines', icon: Swords,
+      kind: 'section', id: 'disciplines', icon: Swords,
       chip: disciplineCount > 0
         ? <Chip tone="ready">{t('manage.chips.ready')}</Chip>
         : <Chip tone="todo">{t('manage.chips.addDisciplines')}</Chip>,
     },
+    // M2-E: Classes card (links to the classes surface). Live chip = N classes · M on page.
     {
-      id: 'offers', icon: Tag,
+      kind: 'link', id: 'classes', icon: GraduationCap, href: `/${locale}/classes`,
+      chip: classesCount > 0
+        ? <Chip tone="ready">{t('manage.chips.classesCount', { n: classesCount, m: classesOnLandingCount })}</Chip>
+        : <Chip tone="todo">{t('manage.chips.addClasses')}</Chip>,
+    },
+    {
+      kind: 'section', id: 'offers', icon: Tag,
       chip: (planCount > 0 || ptCount > 0)
         ? <Chip tone="ready">{t('manage.chips.ready')}</Chip>
         : <Chip tone="todo">{t('manage.chips.setup')}</Chip>,
     },
     {
-      id: 'documents', icon: FileText,
+      kind: 'section', id: 'documents', icon: FileText,
       chip: waiverV != null ? <Chip tone="ready">{t('manage.chips.waiver', { v: waiverV })}</Chip> : <Chip tone="todo">{t('manage.chips.waiverNone')}</Chip>,
     },
     {
-      id: 'messaging', icon: MessageSquare,
+      kind: 'section', id: 'messaging', icon: MessageSquare,
       chip: waConfigured ? <Chip tone="ready">{t('manage.chips.connected')}</Chip> : <Chip tone="neutral">{t('manage.chips.notConnected')}</Chip>,
     },
-  ];
-
-  const cardKey: Record<SectionId, string> = {
-    gym: 'gym', disciplines: 'programs', offers: 'offers', documents: 'documents', messaging: 'messaging',
-  };
-
-  const linkCards: Array<{ id: string; icon: LucideIcon; href: string; chip?: React.ReactNode }> = [
     ...(showCamps ? [{
-      id: 'camps', icon: Tent, href: `/${locale}/camps`,
+      kind: 'link' as const, id: 'camps', icon: Tent, href: `/${locale}/camps`,
       chip: campsCount > 0 ? <Chip tone="neutral">{t('manage.chips.active')}</Chip> : undefined,
     }] : []),
-    { id: 'team', icon: UserCog, href: `/${locale}/coaches` },
-    { id: 'reports', icon: BarChart3, href: `/${locale}/reports` },
-    { id: 'golive', icon: Rocket, href: `/${locale}/publish` },
+    { kind: 'link', id: 'team', icon: UserCog, href: `/${locale}/coaches` },
+    { kind: 'link', id: 'reports', icon: BarChart3, href: `/${locale}/reports` },
+    { kind: 'link', id: 'golive', icon: Rocket, href: `/${locale}/publish` },
   ];
 
   const cardClass = 'group flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-start shadow-sm transition-colors hover:border-gray-200 hover:bg-gray-50';
@@ -205,36 +220,38 @@ export function SettingsClient({
   return (
     <div className="space-y-4" data-testid="settings-index">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {sectionCards.map(({ id, icon: Icon, chip }) => {
-          const k = cardKey[id];
+        {entries.map((entry) => {
+          const Icon = entry.icon;
+          if (entry.kind === 'section') {
+            const k = cardKey[entry.id];
+            return (
+              <button key={entry.id} type="button" data-testid={`settings-card-${entry.id}`} onClick={() => setSection(entry.id)} className={cardClass}>
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Icon className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t(`manage.cards.${k}.title` as Parameters<typeof t>[0])}</span>
+                    {entry.chip}
+                  </span>
+                  <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${k}.desc` as Parameters<typeof t>[0])}</span>
+                </span>
+                <Fwd className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
+              </button>
+            );
+          }
           return (
-            <button key={id} type="button" data-testid={`settings-card-${id}`} onClick={() => setSection(id)} className={cardClass}>
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Icon className="h-5 w-5" /></span>
+            <Link key={entry.id} href={entry.href} data-testid={`settings-card-${entry.id}`} className={cardClass}>
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600"><Icon className="h-5 w-5" /></span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <span className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t(`manage.cards.${k}.title` as Parameters<typeof t>[0])}</span>
-                  {chip}
+                  <span className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t(`manage.cards.${entry.id}.title` as Parameters<typeof t>[0])}</span>
+                  {entry.chip}
                 </span>
-                <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${k}.desc` as Parameters<typeof t>[0])}</span>
+                <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${entry.id}.desc` as Parameters<typeof t>[0])}</span>
               </span>
-              <Fwd className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
-            </button>
+              <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
+            </Link>
           );
         })}
-
-        {linkCards.map(({ id, icon: Icon, href, chip }) => (
-          <Link key={id} href={href} data-testid={`settings-card-${id}`} className={cardClass}>
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600"><Icon className="h-5 w-5" /></span>
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center justify-between gap-2">
-                <span className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t(`manage.cards.${id}.title` as Parameters<typeof t>[0])}</span>
-                {chip}
-              </span>
-              <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${id}.desc` as Parameters<typeof t>[0])}</span>
-            </span>
-            <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
-          </Link>
-        ))}
       </div>
     </div>
   );

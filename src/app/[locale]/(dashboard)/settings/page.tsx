@@ -40,6 +40,8 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     whatsappStatus,
     waiverTemplate,
     { count: campsCount },
+    { count: classesCount },
+    { count: classesOnLandingCount },
   ] = await Promise.all([
     // Exchange rates, ordered by date desc
     supabase.from('exchange_rates').select('*').eq('gym_id', gymId).order('rate_date', { ascending: false }).limit(50),
@@ -60,6 +62,10 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     getWaiverTemplate(),
     // M2-A MANAGE-INDEX: LIVE Camps chip — one gym-scoped head:true count (product-gated card).
     supabase.from('camps').select('id', { count: 'exact', head: true }).eq('gym_id', gymId).is('deleted_at', null),
+    // M2-E CLASS-HOME: LIVE Classes chip — two gym-scoped head:true counts: total active
+    // classes + how many are shown on the public page (show_on_landing).
+    supabase.from('classes').select('id', { count: 'exact', head: true }).eq('gym_id', gymId).eq('is_active', true).is('deleted_at', null),
+    supabase.from('classes').select('id', { count: 'exact', head: true }).eq('gym_id', gymId).eq('is_active', true).eq('show_on_landing', true).is('deleted_at', null),
   ]);
 
   return (
@@ -98,6 +104,8 @@ export default async function SettingsPage({ params, searchParams }: Props) {
           showMembership={products.membership}
           showCamps={products.camp}
           campsCount={campsCount ?? 0}
+          classesCount={classesCount ?? 0}
+          classesOnLandingCount={classesOnLandingCount ?? 0}
         />
       </Suspense>
     </div>

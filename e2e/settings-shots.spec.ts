@@ -55,6 +55,12 @@ test('SETTINGS-SHOTS · Manage index + every section (en) + index (ar, RTL)', as
     await enPage.goto('/en/classes')
     await enPage.getByTestId('add-class-btn').first().click().catch(() => {})
     await shot(enPage, 'settings-class-wizard-en')
+    // M2-E CLASS-HOME: the guided setup hub — classes come BEFORE offers (class-first).
+    // (The Manage index shot above, settings-index-en, now also shows the Classes card.)
+    await enPage.goto('/en/setup')
+    await enPage.getByTestId('setup-hub').first().waitFor({ timeout: 15_000 }).catch(() => {})
+    await enPage.waitForTimeout(700)
+    await enPage.screenshot({ path: 'screenshots/setup-hub-class-first-en.png', fullPage: true }).catch(() => {})
   } finally {
     await en.close()
   }
