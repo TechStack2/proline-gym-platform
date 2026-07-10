@@ -3,16 +3,23 @@ import { parseEnabledProducts } from './products'
 
 /**
  * ONBOARDING-CHECKLIST — a DERIVED first-run setup checklist. There is NO stored
- * checkbox state and NO migration: every item auto-ticks from a light gym-scoped
- * count/exists query, so it reflects reality and updates the instant staff do the
- * work. Membership & PT items are gated on `gyms.enabled_products` (a class-only
- * gym never sees a plan item), so the denominator is dynamic (6–8 items).
+ * checkbox state: every item auto-ticks from a light gym-scoped signal, so it
+ * reflects reality and updates the instant staff do the work. Membership & PT items
+ * are gated on `gyms.enabled_products` (a class-only gym never sees a plan item), so
+ * the denominator is dynamic (6–8 items).
+ *
+ * TODAY-DERISK: the ~15 count/exists probes this used to fan out (the biggest slice
+ * of the /today burst) now collapse into ONE aggregate read — `get_setup_status`
+ * (000093), a self-scoped SECURITY DEFINER row of raw signals. The product gating +
+ * branding derivation stay HERE (the RPC returns raw signals only), so every item /
+ * milestone / dot is byte-identical to the per-query version; only the round-trips
+ * change (15 → 1).
  *
  * Two honest caveats, surfaced in the UI copy:
- *  · `branding` has no gym-level "landing published" flag in the schema — it derives
- *    from whether staff customized brand_color / hero_image_url / tagline (000072).
- *  · exchange rates are now PER-GYM (FX-PER-GYM, 000090) — the exchange item ticks
- *    when THIS gym has a rate (RLS gym-scopes the read; the `.eq` is defense-in-depth).
+ *  · `branding` has no gym-level "landing published" flag — it derives from whether
+ *    staff customized brand_color / hero_image_url / tagline (000072).
+ *  · exchange rates are PER-GYM (FX-PER-GYM, 000090); the exchange item ticks when
+ *    THIS gym has a rate.
  */
 export type SetupItemKey =
   | 'profile' | 'branding' | 'discipline' | 'coach' | 'class'
@@ -28,109 +35,62 @@ export type SetupChecklist = {
 }
 
 /**
- * Compute the derived checklist for one gym. Queries are count/exists with
- * `head: true` (no rows over the wire) and run in Promise.all batches of ≤3 to
- * stay pool-friendly (the leads-page lesson: never a heavy concurrent fan-out).
+ * The raw one-row signal set returned by get_setup_status(gym_id). Every field is a
+ * gym-scoped presentation column or an EXISTS signal; the shaping into items /
+ * milestones happens in TS (below), unchanged from the per-query engine.
  */
-export async function getSetupChecklist(
-  supabase: SupabaseClient,
-  gymId: string,
-): Promise<SetupChecklist> {
-  // One row → items 1 (profile) + 2 (branding) + the product gating, no extra query.
-  const { data: gym } = await supabase
-    .from('gyms')
-    .select('phone, email, brand_color, hero_image_url, tagline_en, enabled_products')
-    .eq('id', gymId)
-    .maybeSingle()
-  const g = (gym ?? {}) as {
-    phone?: string | null; email?: string | null
-    brand_color?: string | null; hero_image_url?: string | null; tagline_en?: string | null
-    enabled_products?: unknown
-  }
-  const products = parseEnabledProducts(g.enabled_products)
+type SetupStatusRow = {
+  name_ar: string | null; name_en: string | null; name_fr: string | null
+  slug: string | null; phone: string | null; email: string | null
+  logo_url: string | null; brand_color: string | null; hero_image_url: string | null
+  tagline_ar: string | null; tagline_en: string | null; tagline_fr: string | null
+  enabled_products: unknown
+  has_discipline: boolean; has_coach: boolean; has_class_schedule: boolean
+  has_membership_plan: boolean; has_pt_package: boolean; has_exchange_rate: boolean
+  has_student: boolean; has_upcoming_camp: boolean; has_bookable_coach: boolean
+  has_landing_class: boolean; has_landing_coach: boolean; first_coach_id: string | null
+}
+
+/** All-false / empty defaults for a missing row (unreachable in the real /today path,
+ *  which always passes the caller's own gym — the page guards a null gym earlier). */
+const EMPTY_STATUS: SetupStatusRow = {
+  name_ar: null, name_en: null, name_fr: null, slug: null, phone: null, email: null,
+  logo_url: null, brand_color: null, hero_image_url: null,
+  tagline_ar: null, tagline_en: null, tagline_fr: null, enabled_products: null,
+  has_discipline: false, has_coach: false, has_class_schedule: false,
+  has_membership_plan: false, has_pt_package: false, has_exchange_rate: false,
+  has_student: false, has_upcoming_camp: false, has_bookable_coach: false,
+  has_landing_class: false, has_landing_coach: false, first_coach_id: null,
+}
+
+/** ONE round-trip: the aggregate setup signals for the caller's own gym. */
+async function getSetupStatusRow(supabase: SupabaseClient, gymId: string): Promise<SetupStatusRow> {
+  const { data } = await supabase.rpc('get_setup_status', { p_gym_id: gymId })
+  const row = Array.isArray(data) ? data[0] : data
+  return (row as SetupStatusRow) ?? EMPTY_STATUS
+}
+
+/** Shape the raw signals into the gated item list — identical order + gating to the
+ *  former per-query engine (membership/PT/camp items appear only when enabled). */
+function deriveChecklist(s: SetupStatusRow): SetupChecklist {
+  const products = parseEnabledProducts(s.enabled_products)
 
   // name_* are NOT NULL at gym creation → contact-filled is the real "profile set"
   // signal. branding has no publish flag → any customized brand field counts.
-  const profileDone = !!(g.phone || g.email)
-  const brandingDone = !!(g.brand_color || g.hero_image_url || g.tagline_en)
-
-  // Gym-scoped exists. The catalog *_read policies are blanket `authenticated`
-  // (NOT auto gym-scoped), so `.eq('gym_id', gymId)` is REQUIRED or it counts
-  // across tenants. All these tables carry a soft-delete `deleted_at`.
-  const scopedExists = async (table: string): Promise<boolean> => {
-    const { count } = await supabase
-      .from(table)
-      .select('id', { count: 'exact', head: true })
-      .eq('gym_id', gymId)
-      .is('deleted_at', null)
-    return (count ?? 0) > 0
-  }
-
-  // The `class` item = an ACTIVE, non-deleted class in THIS gym that has ≥1
-  // class_schedules row (a class with no schedule never appears on the timetable /
-  // portal, so it doesn't count). class_schedules has NO gym_id and its `_read`
-  // policy is blanket-authenticated, so the scope MUST go through classes!inner +
-  // `.eq('classes.gym_id', …)` (the class_schedules-leak pattern) or it counts every
-  // gym's schedules. head:true — no rows over the wire.
-  const classHasSchedule = async (): Promise<boolean> => {
-    const { count } = await supabase
-      .from('class_schedules')
-      .select('id, classes!inner(gym_id)', { count: 'exact', head: true })
-      .eq('classes.gym_id', gymId)
-      .eq('classes.is_active', true)
-      .is('classes.deleted_at', null)
-    return (count ?? 0) > 0
-  }
-
-  // Batch 1 (3 concurrent): the always-applicable gym-scoped catalogs + the class check.
-  const [discipline, coach, klass] = await Promise.all([
-    scopedExists('disciplines'),
-    scopedExists('coaches'),
-    classHasSchedule(),
-  ])
-
-  // Batch 2 (≤3 concurrent): the two product-gated catalogs (skipped when the
-  // product is off) + the per-gym exchange_rates check (FX-PER-GYM: gym-scoped, no deleted_at).
-  const [plan, ptpackage, exchange] = await Promise.all([
-    products.membership ? scopedExists('membership_plans') : Promise.resolve(false),
-    products.pt ? scopedExists('pt_packages') : Promise.resolve(false),
-    supabase.from('exchange_rates').select('id', { count: 'exact', head: true }).eq('gym_id', gymId)
-      .then(({ count }) => (count ?? 0) > 0),
-  ])
-
-  // M2-B: "≥1 upcoming active camp" — camps have NO is_active (they use `status`) and NO
-  // discipline; scope by gym (blanket-authenticated catalog RLS) + the live status set +
-  // not-yet-ended, mirroring the anon landing policy (000043). head:true — no rows over
-  // the wire.
-  const hasUpcomingCamp = async (): Promise<boolean> => {
-    const today = new Date().toISOString().slice(0, 10)
-    const { count } = await supabase
-      .from('camps')
-      .select('id', { count: 'exact', head: true })
-      .eq('gym_id', gymId)
-      .is('deleted_at', null)
-      .in('status', ['open', 'in_progress', 'full'])
-      .gte('end_date', today)
-    return (count ?? 0) > 0
-  }
-
-  // Batch 3 (≤3): members + the product-gated camp check (skipped when camps are off).
-  const [member, camp] = await Promise.all([
-    scopedExists('students'),
-    products.camp ? hasUpcomingCamp() : Promise.resolve(false),
-  ])
+  const profileDone = !!(s.phone || s.email)
+  const brandingDone = !!(s.brand_color || s.hero_image_url || s.tagline_en)
 
   const all: Array<SetupItem | null> = [
     { key: 'profile', done: profileDone },
     { key: 'branding', done: brandingDone },
-    { key: 'discipline', done: discipline },
-    { key: 'coach', done: coach },
-    { key: 'class', done: klass },
-    products.membership ? { key: 'plan', done: plan } : null,
-    products.pt ? { key: 'ptpackage', done: ptpackage } : null,
-    products.camp ? { key: 'camp', done: camp } : null,
-    { key: 'exchange', done: exchange },
-    { key: 'member', done: member },
+    { key: 'discipline', done: s.has_discipline },
+    { key: 'coach', done: s.has_coach },
+    { key: 'class', done: s.has_class_schedule },
+    products.membership ? { key: 'plan', done: s.has_membership_plan } : null,
+    products.pt ? { key: 'ptpackage', done: s.has_pt_package } : null,
+    products.camp ? { key: 'camp', done: s.has_upcoming_camp } : null,
+    { key: 'exchange', done: s.has_exchange_rate },
+    { key: 'member', done: s.has_student },
   ]
   const items = all.filter((x): x is SetupItem => x !== null)
   const doneCount = items.filter((i) => i.done).length
@@ -138,16 +98,22 @@ export async function getSetupChecklist(
   return { items, doneCount, total, allDone: doneCount === total }
 }
 
+/** Compute the derived checklist for one gym (kept for API stability; the milestone
+ *  layer derives from the same single row without a second call). */
+export async function getSetupChecklist(
+  supabase: SupabaseClient,
+  gymId: string,
+): Promise<SetupChecklist> {
+  return deriveChecklist(await getSetupStatusRow(supabase, gymId))
+}
+
 // ============================================================================
 // J1 SETUP-HUB — the milestone layer on TOP of the item engine above.
 //
 // The /setup guided hub groups the same DERIVED reality into SIX owner-facing
-// milestones (M1..M6). It REUSES getSetupChecklist for every catalog existence
-// check + the product gating (no second copy of those queries), and adds only
-// the genuinely-new signals a milestone needs: a "bookable" coach (coach has an
-// availability window), an active class that actually has a schedule row, and a
-// landing-visible entity. Everything stays derived — no stored setup state, no
-// migration. New reads are head:true counts run in Promise.all batches of ≤3.
+// milestones (M1..M6), REUSING the SAME signals as the item list — a "bookable"
+// coach, an active class with a schedule row, a landing-visible entity — all of
+// which now arrive in the single get_setup_status row (no second fan-out).
 // ============================================================================
 
 export type MilestoneKey = 'gym' | 'team' | 'classes' | 'offers' | 'camps' | 'members' | 'golive'
@@ -178,104 +144,44 @@ export type SetupMilestone = {
 export type SetupMilestones = {
   milestones: SetupMilestone[] // 6, or 7 when camps are enabled (product-gated), in display order
   doneCount: number
-  total: number // always 6
+  total: number // 6 (or 7 with camps)
   allDone: boolean
   slug: string | null // for the Go-live landing URL (?gym=<slug>)
   gymName: string | null
 }
 
 /**
- * Compute the 6-milestone view for one gym. Reuses getSetupChecklist (its catalog
- * existence + product gating), then adds a single gyms read for the presentation
- * columns the item engine doesn't expose (name / slug / logo / localized taglines)
- * and two ≤3 batches of the milestone-only existence checks.
+ * Compute the 6-milestone view for one gym. TODAY-DERISK: a SINGLE get_setup_status
+ * read feeds both the item list and every milestone-only signal (bookable coach,
+ * class-with-schedule, landing visibility, first coach id, gym presentation columns) —
+ * was ~15 count/exists probes across two helpers; now one round-trip, byte-identical.
  */
 export async function getSetupMilestones(
   supabase: SupabaseClient,
   gymId: string,
 ): Promise<SetupMilestones> {
-  // Reuse: every catalog existence check + the membership/PT product gating.
-  const checklist = await getSetupChecklist(supabase, gymId)
+  const s = await getSetupStatusRow(supabase, gymId)
+  const checklist = deriveChecklist(s)
   const has = (k: SetupItemKey) => checklist.items.some((i) => i.key === k)
   const done = (k: SetupItemKey) => checklist.items.find((i) => i.key === k)?.done ?? false
 
-  // Batch A (≤3): the rich gym row (M1 + M6 + slug) + two new existence signals.
-  // coach_availability carries its own gym_id (000044) → scope directly.
-  // class_schedules has NO gym_id (000003) → scope via classes!inner + classes.gym_id.
-  const [gymRow, bookable, classWithSchedule] = await Promise.all([
-    supabase
-      .from('gyms')
-      .select('name_ar, name_en, name_fr, slug, phone, email, logo_url, brand_color, tagline_ar, tagline_en, tagline_fr')
-      .eq('id', gymId)
-      .maybeSingle()
-      .then(({ data }) => data),
-    supabase
-      .from('coach_availability')
-      .select('id', { count: 'exact', head: true })
-      .eq('gym_id', gymId)
-      .eq('is_active', true)
-      .then(({ count }) => (count ?? 0) > 0),
-    supabase
-      .from('class_schedules')
-      .select('id, classes!inner(gym_id, is_active, deleted_at)', { count: 'exact', head: true })
-      .eq('classes.gym_id', gymId)
-      .eq('classes.is_active', true)
-      .is('classes.deleted_at', null)
-      .then(({ count }) => (count ?? 0) > 0),
-  ])
-
-  // Batch B (≤3): the two landing-visibility signals (M6) + a representative coach
-  // id so M2 can deep-link the availability panel when coaches exist but aren't bookable.
-  const [landingClass, landingCoach, firstCoachId] = await Promise.all([
-    supabase
-      .from('classes')
-      .select('id', { count: 'exact', head: true })
-      .eq('gym_id', gymId)
-      .eq('show_on_landing', true)
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .then(({ count }) => (count ?? 0) > 0),
-    supabase
-      .from('coaches')
-      .select('id', { count: 'exact', head: true })
-      .eq('gym_id', gymId)
-      .eq('landing_visible', true)
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .then(({ count }) => (count ?? 0) > 0),
-    supabase
-      .from('coaches')
-      .select('id')
-      .eq('gym_id', gymId)
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => (data?.id as string | undefined) ?? null),
-  ])
-
-  const g = (gymRow ?? {}) as {
-    name_ar?: string | null; name_en?: string | null; name_fr?: string | null
-    slug?: string | null; phone?: string | null; email?: string | null
-    logo_url?: string | null; brand_color?: string | null
-    tagline_ar?: string | null; tagline_en?: string | null; tagline_fr?: string | null
-  }
-
   // M1 signals — mirror the item engine's "contact filled" plus a brand signal that
   // (per spec) counts logo_url OR brand_color OR any localized tagline.
-  const nameSet = !!(g.name_en || g.name_ar || g.name_fr)
-  const contactSet = !!(g.phone || g.email)
-  const branded = !!(g.logo_url || g.brand_color || g.tagline_en || g.tagline_ar || g.tagline_fr)
+  const nameSet = !!(s.name_en || s.name_ar || s.name_fr)
+  const contactSet = !!(s.phone || s.email)
+  const branded = !!(s.logo_url || s.brand_color || s.tagline_en || s.tagline_ar || s.tagline_fr)
 
   const hasCoaches = done('coach')
+  const bookable = s.has_bookable_coach
+  const firstCoachId = s.first_coach_id ?? null
+  const classWithSchedule = s.has_class_schedule
   const membershipEnabled = has('plan')
   const ptEnabled = has('ptpackage')
   const planDone = done('plan')
   const ptDone = done('ptpackage')
   const campEnabled = has('camp')
   const campDone = done('camp')
-  const landingVisible = landingClass || landingCoach
+  const landingVisible = s.has_landing_class || s.has_landing_coach
 
   const milestones: SetupMilestone[] = [
     { key: 'gym', done: nameSet && contactSet && branded, detail: {} },
@@ -288,8 +194,7 @@ export async function getSetupMilestones(
       detail: { membershipEnabled, planDone, ptEnabled, ptDone },
     },
     // M2-B: "Your camps" — a product-gated milestone. Present ONLY when products.camp
-    // (spread → the array is 6 or 7; every consumer derives the total from length), done
-    // when ≥1 upcoming active camp exists (the `camp` checklist item, reused above).
+    // (spread → the array is 6 or 7; every consumer derives the total from length).
     ...(campEnabled ? [{ key: 'camps' as const, done: campDone, detail: { campEnabled, campDone } }] : []),
     { key: 'members', done: done('member'), detail: {} },
     { key: 'golive', done: branded && landingVisible, detail: { branded, landingVisible } },
@@ -301,7 +206,7 @@ export async function getSetupMilestones(
     doneCount,
     total: milestones.length,
     allDone: doneCount === milestones.length,
-    slug: g.slug ?? null,
-    gymName: g.name_en || g.name_ar || g.name_fr || null,
+    slug: s.slug ?? null,
+    gymName: s.name_en || s.name_ar || s.name_fr || null,
   }
 }
