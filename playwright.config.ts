@@ -610,6 +610,13 @@ export default defineConfig({
       testMatch: /pt-policy\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // BILL-LOCALIZE: honest TVA + preferred-currency display on a HERMETIC own gym.
+      name: 'bill-localize',
+      dependencies: ['setup'],
+      testMatch: /bill-localize\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
 
     {
       // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries

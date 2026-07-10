@@ -34,6 +34,7 @@ type GymData = {
   logo_url?: string;
   city?: string;
   country?: string;
+  tva_registration_number?: string;
   // 000072 branding
   brand_color?: string;
   hero_image_url?: string;
@@ -118,9 +119,9 @@ const GYM_ERR_KEYS = new Set(['invalid_color', 'invalid_currency', 'not_allowed'
 // own fields. Field lists mirror the JSX sections below.
 type SectionKey = 'identity' | 'contact' | 'localization' | 'branding';
 const SECTION_FIELDS: Record<SectionKey, string[]> = {
-  identity: ['name_en', 'name_ar', 'name_fr'],
+  identity: ['name_en', 'name_ar', 'name_fr', 'tva_registration_number'],
   contact: ['phone', 'email', 'website', 'address_en', 'address_ar', 'address_fr'],
-  localization: ['timezone', 'currency_preference'],
+  localization: ['timezone', 'currency_preference', 'city', 'country'],
   branding: ['brand_color', 'hero_image_url', 'tagline_en', 'tagline_ar', 'tagline_fr'],
 };
 
@@ -143,6 +144,9 @@ export function GymSettings({ gym, locale }: Props) {
     website: gym?.website ?? '',
     timezone: gym?.timezone ?? '',
     currency_preference: gym?.currency_preference ?? '',
+    city: gym?.city ?? '',
+    country: gym?.country ?? '',
+    tva_registration_number: gym?.tva_registration_number ?? '',
     brand_color: gym?.brand_color ?? '',
     hero_image_url: gym?.hero_image_url ?? '',
     tagline_ar: gym?.tagline_ar ?? '',
@@ -299,6 +303,11 @@ export function GymSettings({ gym, locale }: Props) {
         <F label={t('gym.nameFr')} hint={reuseHint}>
           <Input data-testid="gym-name-fr" value={form.name_fr} onChange={set('name_fr')} className="rounded-lg border p-2" placeholder={t('gym.enterFrenchName')} />
         </F>
+        {/* BILL-LOCALIZE: the gym's TVA registration number — its billing/tax identity.
+            Empty = the gym isn't TVA-registered → invoices show NO tax line (honest). */}
+        <F label={t('gym.tvaNumber')} hint={t('gym.tvaNumberHint')}>
+          <Input data-testid="gym-tva-number" dir="ltr" value={form.tva_registration_number} onChange={set('tva_registration_number')} className="rounded-lg border p-2" placeholder={t('gym.tvaNumberPlaceholder')} />
+        </F>
         {saveBar('identity')}
       </Section>
 
@@ -365,6 +374,15 @@ export function GymSettings({ gym, locale }: Props) {
           <label className={cn('text-xs font-medium text-gray-600', isRTL && 'font-arabic')}>{t('gym.interfaceLanguage')}</label>
           <p className={cn('text-2xs text-gray-400', isRTL && 'font-arabic')}>{t('gym.interfaceLanguageHint')}</p>
           <LanguageSwitcher locale={locale} variant="inline" />
+        </div>
+        {/* BILL-LOCALIZE: where the gym operates — surfaced on receipts + billing identity. */}
+        <div className="grid grid-cols-2 gap-3">
+          <F label={t('gym.city')}>
+            <Input data-testid="gym-city" value={form.city} onChange={set('city')} className="rounded-lg border p-2" placeholder={t('gym.cityPlaceholder')} />
+          </F>
+          <F label={t('gym.country')}>
+            <Input data-testid="gym-country" value={form.country} onChange={set('country')} className="rounded-lg border p-2" placeholder={t('gym.countryPlaceholder')} />
+          </F>
         </div>
         {saveBar('localization')}
       </Section>

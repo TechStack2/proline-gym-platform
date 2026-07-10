@@ -10,6 +10,7 @@
  */
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,15 +30,22 @@ const TYPES: { value: InvoiceType; en: string; ar: string; fr: string }[] = [
 ]
 
 export function IssueInvoiceForm({
-  locale, students, exchangeRate, rateDate,
+  locale, students, exchangeRate, rateDate, taxRate, tvaRegistered,
 }: {
   locale: string
   students: { id: string; name: string }[]
   exchangeRate: number | null
   rateDate: string | null
+  // BILL-LOCALIZE: the gym's real tax posture drives an HONEST issuance hint.
+  taxRate: number
+  tvaRegistered: boolean
 }) {
   const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
+  const tn = useTranslations('invoiceNew')
+  // Only a TVA-registered gym with a real rate frames the amount as pre-TVA.
+  const showTva = tvaRegistered && taxRate > 0
+  const rateLabel = Number.isInteger(taxRate) ? String(taxRate) : taxRate.toFixed(2)
   const router = useRouter()
   const errText = useErrorText();
   const [pending, startTransition] = useTransition()
@@ -104,10 +112,12 @@ export function IssueInvoiceForm({
           <Input id="inv-due" data-testid="inv-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="inv-amount-usd">{t('Amount (USD, pre-TVA)', 'المبلغ (دولار، قبل الضريبة)', 'Montant (USD, hors TVA)')}</Label>
+          <Label htmlFor="inv-amount-usd">{showTva ? tn('amountPreTva') : tn('amountUsd')}</Label>
           <Input id="inv-amount-usd" data-testid="inv-amount-usd" type="number" step="0.01" min="0"
             value={amountUsd} onChange={(e) => setAmountUsd(e.target.value)} placeholder="0.00" />
-          <p className="text-xs text-muted-foreground">{t('11% TVA added automatically.', 'تُضاف ضريبة 11% تلقائياً.', 'TVA de 11% ajoutée automatiquement.')}</p>
+          {showTva && (
+            <p className="text-xs text-muted-foreground" data-testid="inv-tva-hint">{tn('tvaAutoAdded', { rate: rateLabel })}</p>
+          )}
         </div>
         <div className="space-y-1">
           <Label htmlFor="inv-amount-lbp">{t('Amount (LBP)', 'المبلغ (ليرة)', 'Montant (LBP)')}</Label>

@@ -1,12 +1,14 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Receipt as ReceiptIcon, ArrowLeft, Printer } from 'lucide-react'
 import { PaymentForm } from '../../payments/components/payment-form'
 import { InvoiceActions } from './invoice-actions'
 import { balanceUsd, paidUsd, localizedName, STATUS_BADGE, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { normalizeCurrencyPref, orderedMoney, fmtUsd } from '@/lib/billing/currency'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,14 +21,29 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
 
   const { data: inv } = await supabase
     .from('invoices')
-    .select(`id, invoice_number, invoice_type, amount_usd, amount_lbp, tax_amount_usd, total_usd, total_lbp,
+    .select(`id, invoice_number, invoice_type, amount_usd, amount_lbp, tax_amount_usd, tax_rate, total_usd, total_lbp,
       exchange_rate, rate_date, status, due_date, paid_at, created_at, notes_en, notes_ar, notes_fr, student_id, payer_profile_id,
+      gyms(tva_registration_number, currency_preference),
       students(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)),
       payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
     .eq('id', id)
     .maybeSingle()
 
   if (!inv) notFound()
+
+  // BILL-LOCALIZE: honest tax + preferred display currency, driven by the gym.
+  const ti = await getTranslations('invoices')
+  const gymRow: any = (inv as any).gyms
+  const gymBilling = Array.isArray(gymRow) ? gymRow[0] : gymRow
+  const tvaNumber: string | null = gymBilling?.tva_registration_number ?? null
+  const pref = normalizeCurrencyPref(gymBilling?.currency_preference)
+  // The tax line shows ONLY for a TVA-registered gym with real tax on the invoice — no
+  // registration number → no tax-line pretense. The rate comes from the invoice's own
+  // stored tax_rate (per-gym since 000074), never a hardcoded 11%.
+  const showTax = !!tvaNumber && Number(inv.tax_amount_usd) > 0
+  const ratePct = Number(inv.tax_rate ?? 0)
+  const rateLabel = Number.isInteger(ratePct) ? String(ratePct) : ratePct.toFixed(2)
+  const totalMoney = orderedMoney(inv.total_usd, inv.total_lbp, pref)
 
   const { data: payments } = await supabase
     .from('payments')
@@ -72,15 +89,25 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
           </span>
         </div>
 
-        <dl className="mt-6 grid gap-3 sm:grid-cols-4 text-sm">
-          <div><dt className="text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</dt><dd className="font-medium">${Number(inv.amount_usd).toFixed(2)}</dd></div>
-          <div><dt className="text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)', 'TVA (11%)')}</dt><dd className="font-medium">${Number(inv.tax_amount_usd).toFixed(2)}</dd></div>
-          <div><dt className="text-muted-foreground">{t('Total', 'الإجمالي', 'Total')}</dt><dd className="font-bold" data-testid="invoice-total">${Number(inv.total_usd).toFixed(2)}</dd></div>
-          <div><dt className="text-muted-foreground">{t('Balance', 'الرصيد', 'Solde')}</dt><dd className={cn('font-bold', balance > 0 ? 'text-red-600' : 'text-green-600')} data-testid="invoice-balance">${balance.toFixed(2)}</dd></div>
+        <dl className={cn('mt-6 grid gap-3 text-sm', showTax ? 'sm:grid-cols-4' : 'sm:grid-cols-2')}>
+          {showTax && (
+            <div><dt className="text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</dt><dd className="font-medium">{fmtUsd(inv.amount_usd)}</dd></div>
+          )}
+          {showTax && (
+            <div>
+              <dt className="text-muted-foreground" data-testid="invoice-tva-label">{ti('tvaLine', { rate: rateLabel })}</dt>
+              <dd className="font-medium">{fmtUsd(inv.tax_amount_usd)}</dd>
+            </div>
+          )}
+          <div><dt className="text-muted-foreground">{t('Total', 'الإجمالي', 'Total')}</dt><dd className="font-bold" data-testid="invoice-total">{totalMoney.primary}</dd></div>
+          <div><dt className="text-muted-foreground">{t('Balance', 'الرصيد', 'Solde')}</dt><dd className={cn('font-bold', balance > 0 ? 'text-red-600' : 'text-green-600')} data-testid="invoice-balance">{fmtUsd(balance)}</dd></div>
         </dl>
-        {inv.total_lbp ? (
-          <p className="mt-1 text-xs text-muted-foreground">{t('Total in LBP', 'الإجمالي بالليرة', 'Total en LBP')}: {Number(inv.total_lbp).toLocaleString()} LBP</p>
+        {totalMoney.secondary ? (
+          <p className="mt-1 text-xs text-muted-foreground" data-testid="invoice-total-secondary">{t('Also', 'أيضاً', 'Aussi')}: {totalMoney.secondary}</p>
         ) : null}
+        {tvaNumber && (
+          <p className="mt-1 text-xs text-muted-foreground" data-testid="invoice-tva-number">{ti('tvaRegistered', { number: tvaNumber })}</p>
+        )}
       </div>
 
       {/* Settlement */}

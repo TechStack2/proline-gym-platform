@@ -698,7 +698,9 @@
     "error_saving": "Erreur lors de l'enregistrement de la facture",
     "search_invoices": "Rechercher des factures...",
     "loading": "Chargement des factures...",
-    "description": "Gérer et voir toutes les factures"
+    "description": "Gérer et voir toutes les factures",
+    "tvaLine": "TVA ({rate}%)",
+    "tvaRegistered": "N° TVA {number}"
   },
   "status": {
     "active": "Actif",
@@ -1298,7 +1300,14 @@
       "enterFrenchName": "Entrez le nom français",
       "unnamed": "PRO LINE Gym",
       "interfaceLanguage": "Langue de l'interface",
-      "interfaceLanguageHint": "Cet appareil uniquement — définit votre langue d'affichage, pas un réglage global du club."
+      "interfaceLanguageHint": "Cet appareil uniquement — définit votre langue d'affichage, pas un réglage global du club.",
+      "tvaNumber": "Numéro d'enregistrement TVA",
+      "tvaNumberHint": "Laissez vide si vous n'êtes pas assujetti à la TVA — les factures n'affichent alors aucune ligne de taxe.",
+      "tvaNumberPlaceholder": "ex. 123456789",
+      "city": "Ville",
+      "cityPlaceholder": "ex. Beyrouth",
+      "country": "Pays",
+      "countryPlaceholder": "ex. Liban"
     },
     "exchange": {
       "currentRate": "Taux de change actuel",
@@ -2638,7 +2647,10 @@
   },
   "invoiceNew": {
     "title": "Nouvelle facture",
-    "subtitle": "Émettez une facture bi-devise via le service canonique."
+    "subtitle": "Émettez une facture bi-devise via le service canonique.",
+    "amountPreTva": "Montant (USD, hors TVA)",
+    "amountUsd": "Montant (USD)",
+    "tvaAutoAdded": "TVA ({rate}%) ajoutée automatiquement."
   },
   "winback": {
     "empty": "Aucun membre perdu à reconquérir — tous sont actifs.",
