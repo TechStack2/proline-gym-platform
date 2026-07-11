@@ -184,11 +184,16 @@ test('SELF-SERVE · freeze request → staff approve → membership paused', asy
   await setMembership({ status: 'active', end_date: iso(60), pause_start_date: null, pause_end_date: null })
 
   const m = await loginAs(browser, 'student')
+  m.page.on('console', (msg) => { if (msg.type() === 'error') console.log('MJ3_FREEZE_CONSOLE:', msg.text()) })
   try {
     await m.page.goto('/en/portal')
     await w(m.page, 'request-freeze-btn').click()
     await expect(w(m.page, 'freeze-modal')).toBeVisible({ timeout: 10_000 })
     await w(m.page, 'freeze-submit').click()
+    // diagnostic: the failure surfaces as a sonner error toast (res.error).
+    await m.page.waitForTimeout(1500)
+    const toastTxt = await m.page.locator('[data-sonner-toast]').allInnerTexts().catch(() => [])
+    console.log('MJ3_FREEZE_TOAST:', JSON.stringify(toastTxt))
     await expect(w(m.page, 'freeze-requested')).toBeVisible({ timeout: 15_000 })
   } finally {
     await m.ctx.close()
