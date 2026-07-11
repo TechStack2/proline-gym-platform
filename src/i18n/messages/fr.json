@@ -83,6 +83,7 @@
     "campaigns": "Campagnes"
   },
   "common": {
+    "phoneAlsoUsedBy": "Aussi utilisé par {name} — les familles peuvent partager",
     "genericError": "Une erreur est survenue. Veuillez réessayer.",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -712,18 +713,29 @@
     "late": "En retard",
     "excused": "Excusé"
   },
+  "welcome": {
+    "title": "Vous y êtes, {name} ! 🥋",
+    "subtitle": "Votre compte est prêt. Voici ce que vous pouvez faire.",
+    "scheduleTitle": "Voir votre planning",
+    "scheduleDesc": "Vos cours et séances PT, toujours à jour.",
+    "progressTitle": "Suivre votre progression",
+    "progressDesc": "Ceinture, présence et forfaits PT au même endroit.",
+    "billingTitle": "Gérer votre facturation",
+    "billingDesc": "Factures, reçus et échéances — sans surprise.",
+    "cta": "Accéder à mon portail"
+  },
   "landing": {
     "nav": {
       "disciplines": "Programmes",
       "pricing": "Tarifs",
       "facility": "Installation",
       "trial": "Essai Gratuit",
-      "login": "Connexion"
+      "login": "Connexion membre"
     },
     "footer": {
       "tagline": "Libérez le combattant en vous 🥊",
       "links": "Liens Rapides",
-      "login": "Connexion Membre",
+      "login": "Connexion membre",
       "programs": "Programmes",
       "plans": "Plans d'Abonnement",
       "trial": "Essai Gratuit",

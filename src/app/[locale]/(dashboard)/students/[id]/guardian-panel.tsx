@@ -14,7 +14,10 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { normalizePhone } from '@/lib/utils/phone'
+import { PhoneDuplicateHint } from '@/components/shared/phone-duplicate-hint'
 import { Loader2, Phone, Search, UserPlus, X, Users } from 'lucide-react'
+// MJ-2×MJ-1 RECONCILE: LOOKUP = MJ-1's find_profile_by_phone RPC; WRITE = MY canonical shape.
 import { findProfileByPhone } from '@/lib/provisioning/guardian-lookup'
 import { InviteButton } from '@/components/shared/invite-button'
 
@@ -96,7 +99,7 @@ export function GuardianPanel({
       const { data: prof, error: pErr } = await supabase
         .from('profiles')
         .insert({
-          gym_id: gymId, phone: phone.trim() || null,
+          gym_id: gymId, phone: normalizePhone(phone) || null,
           first_name_en: fn, first_name_ar: fn, first_name_fr: fn,
           last_name_en: lnm, last_name_ar: lnm, last_name_fr: lnm,
         })
@@ -169,6 +172,7 @@ export function GuardianPanel({
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="me-1 h-3.5 w-3.5" />} {t('search')}
             </Button>
           </div>
+          <PhoneDuplicateHint gymId={gymId} phone={phone} locale={locale} />
           {searched && match && (
             <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm" data-testid="guardian-match">
               <span className="font-medium text-gray-800">{match.name}</span>

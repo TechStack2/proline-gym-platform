@@ -16,9 +16,11 @@
  * timing AND the same GoTrue sign-in rate limit. The service-role client is server-only.
  */
 import { headers } from 'next/headers'
+import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createRateLimitStore, checkRateLimit, resetRateLimit, cleanupRateLimitStore, envLimit } from '@/lib/auth/rate-limit'
+import { normalizePhone, phoneMatchVariants } from '@/lib/utils/phone'
 
 // LOGIN-LIMITER — per-(IP+identifier) brute-force limit. This is where the
 // submitted identifier is KNOWN (the middleware only sees pathnames), so the
@@ -42,7 +44,10 @@ export async function signInWithPhone(
   phoneRaw: string,
   password: string,
 ): Promise<{ ok: boolean; rateLimited?: boolean }> {
-  const phone = (phoneRaw || '').replace(/[\s-]/g, '').trim()
+  // MJ-2: normalize the submitted phone to the ONE canonical shape (03…, +9613…,
+  // 009613…, bare all collapse here) so resolution is an exact compare, and so the
+  // rate-limit identifier is stable across the shapes a user might type.
+  const phone = normalizePhone(phoneRaw)
   if (!phone || !password) return { ok: false }
 
   // Per-identifier limit BEFORE any GoTrue work (cheap rejection under attack).
@@ -57,20 +62,44 @@ export async function signInWithPhone(
   if (!gate.allowed) return { ok: false, rateLimited: true }
 
   // Resolve phone → profile ids (service role; bypasses RLS; server-only, never
-  // returned). STAFF-INVITE root-cause fix: a phone is NOT globally unique across
-  // gyms (multi-tenant — and the e2e worker gyms share fixture phones), so the old
-  // `limit(1)` picked an ARBITRARY match; the wrong twin's synthetic email made the
-  // login fail even with the right password (the true on1:60 flake). Try each
-  // candidate (bounded) — only the credentialed profile's password verifies.
+  // returned). A phone is non-unique BY DESIGN (families share; the ratified
+  // invariant is at most ONE credentialed profile per phone per gym). Match the
+  // normalized phone against its equivalent legacy shapes (no data migration) so
+  // both new normalized rows and old `.trim()`-only rows resolve.
   const admin = createAdminClient()
   const { data: profs } = await admin
-    .from('profiles').select('id').eq('phone', phone).order('created_at', { ascending: true }).limit(5)
+    .from('profiles').select('id').in('phone', phoneMatchVariants(phone))
+    .order('created_at', { ascending: true }).limit(8)
 
-  // ALWAYS attempt a sign-in — the resolved synthetic email(s) when the phone
-  // matches, else a syntactically-valid but non-existent one — so an unknown phone
-  // and a wrong password stay indistinguishable (same generic result).
-  const candidates = (profs ?? []).map((p) => `m-${p.id}@members.proline.lb`)
-  if (candidates.length === 0) candidates.push(`m-none-${phone.replace(/[^0-9]/g, '')}@members.proline.lb`)
+  // DETERMINISTIC RESOLUTION (MJ-2 / the on1:60 flake fix): keep ONLY profiles that
+  // actually hold an auth account. A login-less profile shares the family phone but
+  // has no GoTrue user (profiles.id ≠ any auth.users.id), so its synthetic email
+  // would just 400 and burn a GoTrue attempt. getUserById(id) is the invite flow's
+  // own credentialed test (invite.ts) — the profile IS the auth user (same id).
+  const credentialed: string[] = []
+  for (const p of profs ?? []) {
+    const { data, error } = await admin.auth.admin.getUserById(p.id)
+    if (!error && data?.user) credentialed.push(`m-${p.id}@members.proline.lb`)
+  }
+
+  // Legacy cross-gym data CAN leave >1 credentialed profile on one phone. That
+  // violates the ratified per-gym invariant — surface it (Sentry-tagged) for
+  // clean-up, but still resolve by trying each: only the right password verifies.
+  if (credentialed.length > 1) {
+    Sentry.captureMessage('auth.phone.multiple_credentialed', {
+      level: 'warning',
+      tags: { area: 'auth-phone-resolution' },
+      extra: { count: credentialed.length }, // NO phone/PII — count only
+    })
+  }
+
+  // ALWAYS attempt a sign-in — the resolved synthetic email(s) when the phone maps
+  // to a credentialed profile, else a syntactically-valid but non-existent one — so
+  // an unknown phone and a wrong password stay indistinguishable (no enumeration
+  // oracle; same generic result AND the same GoTrue rate-limit surface — J6 lesson).
+  const candidates = credentialed.length > 0
+    ? credentialed
+    : [`m-none-${phone.replace(/[^0-9]/g, '')}@members.proline.lb`]
 
   const supabase = await createClient() // SSR client → writes the session cookies on success
   for (const email of candidates) {

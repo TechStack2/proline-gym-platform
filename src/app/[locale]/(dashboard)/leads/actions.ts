@@ -13,6 +13,7 @@
  */
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { normalizePhone } from '@/lib/utils/phone';
 import {
   createNotification,
   createNotificationForRole,
@@ -69,7 +70,8 @@ export async function addLead(
       gym_id: gymId,
       first_name: parsed.data.first_name,
       last_name: parsed.data.last_name,
-      phone: parsed.data.phone,
+      phone: normalizePhone(parsed.data.phone), // MJ-2: store the canonical shape
+
       email: parsed.data.email || null,
       source: parsed.data.source,
       source_detail: input.source_detail || null,

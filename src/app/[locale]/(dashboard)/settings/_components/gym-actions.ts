@@ -10,6 +10,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { actionError } from '@/lib/errors/action-error';
+import { normalizePhone } from '@/lib/utils/phone';
 
 export type GymSettingsInput = {
   name_ar?: string
@@ -54,6 +55,9 @@ export async function saveGymSettings(
     payload[key] = typeof v === 'string' && v.trim() !== '' ? v.trim() : null
   }
   if (Object.keys(payload).length === 0) return { ok: false, error: 'nothing_to_save' }
+
+  // MJ-2: store the gym's contact phone in the canonical shape (display formats it).
+  if (payload.phone) payload.phone = normalizePhone(payload.phone) || null
 
   if (payload.brand_color && !/^#[0-9a-fA-F]{6}$/.test(payload.brand_color)) {
     return { ok: false, error: 'invalid_color' }

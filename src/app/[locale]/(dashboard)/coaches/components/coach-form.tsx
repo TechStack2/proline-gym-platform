@@ -23,6 +23,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { normalizePhone } from '@/lib/utils/phone'
 import { Camera } from 'lucide-react'
 import { AvatarUpload, uploadAvatar } from '@/components/shared/avatar-upload'
 import { FormWizard } from '@/components/shared/form-wizard'
@@ -130,7 +131,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
         last_name_en: lastEn.trim(),
         last_name_ar: lastAr.trim() || lastEn.trim(),
         last_name_fr: lastFr.trim() || lastEn.trim(),
-        phone: phone.trim() || null,
+        phone: normalizePhone(phone) || null, // MJ-2: store the canonical shape
       }
       const coachPayload = {
         ...spec,
