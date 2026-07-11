@@ -29,6 +29,16 @@ const withPWA = withPWAInit({
   // caches when the new worker activates. Bump this string on any future SW change.
   cacheId: 'proline-gym-v2',
   disable: process.env.NODE_ENV === 'development',
+  // OFF-4 (OFFLINE-DOOR): register the OFFLINE FRONT DOOR. next-pwa wires a
+  // `handlerDidError → self.fallback(request)` into every runtime-cache route and
+  // precaches this document; so when an offline navigation to an UNCACHED route
+  // fails both network and cache, the SW serves the branded /offline.html (which
+  // honestly states what works offline and deep-links / auto-forwards to the cached
+  // /desk) instead of the browser's native "no internet" error page. Before this the
+  // precached offline.html was dead weight — nothing ever served it.
+  fallbacks: {
+    document: '/offline.html',
+  },
   // OFF-1: next-pwa builds an all-or-nothing precache manifest that, with Next 14
   // App Router, includes URLs `next start` 404s → the SW precache install REJECTS
   // → the worker goes redundant → never activates/controls → the offline machine
@@ -76,6 +86,13 @@ const withPWA = withPWAInit({
     {
       urlPattern: /^https?:\/\/.*\.supabase\.co\/rest\/.*/i,
       handler: 'NetworkOnly',
+      // OFF-4: an EMPTY options object is required now that `fallbacks` is set —
+      // next-pwa injects its `handlerDidError` fallback plugin into every route and
+      // reads `route.options.plugins`, so a route with no `options` crashes the build.
+      // This stays NetworkOnly (NO REST caching — the OFF-2 rule holds); the injected
+      // handler only runs on a network error, where self.fallback returns Response.error()
+      // for a REST request (destination is not 'document') — byte-identical failure.
+      options: {},
     },
     // ─── Static Assets (JS, CSS, fonts): Cache First ───
     {

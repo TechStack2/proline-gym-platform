@@ -1022,6 +1022,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // OFF-4 (OFFLINE-DOOR) — the shipped offline layer made REACHABLE + PRIMED +
+      // HONEST: an offline navigation to an uncached route serves the branded
+      // /offline.html fallback (next-pwa fallbacks.document, deep-links /desk);
+      // when the desk shell is warmed the door auto-forwards to it; and a cold
+      // offline launch of /desk (never visited) hydrates from the login-level warm
+      // with a primed roster. testMatch ANCHORED ($) — `off-door` shares no path
+      // segment with off1/off2/off3/off4 so no substring collision. Runs LAST.
+      name: 'off-door',
+      dependencies: ['setup'],
+      testMatch: /\/off-door\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PWA-INSTALL — the platform-aware, dismissible "Install the app" card on the
       // front-desk hub (Today): renders + manual steps (Safari) / native prompt
       // (Chromium); no nag when installed (standalone); dismiss remembered; /ar clean.

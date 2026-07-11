@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { getOfflineDB } from '@/lib/db/schema'
 import type { PendingPaymentIntent, PendingLeadIntent } from '@/lib/db/schema'
 import { getSyncEngine } from '@/lib/db/sync-engine'
+import { CORE_TABLES, primeDeskMirror } from '@/lib/offline/prime'
 import { useOnline } from '@/lib/offline/use-online'
 import { outboxStats, flushOutbox, type OutboxStats } from '@/lib/offline/outbox'
 import { listPendingPayments, resubmitPayment, discardPayment, type RecordPayment } from '@/lib/offline/payments'
@@ -58,31 +59,10 @@ const lname = (r: Row | undefined, base: string, locale: string): string =>
 
 const beltLabel = (r?: string | null) => (r ? r.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—')
 
-/**
- * OFF-2 — prime the Dexie mirror from the front desk itself (the only offline
- * read surface). Deliberately scoped HERE rather than the dashboard layout: a
- * layout-level pull contends with timing-sensitive specs that never open the
- * desk (it destabilised the realtime-race specs). Core front-desk tables only,
- * once per session + on each `online` window (throttled). Read-only (OFF-3).
- */
-const CORE_TABLES = [
-  'profiles', 'students', 'classes', 'class_schedules',
-  'class_enrollments', 'student_memberships', 'pt_assignments',
-  // OFF-3: the money path needs the member's open invoices + their payments
-  // (to show the balance) cached for the offline record-payment flow.
-  'invoices', 'payments',
-] as const
-
-let deskPrimedThisSession = false
-let lastDeskPrimeAt = 0
-function primeDeskMirror() {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) return // offline → no-op
-  if (Date.now() - lastDeskPrimeAt < 30_000) return // throttle (double-shell mounts twice)
-  lastDeskPrimeAt = Date.now()
-  getSyncEngine().pullAll({ full: true, tables: CORE_TABLES }).catch(() => {
-    lastDeskPrimeAt = 0 // allow a retry on the next online window
-  })
-}
+// OFF-2/OFF-4: the mirror prime (CORE_TABLES + primeDeskMirror) now lives in the
+// shared @/lib/offline/prime module so the FrontDeskOfflineLayer (login-level,
+// runs before any desk visit) and this desk page share ONE throttle. Supabase
+// REST stays NetworkOnly in the SW (OFF-2 rule) — the prime reads live.
 
 export function OfflineDesk({ locale, showMembership = true }: { locale: string; showMembership?: boolean }) {
   const t = useTranslations('desk')
@@ -127,9 +107,10 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
 
   // Prime the mirror when the desk opens online + on each online window. The
   // onSync subscription below re-reads once the pull lands. Offline → no-op,
-  // the desk just reads the last prime.
+  // the desk just reads the last prime. (The shared throttle in prime.ts dedupes
+  // against the layer's login-level prime — never a double pull.)
   useEffect(() => {
-    if (!deskPrimedThisSession) { deskPrimedThisSession = true; primeDeskMirror() }
+    primeDeskMirror()
     const onOnline = () => primeDeskMirror()
     window.addEventListener('online', onOnline)
     return () => window.removeEventListener('online', onOnline)

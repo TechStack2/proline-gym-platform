@@ -2939,7 +2939,8 @@
     "needsConnection": "This needs a connection.",
     "paymentsNeedConnection": "Payments need a connection — only attendance works offline.",
     "synced": "Synced",
-    "savedOffline": "Saved offline — will sync when you reconnect"
+    "savedOffline": "Saved offline — will sync when you reconnect",
+    "scope": "Front desk works offline — attendance, cash, leads. Everything else needs a connection."
   },
   "coach360": {
     "schedule": "Schedule",
