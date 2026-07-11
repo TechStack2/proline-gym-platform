@@ -10,6 +10,8 @@ import { Avatar } from '@/components/shared/avatar'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
+import { MembershipLifecycleActions } from './membership-lifecycle-actions'
+import { ProfileSelfServe } from '../profile/profile-self-serve'
 
 /**
  * Guardian's per-kid dashboard (B3). Rendered on /portal?kid=<studentId> for a
@@ -39,7 +41,7 @@ export async function KidDashboard({
     { data: beltPromos },
     { data: enrollments },
   ] = await Promise.all([
-    supabase.from('students').select('id, current_belt_rank, is_active, gym_id').eq('id', kid.id).maybeSingle(),
+    supabase.from('students').select('id, profile_id, current_belt_rank, is_active, gym_id, emergency_contact_name, emergency_contact_phone, medical_notes').eq('id', kid.id).maybeSingle(),
     supabase
       .from('class_registrations')
       .select('id, status, waitlist_position, monthly_fee_usd, classes:class_id (name_ar, name_en, name_fr)')
@@ -97,6 +99,24 @@ export async function KidDashboard({
   const tw = await getTranslations({ locale, namespace: 'waiver' })
   const waiver = kidStudent?.gym_id ? await getWaiverContext(supabase, kid.id, kidStudent.gym_id) : null
 
+  // MJ-3: the kid's membership lifecycle + pending requests (guardian self-serve).
+  const [{ data: kidMemberships }, { data: kidGym }, { data: kidPending }, { data: kidProfile }] = await Promise.all([
+    supabase.from('student_memberships').select('status, end_date, pause_end_date').eq('student_id', kid.id).order('end_date', { ascending: false }).limit(5),
+    kidStudent?.gym_id
+      ? supabase.from('gyms').select('renewal_lead_days, dunning_grace_days, freeze_min_chunk_days').eq('id', kidStudent.gym_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from('member_requests').select('kind').eq('student_id', kid.id).eq('status', 'pending'),
+    kidStudent?.profile_id
+      ? supabase.from('profiles').select('date_of_birth, phone').eq('id', kidStudent.profile_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+  const { membershipState } = await import('@/lib/lifecycle/status')
+  const kidStates = ((kidMemberships ?? []) as any[]).map((m) => membershipState(m, kidGym ?? {}))
+  const kidMsState = (['lapsed', 'overdue', 'expiring', 'frozen'] as const).find((sv) => kidStates.includes(sv)) ?? 'active'
+  const kidPendRenewal = ((kidPending ?? []) as any[]).some((r) => r.kind === 'renewal')
+  const kidPendFreeze = ((kidPending ?? []) as any[]).some((r) => r.kind === 'freeze')
+  const kidPendChange = ((kidPending ?? []) as any[]).some((r) => r.kind === 'profile_change')
+
   const dayNames = isRTL
     ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -141,6 +161,29 @@ export async function KidDashboard({
           <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3 text-orange-500" />{t('streak', { count: streak })}</span>
         </p>
       </div>
+
+      {/* MJ-3: the kid's membership lifecycle — guardian requests renewal/freeze. */}
+      {(kidMemberships ?? []).length > 0 && (
+        <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="kid-membership">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+              <CreditCard className="h-4 w-4 text-primary-700" /> {t('membership')}
+            </h3>
+            <span data-testid="kid-membership-state" className={cn('rounded-full px-2 py-0.5 text-xs font-medium',
+              kidMsState === 'active' ? 'bg-green-100 text-green-700' : kidMsState === 'frozen' ? 'bg-blue-100 text-blue-700' : kidMsState === 'expiring' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700')}>
+              {t(`msState.${kidMsState}`)}
+            </span>
+          </div>
+          <MembershipLifecycleActions
+            locale={locale}
+            studentId={kid.id}
+            state={kidMsState}
+            pendingRenewal={kidPendRenewal}
+            pendingFreeze={kidPendFreeze}
+            freezeMinDays={(kidGym as any)?.freeze_min_chunk_days ?? 7}
+          />
+        </div>
+      )}
 
       {/* Registrations + request-for-kid */}
       <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -259,6 +302,24 @@ export async function KidDashboard({
 
       {/* E1: published camps — guardian requests FOR this kid */}
       <PortalCampsSection studentId={kid.id} actingFor={kid.name} locale={locale} />
+
+      {/* MJ-3: guardian requests a safety/contact change for this kid (request-only). */}
+      <ProfileSelfServe
+        locale={locale}
+        mode="guardian"
+        studentId={kid.id}
+        credentialed={false}
+        pendingChange={kidPendChange}
+        initial={{
+          contactEmail: null,
+          prefLocale: null,
+          dob: (kidProfile as any)?.date_of_birth ?? null,
+          phone: (kidProfile as any)?.phone ?? null,
+          emergencyName: (kidStudent as any)?.emergency_contact_name ?? null,
+          emergencyPhone: (kidStudent as any)?.emergency_contact_phone ?? null,
+          medical: (kidStudent as any)?.medical_notes ?? null,
+        }}
+      />
 
       {/* Household billing link */}
       <Link href={`/${locale}/portal/billing`} data-testid="kid-billing-link"

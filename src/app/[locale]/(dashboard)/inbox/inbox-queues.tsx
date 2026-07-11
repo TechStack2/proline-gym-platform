@@ -14,10 +14,11 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CheckCircle2, XCircle, Dumbbell, CalendarDays, ArrowUpCircle, Tent } from 'lucide-react'
+import { CheckCircle2, XCircle, Dumbbell, CalendarDays, ArrowUpCircle, Tent, UserCog } from 'lucide-react'
 import { approveRegistration, rejectRegistration } from '../classes/[id]/registration-actions'
 import { approvePtRequest, rejectPtRequest } from '../pt/actions'
 import { registerToCamp, declineCampRequest } from '../camps/actions'
+import { approveMemberRequest, declineMemberRequest } from './member-request-actions'
 
 export type RegRequestRow = {
   id: string
@@ -42,14 +43,23 @@ export type PtRequestRow = {
 export type InboxCoach = { id: string; name: string }
 export type PromotionRow = { id: string; className: string; studentName: string; at: string }
 export type CampRequestRow = { id: string; campId: string; studentId: string; campName: string; studentName: string; requestedAt: string }
+export type MemberRequestRow = {
+  id: string
+  kind: 'profile_change' | 'renewal' | 'freeze'
+  studentName: string
+  note: string | null
+  payload: Record<string, any>
+  requestedAt: string
+}
 
 export function InboxQueues({
-  locale, regRequests, ptRequests, campRequests = [], promotions, coaches = [],
+  locale, regRequests, ptRequests, campRequests = [], memberRequests = [], promotions, coaches = [],
 }: {
   locale: string
   regRequests: RegRequestRow[]
   ptRequests: PtRequestRow[]
   campRequests?: CampRequestRow[]
+  memberRequests?: MemberRequestRow[]
   promotions: PromotionRow[]
   // J3 PT-GUARDS: the gym's active coaches, for the approve-time coach picker.
   coaches?: InboxCoach[]
@@ -83,6 +93,24 @@ export function InboxQueues({
   const visCamp = campRequests.filter((r) => !removed.has(r.id))
   const visReg = regRequests.filter((r) => !removed.has(r.id))
   const visPt = ptRequests.filter((r) => !removed.has(r.id))
+  const visMember = memberRequests.filter((r) => !removed.has(r.id))
+
+  // MJ-3: a human summary of a profile-change payload (which fields staff will apply).
+  const memberFieldLabels: Record<string, string> = {
+    date_of_birth: t('mrField.dob'), phone: t('mrField.phone'), contact_email: t('mrField.email'),
+    emergency_contact_name: t('mrField.emergencyName'), emergency_contact_phone: t('mrField.emergencyPhone'),
+    medical_notes: t('mrField.medical'),
+  }
+  const memberSummary = (r: MemberRequestRow): string => {
+    if (r.kind === 'renewal') return t('mrKind.renewal')
+    if (r.kind === 'freeze') {
+      const d = r.payload?.days
+      return d ? t('mrFreezeDays', { days: d }) : t('mrKind.freeze')
+    }
+    const keys = [...Object.keys(r.payload?.profiles ?? {}), ...Object.keys(r.payload?.students ?? {})]
+    const labels = keys.map((k) => memberFieldLabels[k] ?? k)
+    return labels.length ? labels.join(' · ') : t('mrKind.profile_change')
+  }
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
 
@@ -236,6 +264,46 @@ export function InboxQueues({
                 )}
               </div>
             )})}
+          </div>
+        )}
+      </section>
+
+      {/* ── MJ-3: member self-serve requests (profile change / renewal / freeze) ── */}
+      <section>
+        <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+          <UserCog className="h-4 w-4 text-primary-600" />
+          {t('memberRequests')} ({visMember.length})
+        </h2>
+        {visMember.length === 0 ? (
+          <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
+        ) : (
+          <div className="space-y-2">
+            {visMember.map((r) => (
+              <div key={r.id} data-testid="inbox-member-row" data-kind={r.kind} className="rounded-2xl border bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{r.studentName}</p>
+                    <p className="text-xs text-gray-500">
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600">{t(`mrKind.${r.kind}`)}</span>
+                      {' · '}{memberSummary(r)} · {fmtDate(r.requestedAt)}
+                    </p>
+                    {r.note && <p className="mt-1 text-xs italic text-gray-400">“{r.note}”</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" data-testid="inbox-member-approve" disabled={pending}
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => run(r.id, () => approveMemberRequest(r.id))}>
+                      <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
+                    </Button>
+                    <Button size="sm" variant="outline" data-testid="inbox-member-decline" disabled={pending}
+                      className="text-red-600 hover:bg-red-50"
+                      onClick={() => run(r.id, () => declineMemberRequest(r.id))}>
+                      <XCircle className="me-1 h-4 w-4" /> {t('decline')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>

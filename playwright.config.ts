@@ -554,6 +554,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MJ-3 SELF-SERVE: member/guardian profile edits (direct + change request) +
+      // membership lifecycle requests (renewal/freeze) → staff inbox approve.
+      // Hermetic own gym (its own member/guardian/owner); anchored testMatch.
+      name: 'self-serve',
+      dependencies: ['setup'],
+      testMatch: /\/self-serve\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // B3 (family/household): guardian switcher → request-for-kid → payer
       // invoice → household billing → desk payment + the RLS negative.
       // Switches roles internally (owner + parent).

@@ -18,7 +18,7 @@ export function useInboxCount(): number {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [regs, pts] = await Promise.all([
+    const [regs, pts, members] = await Promise.all([
       supabase
         .from('class_registrations')
         .select('id', { count: 'exact', head: true })
@@ -27,8 +27,13 @@ export function useInboxCount(): number {
         .from('pt_assignments')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'requested'),
+      // MJ-3: member self-serve requests (profile change / renewal / freeze).
+      supabase
+        .from('member_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
     ]);
-    setCount((regs.count ?? 0) + (pts.count ?? 0));
+    setCount((regs.count ?? 0) + (pts.count ?? 0) + (members.count ?? 0));
   }, []);
 
   useEffect(() => {

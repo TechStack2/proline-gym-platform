@@ -4,6 +4,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { User, Phone, CalendarDays, Shield, Award, CreditCard, AlertCircle } from 'lucide-react'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
+import { ProfileSelfServe } from './profile-self-serve'
 
 type Props = { params: { locale: string } }
 
@@ -25,6 +26,11 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
   const { data: guardians } = await supabase.from('guardian_students')
     .select(`guardian_id, guardians:guardian_id (profile_id, relationship_en, relationship_ar, relationship_fr, profiles:profile_id (first_name_en, first_name_ar, first_name_fr, last_name_en, last_name_ar, last_name_fr, phone))`)
     .eq('student_id', student?.id)
+  // MJ-3: is there already a profile-change request awaiting staff review?
+  const { data: pendingChange } = student?.id
+    ? await supabase.from('member_requests').select('id')
+        .eq('student_id', student.id).eq('kind', 'profile_change').eq('status', 'pending').maybeSingle()
+    : { data: null }
 
   const firstName = isRTL ? profile?.first_name_ar : (locale === 'fr' ? profile?.first_name_fr : profile?.first_name_en)
   const lastName = isRTL ? profile?.last_name_ar : (locale === 'fr' ? profile?.last_name_fr : profile?.last_name_en)
@@ -96,6 +102,26 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
         <DetailRow icon={Shield} label={t('emergency')} value={student?.emergency_contact_name ? `${student.emergency_contact_name} (${student.emergency_contact_phone})` : t('notSet')} />
         {student?.medical_notes && <DetailRow icon={AlertCircle} label={t('medical')} value={student.medical_notes} />}
       </div>
+
+      {/* MJ-3: member self-serve — direct contact/locale save + safety change request. */}
+      {student?.id && (
+        <ProfileSelfServe
+          locale={locale}
+          mode="self"
+          studentId={student.id}
+          credentialed
+          pendingChange={!!pendingChange}
+          initial={{
+            contactEmail: (profile as any)?.contact_email ?? null,
+            prefLocale: profile?.locale ?? null,
+            dob: profile?.date_of_birth ?? null,
+            phone: profile?.phone ?? null,
+            emergencyName: student?.emergency_contact_name ?? null,
+            emergencyPhone: student?.emergency_contact_phone ?? null,
+            medical: student?.medical_notes ?? null,
+          }}
+        />
+      )}
 
       {guardians && guardians.length > 0 && (
         <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">

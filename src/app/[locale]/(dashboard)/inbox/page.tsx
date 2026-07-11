@@ -6,7 +6,7 @@ import { getRenewalsDue } from '@/lib/pt/refill'
 import { PtProposals } from '@/components/shared/pt-proposals'
 import { RefreshCw } from 'lucide-react'
 import { localizedName, one } from '@/lib/names'
-import { InboxQueues, type RegRequestRow, type PtRequestRow, type PromotionRow, type InboxCoach } from './inbox-queues'
+import { InboxQueues, type RegRequestRow, type PtRequestRow, type PromotionRow, type InboxCoach, type MemberRequestRow } from './inbox-queues'
 
 export const dynamic = 'force-dynamic'
 
@@ -139,6 +139,22 @@ export default async function InboxPage({ params: { locale } }: Props) {
     requestedAt: r.registration_date,
   }))
 
+  // ── MJ-3: member self-serve requests (profile change / renewal / freeze) ──
+  const { data: memReqRaw } = await supabase
+    .from('member_requests')
+    .select(`id, kind, payload, note, created_at,
+      students:student_id (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+  const memberRequests: MemberRequestRow[] = ((memReqRaw ?? []) as any[]).map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    studentName: localizedName(one(r.students)?.profiles, locale),
+    note: r.note ?? null,
+    payload: (r.payload ?? {}) as Record<string, any>,
+    requestedAt: r.created_at,
+  }))
+
   // ── PT-2: time proposals where the ball is with the gym (member proposed last) ──
   const { data: proposalsRaw } = await supabase
     .from('pt_sessions')
@@ -162,7 +178,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
   const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   const renewals = me?.gym_id ? await getRenewalsDue(supabase, me.gym_id, locale) : []
 
-  const actionable = regRequests.length + ptRequests.length
+  const actionable = regRequests.length + ptRequests.length + memberRequests.length
 
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
@@ -180,6 +196,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
         regRequests={regRequests}
         ptRequests={ptRequests}
         campRequests={campRequests}
+        memberRequests={memberRequests}
         promotions={promotions}
         coaches={inboxCoaches}
       />
