@@ -28,6 +28,10 @@ const PERKS: Record<string, { en: string[]; ar: string[]; fr: string[] }> = {
   },
 };
 
+// TENANT-CONTENT: the annual gear perk is Proline-branded ("PRO LINE gear") — for any
+// non-default tenant swap in a brand-neutral member-gear line so it never leaks.
+const GENERIC_ANNUAL_GEAR = { en: 'Exclusive member gear', ar: 'معدات حصرية للأعضاء', fr: 'Équipement exclusif membre' };
+
 function perkTier(durationDays: number): keyof typeof PERKS {
   if (durationDays >= 300) return 'annual';
   if (durationDays >= 80) return 'quarterly';
@@ -43,6 +47,8 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
   const isRTL = locale === 'ar';
   const supabase = await createClient();
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
+  const isDefault = (gym?.slug ?? DEFAULT_GYM_SLUG) === DEFAULT_GYM_SLUG;
+  const loc = locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en';
 
   // CATALOG-SCOPE: per-gym definer RPCs (000080) — no blanket anon table reads.
   const { data: plans } = gym
@@ -74,7 +80,9 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
             {plans!.map((plan: any, i: number) => {
               const tier = perkTier(plan.duration_days);
               const isAnnual = tier === 'annual';
-              const perks = PERKS[tier][locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'];
+              const perks = (tier === 'annual' && !isDefault)
+                ? PERKS.annual[loc].map((p, k) => (k === PERKS.annual[loc].length - 1 ? GENERIC_ANNUAL_GEAR[loc] : p))
+                : PERKS[tier][loc];
               const period = plan.duration_days >= 300 ? t('perYr') : plan.duration_days >= 80 ? t('per3mo') : t('perMo');
               return (
                 <div key={i} className={cn('relative rounded-2xl bg-white p-8 shadow-elevation-1 hover:shadow-elevation-3 transition-all duration-300 hover:-translate-y-1', isAnnual && 'ring-2 ring-amber-400 shadow-elevation-2')}>

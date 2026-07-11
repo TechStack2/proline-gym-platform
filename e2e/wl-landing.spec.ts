@@ -124,21 +124,28 @@ test('WL-LANDING · a gym with brand_color UNSET falls back to the default look 
     const stopColor = await page.locator('#wl-hero-glow stop').first().getAttribute('stop-color')
     expect(stopColor, 'unset brand_color renders the default crimson').toBe(DEFAULT_BRAND)
 
-    // PROLINE-LANDING-DATA: NULL contact columns → today's built-in defaults,
-    // byte-identical (the demo regression check).
-    await expect(page.getByTestId('hero-wa-cta'), 'default hero wa.me').toHaveAttribute('href', 'https://wa.me/96170628601')
-    await expect(page.getByTestId('hero-ig'), 'default hero IG').toHaveAttribute('href', 'https://instagram.com/prolinegym.lb')
+    // TENANT-CONTENT (was PROLINE-LANDING-DATA): a NON-default gym that left its contact
+    // NULL must NOT inherit the Proline founder identity. Every contact affordance HIDES
+    // (honest empty), and no Proline email / phone / social / address / founder credit
+    // appears anywhere on the page. Only the gym's OWN name renders.
+    await expect(page.getByTestId('hero-wa-cta'), 'no Proline WhatsApp CTA').toHaveCount(0)
+    await expect(page.getByTestId('hero-ig'), 'no Proline hero IG').toHaveCount(0)
     await expect(page.getByTestId('hero-ig-followers'), 'no follower count when unset').toHaveCount(0)
-    await expect(page.getByTestId('facility-phone'), 'default facility tel:').toHaveAttribute('href', 'tel:+96170628601')
-    await expect(page.getByTestId('facility-email'), 'default facility mailto').toHaveAttribute('href', 'mailto:alifakih998@gmail.com')
-    await expect(page.getByTestId('facility-map'), 'default map coordinates (byte-identical URL)')
-      .toHaveAttribute('src', 'https://www.openstreetmap.org/export/embed.html?bbox=35.5390%2C33.8290%2C35.5490%2C33.8390&layer=mapnik&marker=33.8340%2C35.5440')
-    await expect(page.getByTestId('footer-wa'), 'default footer wa.me').toHaveAttribute('href', 'https://wa.me/96170628601')
-    await expect(page.getByTestId('footer-ig'), 'default footer IG').toHaveAttribute('href', 'https://instagram.com/prolinegym.lb')
-    await expect(page.getByTestId('footer-fb'), 'default footer FB').toHaveAttribute('href', 'https://facebook.com/prolinegym.lb')
-    await expect(page.getByTestId('footer-phone'), 'default footer phone').toHaveText('+961 70 628 601')
-    await expect(page.getByTestId('footer-email'), 'default footer email').toHaveText('alifakih998@gmail.com')
-    await expect(page.getByTestId('footer-address'), 'default footer address').toHaveText('Sky Business Center, Baabda')
+    await expect(page.getByTestId('facility-phone'), 'no Proline facility phone').toHaveCount(0)
+    await expect(page.getByTestId('facility-email'), 'no Proline facility email').toHaveCount(0)
+    await expect(page.getByTestId('facility-map'), 'no map without coordinates').toHaveCount(0)
+    await expect(page.getByTestId('footer-wa'), 'no Proline footer WhatsApp').toHaveCount(0)
+    await expect(page.getByTestId('footer-ig'), 'no Proline footer IG').toHaveCount(0)
+    await expect(page.getByTestId('footer-fb'), 'no Proline footer FB').toHaveCount(0)
+    await expect(page.getByTestId('footer-phone'), 'no Proline footer phone').toHaveCount(0)
+    await expect(page.getByTestId('footer-email'), 'no Proline footer email').toHaveCount(0)
+    await expect(page.getByTestId('footer-address'), 'no Proline footer address').toHaveCount(0)
+    await expect(page.getByTestId('footer-brand-name'), 'footer shows the gym name').toHaveText(NAME_DEF)
+    const body = page.locator('body')
+    await expect(body, 'no founder email leaks').not.toContainText('alifakih998@gmail.com')
+    await expect(body, 'no Proline address leaks').not.toContainText('Sky Business Center')
+    await expect(body, 'no Proline founder credit leaks').not.toContainText('Fakih Brothers')
+    await expect(body, 'no Proline phone leaks').not.toContainText('70 628 601')
 
     // M2-C GALLERY: SLUG_DEF is a NON-DEFAULT gym with ZERO landing images → the three
     // image sections show a tasteful EMPTY STATE, NEVER Proline's built-in champions /

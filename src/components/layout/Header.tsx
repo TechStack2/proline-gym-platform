@@ -16,6 +16,9 @@ type HeaderProps = {
    *  realtime channel — CSS-hiding does not stop that). The layout client passes
    *  false below md so only the mobile header's bell is mounted there. */
   showBell?: boolean;
+  // TENANT-CONTENT: the USER's gym brand for the header avatar (never a hardcode).
+  gymName?: string;
+  logoUrl?: string | null;
 };
 
 const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
@@ -28,7 +31,7 @@ const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
   external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي', fr: 'Entraîneur ext.' },
 };
 
-export function Header({ locale, role, showBell = true }: HeaderProps) {
+export function Header({ locale, role, showBell = true, gymName, logoUrl }: HeaderProps) {
   const t = useTranslations();
   const router = useRouter();
   const supabase = createClient();
@@ -84,8 +87,12 @@ export function Header({ locale, role, showBell = true }: HeaderProps) {
         </button>
 
         <div className="flex items-center gap-2 ms-1">
-          <div className="relative h-8 w-8 overflow-hidden rounded-full">
-            <Image src="/logo.jpg" alt="PRO LINE Gym" width={32} height={32} className="h-full w-full object-cover" />
+          <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary-50 text-xs font-bold text-primary-600">
+            {logoUrl ? (
+              <Image src={logoUrl} alt={gymName || ''} width={32} height={32} className="h-full w-full object-cover" />
+            ) : (
+              <span>{(gymName || '?').charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <span className="hidden sm:inline text-sm font-medium text-gray-700 capitalize">
             {label}

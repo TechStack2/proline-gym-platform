@@ -96,7 +96,11 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
     .order('end_date', { ascending: false })
     .limit(5)
   const { data: lcGym } = await supabase
-    .from('gyms').select('renewal_lead_days, dunning_grace_days').limit(1).single()
+    .from('gyms').select('renewal_lead_days, dunning_grace_days, name_ar, name_en, name_fr').limit(1).single()
+  // TENANT-CONTENT: the member's OWN gym name for the belt card subtitle (was a hardcoded
+  // i18n "PRO LINE Gym" that leaked onto every tenant's portal).
+  const g: any = lcGym
+  const portalGymName = g ? ((isRTL ? g.name_ar : locale === 'fr' ? g.name_fr : g.name_en) || g.name_en || '') : ''
   const { membershipState } = await import('@/lib/lifecycle/status')
   const lcStates = ((lcRows ?? []) as any[]).map((m) => membershipState(m, lcGym ?? {}))
   const msState = (['lapsed', 'overdue', 'expiring', 'frozen'] as const).find((sv) => lcStates.includes(sv)) ?? 'active'
@@ -352,7 +356,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-900"><Award className="h-5 w-5 text-yellow-400" /></div>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-gray-700">{beltLabelVal ? `${beltLabelVal}${disciplineNameVal ? ` — ${disciplineNameVal}` : ''}` : t('none')}</p>
-              <p className="text-xs text-gray-500">{t('gymName')}</p>
+              <p className="text-xs text-gray-500">{portalGymName}</p>
             </div>
           </div>
         </PortalCard>
