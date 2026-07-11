@@ -107,7 +107,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       {/* Avatar + Name Card */}
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
-        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-[#cd1419] text-primary-foreground text-3xl font-bold mb-3">
+        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-primary-700 text-primary-foreground text-3xl font-bold mb-3">
           {firstName?.charAt(0) || '?'}
         </div>
         <h2 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')}>
@@ -119,7 +119,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
 
         {/* Specialization Badge */}
         {specialization && (
-          <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-[#cd1419]">
+          <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-primary-700">
             <Award className="h-3.5 w-3.5" />
             {specialization}
           </span>
@@ -144,14 +144,14 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-white p-4 shadow-sm text-center">
-          <BookOpen className="h-5 w-5 text-[#cd1419] mx-auto mb-1.5" />
+          <BookOpen className="h-5 w-5 text-primary-700 mx-auto mb-1.5" />
           <p className="text-2xl font-bold text-gray-900">{classesCount ?? 0}</p>
           <p className="text-xs text-gray-500 mt-0.5">
             {isRTL ? 'حصة' : locale === 'fr' ? 'Cours' : 'Classes'}
           </p>
         </div>
         <div className="rounded-2xl bg-white p-4 shadow-sm text-center">
-          <Users className="h-5 w-5 text-[#cd1419] mx-auto mb-1.5" />
+          <Users className="h-5 w-5 text-primary-700 mx-auto mb-1.5" />
           <p className="text-2xl font-bold text-gray-900">{studentsCount}</p>
           <p className="text-xs text-gray-500 mt-0.5">
             {isRTL ? 'طالب' : locale === 'fr' ? 'Élèves' : 'Students'}

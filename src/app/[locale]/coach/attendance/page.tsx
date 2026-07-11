@@ -425,7 +425,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
           onChange={e => setSelectedDate(e.target.value || todayStr)}
           className={cn(
             'w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-[#cd1419]/30 focus:border-[#cd1419]'
+            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700'
           )}
         />
         <p className="mt-1 text-xs text-gray-400">
@@ -446,7 +446,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
           onChange={e => setSelectedClassId(e.target.value)}
           className={cn(
             'w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-[#cd1419]/30 focus:border-[#cd1419]',
+            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700',
             'appearance-none bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23999%27 stroke-width=%272%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E")] bg-no-repeat',
             isRTL ? 'bg-[position:left_12px_center]' : 'bg-[position:right_12px_center]'
           )}
@@ -583,7 +583,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                 className={cn(
                   'w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3',
                   'text-sm font-semibold text-white transition-colors',
-                  saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#cd1419] hover:bg-[#b01216]'
+                  saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary-700 hover:bg-primary-800'
                 )}
               >
                 {saving ? (

@@ -70,8 +70,8 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#cd1419]/10">
-              <Tent className="h-5 w-5 text-[#cd1419]" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-700/10">
+              <Tent className="h-5 w-5 text-primary-700" />
             </span>
             <div>
               <h1 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="camp-name">{lname(camp)}</h1>

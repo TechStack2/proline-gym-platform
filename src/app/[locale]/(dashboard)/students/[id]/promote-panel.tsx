@@ -90,7 +90,7 @@ export function PromotePanel({
   return (
     <div className="mt-3 border-t pt-3" data-testid="promote-panel">
       {!open ? (
-        <Button size="sm" data-testid="promote-open" onClick={() => setOpen(true)} className="bg-[#cd1419] hover:bg-[#a81014]">
+        <Button size="sm" data-testid="promote-open" onClick={() => setOpen(true)} className="bg-primary-700 hover:bg-primary-800">
           <Award className="me-1 h-4 w-4" /> {t('promote')}
         </Button>
       ) : (
@@ -102,7 +102,7 @@ export function PromotePanel({
                 <button key={d.id} type="button" data-testid="promote-discipline-chip" data-id={d.id}
                   onClick={() => pickDiscipline(d.id)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                    disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                    disciplineId === d.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                   {lname(d)}
                 </button>
               ))}
@@ -138,7 +138,7 @@ export function PromotePanel({
                 <button key={c.id} type="button" data-testid="promote-coach-chip" data-id={c.id}
                   onClick={() => setCoachId(c.id)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                    coachId === c.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                    coachId === c.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                   {c.name}
                 </button>
               ))}
@@ -152,7 +152,7 @@ export function PromotePanel({
 
           <div className="flex items-center gap-2">
             <Button size="sm" data-testid="promote-submit" disabled={busy || !hierarchyId} onClick={submit}
-              className="bg-[#cd1419] hover:bg-[#a81014]">
+              className="bg-primary-700 hover:bg-primary-800">
               {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Award className="me-1 h-4 w-4" />} {t('confirm')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>{t('cancel')}</Button>

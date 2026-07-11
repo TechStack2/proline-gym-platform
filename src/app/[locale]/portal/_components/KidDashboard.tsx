@@ -119,7 +119,7 @@ export async function KidDashboard({
         {kids.map((k) => (
           k.id === kid.id ? (
             <span key={k.id} data-testid="kid-chip" data-kid-id={k.id} data-active="true"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#cd1419] px-3 py-1.5 text-sm font-semibold text-primary-foreground">
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary-700 px-3 py-1.5 text-sm font-semibold text-primary-foreground">
               <Avatar url={k.avatarUrl} name={k.name} size="xs" />
               {k.name}
             </span>
@@ -147,7 +147,7 @@ export async function KidDashboard({
         <div className="mb-2 flex items-center justify-between">
           <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('registrations')}</h3>
           <Link href={`/${locale}/portal/classes?kid=${kid.id}`} data-testid="kid-request-class"
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#cd1419] hover:underline">
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline">
             {t('requestClass')} <ChevronRight className={cn('h-3 w-3', isRTL && 'rotate-180')} />
           </Link>
         </div>
@@ -264,7 +264,7 @@ export async function KidDashboard({
       <Link href={`/${locale}/portal/billing`} data-testid="kid-billing-link"
         className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm hover:bg-gray-50">
         <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <CreditCard className="h-4 w-4 text-[#cd1419]" /> {t('householdBilling')}
+          <CreditCard className="h-4 w-4 text-primary-700" /> {t('householdBilling')}
         </span>
         <ChevronRight className={cn('h-4 w-4 text-gray-400', isRTL && 'rotate-180')} />
       </Link>

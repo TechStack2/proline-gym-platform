@@ -56,7 +56,7 @@ export default async function VendorConsolePage({ params: { locale } }: { params
         <Link
           href={`/${locale}/onboard`}
           data-testid="vendor-onboard-link"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[#cd1419] px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-800"
         >
           <Plus className="h-4 w-4" /> {t('onboardCta')}
         </Link>

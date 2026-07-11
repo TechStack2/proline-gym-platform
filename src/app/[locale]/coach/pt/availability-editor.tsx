@@ -95,7 +95,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale,
             <button key={d} type="button" data-testid="avail-day-pill" data-dow={d}
               onClick={() => setDay(d)}
               className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                day === d ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-600')}>
+                day === d ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-600')}>
               {dayLabel(d)}
             </button>
           ))}
@@ -106,7 +106,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale,
           <span className="text-xs text-gray-400">→</span>
           <input type="time" data-testid="avail-end" value={end} onChange={(e) => setEnd(e.target.value)}
             className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
-          <Button size="sm" data-testid="avail-add" disabled={busy} onClick={addWindow} className="bg-[#cd1419] hover:bg-[#a81014]">
+          <Button size="sm" data-testid="avail-add" disabled={busy} onClick={addWindow} className="bg-primary-700 hover:bg-primary-800">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="me-1 h-4 w-4" />} {t('publish')}
           </Button>
         </div>

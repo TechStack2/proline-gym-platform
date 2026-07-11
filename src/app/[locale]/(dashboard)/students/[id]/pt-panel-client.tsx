@@ -175,7 +175,7 @@ export function MemberPtPanel({
 
       {/* PT-2 docking slot: "Book session" lands beside Sell on each ACTIVE card
           (slot per journey-pt-360 §4 — availability picker, not built here). */}
-      <Button size="sm" data-testid="pt-sell-open" onClick={() => setOpen(true)} className="bg-[#cd1419] hover:bg-[#a81014]">
+      <Button size="sm" data-testid="pt-sell-open" onClick={() => setOpen(true)} className="bg-primary-700 hover:bg-primary-800">
         <Plus className="me-1 h-4 w-4" /> {t('sell')}
       </Button>
 
@@ -201,7 +201,7 @@ export function MemberPtPanel({
                       <button key={x.id} type="button" data-testid="pt-type-chip" data-id={x.id}
                         onClick={() => { setTypeId(x.id); setCoachId('') }}
                         className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                          typeId === x.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                          typeId === x.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                         {lname(x)} · {x.session_count}× · ${Number(x.price_usd).toFixed(0)}
                         {x.validity_days ? ` · ${x.validity_days}d` : ''}
                       </button>
@@ -216,7 +216,7 @@ export function MemberPtPanel({
                         <button key={c.id} type="button" data-testid="pt-coach-chip" data-id={c.id}
                           onClick={() => setCoachId(c.id)}
                           className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
-                            coachId === c.id ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                            coachId === c.id ? 'border-primary-700 bg-red-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                           <Avatar url={c.avatarUrl} name={c.name} size="xs" /> {c.name}
                         </button>
                       ))}
@@ -236,7 +236,7 @@ export function MemberPtPanel({
                   </div>
                 </div>
                 <Button data-testid="pt-sell-submit" onClick={() => void sell()} disabled={pending || checking || !typeId || !coachId}
-                  className="w-full bg-[#cd1419] hover:bg-[#a81014]">
+                  className="w-full bg-primary-700 hover:bg-primary-800">
                   {pending || checking ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('sellConfirm')}
                 </Button>
               </div>
@@ -266,7 +266,7 @@ export function MemberPtPanel({
                 <CalendarPlus className="h-4 w-4" /> {t('warnSetAvailability')}
               </Link>
               <Button data-testid="pt-sell-anyway" onClick={doSell} disabled={pending}
-                className="flex-1 bg-[#cd1419] hover:bg-[#a81014]">
+                className="flex-1 bg-primary-700 hover:bg-primary-800">
                 {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('warnSellAnyway')}
               </Button>
             </div>

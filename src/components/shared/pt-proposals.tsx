@@ -85,7 +85,7 @@ export function PtProposals({ rows, locale }: { rows: ProposalRow[]; locale: str
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
               <Button size="sm" data-testid="proposal-counter-send" disabled={pending || !counterAt}
                 onClick={() => respond(r.id, 'counter', new Date(counterAt).toISOString())}
-                className={cn('bg-[#cd1419] hover:bg-[#a81014]')}>
+                className={cn('bg-primary-700 hover:bg-primary-800')}>
                 {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('sendCounter')}
               </Button>
             </div>

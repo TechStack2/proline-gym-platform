@@ -617,6 +617,13 @@ export default defineConfig({
       testMatch: /bill-localize\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // WL-THEME: the authed gym's brand_color paints the app product — HERMETIC own gyms.
+      name: 'wl-theme',
+      dependencies: ['setup'],
+      testMatch: /wl-theme\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
 
     {
       // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries

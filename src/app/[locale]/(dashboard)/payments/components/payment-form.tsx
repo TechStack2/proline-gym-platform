@@ -142,7 +142,7 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
       )}
 
       <Button data-testid="pay-submit" onClick={submit} disabled={pending}
-        className="bg-[#cd1419] hover:bg-[#a81014]">
+        className="bg-primary-700 hover:bg-primary-800">
         {pending ? t('Recording…', 'جارٍ التسجيل…', 'Enregistrement…') : t('Record payment', 'تسجيل الدفعة', 'Enregistrer le paiement')}
       </Button>
     </div>

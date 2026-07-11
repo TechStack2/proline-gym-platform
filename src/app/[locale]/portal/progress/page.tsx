@@ -114,7 +114,7 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
                 <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{rankLabel(p.to_rank)}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Target className="h-4 w-4 text-[#cd1419]" />
+                <Target className="h-4 w-4 text-primary-700" />
                 {el.hasNext ? (
                   <span>
                     {t('toward_next', {
@@ -133,7 +133,7 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
                       inline style the prod CSP would strip → collapse the bar. */}
                   <div
                     data-testid="progress-bar"
-                    className={cn('h-full bg-[#cd1419]', pctWidthClass(el.requiredClasses ? Math.round((el.attended / el.requiredClasses) * 100) : 100))}
+                    className={cn('h-full bg-primary-700', pctWidthClass(el.requiredClasses ? Math.round((el.attended / el.requiredClasses) * 100) : 100))}
                   />
                 </div>
               )}

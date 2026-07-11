@@ -88,7 +88,7 @@ export function RegistrationsPanel({
                       className="h-8 w-20 text-xs" value={discount[r.id] ?? ''} onChange={(e) => setDiscount({ ...discount, [r.id]: e.target.value })} />
                     <Button size="sm" data-testid="approve-btn" disabled={pending}
                       onClick={() => run(() => approveRegistration({ regId: r.id, classId, discountPct: discount[r.id] ? parseFloat(discount[r.id]) : 0 }))}
-                      className="bg-[#cd1419] hover:bg-[#a81014]">{t('Approve', 'موافقة', 'Approuver')}</Button>
+                      className="bg-primary-700 hover:bg-primary-800">{t('Approve', 'موافقة', 'Approuver')}</Button>
                     <Button size="sm" variant="outline" data-testid="reject-btn" disabled={pending}
                       onClick={() => run(() => rejectRegistration(r.id, classId, undefined))}>{t('Reject', 'رفض', 'Refuser')}</Button>
                   </div>

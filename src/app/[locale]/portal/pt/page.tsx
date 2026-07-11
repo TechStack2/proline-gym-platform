@@ -155,7 +155,7 @@ export default async function PortalPtPage({ params }: Props) {
           </h2>
           <span
             data-testid="portal-pt-remaining"
-            className="text-xs px-2 py-0.5 rounded-full bg-[#cd1419]/10 text-[#cd1419] font-medium"
+            className="text-xs px-2 py-0.5 rounded-full bg-primary-700/10 text-primary-700 font-medium"
           >
             {t('credits_remaining', { count: totalRemaining })}
           </span>

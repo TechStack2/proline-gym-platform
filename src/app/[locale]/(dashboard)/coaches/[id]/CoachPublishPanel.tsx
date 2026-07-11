@@ -134,7 +134,7 @@ export function CoachPublishPanel({
         <div className="mt-4 flex flex-wrap items-center gap-2" data-testid="coach360-admin-controls">
           <button type="button" data-testid="coach360-publish" disabled={tx}
             onClick={() => run(() => publishCoachProfile({ coachId }))}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-60">
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800 disabled:opacity-60">
             {tx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />} {t('publish')}
           </button>
           <button type="button" data-testid="coach360-toggle-comingsoon" disabled={tx}
@@ -165,14 +165,14 @@ export function CoachPublishPanel({
               {LANGS.map((l) => (
                 <input key={`s-${l.code}`} data-testid={`coach360-edit-spec-${l.code}`} dir={l.code === 'ar' ? 'rtl' : 'ltr'}
                   value={f[`specialization_${l.code}` as keyof Fields]} onChange={(e) => set(`specialization_${l.code}` as keyof Fields, e.target.value)}
-                  placeholder={l.label} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:border-[#cd1419] focus:outline-none" />
+                  placeholder={l.label} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:border-primary-700 focus:outline-none" />
               ))}
             </div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">{t('bio')}</label>
             {LANGS.map((l) => (
               <textarea key={`b-${l.code}`} data-testid={`coach360-edit-bio-${l.code}`} dir={l.code === 'ar' ? 'rtl' : 'ltr'} rows={2}
                 value={f[`bio_${l.code}` as keyof Fields]} onChange={(e) => set(`bio_${l.code}` as keyof Fields, e.target.value)}
-                placeholder={l.label} className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:border-[#cd1419] focus:outline-none" />
+                placeholder={l.label} className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:border-primary-700 focus:outline-none" />
             ))}
             <button type="button" data-testid="coach360-save-draft" disabled={tx}
               onClick={() => run(() => saveCoachDraftStaff({ coachId, ...f }))}

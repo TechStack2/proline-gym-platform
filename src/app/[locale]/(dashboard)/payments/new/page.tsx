@@ -75,7 +75,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
                 return (
                   <tr key={inv.id} className="border-b hover:bg-muted/40">
                     <td className="p-3">
-                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono font-medium text-[#cd1419] hover:underline">{inv.invoice_number}</Link>
+                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono font-medium text-primary-700 hover:underline">{inv.invoice_number}</Link>
                     </td>
                     <td className="p-3">{localizedName(profile, locale)}</td>
                     <td className="p-3 font-medium text-red-600">${bal.toFixed(2)}</td>

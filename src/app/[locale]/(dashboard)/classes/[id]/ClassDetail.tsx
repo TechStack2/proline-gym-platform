@@ -120,7 +120,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
           disabled={adminBusy || !classData.is_active}
           onClick={togglePublish}
           className="flex items-center gap-2 rounded-xl border px-3 py-2 disabled:opacity-50">
-          <span className={cn('relative h-6 w-11 rounded-full transition-colors', classData.show_on_landing ? 'bg-[#cd1419]' : 'bg-gray-200')}>
+          <span className={cn('relative h-6 w-11 rounded-full transition-colors', classData.show_on_landing ? 'bg-primary-700' : 'bg-gray-200')}>
             <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', classData.show_on_landing ? (isRTL ? 'right-5' : 'left-5') : (isRTL ? 'right-0.5' : 'left-0.5'))} />
           </span>
           <span className="text-sm font-medium text-gray-800">

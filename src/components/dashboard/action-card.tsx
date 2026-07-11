@@ -68,7 +68,7 @@ export function ActionCard({
         <span
           data-testid={`card-count-${testid}`}
           className={cn('rounded-full px-2 py-0.5 text-xs font-bold',
-            count > 0 ? 'bg-[#cd1419] text-primary-foreground' : 'bg-gray-100 text-gray-500')}
+            count > 0 ? 'bg-primary-700 text-primary-foreground' : 'bg-gray-100 text-gray-500')}
         >
           {badge ?? count}
         </span>

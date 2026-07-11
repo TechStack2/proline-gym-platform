@@ -81,8 +81,8 @@ export function PtPackageCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#cd1419]/10">
-            <Dumbbell className="h-4 w-4 text-[#cd1419]" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700/10">
+            <Dumbbell className="h-4 w-4 text-primary-700" />
           </div>
           <div className="min-w-0">
             <p className={cn('truncate text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
@@ -111,7 +111,7 @@ export function PtPackageCard({
           </span>
         )}
         {data.invoiceHref && (
-          <Link href={data.invoiceHref} data-testid="pt-card-invoice" className="inline-flex items-center gap-1 text-[#cd1419] hover:underline">
+          <Link href={data.invoiceHref} data-testid="pt-card-invoice" className="inline-flex items-center gap-1 text-primary-700 hover:underline">
             <FileText className="h-3 w-3" />
             <span className="font-mono">{data.invoiceNumber}</span>
             {data.invoiceStatusLabel && (

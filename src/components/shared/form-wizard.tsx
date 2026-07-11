@@ -76,7 +76,7 @@ export function FormWizard({
           <div className="flex items-center gap-1.5">
             {steps.map((s, i) => (
               <span key={s.key} data-testid="wizard-step-dot" data-active={i === step}
-                className={cn('h-1.5 flex-1 rounded-full', i <= step ? 'bg-[#cd1419]' : 'bg-gray-200')} />
+                className={cn('h-1.5 flex-1 rounded-full', i <= step ? 'bg-primary-700' : 'bg-gray-200')} />
             ))}
           </div>
           <p className="mt-1.5 text-[11px] font-medium text-gray-500" data-testid="wizard-step-title">
@@ -95,13 +95,13 @@ export function FormWizard({
           </Button>
           {last ? (
             <Button size="sm" data-testid="wizard-submit" disabled={!valid || busy}
-              onClick={() => void onSubmit()} className="bg-[#cd1419] hover:bg-[#a81014]">
+              onClick={() => void onSubmit()} className="bg-primary-700 hover:bg-primary-800">
               {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />}
               {submitLabel}
             </Button>
           ) : (
             <Button size="sm" data-testid="wizard-next" disabled={!valid || busy}
-              onClick={() => setStep((s) => s + 1)} className="bg-[#cd1419] hover:bg-[#a81014]">
+              onClick={() => setStep((s) => s + 1)} className="bg-primary-700 hover:bg-primary-800">
               {t('next')}
             </Button>
           )}
@@ -125,7 +125,7 @@ export function ChipRow<T extends string>({ options, value, onChange, testid }: 
         <button key={o.value} type="button" data-testid={testid} data-value={o.value}
           onClick={() => onChange(o.value)}
           className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-            value === o.value ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+            value === o.value ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
           {o.label}
         </button>
       ))}

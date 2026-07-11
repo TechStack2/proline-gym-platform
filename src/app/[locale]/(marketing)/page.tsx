@@ -46,7 +46,7 @@ async function resolveRequestSlug(searchParams?: { gym?: string }): Promise<stri
 // with NO 'unsafe-inline', so an inline style="" attr would be STRIPPED — a var'd
 // class + a nonce'd :root block is the CSP-safe path). --brand-dark (hover) is an
 // 82% shade (floor → the default #cd1419 → exactly #a81014, today's hover); --brand-
-// soft is the 10% tint (the old bg-[#cd1419]/10). Literal values → no color-mix dep.
+// soft is the 10% tint (the old bg-primary-700/10). Literal values → no color-mix dep.
 function buildBrandCss(brand: string): string {
   const n = parseInt(brand.slice(1), 16);
   const r = (n >> 16) & 255;

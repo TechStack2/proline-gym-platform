@@ -48,7 +48,7 @@ export function WaiverConsentFields({
       </div>
       <label className="flex items-start gap-2 text-xs text-gray-700">
         <input type="checkbox" data-testid="waiver-agree" checked={agreed}
-          onChange={(e) => onAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#cd1419]" />
+          onChange={(e) => onAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary-700" />
         <span>{t('agree')}</span>
       </label>
       <input type="hidden" data-testid="waiver-has-signature" value={signature ? '1' : '0'} readOnly />
@@ -92,7 +92,7 @@ export function WaiverSign({
   return (
     <>
       <Button size="sm" data-testid={`${testidPrefix}-sign-open`} onClick={() => setOpen(true)}
-        className={cn('gap-1', outdated ? 'bg-amber-600 hover:bg-amber-700' : 'bg-[#cd1419] hover:bg-[#a81014]')}>
+        className={cn('gap-1', outdated ? 'bg-amber-600 hover:bg-amber-700' : 'bg-primary-700 hover:bg-primary-800')}>
         <FileSignature className="h-4 w-4" /> {label}
       </Button>
 
@@ -125,7 +125,7 @@ export function WaiverSign({
             </div>
             <div className="flex items-center justify-end border-t px-5 py-3">
               <Button size="sm" data-testid="waiver-submit" disabled={!canSubmit} onClick={() => void submit()}
-                className="bg-[#cd1419] hover:bg-[#a81014]">
+                className="bg-primary-700 hover:bg-primary-800">
                 {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />}
                 {t('submitSign')}
               </Button>

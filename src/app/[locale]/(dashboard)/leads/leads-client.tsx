@@ -314,7 +314,7 @@ export function LeadsClient({
               data-lead-name={`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim()}
               data-lead-status={lead.status}
               data-fresh={isFresh}
-              className={cn('hover:shadow-md transition-shadow', isFresh && 'ring-2 ring-[#cd1419]/40')}
+              className={cn('hover:shadow-md transition-shadow', isFresh && 'ring-2 ring-primary-700/40')}
             >
               <CardContent className="pt-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -322,7 +322,7 @@ export function LeadsClient({
                     <h3 className="font-medium text-gray-900 flex items-center gap-1.5">
                       {lead.first_name} {lead.last_name}
                       {isFresh && (
-                        <span data-testid="lead-fresh-badge" className="rounded-full bg-[#cd1419] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                        <span data-testid="lead-fresh-badge" className="rounded-full bg-primary-700 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                           {t('freshInquiry')}
                         </span>
                       )}
@@ -730,7 +730,7 @@ function AddLeadModal({
                 <button key={d.id} type="button" data-testid="lead-discipline-chip" data-id={d.id}
                   onClick={() => setDisciplineId(disciplineId === d.id ? '' : d.id)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                    disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
+                    disciplineId === d.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                   {disciplineName(d)}
                 </button>
               ))}
@@ -742,7 +742,7 @@ function AddLeadModal({
                 <button key={src} type="button" data-testid="lead-source-chip" data-value={src}
                   onClick={() => setSource(src)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                    source === src ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
+                    source === src ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                   {t(`source.${src}` as Parameters<typeof t>[0])}
                 </button>
               ))}

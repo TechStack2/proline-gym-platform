@@ -170,7 +170,7 @@ export function MemberActions({
   return (
     <div className="flex flex-wrap gap-2" data-testid="member-quick-actions">
       <button type="button" data-testid="m360-pay-open" onClick={() => setPayOpen(true)}
-        className="inline-flex items-center gap-1 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
+        className="inline-flex items-center gap-1 rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-800">
         <DollarSign className="h-3.5 w-3.5" /> {t('recordPayment')}
       </button>
       <button type="button" data-testid="m360-register-open" onClick={() => setRegOpen(true)}
@@ -197,7 +197,7 @@ export function MemberActions({
                   <button key={c.id} type="button" data-testid="m360-class-option" data-id={c.id}
                     onClick={() => setClassId(c.id)}
                     className={cn('flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm',
-                      classId === c.id ? 'border-[#cd1419] bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                      classId === c.id ? 'border-primary-700 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
                     <span className="font-medium text-gray-900">{lname(c)}</span>
                     <span className="text-xs text-gray-500">
                       {c.monthly_fee_usd != null ? `$${Number(c.monthly_fee_usd).toFixed(0)}/${t('mo')}` : '—'}
@@ -214,7 +214,7 @@ export function MemberActions({
                   onChange={(e) => setDiscount(e.target.value)} placeholder="0" className="h-9 w-28" />
               </div>
               <Button data-testid="m360-register-submit" onClick={submitRegister} disabled={pending || !classId}
-                className="w-full bg-[#cd1419] hover:bg-[#a81014]">
+                className="w-full bg-primary-700 hover:bg-primary-800">
                 {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('registerConfirm')}
               </Button>
             </div>
@@ -236,7 +236,7 @@ export function MemberActions({
                     <button key={c.id} type="button" data-testid="m360-camp-option" data-id={c.id} data-full={full}
                       onClick={() => setCampId(c.id)}
                       className={cn('flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm',
-                        campId === c.id ? 'border-[#cd1419] bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                        campId === c.id ? 'border-primary-700 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
                       <span className="min-w-0 truncate text-start font-medium text-gray-900">{cname}</span>
                       <span className="shrink-0 text-xs text-gray-500" dir="ltr">
                         ${Number(c.price_usd).toFixed(0)}
@@ -255,7 +255,7 @@ export function MemberActions({
                 </p>
               )}
               <Button data-testid="m360-camp-submit" onClick={submitCamp} disabled={pending || !campId}
-                className="w-full bg-[#cd1419] hover:bg-[#a81014]">
+                className="w-full bg-primary-700 hover:bg-primary-800">
                 {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('campConfirm')}
               </Button>
             </div>
@@ -298,7 +298,7 @@ export function MemberActions({
                   placeholder={t('optional')} className="h-9" />
               </div>
               <Button data-testid="m360-pay-submit" onClick={submitPayment} disabled={pending}
-                className="w-full bg-[#cd1419] hover:bg-[#a81014]">
+                className="w-full bg-primary-700 hover:bg-primary-800">
                 {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('payConfirm')}
               </Button>
             </div>

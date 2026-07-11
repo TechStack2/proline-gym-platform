@@ -332,7 +332,7 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
               <Search className={cn('absolute top-2.5 h-4 w-4 text-gray-400', isRTL ? 'right-3' : 'left-3')} />
               <input data-testid="desk-search" value={q} onChange={(e) => { setQ(e.target.value); setSelectedStudent(null) }}
                 placeholder={t('searchPlaceholder')} dir={isRTL ? 'rtl' : 'ltr'}
-                className={cn('w-full rounded-lg border border-gray-200 py-2 text-sm focus:border-[#cd1419] focus:outline-none focus:ring-1 focus:ring-[#cd1419]', isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3')} />
+                className={cn('w-full rounded-lg border border-gray-200 py-2 text-sm focus:border-primary-700 focus:outline-none focus:ring-1 focus:ring-primary-700', isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3')} />
             </div>
 
             {q.trim() && !selectedStudent && (
@@ -375,7 +375,7 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                 {/* Full file / edits need a connection (OFF-3). */}
                 {online ? (
                   <Link href={`/${locale}/students/${basics.id}`} data-testid="desk-open-file"
-                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[#cd1419] hover:underline">
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary-700 hover:underline">
                     <ExternalLink className="h-3.5 w-3.5" /> {t('openFile')}
                   </Link>
                 ) : (
@@ -420,7 +420,7 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                   <li key={c.id}>
                     <button type="button" data-testid="desk-schedule-row" data-class-id={c.classId} onClick={() => setSelectedClass(c.classId)}
                       className={cn('flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm',
-                        selectedClass === c.classId ? 'border-[#cd1419] bg-red-50' : 'border-gray-100 hover:border-gray-300')}>
+                        selectedClass === c.classId ? 'border-primary-700 bg-red-50' : 'border-gray-100 hover:border-gray-300')}>
                       <span className="font-medium text-gray-900">{c.name}</span>
                       <span className="inline-flex items-center gap-2 text-xs text-gray-500">
                         <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{c.start}{c.end ? `–${c.end}` : ''}</span>

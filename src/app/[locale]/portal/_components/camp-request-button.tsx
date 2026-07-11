@@ -39,7 +39,7 @@ export function CampRequestButton({ campId, studentId, actingFor, locale }: {
 
   return (
     <button type="button" data-testid="portal-camp-request" disabled={busy} onClick={request}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
       {actingFor ? t('requestFor', { name: actingFor }) : t('request')}
     </button>

@@ -81,7 +81,7 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
         <div className="rounded-2xl bg-white p-4 shadow-sm">
           <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{t('membership')}</h3>
           <div className="flex items-center gap-3">
-            <CreditCard className="h-5 w-5 text-[#cd1419]" />
+            <CreditCard className="h-5 w-5 text-primary-700" />
             <div>
               <p className="font-semibold text-gray-900">{membershipNameVal}</p>
               <p className="text-xs text-gray-500">{new Date(membership.start_date).toLocaleDateString(dateLocale(locale))} — {new Date(membership.end_date).toLocaleDateString(dateLocale(locale))}</p>

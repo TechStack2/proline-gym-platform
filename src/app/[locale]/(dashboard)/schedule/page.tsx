@@ -51,7 +51,7 @@ function ScheduleEmpty({ locale, canCreate, label, cta }: { locale: string; canC
       <p className="text-sm text-gray-500">{label}</p>
       {canCreate && (
         <Link href={`/${locale}/classes`} data-testid="schedule-empty-create-class"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#cd1419] px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]">
+          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary-700 px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-800">
           <CalendarClock className="h-4 w-4" /> {cta}
         </Link>
       )}
@@ -298,7 +298,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
             <option value="">{t('allCoaches')}</option>
             {(coaches ?? []).map((c: any) => <option key={c.id} value={c.id}>{localizedName(one(c.profiles), locale)}</option>)}
           </select>
-          <button className="h-9 rounded-lg bg-[#cd1419] px-4 text-sm font-medium text-primary-foreground hover:bg-[#a81014]">{t('apply')}</button>
+          <button className="h-9 rounded-lg bg-primary-700 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-800">{t('apply')}</button>
         </form>
       </div>
 
@@ -367,7 +367,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                 <div key={col.coachId} className="rounded-2xl border bg-white p-5 shadow-elevation-1" data-testid="diary-coach-column" data-coach-id={col.coachId}>
                   {/* TEAM-1: the column header is the door into the coach's file. */}
                   <Link href={`/${locale}/coaches/${col.coachId}`} data-testid="diary-coach-header" data-coach-link="1"
-                    className={cn('mb-2 flex items-center gap-2 border-b pb-2 text-sm font-bold text-gray-900 hover:text-[#cd1419]', isRTL && 'font-arabic')}>
+                    className={cn('mb-2 flex items-center gap-2 border-b pb-2 text-sm font-bold text-gray-900 hover:text-primary-700', isRTL && 'font-arabic')}>
                     <Avatar
                       url={one((coaches ?? []).find((c: any) => c.id === col.coachId)?.profiles)?.avatar_url}
                       name={coachName(col.coachId) || '—'}

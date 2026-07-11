@@ -118,7 +118,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
         ) : state === 'lapsed' ? (
           <Button size="sm" data-testid="ms-reinstate" disabled={pending}
             onClick={() => run(() => reinstateMembership(data.id, studentId), 'reinstated')}
-            className="h-7 bg-[#cd1419] text-xs hover:bg-[#a81014]">
+            className="h-7 bg-primary-700 text-xs hover:bg-primary-800">
             <RotateCcw className="me-1 h-3 w-3" /> {t('reinstate')}
           </Button>
         ) : (
@@ -153,7 +153,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
               value={freezeDays} onChange={(e) => setFreezeDays(e.target.value)} className="h-8 w-24" />
             <Button size="sm" data-testid="ms-freeze-submit" disabled={pending}
               onClick={() => run(() => freezeMembership(data.id, Number(freezeDays), studentId), 'frozen')}
-              className="h-8 bg-[#cd1419] text-xs hover:bg-[#a81014]">
+              className="h-8 bg-primary-700 text-xs hover:bg-primary-800">
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Snowflake className="me-1 h-3 w-3" />} {t('freezeConfirm')}
             </Button>
           </div>
@@ -172,14 +172,14 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
               <button key={p.id} type="button" data-testid="ms-plan-chip" data-id={p.id}
                 onClick={() => setPlanId(p.id)}
                 className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                  planId === p.id ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 bg-white text-gray-700')}>
+                  planId === p.id ? 'border-primary-700 bg-red-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700')}>
                 {p.name} · ${p.price.toFixed(0)}
               </button>
             ))}
           </div>
           <Button size="sm" data-testid="ms-plan-submit" disabled={pending || !planId}
             onClick={() => run(() => changeMembershipPlan(data.id, planId, studentId), 'planChanged')}
-            className="h-8 bg-[#cd1419] text-xs hover:bg-[#a81014]">
+            className="h-8 bg-primary-700 text-xs hover:bg-primary-800">
             {t('changePlanConfirm')}
           </Button>
         </div>

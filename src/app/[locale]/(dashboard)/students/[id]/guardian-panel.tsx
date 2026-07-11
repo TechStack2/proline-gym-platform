@@ -167,7 +167,7 @@ export function GuardianPanel({
             <Input data-testid="guardian-phone-input" dir="ltr" placeholder="+961…" value={phone}
               onChange={(e) => { setPhone(e.target.value); setSearched(false); setMatch(null) }} className="h-9" />
             <Button size="sm" data-testid="guardian-search-btn" disabled={busy || !phone.trim()} onClick={search}
-              className="bg-[#cd1419] hover:bg-[#a81014]">
+              className="bg-primary-700 hover:bg-primary-800">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="me-1 h-3.5 w-3.5" />} {t('search')}
             </Button>
           </div>

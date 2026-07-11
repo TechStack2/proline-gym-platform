@@ -279,7 +279,7 @@ export function GymSettings({ gym, locale }: Props) {
               <Building2 className="h-7 w-7 text-primary-500" />
             </div>
           )}
-          <span className="absolute -bottom-1 -end-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#cd1419] text-primary-foreground ring-2 ring-white">
+          <span className="absolute -bottom-1 -end-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary-700 text-primary-foreground ring-2 ring-white">
             {logoBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
           </span>
           <input type="file" accept="image/*" className="hidden" data-testid="gym-logo-input" onChange={onPickLogo} />
@@ -355,7 +355,7 @@ export function GymSettings({ gym, locale }: Props) {
                   onClick={() => setForm((prev) => ({ ...prev, currency_preference: c }))}
                   className={cn(
                     'rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
-                    active ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
+                    active ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
                   )}
                 >
                   {c === 'BOTH' ? t('gym.currencyBoth') : c}
@@ -416,7 +416,7 @@ export function GymSettings({ gym, locale }: Props) {
                   <ImageIcon className="h-6 w-6" />
                 </div>
               )}
-              <span className="absolute bottom-1 end-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#cd1419] text-primary-foreground ring-2 ring-white">
+              <span className="absolute bottom-1 end-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary-700 text-primary-foreground ring-2 ring-white">
                 {heroBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
               </span>
               <input type="file" accept="image/*" className="hidden" data-testid="gym-hero-input" onChange={onPickHero} />

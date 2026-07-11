@@ -69,6 +69,29 @@
     --c-secondary-950: 31 31 31;
     --c-secondary-fg: 255 255 255;
 
+    /* ─── WL-THEME: the BRAND ramp as channel vars (R G B) so Tailwind's
+       primary-* utilities are `rgb(var(--c-brand-N) / <alpha>)` — a per-gym var
+       flip, not a restyle. These DEFAULTS are the EXACT current `primary` hexes,
+       so a gym with brand_color NULL (Proline + the default gym) is byte-identical.
+       An authed shell whose gym HAS a brand_color overrides these channels in a
+       nonce'd :root block (BrandThemeStyle), branding every primary-* accent. Brand
+       is a saturated accent that reads on BOTH themes, so — like the DS-2 note —
+       it is NOT flipped under html.dark; only --c-brand-fg (computed for contrast)
+       guarantees legible brand-on-brand text. 800 = the 82% hover shade (#a81014,
+       the old bg-[#a81014]); it replaces the unused red-800 (#991b1b). ─── */
+    --c-brand-50: 254 242 242;   /* #fef2f2 */
+    --c-brand-100: 254 226 226;  /* #fee2e2 */
+    --c-brand-200: 254 202 202;  /* #fecaca */
+    --c-brand-300: 252 165 165;  /* #fca5a5 */
+    --c-brand-400: 248 113 113;  /* #f87171 */
+    --c-brand-500: 239 68 68;    /* #ef4444 */
+    --c-brand-600: 220 38 38;    /* #dc2626 */
+    --c-brand-700: 205 20 25;    /* #cd1419 — the Proline crimson */
+    --c-brand-800: 168 16 20;    /* #a81014 — brand hover (82% shade) */
+    --c-brand-900: 127 29 29;    /* #7f1d1d */
+    --c-brand-950: 69 10 10;     /* #450a0a */
+    --c-brand-fg: 255 255 255;   /* text ON brand (contrast-computed per gym) */
+
     /* ─── Typography ─── */
     --font-arabic: 'IBM Plex Sans Arabic', var(--font-geist-sans), system-ui, sans-serif;
     --font-latin: var(--font-geist-sans), system-ui, -apple-system, sans-serif;

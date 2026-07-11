@@ -198,7 +198,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
                   data-testid="pt-log"
                   disabled={busy !== null || r.sessions_remaining <= 0}
                   onClick={() => run(`log-${r.assignment_id}`, () => logPtDelivery({ assignmentId: r.assignment_id }), t('log_session_success'))}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[#cd1419]/30 px-2.5 py-1.5 text-xs font-medium text-[#cd1419] disabled:opacity-40"
+                  className="inline-flex items-center gap-1 rounded-lg border border-primary-700/30 px-2.5 py-1.5 text-xs font-medium text-primary-700 disabled:opacity-40"
                 >
                   <PlayCircle className="h-3.5 w-3.5" />{t('log_session')}
                 </button>

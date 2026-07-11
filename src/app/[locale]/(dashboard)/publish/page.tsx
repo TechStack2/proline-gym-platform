@@ -136,7 +136,7 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
       {/* ── Header ── */}
       <div>
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#cd1419]/10 text-primary-600">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-700/10 text-primary-600">
             <Megaphone className="h-5 w-5" />
           </span>
           <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>

@@ -245,7 +245,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       {kids.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="kid-switcher">
           <span data-testid="kid-chip-me"
-            className="rounded-full bg-[#cd1419] px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+            className="rounded-full bg-primary-700 px-4 py-1.5 text-sm font-semibold text-primary-foreground">
             {t('me')}
           </span>
           {kids.map((k: any) => (
@@ -284,14 +284,14 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           as descendants, and the myStatus heading keeps the AX-1 /ar known string. */}
       <section data-testid="self-view" className="space-y-4">
         <h2 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-          <TrendingUp className="h-4 w-4 text-[#cd1419]" />{t('myStatus')}
+          <TrendingUp className="h-4 w-4 text-primary-700" />{t('myStatus')}
         </h2>
 
         {/* 1 · Membership → drills to billing (renewal) — NO-MEMBERSHIP: hidden off */}
         {enabledProducts.membership && (
         <PortalCard data-testid="card-membership">
           <PortalCardTitle icon={CreditCard}
-            right={<Link href={`/${locale}/portal/billing`} data-testid="membership-open" className="text-xs font-medium text-[#cd1419]">{t('view')}</Link>}>
+            right={<Link href={`/${locale}/portal/billing`} data-testid="membership-open" className="text-xs font-medium text-primary-700">{t('view')}</Link>}>
             {t('membership')}
           </PortalCardTitle>
           <div className="flex items-center justify-between gap-2">
@@ -311,7 +311,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           icon={Wallet} title={t('billing')} count={openInvoices.length}
           badge={balanceDue > 0 ? `$${balanceDue.toFixed(2)}` : t('allSettled')}
           emptyText={t('allSettled')} testid="billing" isRTL={isRTL}
-          footer={<Link href={`/${locale}/portal/billing`} data-testid="billing-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#cd1419]">{t('billing')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
+          footer={<Link href={`/${locale}/portal/billing`} data-testid="billing-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-700">{t('billing')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
         >
           <DrillDetails
             testid="billing-drill" rowTestid="billing-row" isRTL={isRTL}
@@ -333,7 +333,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         {/* 3 · PT → sessions remaining + next session → pt */}
         <PortalCard data-testid="card-pt">
           <PortalCardTitle icon={Dumbbell}
-            right={<Link href={`/${locale}/portal/pt`} data-testid="pt-open" className="text-xs font-medium text-[#cd1419]">{t('view')}</Link>}>
+            right={<Link href={`/${locale}/portal/pt`} data-testid="pt-open" className="text-xs font-medium text-primary-700">{t('view')}</Link>}>
             PT
           </PortalCardTitle>
           <div className="flex items-center justify-between text-sm">
@@ -349,7 +349,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         {/* 4 · Belt progress → progress */}
         <PortalCard data-testid="card-belt">
           <PortalCardTitle icon={Award}
-            right={<Link href={`/${locale}/portal/progress`} data-testid="belt-open" className="text-xs font-medium text-[#cd1419]">{t('view')}</Link>}>
+            right={<Link href={`/${locale}/portal/progress`} data-testid="belt-open" className="text-xs font-medium text-primary-700">{t('view')}</Link>}>
             {t('belt')}
           </PortalCardTitle>
           <div className="flex items-center gap-3">
@@ -385,7 +385,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
               footer={
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs" data-testid="classes-footer">
                   <span className="text-gray-500">{t('enrolledClasses')}: <span className="font-medium text-gray-700">{enrolledCount || 0}</span> · {t('nextClass')}: <span data-testid="self-next-class" className="font-medium text-gray-700" dir="ltr">{nextClassLabel || '—'}</span></span>
-                  <Link href={`/${locale}/portal/classes`} data-testid="classes-open" className="inline-flex items-center gap-1 font-medium text-[#cd1419]">{t('classes')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>
+                  <Link href={`/${locale}/portal/classes`} data-testid="classes-open" className="inline-flex items-center gap-1 font-medium text-primary-700">{t('classes')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>
                 </div>
               }
             >

@@ -204,7 +204,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
       {/* Premium scan bar — 4 headline numbers, each scoped to a card below */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat icon={Calendar} value={totalToday} label={t('stats.today')} tone="text-blue-600" bg="bg-blue-50" />
-        <Stat icon={Users} value={students.length} label={t('stats.students')} tone="text-[#cd1419]" bg="bg-red-50" brand />
+        <Stat icon={Users} value={students.length} label={t('stats.students')} tone="text-primary-700" bg="bg-red-50" brand />
         <Stat icon={CalendarDays} value={weekRows.length} label={t('stats.week')} tone="text-violet-600" bg="bg-violet-50" />
         <Stat icon={Dumbbell} value={ptRemaining} label={t('stats.ptSessions')} tone="text-emerald-600" bg="bg-emerald-50" />
       </div>
@@ -232,7 +232,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
               </Link>
               <Link href={`/${locale}/coach/attendance?classId=${r.classId}`} data-testid="coach-today-attendance"
                 className={cn('inline-flex shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium',
-                  complete ? 'bg-green-50 text-green-700' : 'bg-[#cd1419] text-primary-foreground hover:bg-[#b01216]')}>
+                  complete ? 'bg-green-50 text-green-700' : 'bg-primary-700 text-primary-foreground hover:bg-primary-800')}>
                 {complete ? <CheckCircle2 className="h-4 w-4" /> : <>{t('today.startAttendance')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></>}
               </Link>
             </div>
@@ -244,7 +244,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
       {todaysTrials.length > 0 && (
         <PortalCard className="space-y-2" data-testid="coach-home-trials">
           <PortalCardTitle icon={CalendarClock}
-            right={<Link href={`/${locale}/coach/trials`} className="text-xs font-medium text-[#cd1419]">{tct('openTab')}</Link>}>
+            right={<Link href={`/${locale}/coach/trials`} className="text-xs font-medium text-primary-700">{tct('openTab')}</Link>}>
             {tct('todayTitle')}
           </PortalCardTitle>
           {todaysTrials.map((tr) => (
@@ -332,7 +332,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
         <ActionCard
           icon={Dumbbell} title={t('pt.title')} count={pt.length}
           emptyText={t('pt.empty')} testid="coach-pt" isRTL={isRTL}
-          footer={<Link href={`/${locale}/coach/pt`} data-testid="coach-pt-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#cd1419]">{t('pt.manage')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
+          footer={<Link href={`/${locale}/coach/pt`} data-testid="coach-pt-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-700">{t('pt.manage')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
         >
           <DrillDetails
             testid="coach-pt-drill" rowTestid="coach-pt-row" isRTL={isRTL}
@@ -352,7 +352,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
         <ActionCard
           icon={CalendarClock} title={t('trials.title')} count={upcomingTrials.length}
           emptyText={t('trials.empty')} testid="coach-trials" isRTL={isRTL}
-          footer={<Link href={`/${locale}/coach/trials`} data-testid="coach-trials-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#cd1419]">{t('trials.manage')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
+          footer={<Link href={`/${locale}/coach/trials`} data-testid="coach-trials-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-700">{t('trials.manage')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
         >
           <DrillDetails
             testid="coach-trials-drill" rowTestid="coach-trials-row" isRTL={isRTL}
@@ -371,7 +371,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
       {/* ── MY PROFILE / LANDING — display only (publish gate unchanged) ── */}
       <PortalCard data-testid="coach-profile-status">
         <PortalCardTitle icon={Megaphone}
-          right={<Link href={`/${locale}/coach/profile`} data-testid="coach-profile-open" className="text-xs font-medium text-[#cd1419]">{t('profile.manage')}</Link>}>
+          right={<Link href={`/${locale}/coach/profile`} data-testid="coach-profile-open" className="text-xs font-medium text-primary-700">{t('profile.manage')}</Link>}>
           {t('profile.title')}
         </PortalCardTitle>
         <div className="flex items-center justify-between gap-2">
