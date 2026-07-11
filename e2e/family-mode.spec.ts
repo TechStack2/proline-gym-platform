@@ -168,8 +168,7 @@ test('FAMILY-MODE · inviting the guardian issues credentials; a duplicate phone
     await expect(w(page, 'portal-access')).toBeVisible({ timeout: 20_000 })
     await w(page, 'portal-access').locator('[data-testid="invite-btn"]').click()
     await expect(w(page, 'invite-error'), 'the credential invariant blocks the duplicate').toBeVisible({ timeout: 20_000 })
-    // eslint-disable-next-line no-console
-    console.log('MJ1_INVITE_ERROR:', JSON.stringify(await w(page, 'invite-error').textContent()))
+    // The block is OUR invariant (not a raw GoTrue error): the copy names the holder.
     await expect(w(page, 'invite-error')).toContainText(GUARDIAN_NAME)
   } finally {
     await ctx.close()
