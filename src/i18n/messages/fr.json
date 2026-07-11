@@ -2899,7 +2899,8 @@
     "needsConnection": "Une connexion est nécessaire.",
     "paymentsNeedConnection": "Les paiements nécessitent une connexion — seule la présence fonctionne hors ligne.",
     "synced": "Synchronisé",
-    "savedOffline": "Enregistré hors ligne — sera synchronisé à la reconnexion"
+    "savedOffline": "Enregistré hors ligne — sera synchronisé à la reconnexion",
+    "scope": "La réception fonctionne hors ligne — présence, espèces, prospects. Le reste nécessite une connexion."
   },
   "coach360": {
     "schedule": "Planning",
