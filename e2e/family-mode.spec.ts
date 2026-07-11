@@ -122,13 +122,14 @@ test('FAMILY-MODE · a minor gates the invite behind the guardian; the staff ove
     await page.goto('/en/students')
     await page.locator('[data-testid="student-card"]:visible').filter({ hasText: 'Kid One' }).first().click()
     await expect(w(page, 'portal-access')).toBeVisible({ timeout: 20_000 })
-    // The invite is gated — the guardian is the family's door.
+    // The invite is gated — the guardian is the family's door. Scope to portal-access:
+    // the guardian panel on this kid's page also renders an invite-btn (the parent invite).
     await expect(w(page, 'invite-blocked-guardian')).toBeVisible()
-    await expect(w(page, 'invite-btn')).toHaveCount(0)
+    await expect(w(page, 'portal-access').locator('[data-testid="invite-btn"]'), 'the member invite is gated').toHaveCount(0)
     await page.screenshot({ path: 'screenshots/member-eligibility-gated.png', fullPage: true }).catch(() => {})
     // Staff override → "can log in" reveals the invite affordance.
     await w(page, 'portal-eligibility-yes').click()
-    await expect(w(page, 'invite-btn')).toBeVisible({ timeout: 15_000 })
+    await expect(w(page, 'portal-access').locator('[data-testid="invite-btn"]')).toBeVisible({ timeout: 15_000 })
   } finally {
     await ctx.close()
   }
@@ -162,7 +163,7 @@ test('FAMILY-MODE · inviting the guardian issues credentials; a duplicate phone
 
     // …but INVITING them is refused — the phone already backs the guardian's login.
     await expect(w(page, 'portal-access')).toBeVisible({ timeout: 20_000 })
-    await w(page, 'invite-btn').click()
+    await w(page, 'portal-access').locator('[data-testid="invite-btn"]').click()
     await expect(w(page, 'invite-error'), 'the credential invariant blocks the duplicate').toBeVisible({ timeout: 20_000 })
     await expect(w(page, 'invite-error')).toContainText(GUARDIAN_NAME)
   } finally {
