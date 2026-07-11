@@ -127,8 +127,9 @@ test('MJ-2 · a non-default gym landing shows the Member sign-in front door → 
     await expect(signin, 'the nav Member sign-in link renders (non-default tenant too)').toBeVisible({ timeout: 15_000 })
     await expect(signin).toHaveAttribute('href', '/en/auth/login')
     await expect(page.getByTestId('landing-footer-signin'), 'the footer sign-in link too').toHaveAttribute('href', '/en/auth/login')
-    // Staff-only credential gate: the public path is request → leads, never self-registration.
-    await expect(page.getByRole('link', { name: /register|sign\s?up|create account|s'inscrire|إنشاء حساب/i }), 'no public registration link')
+    // Staff-only credential gate: NO self-registration ROUTE (the public path is
+    // request → leads, i.e. the trial CTA — that's allowed, so assert the route, not text).
+    await expect(page.locator('a[href*="/auth/register"], a[href*="/auth/signup"], a[href$="/register"]'), 'no public registration route')
       .toHaveCount(0)
   } finally {
     await ctx.close()

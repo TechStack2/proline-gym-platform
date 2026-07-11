@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { DEFAULT_GYM_SLUG } from '@/lib/marketing/gym'
 import { storagePublicUrl } from '@/lib/storage/public-url'
 import { cn } from '@/lib/utils'
@@ -27,13 +28,22 @@ export default async function WelcomePage({ params: { locale } }: { params: { lo
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name_ar, first_name_en, first_name_fr, gyms:gym_id (slug, name_ar, name_en, name_fr, logo_url)')
+    .select('first_name_ar, first_name_en, first_name_fr, gym_id')
     .eq('id', user.id).maybeSingle()
 
   const firstName =
     (locale === 'ar' ? profile?.first_name_ar : locale === 'fr' ? profile?.first_name_fr : profile?.first_name_en) ||
     profile?.first_name_en || ''
-  const g = (profile as { gyms?: { slug?: string; name_ar?: string; name_en?: string; name_fr?: string; logo_url?: string } | null } | null)?.gyms
+
+  // A MEMBER can't read the gyms table via RLS (gyms_staff_read is staff-only), so the
+  // gym's PUBLIC brand (name + logo — exactly what the landing shows) is resolved with
+  // the service role, scoped to the member's OWN gym_id. Server-only; no RLS/migration.
+  let g: { slug?: string; name_ar?: string; name_en?: string; name_fr?: string; logo_url?: string } | null = null
+  if (profile?.gym_id) {
+    const { data } = await createAdminClient()
+      .from('gyms').select('slug, name_ar, name_en, name_fr, logo_url').eq('id', profile.gym_id).maybeSingle()
+    g = data
+  }
   const isDefaultGym = (g?.slug ?? DEFAULT_GYM_SLUG) === DEFAULT_GYM_SLUG
   const gymName =
     (locale === 'ar' ? g?.name_ar : locale === 'fr' ? g?.name_fr : g?.name_en) ||
