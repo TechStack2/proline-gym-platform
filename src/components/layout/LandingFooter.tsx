@@ -89,7 +89,7 @@ export function LandingFooter({ locale, gymName, logoUrl, address, contact = EMP
           <div>
             <h4 className="text-sm font-semibold text-white mb-4">{t('footer.links') || 'Quick Links'}</h4>
             <ul className="space-y-2.5">
-              <li><Link href={`/${locale}/auth/login`} className="text-sm text-gray-400 hover:text-white transition-colors">{t('footer.login') || 'Member Login'}</Link></li>
+              <li><Link href={`/${locale}/auth/login`} data-testid="landing-footer-signin" className="text-sm text-gray-400 hover:text-white transition-colors">{t('footer.login') || 'Member sign-in'}</Link></li>
               <li><a href="#disciplines" className="text-sm text-gray-400 hover:text-white transition-colors">{t('footer.programs') || 'Programs'}</a></li>
               <li><a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">{t('footer.plans') || 'Membership Plans'}</a></li>
               <li><a href="#trial" className="text-sm text-gray-400 hover:text-white transition-colors">{t('footer.trial') || 'Free Trial'}</a></li>

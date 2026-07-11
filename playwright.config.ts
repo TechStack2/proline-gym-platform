@@ -792,6 +792,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MJ-2 SIGN-IN-SANE: deterministic phone sign-in (variant resolution +
+      // credentialed-only past a login-less family twin) + the landing front door.
+      name: 'mj2-sign-in',
+      dependencies: ['setup'],
+      testMatch: /mj2-sign-in\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PORTAL-BALANCE: the member's money number is ONE number — a part-paid
       // member sees the SAME netted balance on the portal home tile and the
       // billing tab (home used to omit 'partial' + ignore payments). Issues its

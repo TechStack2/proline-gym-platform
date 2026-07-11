@@ -7,17 +7,13 @@
  * (G1-full) once a gym activates — so activation is zero rework.
  */
 
+// MJ-2: the normalizer now lives in the shared lib/utils/phone module (one source
+// of truth for sign-in resolution + every capture point). Re-exported here under
+// its original name so the wa.me dispatch path is unchanged.
+import { phoneDigits } from '@/lib/utils/phone'
+
 /** Normalize a stored phone to e.164 digits (no '+'). Defaults to Lebanon (961). */
-export function toE164Digits(phone: string | null | undefined, countryCode = '961'): string {
-  const d = (phone ?? '').replace(/\D/g, '')
-  if (!d) return ''
-  if (d.startsWith(countryCode)) return d
-  if (d.startsWith('00')) return d.slice(2)
-  if (d.startsWith('0')) return countryCode + d.slice(1)
-  // A bare local number (≤8 digits for LB) gets the country code; longer values
-  // are assumed already international.
-  return d.length <= 8 ? countryCode + d : d
-}
+export const toE164Digits = phoneDigits
 
 /** wa.me deep-link to `phone` with a prefilled message. '' if no phone. */
 export function waLink(phone: string | null | undefined, message: string, countryCode = '961'): string {

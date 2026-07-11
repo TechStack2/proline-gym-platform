@@ -83,6 +83,7 @@
     "campaigns": "Campaigns"
   },
   "common": {
+    "phoneAlsoUsedBy": "Also used by {name} — families can share",
     "genericError": "Something went wrong. Please try again.",
     "save": "Save",
     "cancel": "Cancel",
@@ -712,18 +713,29 @@
     "late": "Late",
     "excused": "Excused"
   },
+  "welcome": {
+    "title": "You're in, {name}! 🥋",
+    "subtitle": "Your account is ready. Here's what you can do now.",
+    "scheduleTitle": "See your schedule",
+    "scheduleDesc": "Your classes and PT sessions, always up to date.",
+    "progressTitle": "Track your progress",
+    "progressDesc": "Belt rank, attendance, and PT packages in one place.",
+    "billingTitle": "Manage your billing",
+    "billingDesc": "Invoices, receipts, and what's due — no surprises.",
+    "cta": "Go to my portal"
+  },
   "landing": {
     "nav": {
       "disciplines": "Programs",
       "pricing": "Pricing",
       "facility": "Facility",
       "trial": "Free Trial",
-      "login": "Login"
+      "login": "Member sign-in"
     },
     "footer": {
       "tagline": "Unleash the fighter in you 🥊",
       "links": "Quick Links",
-      "login": "Member Login",
+      "login": "Member sign-in",
       "programs": "Programs",
       "plans": "Membership Plans",
       "trial": "Free Trial",

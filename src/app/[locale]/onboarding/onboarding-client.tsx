@@ -101,7 +101,10 @@ export function OnboardingClient({
     const res = await completeOnboarding()
     setBusy(false)
     if (!res.ok) { setError(errText(res.error)); return }
-    router.push(`/${lang}${res.home}`)
+    // MJ-2 FIRST-LOGIN WELCOME: a member lands on the guided "you're in" moment
+    // (name + gym brand + what they can do → CTA into the portal) instead of a bare
+    // redirect. Staff/coaches keep their role home (Today / setup / vendor console).
+    router.push(`/${lang}${isMember ? '/welcome' : res.home}`)
     router.refresh()
   }
 

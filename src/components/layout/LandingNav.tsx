@@ -90,8 +90,11 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
               </a>
             ))}
             <LanguageSwitcher locale={locale} />
+            {/* MJ-2 FRONT DOOR: the member sign-in link. Staff-only credential gate —
+                there is NO public registration link (the public path is request → leads). */}
             <Link
               href={`/${locale}/auth/login`}
+              data-testid="landing-member-signin"
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-semibold transition-all',
                 scrolled
@@ -99,7 +102,7 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
                   : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
               )}
             >
-              {t('nav.login') || 'Login'}
+              {t('nav.login') || 'Member sign-in'}
             </Link>
           </div>
 
@@ -136,10 +139,11 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
             </div>
             <Link
               href={`/${locale}/auth/login`}
+              data-testid="landing-member-signin-mobile"
               onClick={() => setMobileOpen(false)}
               className="block rounded-lg bg-primary-600 px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-700 mt-2"
             >
-              {t('nav.login') || 'Login'}
+              {t('nav.login') || 'Member sign-in'}
             </Link>
           </div>
         </div>

@@ -17,6 +17,8 @@ import { useTranslations } from 'next-intl'
 import { useErrorText } from '@/lib/errors/use-error-text'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { normalizePhone } from '@/lib/utils/phone'
+import { PhoneDuplicateHint } from './phone-duplicate-hint'
 import { UserPlus, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,7 +61,7 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
           gym_id: gymId,
           first_name_en: firstName.trim(), first_name_ar: firstName.trim(), first_name_fr: firstName.trim(),
           last_name_en: lastName.trim() || null, last_name_ar: lastName.trim() || null, last_name_fr: lastName.trim() || null,
-          phone: phone.trim(),
+          phone: normalizePhone(phone), // MJ-2: store the canonical shape (phone is required)
         })
         .select('id')
         .single()
@@ -122,6 +124,7 @@ export function InviteStaffButton({ locale, gymId }: { locale: string; gymId: st
           {/* Phone is REQUIRED — it IS the login (and the wa.me share target). */}
           <Input data-testid="staff-phone" placeholder={t('phoneRequired')} value={phone}
             onChange={(e) => setPhone(e.target.value)} dir="ltr" inputMode="tel" />
+          <PhoneDuplicateHint gymId={gymId} phone={phone} locale={locale} />
           <div className="flex flex-wrap gap-1.5">
             {ROLES.map((r) => (
               <button key={r} type="button" data-testid="staff-role" data-value={r}

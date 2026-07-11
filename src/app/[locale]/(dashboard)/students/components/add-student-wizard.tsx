@@ -22,10 +22,14 @@ import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { normalizePhone } from '@/lib/utils/phone'
+import { PhoneDuplicateHint } from '@/components/shared/phone-duplicate-hint'
 import { toast } from '@/components/ui/use-toast'
 import { FormWizard, ChipRow } from '@/components/shared/form-wizard'
 import { ModalPortal } from '@/components/shared/modal-portal'
 import { Search, Plus, X } from 'lucide-react'
+// MJ-2×MJ-1 RECONCILE: LOOKUP is MJ-1's gym-scoped find_profile_by_phone RPC; WRITE
+// stores MY canonical normalizePhone shape; the dup-hint chip complements the flow.
 import { findProfileByPhone } from '@/lib/provisioning/guardian-lookup'
 import { inviteToPortal } from '@/lib/provisioning/invite'
 import { InviteResultCard, type InviteResult } from '@/components/shared/invite-button'
@@ -147,7 +151,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
       const { data: student, error } = await supabase.rpc('create_student', {
         p_first_name_ar: nameAr || nameEn, p_first_name_en: nameEn, p_first_name_fr: nameEn,
         p_last_name_ar: '', p_last_name_en: '', p_last_name_fr: '',
-        p_phone: phone, p_gender: gender, p_date_of_birth: dob || null,
+        p_phone: normalizePhone(phone), p_gender: gender, p_date_of_birth: dob || null,
         p_emergency_contact_name: null, p_emergency_contact_phone: null,
         p_medical_notes: null, p_join_date: null, p_current_belt_rank: null,
       })
@@ -160,7 +164,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
           const { data: prof, error: pErr } = await supabase
             .from('profiles')
             .insert({
-              gym_id: gymId, phone: gPhone.trim(),
+              gym_id: gymId, phone: normalizePhone(gPhone),
               first_name_ar: gName.trim(), first_name_en: gName.trim(), first_name_fr: gName.trim(),
               last_name_ar: '', last_name_en: '', last_name_fr: '',
             })
@@ -197,7 +201,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
         const { data: prof, error } = await supabase
           .from('profiles')
           .insert({
-            gym_id: gymId, phone: fgPhone.trim() || null,
+            gym_id: gymId, phone: normalizePhone(fgPhone) || null,
             first_name_ar: fgName.trim(), first_name_en: fgName.trim(), first_name_fr: fgName.trim(),
             last_name_ar: '', last_name_en: '', last_name_fr: '',
           })
@@ -208,7 +212,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
       if (!guardianProfileId) throw new Error('guardian_unresolved')
       const guardianId = await ensureGuardian(guardianProfileId)
       const guardianName = fgFound?.name ?? fgName.trim()
-      const guardianPhone = fgPhone.trim() || null
+      const guardianPhone = normalizePhone(fgPhone) || null
 
       let firstStudentId = ''
       // 2) Each kid — PHONE-FREE; the household contact + emergency ride the guardian.
@@ -305,7 +309,10 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
           {modeChips}
           <F label={t('nameEn')}><Input data-testid="sw-name-en" value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></F>
           <F label={t('nameAr')}><Input dir="rtl" data-testid="sw-name-ar" value={nameAr} onChange={(e) => setNameAr(e.target.value)} /></F>
-          <F label={t('phone')}><Input dir="ltr" type="tel" data-testid="sw-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+961…" /></F>
+          <F label={t('phone')}>
+            <Input dir="ltr" type="tel" data-testid="sw-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+961…" />
+            <PhoneDuplicateHint gymId={gymId} phone={phone} locale={locale} />
+          </F>
           <div className="grid grid-cols-2 gap-3">
             <F label={t('dob')}><Input type="date" data-testid="sw-dob" value={dob} onChange={(e) => setDob(e.target.value)} /></F>
             <F label={t('gender')}>
@@ -390,6 +397,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
               <Search className="me-1 h-3.5 w-3.5" /> {t('search')}
             </Button>
           </div>
+          <PhoneDuplicateHint gymId={gymId} phone={fgPhone} locale={locale} />
           {fgFound && (
             <p data-testid="fam-guardian-found" className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700">
               {t('family.foundGuardian', { name: fgFound.name, count: fgFound.kidCount })}

@@ -120,7 +120,13 @@ test('ON-1 · member invite → onboarding → portal (identity intact) + wa.me 
   try {
     await signIn(member.page, login, temp)
     await completeOnboarding(member.page, 'NewMemberPass!1')
-    await expect(member.page, 'lands in the member portal').toHaveURL(/\/portal/, { timeout: 20_000 })
+    // MJ-2 FIRST-LOGIN WELCOME: a member no longer bare-redirects to the portal —
+    // they land on the guided "you're in" moment (name + gym brand + what they can
+    // do), then tap the CTA into the portal.
+    await expect(member.page, 'lands on the first-login welcome').toHaveURL(/\/welcome/, { timeout: 20_000 })
+    await expect(member.page.getByTestId('welcome-title'), 'the welcome greets the member by name').toBeVisible()
+    await member.page.getByTestId('welcome-cta').click()
+    await expect(member.page, 'the CTA leads into the member portal').toHaveURL(/\/portal/, { timeout: 20_000 })
 
     // Identity integrity: the pre-adoption PAID invoice still resolves for them
     // (RLS intact — auth.uid() == the unchanged profile id).
