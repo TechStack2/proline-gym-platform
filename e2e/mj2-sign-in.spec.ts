@@ -42,14 +42,20 @@ test.beforeAll(async () => {
 
   // A CREDENTIALED member in the invite-flow shape: auth user id == profile id,
   // synthetic email, phone set, NO forced-change (a plain successful sign-in). We
-  // own the password, so we can sign in with a phone VARIANT below.
+  // own the password, so we can sign in with a phone VARIANT below. Creating the
+  // auth user fires the handle_new_user trigger → it auto-creates the profiles row,
+  // so we PATCH it (gym + phone + names) rather than insert (would 23505).
   credId = randomUUID()
   const auth = await fetch(`${URL}/auth/v1/admin/users`, {
     method: 'POST', headers: H,
     body: JSON.stringify({ id: credId, email: `m-${credId}@members.proline.lb`, phone: MEMBER_PHONE, password: PASSWORD, email_confirm: true, phone_confirm: true, app_metadata: {} }),
   })
   if (!auth.ok) throw new Error(`create auth user failed: ${auth.status} ${await auth.text()}`)
-  await rest('profiles', { id: credId, gym_id: gymId, phone: MEMBER_PHONE, first_name_en: 'Cred', first_name_ar: 'كريد', first_name_fr: 'Cred', last_name_en: 'Holder', last_name_ar: 'حامل', last_name_fr: 'Holder' })
+  const patch = await fetch(`${URL}/rest/v1/profiles?id=eq.${credId}`, {
+    method: 'PATCH', headers: H,
+    body: JSON.stringify({ gym_id: gymId, phone: MEMBER_PHONE, first_name_en: 'Cred', first_name_ar: 'كريد', first_name_fr: 'Cred', last_name_en: 'Holder', last_name_ar: 'حامل', last_name_fr: 'Holder' }),
+  })
+  if (!patch.ok) throw new Error(`patch cred profile failed: ${patch.status} ${await patch.text()}`)
   await rest('user_roles', { user_id: credId, gym_id: gymId, role: 'student' })
 
   // A SECOND profile on the SAME phone but LOGIN-LESS (a family member, no auth
