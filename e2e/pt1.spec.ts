@@ -34,6 +34,38 @@ async function openKarimFile(page: Page): Promise<string> {
   return page.url().split('?')[0];
 }
 
+// J6 poll-DB-commit-first (union-load fix). Service-role REST read of the primary
+// (bypasses RLS) used to confirm a write is API-visible BEFORE the app is asked to
+// render it — see pollPtAssignmentActive at the coach-roster handoff below.
+const SR_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SR_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function srGet(path: string): Promise<Array<{ id: string }>> {
+  const res = await fetch(`${SR_URL}/rest/v1/${path}`, {
+    headers: { apikey: SR_KEY!, Authorization: `Bearer ${SR_KEY}` },
+  });
+  if (!res.ok) throw new Error(`srGet ${path} failed: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+/**
+ * Block until the ACTIVE pt_assignment for `packageNameEn` (unique per run) is
+ * API-visible. get_coach_pt_roster surfaces exactly this state — an is_active +
+ * status='active' assignment for the package — so once this poll passes the coach
+ * render sees the row too (same PostgREST/DB). Cheap (one REST call/attempt) vs.
+ * re-rendering the whole coach page for 90s hoping the row lands under union load.
+ */
+async function pollPtAssignmentActive(packageNameEn: string): Promise<void> {
+  if (!SR_URL || !SR_KEY) throw new Error('pt1 poll needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL');
+  await untilConsistent(async () => {
+    const pkgs = await srGet(`pt_packages?name_en=eq.${encodeURIComponent(packageNameEn)}&select=id`);
+    expect(pkgs.length, `package "${packageNameEn}" is committed`).toBeGreaterThan(0);
+    const ids = pkgs.map((p) => p.id).join(',');
+    const asg = await srGet(`pt_assignments?package_id=in.(${ids})&is_active=eq.true&status=eq.active&select=id`);
+    expect(asg.length, 'an active PT assignment for the package is API-visible').toBeGreaterThan(0);
+  }, { timeout: 60_000 });
+}
+
 test('PT-1 · catalog → publish gate → desk sale → package-first cards (no flat lists)', async ({ browser }) => {
   test.setTimeout(240_000);
   const owner = await ctxFor(browser, 'owner');
@@ -114,15 +146,18 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
   try {
     // ── Coach logs 8 deliveries on the run's 10-pack (10 → 2 = the threshold) ──
     // ROOT RACE: the just-sold package (committed in test 1) can lag the coach
-    // roster read (PostgREST replica/realtime) → re-navigate until it surfaces.
-    // Under heavy full-union write load the replica lag can exceed the default 40s
-    // budget (observed hitting the wall at ~41s), so give this first surfacing read
-    // a wider 90s window — the read is idempotent (re-navigates each attempt).
+    // roster read under full-union write load — the page renders but the row isn't
+    // yet API-visible, and blindly re-rendering the coach page for 90s to wait it
+    // out was STILL losing the race. J6 poll-DB-commit-first: confirm via the
+    // service role that the ACTIVE assignment for this run's package is API-visible
+    // FIRST (cheap primary read, the same PostgREST the coach RPC uses), THEN render
+    // the roster once — it now surfaces within the normal budget. No budget widening.
+    await pollPtAssignmentActive(TYPE_NAME);
     const rosterSel = `[data-testid="pt-roster-row"][data-package-en="${TYPE_NAME}"]:visible`;
     await untilConsistent(async () => {
       await coach.page.goto('/en/coach/pt');
       await expect(coach.page.locator(rosterSel).first()).toBeVisible({ timeout: 6_000 });
-    }, { timeout: 90_000 });
+    });
     const roster = coach.page.locator(rosterSel).first();
     for (let remaining = 10; remaining > 2; remaining--) {
       await roster.getByTestId('pt-log').click();
