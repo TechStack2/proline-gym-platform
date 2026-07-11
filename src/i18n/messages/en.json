@@ -2286,6 +2286,19 @@
       "createAndLink": "Create & link",
       "linkFailed": "Could not link the guardian.",
       "nameRequired": "The first name is required."
+    },
+    "access": {
+      "title": "Portal login",
+      "byAge": "By age",
+      "canLogin": "Can log in",
+      "guardianHolds": "Guardian holds access",
+      "defaultHintAdult": "Adults hold their own login by default.",
+      "defaultHintMinor": "Under-18s default to no login — the guardian is the family's door.",
+      "yesHint": "This member holds their own login.",
+      "noHint": "Access runs through the guardian.",
+      "blockedTitle": "Guardian holds access",
+      "blockedBody": "This member doesn't hold their own login. Invite their guardian instead.",
+      "toGuardians": "Go to guardians"
     }
   },
   "promote": {
@@ -2560,7 +2573,32 @@
     "planHint": "Optional — a membership can be added later.",
     "noPlan": "No plan",
     "review": "Review",
-    "minor": "Minor"
+    "minor": "Minor",
+    "modeSolo": "One member",
+    "modeFamily": "A family",
+    "family": {
+      "title": "Add a family",
+      "guardian": "Guardian",
+      "guardianHint": "Start with the parent or guardian — they're the family's contact. Enter their phone once.",
+      "guardianName": "Guardian name",
+      "guardianNamePh": "Parent's full name",
+      "foundGuardian": "{name} is already here ({count} linked children) — new members go under them.",
+      "kids": "Children",
+      "kidsHint": "Add each child. No phone needed — they're reached through the guardian.",
+      "kidN": "Child {n}",
+      "removeKid": "Remove",
+      "addKid": "Add another child",
+      "dualHat": "Parent",
+      "dualHatHint": "Is the parent training too? They get their own membership under the same identity — no second account.",
+      "parentTrains": "{name} is training too",
+      "theParent": "the parent",
+      "parentPlan": "Parent's plan",
+      "parentAlsoTrains": "The parent trains too",
+      "sendAccess": "Send portal access to {name}?",
+      "created": "Family added",
+      "inviteFailed": "Family added, but the portal invite failed",
+      "done": "Done"
+    }
   },
   "portalHome": {
     "today": "Today",
@@ -2784,8 +2822,10 @@
       "target_not_found": "Member not found.",
       "cross_gym": "Not in your gym.",
       "no_phone": "Add a phone number first.",
-      "unauthenticated": "Please sign in."
-    }
+      "unauthenticated": "Please sign in.",
+      "phone_taken": "This phone already has a login for {name}."
+    },
+    "someoneElse": "another member"
   },
   "onboarding": {
     "welcome": "Welcome, {name}!",

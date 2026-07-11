@@ -2286,6 +2286,19 @@
       "createAndLink": "Créer et lier",
       "linkFailed": "Échec de la liaison.",
       "nameRequired": "Le prénom est requis."
+    },
+    "access": {
+      "title": "Accès au portail",
+      "byAge": "Selon l'âge",
+      "canLogin": "Peut se connecter",
+      "guardianHolds": "Le tuteur détient l'accès",
+      "defaultHintAdult": "Les adultes ont leur propre identifiant par défaut.",
+      "defaultHintMinor": "Les moins de 18 ans n'ont pas d'identifiant par défaut — le tuteur est la porte de la famille.",
+      "yesHint": "Ce membre a son propre identifiant.",
+      "noHint": "L'accès passe par le tuteur.",
+      "blockedTitle": "Le tuteur détient l'accès",
+      "blockedBody": "Ce membre n'a pas son propre identifiant. Invitez plutôt son tuteur.",
+      "toGuardians": "Aller aux tuteurs"
     }
   },
   "promote": {
@@ -2560,7 +2573,32 @@
     "planHint": "Facultatif — une adhésion peut être ajoutée plus tard.",
     "noPlan": "Sans plan",
     "review": "Révision",
-    "minor": "Mineur"
+    "minor": "Mineur",
+    "modeSolo": "Un membre",
+    "modeFamily": "Une famille",
+    "family": {
+      "title": "Ajouter une famille",
+      "guardian": "Tuteur",
+      "guardianHint": "Commencez par le parent ou le tuteur — c'est le contact de la famille. Saisissez son numéro une fois.",
+      "guardianName": "Nom du tuteur",
+      "guardianNamePh": "Nom complet du parent",
+      "foundGuardian": "{name} est déjà là ({count} enfants liés) — les nouveaux membres seront ajoutés sous lui.",
+      "kids": "Enfants",
+      "kidsHint": "Ajoutez chaque enfant. Aucun téléphone requis — ils sont joignables via le tuteur.",
+      "kidN": "Enfant {n}",
+      "removeKid": "Retirer",
+      "addKid": "Ajouter un enfant",
+      "dualHat": "Parent",
+      "dualHatHint": "Le parent s'entraîne aussi ? Il obtient son propre abonnement sous la même identité — pas de second compte.",
+      "parentTrains": "{name} s'entraîne aussi",
+      "theParent": "le parent",
+      "parentPlan": "Forfait du parent",
+      "parentAlsoTrains": "Le parent s'entraîne aussi",
+      "sendAccess": "Envoyer l'accès au portail à {name} ?",
+      "created": "Famille ajoutée",
+      "inviteFailed": "Famille ajoutée, mais l'invitation au portail a échoué",
+      "done": "Terminé"
+    }
   },
   "portalHome": {
     "today": "Aujourd'hui",
@@ -2784,8 +2822,10 @@
       "target_not_found": "Membre introuvable.",
       "cross_gym": "Pas dans votre salle.",
       "no_phone": "Ajoutez d'abord un numéro.",
-      "unauthenticated": "Veuillez vous connecter."
-    }
+      "unauthenticated": "Veuillez vous connecter.",
+      "phone_taken": "Ce numéro a déjà un identifiant pour {name}."
+    },
+    "someoneElse": "un autre membre"
   },
   "onboarding": {
     "welcome": "Bienvenue, {name} !",

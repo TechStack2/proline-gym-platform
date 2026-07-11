@@ -15,10 +15,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Loader2, Phone, Search, UserPlus, X, Users } from 'lucide-react'
+import { findProfileByPhone } from '@/lib/provisioning/guardian-lookup'
+import { InviteButton } from '@/components/shared/invite-button'
 
 export type GuardianRow = {
   linkId: string
   guardianId: string
+  profileId: string
   name: string
   phone: string | null
   relationship: string | null
@@ -45,24 +48,14 @@ export function GuardianPanel({
   const [newFirst, setNewFirst] = useState('')
   const [newLast, setNewLast] = useState('')
 
+  // MJ-1 LOOKUP UNIFY: the same normalized exact-match helper the add-member wizard
+  // uses (find_profile_by_phone, gym-scoped) — no more per-surface phone semantics.
   const search = async () => {
     setBusy(true); setError(''); setMatch(null)
     const supabase = createClient()
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, first_name_ar, first_name_en, last_name_ar, last_name_en')
-      .eq('gym_id', gymId)
-      .eq('phone', phone.trim())
-      .limit(1)
-      .maybeSingle()
+    const found = await findProfileByPhone(supabase, phone, locale)
     setSearched(true)
-    if (data) {
-      const name = [
-        (isRTL ? data.first_name_ar : data.first_name_en) || data.first_name_en,
-        (isRTL ? data.last_name_ar : data.last_name_en) || data.last_name_en,
-      ].filter(Boolean).join(' ')
-      setMatch({ profileId: data.id, name })
-    }
+    if (found) setMatch({ profileId: found.profileId, name: found.name })
     setBusy(false)
   }
 
@@ -127,7 +120,7 @@ export function GuardianPanel({
   }
 
   return (
-    <section className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="panel-guardians">
+    <section id="panel-guardians" className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="panel-guardians">
       <div className="mb-3 flex items-center justify-between">
         <h2 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <Users className="h-4 w-4 text-primary-600" /> {t('guardians')}
@@ -142,7 +135,7 @@ export function GuardianPanel({
       ) : (
         <ul className="space-y-2">
           {guardians.map((g) => (
-            <li key={g.linkId} className="flex items-center justify-between text-sm" data-testid="guardian-row">
+            <li key={g.linkId} className="flex flex-wrap items-center justify-between gap-2 text-sm" data-testid="guardian-row">
               <div>
                 <p className="font-medium text-gray-800">{g.name}{g.relationship ? ` (${g.relationship})` : ''}</p>
                 {g.phone && (
@@ -151,10 +144,15 @@ export function GuardianPanel({
                   </a>
                 )}
               </div>
-              <Button size="sm" variant="ghost" data-testid="guardian-unlink-btn" disabled={busy}
-                className="text-red-500 hover:bg-red-50" onClick={() => unlink(g.linkId)}>
-                <X className="h-3.5 w-3.5" /> {t('unlink')}
-              </Button>
+              <div className="flex items-center gap-1" data-testid="guardian-row-actions">
+                {/* MJ-1: give the guardian their own portal login (role 'parent'). The
+                    guardian is the family's door — this is the one credential the household needs. */}
+                <InviteButton kind="parent" id={g.profileId} name={g.name} locale={locale} phone={g.phone} />
+                <Button size="sm" variant="ghost" data-testid="guardian-unlink-btn" disabled={busy}
+                  className="text-red-500 hover:bg-red-50" onClick={() => unlink(g.linkId)}>
+                  <X className="h-3.5 w-3.5" /> {t('unlink')}
+                </Button>
+              </div>
             </li>
           ))}
         </ul>
