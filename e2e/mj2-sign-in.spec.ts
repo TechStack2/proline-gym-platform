@@ -1,6 +1,9 @@
 import { test, expect, type Browser } from '@playwright/test'
 import { randomUUID } from 'crypto'
 import { ROLES } from './roles'
+// The REAL app-side normalizer (not a copy) — so the MJ-2×MJ-1 equivalence test below
+// fails the moment lib/utils/phone.ts and the SQL normalize_lb_phone drift apart.
+import { phoneDigits } from '../src/lib/utils/phone'
 
 /**
  * MJ-2 SIGN-IN-SANE — deterministic phone sign-in + the member front door.
@@ -133,5 +136,36 @@ test('MJ-2 · a non-default gym landing shows the Member sign-in front door → 
       .toHaveCount(0)
   } finally {
     await ctx.close()
+  }
+})
+
+test('MJ-2×MJ-1 · normalize_lb_phone (SQL) === phoneDigits (TS) for every representative variant (drift guard)', async () => {
+  // RULING #1: the app-side canonical normalizer (lib/utils/phone.ts) and MJ-1's SQL
+  // mirror (normalize_lb_phone, 000094) MUST stay identical. Run representative shapes
+  // through BOTH — the real TS phoneDigits and the SQL function via RPC — and assert
+  // equality, so a future edit to either side can never silently diverge.
+  if (!URL || !KEY) throw new Error('MJ-2 equivalence test needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL')
+  const inputs = [
+    '03123456',            // local trunk-0 landline/short
+    '+9613123456',         // international +961
+    '009613123456',        // 00-international
+    '3123456',             // bare 7-digit national
+    '70123456',            // bare 8-digit mobile
+    '070123456',           // trunk-0 mobile
+    '+961 70 12 34 56',    // spaced international
+    '76-000-501',          // dashed local
+    '96170628601',         // bare, already country-coded
+    '+96176520000',        // canonical
+    '',                    // empty → ''
+    'abc',                 // no digits → ''
+    '+15551234567',        // foreign (not 961) → left as-is
+  ]
+  for (const raw of inputs) {
+    const res = await fetch(`${URL}/rest/v1/rpc/normalize_lb_phone`, {
+      method: 'POST', headers: H, body: JSON.stringify({ p_phone: raw }),
+    })
+    expect(res.ok, `normalize_lb_phone(${JSON.stringify(raw)}) is RPC-callable`).toBeTruthy()
+    const sql = ((await res.json()) as string) ?? ''
+    expect(sql, `SQL↔TS normalizer drift on ${JSON.stringify(raw)}`).toBe(phoneDigits(raw))
   }
 })
