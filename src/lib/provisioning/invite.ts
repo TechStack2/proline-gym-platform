@@ -14,6 +14,7 @@ import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { gymDisplayName } from '@/lib/whatsapp/identity'
+import { recordAudit } from '@/lib/audit/log'
 import { actionError } from '@/lib/errors/action-error';
 
 type InviteInput =
@@ -155,6 +156,19 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
   }
   if (inv) await admin.from('account_invites').update(invPayload).eq('id', inv.id)
   else await admin.from('account_invites').insert(invPayload)
+
+  // AUDIT PARITY (AUTH-DEPTH REQ3): record credential issuance — who granted portal
+  // access (and which role) to whom, in which gym. Best-effort, attributed to the
+  // inviting staff member + the target gym. Runs through the service-role client
+  // (auth.uid() is null here), so changed_by/gym_id are passed explicitly.
+  await recordAudit(admin, {
+    tableName: 'account_invites',
+    recordId: profileId,
+    operation: 'create',
+    gymId,
+    changedBy: user.id,
+    newData: { role, channel: 'whatsapp', reinvite: !!existing?.user },
+  })
 
   return { ok: true, tempPassword: temp, login, waPhone: phone, role, gymName }
 }

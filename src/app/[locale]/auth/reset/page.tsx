@@ -13,6 +13,8 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { PasswordStrengthHint } from '@/components/shared/password-strength'
+import { isPasswordValid, PASSWORD_MIN_LENGTH } from '@/lib/utils/password'
 import { Lock, Eye, EyeOff, CheckCircle2, Loader2, KeyRound } from 'lucide-react'
 
 type Props = { params: { locale: string } }
@@ -42,7 +44,8 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
     return () => sub.subscription.unsubscribe()
   }, [supabase])
 
-  const valid = pw.length >= 10 && pw === pw2
+  // AUTH-DEPTH: the same shared policy as the onboarding change-password step.
+  const valid = isPasswordValid(pw) && pw === pw2
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,9 +107,11 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
               disabled={loading}
               isRTL={isRTL}
             />
-            {pw.length > 0 && pw.length < 10 && (
+            {pw.length > 0 && pw.length < PASSWORD_MIN_LENGTH && (
               <p className="-mt-2 text-xs text-amber-600">{t('resetTooShort')}</p>
             )}
+            {/* AUTH-DEPTH: shared strength hint (non-blocking; `valid` is the gate). */}
+            <PasswordStrengthHint pw={pw} className="-mt-2" />
 
             <PasswordField
               id="reset-password2"

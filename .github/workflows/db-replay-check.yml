@@ -128,6 +128,21 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/ci/assert-auth-primitives.sql
           echo "✅ AUTH-PRIMITIVES proof GREEN — role + admin scope to profiles.gym_id."
 
+      - name: Assert every SECURITY DEFINER function's EXECUTE posture (DEFINER-POSTURE guard)
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y postgresql-client; fi
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          # AUTH-DEPTH (000096): a SECURITY DEFINER function bypasses RLS, so who may
+          # EXECUTE it is access control. This guard RAISEs (→ psql exits non-zero under
+          # ON_ERROR_STOP=1) if any public definer function is PUBLIC-executable (V1),
+          # lacks a pinned search_path (V2), or grants EXECUTE to anon while off the
+          # reviewed landing + RLS-helper allowlist (V3) — the Supabase anon default-
+          # privilege that made new staff RPCs anon-callable. Prints the full inventory
+          # + verdict per function to the run log.
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/ci/assert-definer-posture.sql
+          echo "✅ DEFINER-POSTURE guard GREEN — no PUBLIC/anon leak; every definer function pins search_path."
+
       - name: Stop the local stack
         if: always()
         run: supabase stop --no-backup || true

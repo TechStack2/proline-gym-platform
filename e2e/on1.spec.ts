@@ -71,6 +71,9 @@ async function completeOnboarding(page: Page, newPassword: string) {
   await pwField.click()
   await pwField.pressSequentially(newPassword, { delay: 25 })
   await expect(pwField, 'new-password holds focus across keystrokes — full value lands').toHaveValue(newPassword)
+  // AUTH-DEPTH REQ4: the shared set-password strength hint renders once a password is typed.
+  await expect(page.locator('[data-testid="password-strength"]:visible').first(),
+    'the shared password strength hint renders').toBeVisible()
   const pw2Field = w('ob-password2')
   await pw2Field.click()
   await pw2Field.pressSequentially(newPassword, { delay: 25 })

@@ -5,6 +5,12 @@
     "tagline": "Martial Arts Gym Management Platform",
     "loading": "Loading..."
   },
+  "password": {
+    "hint": "a longer passphrase is stronger",
+    "strengthWeak": "Weak",
+    "strengthFair": "Good",
+    "strengthStrong": "Strong"
+  },
   "auth": {
     "login": "Login",
     "logout": "Logout",
