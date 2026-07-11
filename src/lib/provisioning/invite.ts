@@ -26,7 +26,9 @@ type InviteInput =
 // known; the surface (buildWaLink) picks by the staff's locale.
 type GymName = { ar: string; en: string; fr: string }
 type InviteOk = { ok: true; tempPassword: string; login: string; waPhone: string; role: string; gymName: GymName }
-type InviteErr = { ok: false; error: string }
+// MJ-1: `holder` carries the name of the existing credentialed owner for the
+// `phone_taken` invariant, so the surface can say WHO already holds the phone.
+type InviteErr = { ok: false; error: string; holder?: string }
 
 const STAFF_ROLES = ['owner', 'head_coach', 'receptionist']
 
@@ -93,6 +95,14 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
   const { data: prof } = await supabase.from('profiles').select('phone').eq('id', profileId).maybeSingle()
   const phone = (prof?.phone ?? '').trim()
   if (!phone) return { ok: false, error: 'no_phone' }
+
+  // MJ-1 CREDENTIAL INVARIANT: a phone may back at most ONE login per gym. Login-less
+  // records (no auth user) may share a phone freely — the guard bites only here, at
+  // credential issuance. Ask the gym-scoped DEFINER checker whether another
+  // CREDENTIALED profile already holds this (normalized) number; if so, refuse before
+  // touching GoTrue so we never create a second login for a taken phone.
+  const { data: holder } = await supabase.rpc('credentialed_phone_owner', { p_phone: phone, p_exclude: profileId })
+  if (holder) return { ok: false, error: 'phone_taken', holder: holder as string }
 
   // CREDENTIAL SHAPE (live finding): this project has PHONE LOGINS DISABLED, so
   // a phone+password sign-in fails ("Phone logins are disabled"). Email logins

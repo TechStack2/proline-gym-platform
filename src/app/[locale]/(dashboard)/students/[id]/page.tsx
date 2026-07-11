@@ -14,7 +14,7 @@ import { GuardianPanel, type GuardianRow } from './guardian-panel'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { PromotePanel } from './promote-panel'
 import { MemberActions, type OpenInvoice, type PickableCamp, type PickableClass } from './member-actions'
-import { InviteButton } from '@/components/shared/invite-button'
+import { MemberPortalAccess } from './member-portal-access'
 import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel-client'
 import { MembershipCard, type MembershipCardData, type PlanOption } from './membership-card'
 import { getEnabledProducts } from '@/lib/gym/products'
@@ -76,7 +76,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     supabase
       .from('guardian_students')
       .select(`id, guardians:guardian_id (id, relationship_ar, relationship_en, relationship_fr,
-        profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
+        profiles:profile_id (id, first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone))`)
       .eq('student_id', id),
     supabase
       .from('student_memberships')
@@ -152,6 +152,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     return {
       linkId: g.id,
       guardianId: guard?.id,
+      profileId: one(guard?.profiles)?.id,
       name: localizedName(one(guard?.profiles), locale),
       phone: one(guard?.profiles)?.phone ?? null,
       relationship: rel,
@@ -446,8 +447,15 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               member; the old pills navigated to GLOBAL pages (/classes — the
               create-a-class page! — /payments/new, /pt) and dropped the member. */}
           <div className="flex flex-col items-end gap-2">
-            {/* ON-1: invite this member to the portal (external credential share) */}
-            <InviteButton kind="student" id={id} name={name} locale={locale} />
+            {/* ON-1 + MJ-1: invite this member to the portal — gated on portal-login
+                eligibility (staff override ?? age default). An ineligible minor points
+                staff to the guardian panel (the guardian is the family's door). */}
+            <MemberPortalAccess
+              studentId={id} name={name} locale={locale}
+              phone={prof?.phone ?? null}
+              override={(student as any).portal_login_override ?? null}
+              age={age}
+            />
             {/* F3: front-desk waiver capture when unsigned/outdated (staff signs on a tablet) */}
             {waiver.template && (waiver.state === 'unsigned' || waiver.state === 'outdated') && (
               <WaiverSign

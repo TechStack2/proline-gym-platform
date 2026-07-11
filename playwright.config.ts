@@ -545,6 +545,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MJ-1 FAMILY-DOOR: the family account model (guardian-first wizard, dual-hat,
+      // portal-login eligibility, invite-guardian + the one-login-per-phone invariant).
+      // Hermetic own gym; anchored with a leading slash so it never substring-collides.
+      name: 'family-mode',
+      dependencies: ['setup'],
+      testMatch: /\/family-mode\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // B3 (family/household): guardian switcher → request-for-kid → payer
       // invoice → household billing → desk payment + the RLS negative.
       // Switches roles internally (owner + parent).

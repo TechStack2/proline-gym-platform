@@ -79,6 +79,8 @@ export function InviteResultCard({ result, locale }: { result: InviteResult; loc
 type Props =
   | { kind: 'student'; id: string; name: string; locale: string; phone?: string | null; editHref?: string }
   | { kind: 'coach'; id: string; name: string; locale: string; phone?: string | null; editHref?: string }
+  // MJ-1: invite a GUARDIAN — `id` is their profile id; role 'parent' (INVITABLE_ROLES).
+  | { kind: 'parent'; id: string; name: string; locale: string; phone?: string | null; editHref?: string }
 
 // ERROR-COPY: invite.err owns the invite-specific keys (authz/target); any other key
 // (the stable keys from actionError) falls back to friendly, shared errors.* copy.
@@ -94,9 +96,15 @@ export function InviteButton({ kind, id, locale, phone, editHref }: Props) {
 
   const invite = async () => {
     setBusy(true); setError('')
-    const res = await inviteToPortal(kind === 'student' ? { studentId: id } : { coachId: id })
+    const res = await inviteToPortal(
+      kind === 'student' ? { studentId: id }
+        : kind === 'coach' ? { coachId: id }
+          : { profileId: id, role: 'parent' },
+    )
     setBusy(false)
     if (res.ok) setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName })
+    // MJ-1: the credential invariant carries WHO holds the phone → interpolate the name.
+    else if (res.error === 'phone_taken') setError(t('err.phone_taken', { name: res.holder || t('someoneElse') }))
     else setError(INVITE_ERR_KEYS.has(res.error) ? t(`err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error))
   }
 

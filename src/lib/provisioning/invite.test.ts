@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
  * sentinel on first use, so "reached the privileged path" is observable and
  * nothing real is ever created.
  */
-const state = { callerRole: 'receptionist' }
+const state = { callerRole: 'receptionist', phoneHolder: null as string | null }
 const adminTouched = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -33,6 +33,9 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       return q
     },
+    // MJ-1: the credential-invariant checker (credentialed_phone_owner). Returns the
+    // configured holder name (or null when the phone is free to credential).
+    rpc: async (fn: string) => (fn === 'credentialed_phone_owner' ? { data: state.phoneHolder } : { data: null }),
   }),
 }))
 
@@ -48,6 +51,7 @@ import { inviteToPortal } from './invite'
 beforeEach(() => {
   adminTouched.mockClear()
   state.callerRole = 'receptionist'
+  state.phoneHolder = null
 })
 
 describe('inviteToPortal runtime role allowlist', () => {
@@ -87,6 +91,24 @@ describe('inviteToPortal runtime role allowlist', () => {
     state.callerRole = 'owner'
     await expect(inviteToPortal({ profileId: 'target-1', role: 'receptionist' }))
       .rejects.toThrow('REACHED_ADMIN') // the sentinel: both gates passed
+    expect(adminTouched).toHaveBeenCalled()
+  })
+})
+
+describe('MJ-1 credential invariant (one login per phone per gym)', () => {
+  it('blocks the invite when another CREDENTIALED profile already holds the phone — no privileged call', async () => {
+    state.callerRole = 'owner'
+    state.phoneHolder = 'Rana Mourad' // a credentialed profile already owns this number
+    const res = await inviteToPortal({ profileId: 'target-1', role: 'parent' })
+    expect(res).toEqual({ ok: false, error: 'phone_taken', holder: 'Rana Mourad' })
+    expect(adminTouched, 'GoTrue is never touched when the phone is taken').not.toHaveBeenCalled()
+  })
+
+  it('lets the invite through when the phone is free (login-less holders do not count) → reaches the privileged path', async () => {
+    state.callerRole = 'owner'
+    state.phoneHolder = null // no CREDENTIALED holder → free to issue
+    await expect(inviteToPortal({ profileId: 'target-1', role: 'parent' }))
+      .rejects.toThrow('REACHED_ADMIN') // passed the invariant, reached GoTrue
     expect(adminTouched).toHaveBeenCalled()
   })
 })
