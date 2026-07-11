@@ -145,9 +145,13 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
         <p className="mt-4 mx-auto max-w-2xl text-lg sm:text-xl text-gray-300 leading-relaxed md:min-h-[3.5rem]">
           {t('subheadline')}
         </p>
-        <p className="mt-2 text-sm font-semibold tracking-wide text-gray-300">
-          {t('byline')}
-        </p>
+        {/* TENANT-CONTENT: the "by Fakih Brothers" byline is the Proline founders' credit —
+            default gym only, never on another tenant's hero. */}
+        {isDefault && (
+          <p className="mt-2 text-sm font-semibold tracking-wide text-gray-300">
+            {t('byline')}
+          </p>
+        )}
 
         {/* CTAs */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">

@@ -200,7 +200,7 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
       <ChampionsSection locale={locale} gymSlug={sectionSlug} />
       <CoachesSection locale={locale} gymSlug={sectionSlug} />
       <GallerySection locale={locale} gymSlug={sectionSlug} />
-      <WhySection locale={locale} />
+      <WhySection locale={locale} isDefault={isDefault} />
       <PricingSection locale={locale} gymSlug={sectionSlug} />
       <PtSection locale={locale} gymSlug={sectionSlug} />
       <CampsSection locale={locale} gymSlug={sectionSlug} />

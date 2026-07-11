@@ -93,7 +93,7 @@ export function FacilitySection({ locale, contact = EMPTY_CONTACT, isDefault = f
               {t('title')}
             </h2>
             <p className="mt-3 text-gray-500 leading-relaxed">
-              {t('subtitle')}
+              {isDefault ? t('subtitle') : t('subtitleAlt')}
             </p>
 
             <div className="mt-8 space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
