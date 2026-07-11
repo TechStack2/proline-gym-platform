@@ -48,6 +48,15 @@ async function loginAs(browser: Browser, role: 'owner' | 'student' | 'parent', l
 }
 const w = (page: Page, tid: string) => page.locator(`[data-testid="${tid}"]:visible`).first()
 
+// A portal modal can re-render mid-interaction; a bare fill occasionally doesn't
+// stick (→ an empty change-request payload). Retry until the value registers.
+async function robustFill(page: Page, tid: string, value: string) {
+  await expect(async () => {
+    await w(page, tid).fill(value)
+    await expect(w(page, tid)).toHaveValue(value, { timeout: 2_000 })
+  }).toPass({ timeout: 15_000 })
+}
+
 test.beforeAll(async () => {
   if (!URL || !KEY) throw new Error('SELF-SERVE needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL')
   const res = await fetch(`${URL}/rest/v1/rpc/seed_e2e_wl_gym`, {
@@ -117,7 +126,7 @@ test('SELF-SERVE · medical change request → staff approve → applied', async
     await m.page.goto('/en/portal/profile')
     await w(m.page, 'profile-change-open').click()
     await expect(w(m.page, 'profile-change-modal')).toBeVisible({ timeout: 10_000 })
-    await w(m.page, 'pc-medical').fill(note)
+    await robustFill(m.page, 'pc-medical', note)
     await m.page.screenshot({ path: 'screenshots/mj3-change-request.png', fullPage: true }).catch(() => {})
     await w(m.page, 'profile-change-submit').click()
     await expect(w(m.page, 'profile-change-pending')).toBeVisible({ timeout: 20_000 })
@@ -231,7 +240,7 @@ test('SELF-SERVE · guardian submits a change request for a linked kid', async (
     await expect(p.page.locator('[data-testid="profile-edit-contact"]')).toHaveCount(0)
     await w(p.page, 'profile-change-open').click()
     await expect(w(p.page, 'profile-change-modal')).toBeVisible({ timeout: 10_000 })
-    await w(p.page, 'pc-medical').fill(note)
+    await robustFill(p.page, 'pc-medical', note)
     await w(p.page, 'profile-change-submit').click()
     await expect(w(p.page, 'profile-change-pending')).toBeVisible({ timeout: 15_000 })
   } finally {
