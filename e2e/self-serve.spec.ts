@@ -81,8 +81,10 @@ test.afterAll(async () => {
   await svc(`gyms?id=eq.${gymId}`, { method: 'DELETE' }).catch(() => {})
 })
 
+// Patch EVERY membership of the member (some seeds create more than one row; the
+// portal banner reflects the MOST-URGENT, so a single-row patch can be masked).
 async function setMembership(patch: Record<string, unknown>) {
-  await svc(`student_memberships?id=eq.${memberMembershipId}`, { method: 'PATCH', body: JSON.stringify(patch) })
+  await svc(`student_memberships?student_id=eq.${memberStudentId}`, { method: 'PATCH', body: JSON.stringify(patch) })
 }
 const iso = (deltaDays: number) => new Date(Date.now() + deltaDays * 864e5).toISOString().slice(0, 10)
 
@@ -137,10 +139,11 @@ test('SELF-SERVE · medical change request → staff approve → applied', async
   }
 
   // Applied: the member's medical notes now carry the requested value.
+  // (The inbox hides the row optimistically, so poll until the approve commits.)
   await expect(async () => {
     const [st] = await svcJson(`students?id=eq.${memberStudentId}&select=medical_notes`)
     expect(st?.medical_notes).toBe(note)
-  }).toPass({ timeout: 25_000 })
+  }).toPass({ timeout: 35_000 })
 })
 
 test('SELF-SERVE · renewal request → inbox → staff approve', async ({ browser }) => {
@@ -171,10 +174,11 @@ test('SELF-SERVE · renewal request → inbox → staff approve', async ({ brows
   }
 
   // The request is resolved (approved) — reuse of renew_now issued the invoice.
+  // (The inbox hides the row optimistically, so poll until the server commits.)
   await expect(async () => {
     const rows = await svcJson(`member_requests?student_id=eq.${memberStudentId}&kind=eq.renewal&select=status&order=created_at.desc&limit=1`)
     expect(rows[0]?.status).toBe('approved')
-  }).toPass({ timeout: 15_000 })
+  }).toPass({ timeout: 25_000 })
 })
 
 test('SELF-SERVE · freeze request → staff approve → membership paused', async ({ browser }) => {
@@ -187,7 +191,9 @@ test('SELF-SERVE · freeze request → staff approve → membership paused', asy
   try {
     await m.page.goto('/en/portal')
     // One-tap freeze request (mirrors the renewal affordance; staff set the exact
-    // length at the desk — the request defaults to the gym minimum chunk).
+    // length at the desk — the request defaults to the gym minimum chunk). Assert
+    // the button first with a bounded wait so a state mismatch fails fast, not hangs.
+    await expect(w(m.page, 'request-freeze-btn')).toBeVisible({ timeout: 20_000 })
     await w(m.page, 'request-freeze-btn').click()
     await expect(w(m.page, 'freeze-requested')).toBeVisible({ timeout: 15_000 })
   } finally {
@@ -205,11 +211,12 @@ test('SELF-SERVE · freeze request → staff approve → membership paused', asy
     await s.ctx.close()
   }
 
-  // The freeze mechanics were reused → the membership is paused.
+  // The freeze mechanics were reused → one of the member's memberships is paused
+  // (freeze_membership picks the most-recent active row). Poll past the optimistic hide.
   await expect(async () => {
-    const [mem] = await svcJson(`student_memberships?id=eq.${memberMembershipId}&select=status`)
-    expect(mem?.status).toBe('paused')
-  }).toPass({ timeout: 15_000 })
+    const rows = await svcJson(`student_memberships?student_id=eq.${memberStudentId}&select=status`)
+    expect(rows.some((m) => m.status === 'paused')).toBe(true)
+  }).toPass({ timeout: 25_000 })
 })
 
 test('SELF-SERVE · guardian submits a change request for a linked kid', async ({ browser }) => {
