@@ -3139,7 +3139,11 @@
     "leadWillQueueOffline": "Offline — this lead will queue and sync on reconnect",
     "leadSaveOffline": "Save offline",
     "leadSavedOffline": "Saved offline · will sync",
-    "leadRecorded": "Lead captured"
+    "leadRecorded": "Lead captured",
+    "balanceOwed": "Balance owed",
+    "settled": "Settled",
+    "verifyBillingOnline": "Verify online for billing actions",
+    "activeClasses": "{n, plural, =0 {No active classes} one {# active class} other {# active classes}}"
   },
   "vendor": {
     "meta": {

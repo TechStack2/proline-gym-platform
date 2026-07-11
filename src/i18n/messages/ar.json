@@ -3139,7 +3139,11 @@
     "leadWillQueueOffline": "دون اتصال — سيُدرَج هذا العميل ويُزامَن عند عودة الاتصال",
     "leadSaveOffline": "حفظ دون اتصال",
     "leadSavedOffline": "حُفظ دون اتصال · ستتم المزامنة",
-    "leadRecorded": "تم تسجيل العميل"
+    "leadRecorded": "تم تسجيل العميل",
+    "balanceOwed": "الرصيد المستحق",
+    "settled": "مُسدَّد",
+    "verifyBillingOnline": "تحقق عبر الإنترنت لإجراءات الفوترة",
+    "activeClasses": "{n, plural, =0 {لا حصص فعّالة} one {حصة فعّالة} other {# حصص فعّالة}}"
   },
   "vendor": {
     "meta": {

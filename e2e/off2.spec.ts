@@ -110,6 +110,9 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
       await expect(basics.getByTestId('desk-basic-membership'), 'membership status from cache').toBeVisible()
       await expect(basics.getByTestId('desk-basic-pt'), 'PT remaining from cache').toBeVisible()
       await expect(basics.getByTestId('desk-basic-belt'), 'belt from cache').toBeVisible()
+      // OFF-5: the lookup also carries balance owed + active class registrations from the mirror.
+      await expect(basics.getByTestId('desk-basic-balance'), 'balance owed from cache').toBeVisible()
+      await expect(basics.getByTestId('desk-basic-classes'), 'active class registrations from cache').toBeVisible()
 
       // ── No write leakage: full-file/edit affordance is gated offline ──
       await expect(basics.getByTestId('needs-connection'), 'edit/full-file needs a connection offline').toBeVisible()
@@ -118,7 +121,10 @@ test.describe('OFF-2 · offline front-desk reads (Dexie mirror)', () => {
       // ── Today's schedule → roster, FROM THE DEXIE CACHE (drill a class that has
       //    a roster — the full-suite gym carries several Muay-Thai classes, only
       //    some enrolled, so don't blind-.first() onto a roster-less one). ──
-      await expect(vis(page, '[data-testid="desk-schedule-row"]').first(), "today's schedule from cache").toBeVisible({ timeout: 15_000 })
+      const schedRow = vis(page, '[data-testid="desk-schedule-row"]').first()
+      await expect(schedRow, "today's schedule from cache").toBeVisible({ timeout: 15_000 })
+      // OFF-5: the schedule row carries capacity vs enrolled from the mirror.
+      await expect(schedRow.getByTestId('desk-schedule-capacity'), 'capacity vs enrolled from cache').toBeVisible()
       expect(await openRosteredClass(page), 'a class roster renders from the cache offline').toBe(true)
 
       await ctx.setOffline(false)

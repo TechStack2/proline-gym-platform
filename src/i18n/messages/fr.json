@@ -3139,7 +3139,11 @@
     "leadWillQueueOffline": "Hors ligne — ce prospect sera mis en file et synchronisé à la reconnexion",
     "leadSaveOffline": "Enregistrer hors ligne",
     "leadSavedOffline": "Enregistré hors ligne · se synchronisera",
-    "leadRecorded": "Prospect enregistré"
+    "leadRecorded": "Prospect enregistré",
+    "balanceOwed": "Solde dû",
+    "settled": "Réglé",
+    "verifyBillingOnline": "Vérifiez en ligne pour les actions de facturation",
+    "activeClasses": "{n, plural, =0 {Aucun cours actif} one {# cours actif} other {# cours actifs}}"
   },
   "vendor": {
     "meta": {
