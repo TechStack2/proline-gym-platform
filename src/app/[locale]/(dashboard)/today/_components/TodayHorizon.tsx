@@ -12,7 +12,7 @@ import { getRenewalsDue } from '@/lib/pt/refill'
 import { RenewRowButton, ResumeRowButton } from '@/components/dashboard/lifecycle-buttons'
 import { membershipState } from '@/lib/lifecycle/status'
 import { getWinbackQueue } from '@/lib/finances/winback'
-import { getEnabledProducts } from '@/lib/gym/products'
+import { parseEnabledProducts } from '@/lib/gym/products'
 import { gymDisplayName } from '@/lib/whatsapp/identity'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import {
@@ -32,14 +32,6 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const t = await getTranslations('today')
   const tw = await getTranslations('whatsapp')
   const supabase = await createClient()
-  // PERF-SSR: both only need gymId + are independent → one wave, not two awaits.
-  //   NO-MEMBERSHIP: hide the membership horizon cards on gyms that don't sell it.
-  //   WL-TEMPLATES: the renewal wa.me shares greet with THIS gym's localized name.
-  const [products, { data: gymRow }] = await Promise.all([
-    getEnabledProducts(supabase, gymId),
-    supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle(),
-  ])
-  const gymName = gymDisplayName(gymRow, locale)
 
   const now = new Date()
   const dow = now.getDay() // 0=Sunday … 6=Saturday (class_schedules convention)
@@ -47,15 +39,25 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const horizonEnd = dayStart // operational lens = today only
   const hhmmNow = now.toTimeString().slice(0, 5)
 
+  // TODAY-DERISK: this component read the `gyms` table FOUR times (enabled_products,
+  // the wa-share name, the dunning/renewal policy, the PT-refill thresholds). Fold
+  // them into ONE PK read at the head of the first wave — every consumer derives from
+  // this single row (products gating, gymName, gymPolicyRow, refill thresholds).
   const [
+    { data: gymRow },
     { data: schedules },
     { count: regRequests },
     { count: ptRequests },
     { data: expiring },
-    { data: dueToday },
-    { data: overdueRaw },
+    { data: openInvoices },
     { data: ptSessions },
   ] = await Promise.all([
+    // ── 0. The single gyms row (was 4 separate reads) ──
+    supabase
+      .from('gyms')
+      .select('enabled_products, name_ar, name_en, name_fr, renewal_lead_days, dunning_grace_days, pt_refill_sessions_threshold, pt_refill_days_threshold')
+      .eq('id', gymId)
+      .maybeSingle(),
     // ── 1. Now/Next: today's recurring classes, gym-scoped + active ──
     supabase
       .from('class_schedules')
@@ -82,23 +84,18 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
       .gte('end_date', dayStart)
       .lte('end_date', horizonEnd)
       .order('end_date'),
-    // ── 4. Money: invoices due today (open) + overdue ──
+    // ── 4. Money: ONE invoices read (was two — due-today + overdue) covering every
+    //    open invoice due ≤ today; partitioned in JS below. due_date DESC + a generous
+    //    cap so today's due rows are never truncated ahead of the older overdue tail. ──
     supabase
       .from('invoices')
       .select(`id, invoice_number, total_usd, status, due_date,
         students (profiles:profile_id (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
       .eq('gym_id', gymId)
-      .gte('due_date', dayStart)
       .lte('due_date', horizonEnd)
-      .in('status', ['pending', 'partial'])
-      .order('due_date'),
-    supabase
-      .from('invoices')
-      .select('id, total_usd')
-      .eq('gym_id', gymId)
-      .lt('due_date', dayStart)
       .in('status', ['pending', 'partial', 'overdue'])
-      .limit(200),
+      .order('due_date', { ascending: false })
+      .limit(300),
     // ── 5. PT today (C1) ──
     supabase
       .from('pt_sessions')
@@ -109,6 +106,23 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
       .lt('scheduled_at', `${dayStart}T23:59:59`)
       .order('scheduled_at'),
   ])
+
+  // Derive everything the 4 former gyms reads fed, from the single row above.
+  const products = parseEnabledProducts((gymRow as { enabled_products?: unknown } | null)?.enabled_products)
+  const gymName = gymDisplayName(gymRow, locale)
+  const gymPolicyRow = (gymRow ?? {}) as { renewal_lead_days?: number | null; dunning_grace_days?: number | null }
+  const refillThresholds = {
+    sessions: (gymRow as { pt_refill_sessions_threshold?: number | null } | null)?.pt_refill_sessions_threshold ?? 2,
+    days: (gymRow as { pt_refill_days_threshold?: number | null } | null)?.pt_refill_days_threshold ?? 7,
+  }
+
+  // Partition the merged invoices: due-today = pending/partial dated today; overdue =
+  // anything dated before today (matches the former two reads' predicates exactly).
+  const allOpenInvoices = ((openInvoices ?? []) as any[])
+  const dueToday = allOpenInvoices
+    .filter((i) => i.due_date >= dayStart && i.due_date <= horizonEnd && (i.status === 'pending' || i.status === 'partial'))
+    .sort((a, b) => (a.due_date < b.due_date ? -1 : a.due_date > b.due_date ? 1 : 0))
+  const overdueRaw = allOpenInvoices.filter((i) => i.due_date < dayStart)
 
   const todayClasses = (schedules ?? [])
     .map((s: any) => ({ ...s, cls: one(s.classes) }))
@@ -121,16 +135,17 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const allOpenIds = [...dueIds, ...overIds]
 
   // PERF-2: one parallel wave for every INDEPENDENT read — enrollments, open-invoice
-  // payments, the drawer tally, PT refills, live camps, the dunning policy, the chase
-  // + paused membership lists, and the win-back queue. Only the camp roster→invoice
-  // chain below stays sequential (each step feeds the next). Was ~9 serial round-trips.
+  // payments, the drawer tally, PT refills, live camps, the chase + paused membership
+  // lists, and the win-back queue. Only the camp roster→invoice chain below stays
+  // sequential (each step feeds the next). TODAY-DERISK: the dunning/renewal policy
+  // read is gone (it now comes off the single gyms row above), and PT refills reuse
+  // that row's thresholds instead of re-reading gyms.
   const [
     { data: enrollments },
     { data: pays },
     tally,
     renewals,
     { data: liveCamps },
-    { data: gymPolicyRow },
     { data: chaseRaw },
     { data: pausedRaw },
     winbackQueue,
@@ -142,7 +157,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
       ? supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', allOpenIds)
       : Promise.resolve({ data: [] as { invoice_id: string; amount_usd: number | null }[] }),
     getDailyTally(supabase, dayStart),
-    getRenewalsDue(supabase, gymId, locale),
+    getRenewalsDue(supabase, gymId, locale, refillThresholds),
     supabase
       .from('camps')
       .select('id, name_ar, name_en, name_fr, max_capacity')
@@ -151,8 +166,6 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
       .in('status', ['open', 'in_progress', 'full'])
       .lte('start_date', horizonEnd)
       .gte('end_date', dayStart),
-    supabase
-      .from('gyms').select('renewal_lead_days, dunning_grace_days').eq('id', gymId).single(),
     supabase
       .from('student_memberships')
       .select(`id, end_date, status, pause_end_date,

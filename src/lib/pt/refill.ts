@@ -24,14 +24,25 @@ export async function getRenewalsDue(
   supabase: SupabaseClient<any>,
   gymId: string,
   locale: string,
+  // TODAY-DERISK: callers that already hold the gym row (e.g. TodayHorizon reads gyms
+  // ONCE) pass the thresholds in to skip this helper's own gyms round-trip. Omitted →
+  // the read happens here as before (Inbox and any other caller are unchanged).
+  thresholds?: { sessions: number; days: number },
 ): Promise<RenewalDueRow[]> {
-  const { data: gym } = await supabase
-    .from('gyms')
-    .select('pt_refill_sessions_threshold, pt_refill_days_threshold')
-    .eq('id', gymId)
-    .single()
-  const thrSessions = gym?.pt_refill_sessions_threshold ?? 2
-  const thrDays = gym?.pt_refill_days_threshold ?? 7
+  let thrSessions: number
+  let thrDays: number
+  if (thresholds) {
+    thrSessions = thresholds.sessions
+    thrDays = thresholds.days
+  } else {
+    const { data: gym } = await supabase
+      .from('gyms')
+      .select('pt_refill_sessions_threshold, pt_refill_days_threshold')
+      .eq('id', gymId)
+      .single()
+    thrSessions = gym?.pt_refill_sessions_threshold ?? 2
+    thrDays = gym?.pt_refill_days_threshold ?? 7
+  }
 
   const { data: rows } = await supabase
     .from('pt_assignments')
