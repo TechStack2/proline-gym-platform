@@ -20,6 +20,11 @@ import { vis, untilConsistent } from './helpers'
  * SW e2e per the established rules — real controller waits, no page.route hacks; the
  * offline door + warm are proven via the actual caches. Reuses the G2 setOffline
  * harness; isolated owner contexts. Every wait is BOUNDED.
+ *
+ * OFF-5 (STAFF-OFFLINE) extends this file: the offline desk gets EYES — an offline
+ * lookup by normalized phone surfaces membership STATE + balance owed + active class
+ * registrations + PT; today's schedule shows coach + capacity vs enrolled; and the
+ * login-prime footprint delta (adds only `coaches`) is measured off the real mirror.
  */
 async function ownerPage(browser: Browser, locale = 'en') {
   const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale })
@@ -111,6 +116,58 @@ async function openRosteredClass(page: Page): Promise<boolean> {
   return false
 }
 
+/** OFF-5: issue a throwaway membership invoice for Karim (on /en — the member
+ *  dropdown is localized) so the offline balance-owed read has something to net. */
+async function issueForKarim(page: Page, amountUsd: number) {
+  await page.goto('/en/invoices/new')
+  const karim = await page.locator('[data-testid="inv-student"] option', { hasText: 'Karim' }).first().getAttribute('value')
+  expect(karim, 'Karim in the member dropdown').toBeTruthy()
+  await vis(page, '[data-testid="inv-student"]').selectOption(karim!)
+  await vis(page, '[data-testid="inv-type"]').selectOption('membership')
+  await vis(page, '[data-testid="inv-amount-usd"]').fill(String(amountUsd))
+  await vis(page, '[data-testid="issue-submit"]').click()
+  await expect(vis(page, '[data-testid="invoice-number"]')).toBeVisible({ timeout: 15_000 })
+}
+
+type Footprint = {
+  per: Record<string, { rows: number; bytes: number }>
+  off4: { rows: number; bytes: number }; off5: { rows: number; bytes: number }
+  delta: { rows: number; bytes: number }
+}
+
+/** OFF-5 req-4: measure the REAL primed mirror payload (rows + serialized bytes) per
+ *  CORE table, straight off Dexie, comparing the OFF-4 table set to the OFF-5 set
+ *  (which adds `coaches`). The delta is exactly the coaches table — the login prime
+ *  must stay unnoticeable. */
+async function deskFootprint(page: Page): Promise<Footprint> {
+  const OFF4 = ['profiles', 'students', 'classes', 'class_schedules', 'class_enrollments', 'student_memberships', 'pt_assignments', 'invoices', 'payments']
+  const OFF5 = [...OFF4, 'coaches']
+  return page.evaluate((sets) => new Promise<Footprint>((resolve) => {
+    const open = indexedDB.open('proline_offline_db')
+    open.onsuccess = () => {
+      const db = open.result
+      const all = Array.from(new Set([...sets.off4, ...sets.off5]))
+      const per: Record<string, { rows: number; bytes: number }> = {}
+      let done = 0
+      const finish = () => {
+        if (++done < all.length) return
+        const sum = (list: string[]) => list.reduce((a, t) => ({ rows: a.rows + (per[t]?.rows || 0), bytes: a.bytes + (per[t]?.bytes || 0) }), { rows: 0, bytes: 0 })
+        const off4 = sum(sets.off4), off5 = sum(sets.off5)
+        db.close()
+        resolve({ per, off4, off5, delta: { rows: off5.rows - off4.rows, bytes: off5.bytes - off4.bytes } })
+      }
+      for (const t of all) {
+        try {
+          const req = db.transaction(t, 'readonly').objectStore(t).getAll()
+          req.onsuccess = () => { const rows = req.result || []; per[t] = { rows: rows.length, bytes: JSON.stringify(rows).length }; finish() }
+          req.onerror = () => { per[t] = { rows: -1, bytes: 0 }; finish() }
+        } catch { per[t] = { rows: -1, bytes: 0 }; finish() }
+      }
+    }
+    open.onerror = () => resolve({ per: {}, off4: { rows: -1, bytes: 0 }, off5: { rows: -1, bytes: 0 }, delta: { rows: 0, bytes: 0 } })
+  }), { off4: OFF4, off5: OFF5 })
+}
+
 test.describe('OFF-4 · offline door (reachable, primed, honest)', () => {
   test('offline navigation to an uncached route serves the branded fallback + deep-links to /desk', async ({ browser }) => {
     test.setTimeout(150_000)
@@ -194,7 +251,18 @@ test.describe('OFF-4 · offline door (reachable, primed, honest)', () => {
         await expect(vis(cold, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first(),
           'the primed mirror finds the member offline').toBeVisible({ timeout: 20_000 })
         await vis(cold, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first().click()
-        await expect(vis(cold, '[data-testid="desk-member-basics"]').first()).toBeVisible({ timeout: 15_000 })
+        const basics = vis(cold, '[data-testid="desk-member-basics"]').first()
+        await expect(basics).toBeVisible({ timeout: 15_000 })
+        // OFF-5: the offline lookup shows the staff-floor essentials from the mirror —
+        // membership STATE, balance owed, active class registrations, PT.
+        await expect(basics.getByTestId('desk-basic-membership'), 'membership state from mirror').toBeVisible()
+        await expect(basics.getByTestId('desk-basic-balance'), 'balance owed from the reconcile lib over the mirror').toBeVisible()
+        await expect(basics.getByTestId('desk-basic-classes'), 'active class registrations from the mirror').toBeVisible()
+        await expect(basics.getByTestId('desk-basic-pt'), 'PT remaining from the mirror').toBeVisible()
+        // OFF-5: today's schedule carries coach + capacity vs enrolled, from the mirror.
+        const row = vis(cold, '[data-testid="desk-schedule-row"]').first()
+        await expect(row, "today's schedule renders offline").toBeVisible({ timeout: 15_000 })
+        await expect(row.getByTestId('desk-schedule-capacity'), 'capacity vs enrolled from the mirror').toBeVisible()
         expect(await openRosteredClass(cold), 'a class roster renders from the primed cache offline').toBe(true)
       } finally {
         await cold.close()
@@ -223,6 +291,80 @@ test.describe('OFF-4 · offline door (reachable, primed, honest)', () => {
       const deskLink = vis(page, '[data-testid="offline-desk-link"]').first()
       await expect(deskLink).toHaveAttribute('href', '/ar/desk')
       await expect(deskLink, 'the CTA is Arabic, not a raw key').toContainText('الاستقبال')
+    } finally {
+      await ctx.setOffline(false)
+      await ctx.close()
+    }
+  })
+
+  // ── OFF-5 STAFF-OFFLINE: the offline desk gets eyes ──
+  test('OFF-5 · offline lookup by phone → status + balance + classes; schedule shows coach + capacity; prime footprint measured', async ({ browser }) => {
+    test.setTimeout(240_000)
+    const { ctx, page } = await ownerPage(browser)
+    try {
+      // Give Karim an open balance to net offline.
+      await issueForKarim(page, 40)
+
+      // Prime the mirror deterministically via the desk's own "Sync now" (a full
+      // pullAll), and confirm Karim (found BY NORMALIZED PHONE) + his invoice mirrored
+      // ONLINE before going offline.
+      await page.goto('/en/desk')
+      await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 15_000 })
+      await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 45_000 }).catch(() => {})
+      const syncBtn = vis(page, '[data-testid="desk-sync-now"]').first()
+      await untilConsistent(async () => {
+        await expect(syncBtn, 'sync-now ready').toBeEnabled({ timeout: 10_000 })
+        await syncBtn.click()
+        await expect(syncBtn, 'prime running').toBeDisabled({ timeout: 4_000 }).catch(() => {})
+        await expect(syncBtn, 'prime settled').toBeEnabled({ timeout: 20_000 })
+        // phone search (normalized) finds Karim from the mirror
+        await vis(page, '[data-testid="desk-search"]').first().fill('70000001')
+        await expect(vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first(),
+          'normalized-phone search finds Karim from the mirror').toBeVisible({ timeout: 5_000 })
+      }, { timeout: 90_000 })
+
+      // REQ-4 FOOTPRINT: measure the real primed payload (rows + bytes) per table.
+      const fp = await deskFootprint(page)
+      console.log('[OFF-5 FOOTPRINT] ' + JSON.stringify({ off4: fp.off4, off5: fp.off5, delta: fp.delta, coaches: fp.per.coaches, per: fp.per }))
+      expect(fp.per.coaches?.rows ?? -1, 'coaches mirrored by the login prime').toBeGreaterThan(0)
+      expect(fp.delta.rows, 'the OFF-5 prime delta is EXACTLY the coaches table').toBe(fp.per.coaches.rows)
+      expect(fp.off5.bytes, 'the full primed mirror stays bounded (< 2 MB on a seeded gym)').toBeLessThan(2_000_000)
+
+      // Page-cache the desk under control, then go OFFLINE and commit it.
+      await page.reload()
+      await page.waitForLoadState('networkidle').catch(() => {})
+      await ctx.setOffline(true)
+      await untilConsistent(async () => {
+        await page.reload()
+        await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 10_000 })
+      }, { timeout: 60_000 })
+      await untilConsistent(async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+        await expect(vis(page, '[data-testid="desk-sync-now"]').first(), 'offline committed').toBeDisabled({ timeout: 2_000 })
+      }, { timeout: 30_000, intervals: [500, 1_000, 2_000] })
+
+      // OFFLINE LOOKUP by normalized phone → the staff-floor essentials from the mirror.
+      await vis(page, '[data-testid="desk-search"]').first().fill('70000001')
+      await vis(page, '[data-testid="desk-member-result"]').filter({ hasText: 'Karim' }).first().click()
+      const basics = vis(page, '[data-testid="desk-member-basics"]').first()
+      await expect(basics).toBeVisible({ timeout: 15_000 })
+      await expect(basics.getByTestId('desk-basic-membership'), 'membership STATE offline').toBeVisible()
+      const balance = basics.getByTestId('desk-basic-balance')
+      await expect(balance, 'balance owed offline (reconcile over mirror)').toBeVisible()
+      await expect(balance, 'shows a $ balance owed (the invoice we just issued)').toContainText(/\$\d/)
+      await expect(basics.getByTestId('desk-balance-hint'), 'honest "verify online for billing" hint').toBeVisible()
+      await expect(basics.getByTestId('desk-basic-classes'), 'active class registrations offline').toBeVisible()
+      await expect(basics.getByTestId('desk-basic-pt'), 'PT remaining offline').toBeVisible()
+      // Screenshots land in screenshots/ — the e2e.yml "Upload screenshots" step (if:always)
+      // uploads that dir as the `e2e-screenshots` artifact for the visual review.
+      await page.screenshot({ path: 'screenshots/off5-lookup.png', fullPage: true })
+
+      // Today's schedule: coach + capacity vs enrolled from the mirror.
+      const row = vis(page, '[data-testid="desk-schedule-row"]').first()
+      await expect(row, "today's schedule offline").toBeVisible({ timeout: 15_000 })
+      await expect(row.getByTestId('desk-schedule-capacity'), 'capacity vs enrolled offline').toBeVisible()
+      await row.click()
+      await page.screenshot({ path: 'screenshots/off5-schedule.png', fullPage: true })
     } finally {
       await ctx.setOffline(false)
       await ctx.close()

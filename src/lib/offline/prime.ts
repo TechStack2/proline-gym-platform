@@ -24,11 +24,14 @@ import { getSyncEngine } from '@/lib/db/sync-engine'
 
 // The front-desk core the offline desk reads. Kept light so the prime doesn't
 // contend with the rest of the app. `invoices`/`payments` back the OFF-3 offline
-// record-payment balances.
+// record-payment balances + the OFF-5 balance-owed read; `coaches` gives today's
+// schedule its coach name (class.coach_id → coaches.profile_id → the mirrored
+// profile). `coaches` is a tiny per-gym table — negligible prime footprint (OFF-5
+// req-4 payload-delta measurement).
 export const CORE_TABLES = [
   'profiles', 'students', 'classes', 'class_schedules',
   'class_enrollments', 'student_memberships', 'pt_assignments',
-  'invoices', 'payments',
+  'invoices', 'payments', 'coaches',
 ] as const
 
 // ─── Dexie mirror prime (shared, throttled) ───────────────────────────────

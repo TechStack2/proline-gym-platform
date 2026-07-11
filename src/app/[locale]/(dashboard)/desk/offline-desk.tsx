@@ -25,8 +25,13 @@ import { saveAttendance } from '@/app/[locale]/coach/attendance/actions'
 import { recordPayment, getInvoiceState, discardOfflinePayment } from '../invoices/actions'
 import { addLead, discardOfflineLead } from '../leads/actions'
 import { dateLocale } from '@/lib/utils/locale-format'
+// OFF-5: reuse the read-time status + reconcile libs against the MIRRORED rows, and
+// the MJ-2 canonical phone normalizer — so offline lookups match the online surfaces.
+import { membershipState, type MembershipState } from '@/lib/lifecycle/status'
+import { outstandingUsd } from '@/lib/billing/reconcile'
+import { phoneDigits } from '@/lib/utils/phone'
 import { RecordPaymentForm, PendingSyncBar, CaptureLeadForm, type DeskInvoice } from './desk-payments'
-import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff, Receipt } from 'lucide-react'
+import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff, Receipt, User, Wallet, Info, ClipboardList } from 'lucide-react'
 
 type Row = Record<string, any>
 type DeskData = {
@@ -35,6 +40,8 @@ type DeskData = {
   ptByStudent: Map<string, Row[]>
   schedules: Row[]; classesById: Map<string, Row>
   enrollmentsByClass: Map<string, Row[]>
+  enrollmentsByStudent: Map<string, Row[]>
+  coachesById: Map<string, Row>
   invoicesByStudent: Map<string, Row[]>
   paymentsByInvoice: Map<string, Row[]>
   cachedAt: string | null
@@ -57,7 +64,27 @@ const flushHandlers = {
 const lname = (r: Row | undefined, base: string, locale: string): string =>
   (r?.[`${base}_${locale}`] || r?.[`${base}_en`] || '') as string
 
+// OFF-5: tolerant front-desk phone match — partial raw-digit inclusion OR canonical
+// normalization (via MJ-2's phoneDigits, the same rule as SQL normalize_lb_phone), so
+// "70 000 001" and "+96170000001" both find the member. Blank query → no match.
+const phoneMatches = (stored: string | null | undefined, query: string): boolean => {
+  const rawQ = query.replace(/\D/g, '')
+  if (!rawQ) return false
+  const rawS = (stored ?? '').replace(/\D/g, '')
+  return rawS.includes(rawQ) || phoneDigits(stored).includes(phoneDigits(query))
+}
+
 const beltLabel = (r?: string | null) => (r ? r.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—')
+
+// OFF-5: membership-state badge colours (matches the lifecycle.state labels).
+const STATUS_BADGE_CLS: Record<MembershipState, string> = {
+  active: 'bg-green-100 text-green-800',
+  expiring: 'bg-amber-100 text-amber-800',
+  overdue: 'bg-red-100 text-red-700',
+  lapsed: 'bg-red-100 text-red-700',
+  frozen: 'bg-blue-100 text-blue-700',
+  none: 'bg-gray-100 text-gray-600',
+}
 
 // OFF-2/OFF-4: the mirror prime (CORE_TABLES + primeDeskMirror) now lives in the
 // shared @/lib/offline/prime module so the FrontDeskOfflineLayer (login-level,
@@ -66,6 +93,7 @@ const beltLabel = (r?: string | null) => (r ? r.replace(/_/g, ' ').replace(/\b\w
 
 export function OfflineDesk({ locale, showMembership = true }: { locale: string; showMembership?: boolean }) {
   const t = useTranslations('desk')
+  const tState = useTranslations('lifecycle.state')
   const isRTL = locale === 'ar'
   const online = useOnline()
   const [data, setData] = useState<DeskData | null>(null)
@@ -79,25 +107,30 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
     setLoading(true)
     try {
       const db = getOfflineDB()
-      const [students, profilesArr, memberships, pts, schedules, classesArr, enrollments, invoicesArr, paymentsArr, meta] = await Promise.all([
+      const [students, profilesArr, memberships, pts, schedules, classesArr, enrollments, invoicesArr, paymentsArr, coachesArr, meta] = await Promise.all([
         db.students.toArray(), db.profiles.toArray(), db.student_memberships.toArray(),
         db.pt_assignments.toArray(), db.class_schedules.toArray(), db.classes.toArray(),
-        db.class_enrollments.toArray(), db.invoices.toArray(), db.payments.toArray(), db.sync_metadata.toArray(),
+        db.class_enrollments.toArray(), db.invoices.toArray(), db.payments.toArray(), db.coaches.toArray(), db.sync_metadata.toArray(),
       ])
       const profiles = new Map(profilesArr.map((p: Row) => [p.id, p]))
       const classesById = new Map(classesArr.map((c: Row) => [c.id, c]))
+      const coachesById = new Map(coachesArr.map((c: Row) => [c.id, c]))
       const membershipsByStudent = new Map<string, Row[]>()
       for (const m of memberships as Row[]) (membershipsByStudent.get(m.student_id) ?? membershipsByStudent.set(m.student_id, []).get(m.student_id)!).push(m)
       const ptByStudent = new Map<string, Row[]>()
       for (const p of pts as Row[]) (ptByStudent.get(p.student_id) ?? ptByStudent.set(p.student_id, []).get(p.student_id)!).push(p)
       const enrollmentsByClass = new Map<string, Row[]>()
-      for (const e of enrollments as Row[]) (enrollmentsByClass.get(e.class_id) ?? enrollmentsByClass.set(e.class_id, []).get(e.class_id)!).push(e)
+      const enrollmentsByStudent = new Map<string, Row[]>()
+      for (const e of enrollments as Row[]) {
+        (enrollmentsByClass.get(e.class_id) ?? enrollmentsByClass.set(e.class_id, []).get(e.class_id)!).push(e)
+        ;(enrollmentsByStudent.get(e.student_id) ?? enrollmentsByStudent.set(e.student_id, []).get(e.student_id)!).push(e)
+      }
       const invoicesByStudent = new Map<string, Row[]>()
       for (const inv of invoicesArr as Row[]) (invoicesByStudent.get(inv.student_id) ?? invoicesByStudent.set(inv.student_id, []).get(inv.student_id)!).push(inv)
       const paymentsByInvoice = new Map<string, Row[]>()
       for (const p of paymentsArr as Row[]) (paymentsByInvoice.get(p.invoice_id) ?? paymentsByInvoice.set(p.invoice_id, []).get(p.invoice_id)!).push(p)
       const cachedAt = (meta as Row[]).map((m) => m.last_synced_at).filter(Boolean).sort().pop() ?? null
-      setData({ students: students as Row[], profiles, membershipsByStudent, ptByStudent, schedules: schedules as Row[], classesById, enrollmentsByClass, invoicesByStudent, paymentsByInvoice, cachedAt })
+      setData({ students: students as Row[], profiles, membershipsByStudent, ptByStudent, schedules: schedules as Row[], classesById, coachesById, enrollmentsByClass, enrollmentsByStudent, invoicesByStudent, paymentsByInvoice, cachedAt })
     } finally {
       setLoading(false)
     }
@@ -198,14 +231,17 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
     return [lname(p, 'first_name', locale), lname(p, 'last_name', locale)].filter(Boolean).join(' ').trim()
   }, [data, locale])
 
-  // ── Member search ──
+  // ── Member search (OFF-5: ANY member by name OR normalized phone) ──
   const results = useMemo(() => {
     if (!data || !q.trim()) return [] as Row[]
-    const needle = q.trim().toLowerCase()
+    const query = q.trim()
+    const needle = query.toLowerCase()
     return data.students
       .filter((s) => s.is_active !== false)
       .map((s) => ({ s, name: memberName(s), phone: (data.profiles.get(s.profile_id)?.phone ?? '') as string }))
-      .filter((r) => r.name.toLowerCase().includes(needle) || r.phone.includes(needle))
+      // Phone matches through the canonical normalizer (partial digits + +961/00/0
+      // formatting variants), so "70 000 001" and "+96170000001" both find the member.
+      .filter((r) => r.name.toLowerCase().includes(needle) || phoneMatches(r.phone, query))
       .slice(0, 12)
   }, [data, q, memberName])
 
@@ -219,16 +255,33 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
     const activeMs = ms.find((m) => m.status === 'active') ?? ms[0]
     const pt = (data.ptByStudent.get(s.id) ?? []).filter((a) => a.is_active !== false)
     const ptRemaining = pt.reduce((n, a) => n + (Number(a.sessions_remaining) || 0), 0)
+    // OFF-5: read-time membership STATE (active/expiring/overdue/lapsed/frozen/none)
+    // from the mirrored row — the same honest computation as the online surfaces.
+    const status: MembershipState = membershipState(activeMs as any, {})
+    // OFF-5: balance OWED via the reconcile lib against the mirrored invoices/payments.
+    const memberInvoices = (data.invoicesByStudent.get(s.id) ?? [])
+    const memberPayments = memberInvoices.flatMap((inv) => data.paymentsByInvoice.get(inv.id) ?? [])
+    const balanceOwed = outstandingUsd(
+      memberInvoices.map((inv) => ({ id: inv.id, status: inv.status, total_usd: Number(inv.total_usd ?? 0) })),
+      memberPayments.map((pay) => ({ invoice_id: pay.invoice_id, amount_usd: Number(pay.amount_usd ?? 0) })),
+    )
+    // OFF-5: the member's ACTIVE class registrations (names) from the mirror.
+    const activeClasses = (data.enrollmentsByStudent.get(s.id) ?? [])
+      .filter((e) => e.is_active !== false)
+      .map((e) => lname(data.classesById.get(e.class_id), 'name', locale))
+      .filter((name, i, arr) => name && arr.indexOf(name) === i)
     return {
       name: memberName(s),
       phone: (p?.phone ?? '') as string,
-      membership: activeMs?.status ?? 'none',
+      status,
       membershipEnd: activeMs?.end_date ?? null,
+      balanceOwed,
+      activeClasses,
       ptRemaining,
       belt: s.current_belt_rank as string | null,
       id: s.id,
     }
-  }, [data, selectedStudent, memberName])
+  }, [data, selectedStudent, memberName, locale])
 
   // ── OFF-3: the selected member's open invoices (balance from cached payments) ──
   const openInvoices = useMemo(() => {
@@ -247,15 +300,20 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
       .filter((i) => i.balance_usd > 0.001)
   }, [data, selectedStudent])
 
-  // ── Today's schedule ──
+  // ── Today's schedule (OFF-5: + coach name + capacity vs enrolled, from the mirror) ──
   const todaySchedule = useMemo(() => {
-    if (!data) return [] as { id: string; classId: string; name: string; room: string; start: string; end: string }[]
+    if (!data) return [] as { id: string; classId: string; name: string; room: string; start: string; end: string; coach: string; enrolled: number; capacity: number | null }[]
     const dow = new Date().getDay()
     return data.schedules
       .filter((sc) => Number(sc.day_of_week) === dow && sc.is_active !== false)
       .map((sc) => {
         const c = data.classesById.get(sc.class_id)
-        return { id: sc.id, classId: sc.class_id, name: c ? lname(c, 'name', locale) : '—', room: (c?.room ?? '') as string, start: (sc.start_time ?? '').slice(0, 5), end: (sc.end_time ?? '').slice(0, 5) }
+        // coach: class.coach_id → coaches.profile_id → the mirrored profile name.
+        const coachProfile = c?.coach_id ? data.profiles.get(data.coachesById.get(c.coach_id)?.profile_id) : undefined
+        const coach = coachProfile ? [lname(coachProfile, 'first_name', locale), lname(coachProfile, 'last_name', locale)].filter(Boolean).join(' ').trim() : ''
+        const enrolled = (data.enrollmentsByClass.get(sc.class_id) ?? []).filter((e) => e.is_active !== false).length
+        const capacity = c?.max_capacity != null ? Number(c.max_capacity) : null
+        return { id: sc.id, classId: sc.class_id, name: c ? lname(c, 'name', locale) : '—', room: (c?.room ?? '') as string, start: (sc.start_time ?? '').slice(0, 5), end: (sc.end_time ?? '').slice(0, 5), coach, enrolled, capacity }
       })
       .sort((a, b) => a.start.localeCompare(b.start))
   }, [data, locale])
@@ -337,12 +395,12 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                 <div className="mt-2 space-y-1.5 text-sm text-gray-700">
                   {basics.phone && <p className="inline-flex items-center gap-1.5" data-testid="desk-basic-phone"><Phone className="h-3.5 w-3.5 text-gray-400" /><span dir="ltr">{basics.phone}</span></p>}
                   <p className="flex flex-wrap items-center gap-1.5">
-                    {/* NO-MEMBERSHIP-GAPS: a classes+PT gym has no membership state to badge. */}
+                    {/* OFF-5: honest read-time membership STATE (active/expiring/overdue/
+                        lapsed/frozen). NO-MEMBERSHIP-GAPS: a classes+PT gym has none to badge. */}
                     {showMembership && (
-                    <span data-testid="desk-basic-membership" data-status={basics.membership}
-                      className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                        basics.membership === 'active' ? 'bg-green-100 text-green-800' : basics.membership === 'none' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-800')}>
-                      {t(`membership.${basics.membership === 'active' ? 'active' : basics.membership === 'none' ? 'none' : 'inactive'}`)}
+                    <span data-testid="desk-basic-membership" data-status={basics.status}
+                      className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLS[basics.status])}>
+                      {tState(basics.status)}
                     </span>
                     )}
                     <span data-testid="desk-basic-pt" className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
@@ -351,6 +409,31 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                     <span data-testid="desk-basic-belt" className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
                       <Award className="h-3 w-3" /> {beltLabel(basics.belt)}
                     </span>
+                    {/* OFF-5: the member's active class registrations (count + names on hover). */}
+                    <span data-testid="desk-basic-classes" data-count={basics.activeClasses.length}
+                      title={basics.activeClasses.join(', ')}
+                      className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                      <ClipboardList className="h-3 w-3" /> {t('activeClasses', { n: basics.activeClasses.length })}
+                    </span>
+                  </p>
+                  {basics.activeClasses.length > 0 && (
+                    <p className="text-xs text-gray-500" data-testid="desk-basic-class-names">{basics.activeClasses.join(' · ')}</p>
+                  )}
+                  {/* OFF-5: balance OWED (reconcile lib over the mirror) + the honest
+                      "verify online for billing actions" hint. No offline financial mutation
+                      beyond the existing provisional-cash path below. */}
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-0.5" data-testid="desk-basic-balance" data-balance={basics.balanceOwed}>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                      <Wallet className="h-3.5 w-3.5 text-gray-400" />
+                      {basics.balanceOwed > 0
+                        ? <span className="font-semibold text-red-600">{t('balanceOwed')}: ${basics.balanceOwed.toFixed(2)}</span>
+                        : <span className="text-green-700">{t('settled')}</span>}
+                    </span>
+                    {basics.balanceOwed > 0 && (
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-400" data-testid="desk-balance-hint">
+                        <Info className="h-3 w-3 shrink-0" /> {t('verifyBillingOnline')}
+                      </span>
+                    )}
                   </p>
                 </div>
                 {/* Full file / edits need a connection (OFF-3). */}
@@ -400,13 +483,21 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                 {todaySchedule.map((c) => (
                   <li key={c.id}>
                     <button type="button" data-testid="desk-schedule-row" data-class-id={c.classId} onClick={() => setSelectedClass(c.classId)}
-                      className={cn('flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm',
+                      className={cn('flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm',
                         selectedClass === c.classId ? 'border-primary-700 bg-primary-50' : 'border-gray-100 hover:border-gray-300')}>
-                      <span className="font-medium text-gray-900">{c.name}</span>
-                      <span className="inline-flex items-center gap-2 text-xs text-gray-500">
-                        <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{c.start}{c.end ? `–${c.end}` : ''}</span>
-                        {c.room && <span>{c.room}</span>}
+                      {/* OFF-5: name + coach + capacity vs enrolled on the left, time on the right. */}
+                      <span className="flex min-w-0 flex-col items-start text-start">
+                        <span className="max-w-full truncate font-medium text-gray-900">{c.name}</span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500">
+                          {c.coach && <span data-testid="desk-schedule-coach" className="inline-flex items-center gap-1"><User className="h-3 w-3" />{c.coach}</span>}
+                          <span data-testid="desk-schedule-capacity" data-enrolled={c.enrolled} data-capacity={c.capacity ?? ''}
+                            className={cn('inline-flex items-center gap-1', c.capacity != null && c.enrolled >= c.capacity && 'font-medium text-amber-700')}>
+                            <Users className="h-3 w-3" /><span dir="ltr">{c.enrolled}{c.capacity != null ? `/${c.capacity}` : ''}</span>
+                          </span>
+                          {c.room && <span>{c.room}</span>}
+                        </span>
                       </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500" dir="ltr"><Clock className="h-3 w-3" />{c.start}{c.end ? `–${c.end}` : ''}</span>
                     </button>
                   </li>
                 ))}
