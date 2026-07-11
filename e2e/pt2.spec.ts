@@ -46,8 +46,15 @@ async function sellToKarim(page: Page, typeName: string) {
   await expect(page).toHaveURL(/\/students\/[0-9a-f-]{36}/, { timeout: 15_000 });
   await vis(page, '[data-testid="pt-sell-open"]').first().click();
   await page.locator('[data-testid="pt-type-chip"]').filter({ hasText: typeName }).first().click();
-  await page.locator('[data-testid="pt-coach-chip"]').first().click();
+  // UNION-ORDER DETERMINISM (pt-policy 2dd7429 / pt1 lesson): pt-coach-chip lists ALL the
+  // gym's coaches, and siblings (adm1/adm2) add some to the SHARED run gym → `.first()` is
+  // non-deterministic. This test publishes SAMI's availability and books slots against the
+  // sold package's coach, so it MUST sell to Sami — a different coach has no slots (and a
+  // no-availability coach also raises the warn this helper would otherwise not clear).
+  await page.locator('[data-testid="pt-coach-chip"]').filter({ hasText: 'Sami' }).first().click();
   await page.getByTestId('pt-sell-submit').click();
+  // Tolerant warn-and-allow: no-op when Sami already has availability (→ no warn).
+  await page.getByTestId('pt-sell-anyway').click({ timeout: 10_000 }).catch(() => {});
   await expect(
     vis(page, '[data-testid="member-pt-row"][data-status="active"]').filter({ hasText: typeName }).first(),
   ).toBeVisible({ timeout: 20_000 });

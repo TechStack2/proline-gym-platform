@@ -157,7 +157,8 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
     await refillRow.getByTestId('refill-resell').click();
     await expect(owner.page).toHaveURL(/sellpt=/, { timeout: 15_000 });
     await expect(vis(owner.page, '[data-testid="pt-sell-modal"]').first()).toBeVisible({ timeout: 15_000 });
-    await vis(owner.page, '[data-testid="pt-coach-chip"]').first().click();
+    // Same union-order determinism as the first sale — pin Sami (not `.first()`).
+    await vis(owner.page, '[data-testid="pt-coach-chip"]').filter({ hasText: SELL_COACH }).first().click();
     await vis(owner.page, '[data-testid="pt-sell-submit"]').first().click();
     // J3 SALE GUARD: Sami has no availability → warn-and-allow → "Sell anyway".
     await owner.page.getByTestId('pt-sell-anyway').click({ timeout: 10_000 }).catch(() => {});
