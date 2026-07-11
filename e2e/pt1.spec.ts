@@ -34,6 +34,11 @@ async function openKarimFile(page: Page): Promise<string> {
   return page.url().split('?')[0];
 }
 
+// The run gym's seeded coach (roles.ts `coach` session = Sami). test 2 reads the
+// roster AS this coach (get_coach_pt_roster is scoped to auth.uid()), so the sale
+// MUST assign THIS coach — see the union-order determinism note at the sale below.
+const SELL_COACH = 'Sami';
+
 test('PT-1 · catalog → publish gate → desk sale → package-first cards (no flat lists)', async ({ browser }) => {
   test.setTimeout(240_000);
   const owner = await ctxFor(browser, 'owner');
@@ -73,7 +78,13 @@ test('PT-1 · catalog → publish gate → desk sale → package-first cards (no
     await openKarimFile(owner.page);
     await vis(owner.page, '[data-testid="pt-sell-open"]').first().click();
     await owner.page.locator('[data-testid="pt-type-chip"]').filter({ hasText: TYPE_NAME }).first().click();
-    await owner.page.locator('[data-testid="pt-coach-chip"]').first().click();
+    // UNION-ORDER DETERMINISM (the pt-policy 2dd7429 lesson): pt-coach-chip lists ALL
+    // the gym's coaches, and under full-union load siblings add coaches to the shared
+    // run gym → `.first()` is non-deterministic and can assign a NON-Sami coach. test 2
+    // reads the roster AS Sami (get_coach_pt_roster is scoped to auth.uid()), so a wrong
+    // assignment makes that package NEVER surface there — the real cause of pt1:141's
+    // "green solo, red under union, blew even 90s" (a wrong-coach row can't ever appear).
+    await owner.page.locator('[data-testid="pt-coach-chip"]').filter({ hasText: SELL_COACH }).first().click();
     await owner.page.getByTestId('pt-sell-discount-pct').fill('10');
     await owner.page.getByTestId('pt-sell-submit').click();
     // J3 SALE GUARD: the seeded coach (Sami) has no published availability, so the
@@ -113,16 +124,16 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
   const student = await ctxFor(browser, 'student'); // Karim
   try {
     // ── Coach logs 8 deliveries on the run's 10-pack (10 → 2 = the threshold) ──
-    // ROOT RACE: the just-sold package (committed in test 1) can lag the coach
-    // roster read (PostgREST replica/realtime) → re-navigate until it surfaces.
-    // Under heavy full-union write load the replica lag can exceed the default 40s
-    // budget (observed hitting the wall at ~41s), so give this first surfacing read
-    // a wider 90s window — the read is idempotent (re-navigates each attempt).
+    // The package is committed by test 1 (fullyParallel:false → this test only starts
+    // after test 1 fully finishes) AND — via the Sami pin at the sale — assigned to
+    // THIS coach, so get_coach_pt_roster surfaces it within the normal budget (the
+    // seeded-package roster reads further down pass at the same 40s under the same
+    // union load — proof there's no residual commit/render lag once the coach matches).
     const rosterSel = `[data-testid="pt-roster-row"][data-package-en="${TYPE_NAME}"]:visible`;
     await untilConsistent(async () => {
       await coach.page.goto('/en/coach/pt');
       await expect(coach.page.locator(rosterSel).first()).toBeVisible({ timeout: 6_000 });
-    }, { timeout: 90_000 });
+    });
     const roster = coach.page.locator(rosterSel).first();
     for (let remaining = 10; remaining > 2; remaining--) {
       await roster.getByTestId('pt-log').click();
@@ -146,7 +157,8 @@ test('PT-1 · use→refill (inbox+today+nudge) → one-tap re-sell; expiry freez
     await refillRow.getByTestId('refill-resell').click();
     await expect(owner.page).toHaveURL(/sellpt=/, { timeout: 15_000 });
     await expect(vis(owner.page, '[data-testid="pt-sell-modal"]').first()).toBeVisible({ timeout: 15_000 });
-    await vis(owner.page, '[data-testid="pt-coach-chip"]').first().click();
+    // Same union-order determinism as the first sale — pin Sami (not `.first()`).
+    await vis(owner.page, '[data-testid="pt-coach-chip"]').filter({ hasText: SELL_COACH }).first().click();
     await vis(owner.page, '[data-testid="pt-sell-submit"]').first().click();
     // J3 SALE GUARD: Sami has no availability → warn-and-allow → "Sell anyway".
     await owner.page.getByTestId('pt-sell-anyway').click({ timeout: 10_000 }).catch(() => {});
