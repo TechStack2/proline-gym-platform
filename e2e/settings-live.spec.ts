@@ -110,3 +110,46 @@ test('SETTINGS-LIVE · add exchange rate → current + history + new-invoice LBP
     await ctx.close()
   }
 })
+
+test('SETTINGS-LIVE · BILL-LOCALIZE billing identity (TVA number · city · country) persists, then restores', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const { ctx, page } = await ownerCtx(browser)
+  try {
+    await page.goto('/en/settings?tab=gym')
+    // TVA registration number → the Identity section.
+    const tva = vis(page, '[data-testid="gym-tva-number"]').first()
+    await expect(tva, 'TVA number field is editable').toBeVisible({ timeout: 15_000 })
+    const origTva = await tva.inputValue()
+    // City + country → the Localization section.
+    const city = vis(page, '[data-testid="gym-city"]').first()
+    const country = vis(page, '[data-testid="gym-country"]').first()
+    const origCity = await city.inputValue()
+    const origCountry = await country.inputValue()
+
+    await tva.fill('LB-TEST-55555')
+    await vis(page, '[data-testid="gym-save-identity"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-identity"]').first(), 'identity save confirms').toBeVisible({ timeout: 15_000 })
+    await city.fill('Testville')
+    await country.fill('Testland')
+    await vis(page, '[data-testid="gym-save-localization"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-localization"]').first(), 'localization save confirms').toBeVisible({ timeout: 15_000 })
+
+    // PERSISTENCE: a fresh server render shows the saved values.
+    await page.reload()
+    await expect(vis(page, '[data-testid="gym-tva-number"]').first(), 'TVA number persisted').toHaveValue('LB-TEST-55555', { timeout: 15_000 })
+    await expect(vis(page, '[data-testid="gym-city"]').first(), 'city persisted').toHaveValue('Testville')
+    await expect(vis(page, '[data-testid="gym-country"]').first(), 'country persisted').toHaveValue('Testland')
+
+    // RESTORE the shared worker-gym values so no other spec sees the edit (e.g. a stray
+    // TVA number would make sibling invoices sprout a tax line).
+    await vis(page, '[data-testid="gym-tva-number"]').first().fill(origTva)
+    await vis(page, '[data-testid="gym-save-identity"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-identity"]').first(), 'TVA restore saves').toBeVisible({ timeout: 15_000 })
+    await vis(page, '[data-testid="gym-city"]').first().fill(origCity)
+    await vis(page, '[data-testid="gym-country"]').first().fill(origCountry)
+    await vis(page, '[data-testid="gym-save-localization"]').first().click()
+    await expect(vis(page, '[data-testid="gym-save-ok-localization"]').first(), 'city/country restore saves').toBeVisible({ timeout: 15_000 })
+  } finally {
+    await ctx.close()
+  }
+})

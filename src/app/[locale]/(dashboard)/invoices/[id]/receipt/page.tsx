@@ -6,6 +6,7 @@ import { paidUsd, balanceUsd, localizedName, statusLabel, METHOD_LABEL, INVOICE_
 import { getTranslations } from 'next-intl/server'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import { PrintButton } from './print-button'
+import { normalizeCurrencyPref, orderedMoney, fmtUsd } from '@/lib/billing/currency'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,9 +26,9 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
 
   const { data: inv } = await supabase
     .from('invoices')
-    .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, amount_usd, tax_amount_usd, total_usd, total_lbp,
+    .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, amount_usd, tax_amount_usd, tax_rate, total_usd, total_lbp,
       exchange_rate, status, due_date, paid_at, created_at, payer_profile_id,
-      gyms(name_ar, name_en, name_fr),
+      gyms(name_ar, name_en, name_fr, tva_registration_number, currency_preference),
       students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)),
       payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
     .eq('id', id)
@@ -44,6 +45,16 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const gymRow: any = (inv as any).gyms
   const gym = Array.isArray(gymRow) ? gymRow[0] : gymRow
   const gymName = gym ? (isRTL ? gym.name_ar : locale === 'fr' ? gym.name_fr : gym.name_en) : 'PRO LINE Gym'
+  // BILL-LOCALIZE: honest tax + preferred display currency (see currency.ts). The tax
+  // row shows only for a TVA-registered gym with real tax; the rate is the invoice's own
+  // stored tax_rate (per-gym, 000074), never a hardcoded 11%.
+  const ti = await getTranslations('invoices')
+  const tvaNumber: string | null = gym?.tva_registration_number ?? null
+  const pref = normalizeCurrencyPref(gym?.currency_preference)
+  const showTax = !!tvaNumber && Number(inv.tax_amount_usd) > 0
+  const ratePct = Number(inv.tax_rate ?? 0)
+  const rateLabel = Number.isInteger(ratePct) ? String(ratePct) : ratePct.toFixed(2)
+  const totalMoney = orderedMoney(inv.total_usd, inv.total_lbp, pref)
   const profRow: any = (inv as any).students?.profiles
   const profile = Array.isArray(profRow) ? profRow[0] : profRow
   const studentName = localizedName(profile, locale)
@@ -76,6 +87,9 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
         <div className="mb-6 border-b pb-4 text-center">
           <h1 className="text-xl font-bold">{gymName}</h1>
           <p className="text-sm text-muted-foreground">{t('Payment Receipt', 'إيصال دفع', 'Reçu de paiement')}</p>
+          {tvaNumber && (
+            <p className="text-xs text-muted-foreground" data-testid="receipt-tva-number">{ti('tvaRegistered', { number: tvaNumber })}</p>
+          )}
         </div>
 
         <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
@@ -101,9 +115,13 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
 
         <table className="mb-4 w-full text-sm">
           <tbody>
-            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</td><td className="py-1 text-end">${Number(inv.amount_usd).toFixed(2)}</td></tr>
-            <tr className="border-b"><td className="py-1 text-muted-foreground">{t('TVA (11%)', 'ض.ق.م (11%)', 'TVA (11%)')}</td><td className="py-1 text-end">${Number(inv.tax_amount_usd).toFixed(2)}</td></tr>
-            <tr className="border-b font-bold"><td className="py-1">{t('Total', 'الإجمالي', 'Total')}</td><td className="py-1 text-end">${Number(inv.total_usd).toFixed(2)}{inv.total_lbp ? ` · ${Number(inv.total_lbp).toLocaleString()} LBP` : ''}</td></tr>
+            {showTax && (
+              <tr className="border-b"><td className="py-1 text-muted-foreground">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</td><td className="py-1 text-end">{fmtUsd(inv.amount_usd)}</td></tr>
+            )}
+            {showTax && (
+              <tr className="border-b"><td className="py-1 text-muted-foreground" data-testid="receipt-tva-label">{ti('tvaLine', { rate: rateLabel })}</td><td className="py-1 text-end">{fmtUsd(inv.tax_amount_usd)}</td></tr>
+            )}
+            <tr className="border-b font-bold"><td className="py-1">{t('Total', 'الإجمالي', 'Total')}</td><td className="py-1 text-end" data-testid="receipt-total">{totalMoney.primary}{totalMoney.secondary ? ` · ${totalMoney.secondary}` : ''}</td></tr>
           </tbody>
         </table>
 

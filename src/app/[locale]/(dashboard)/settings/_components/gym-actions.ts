@@ -23,6 +23,10 @@ export type GymSettingsInput = {
   website?: string
   timezone?: string
   currency_preference?: string
+  // BILL-LOCALIZE: billing/localization identity (columns exist since 000002)
+  city?: string
+  country?: string
+  tva_registration_number?: string
   // 000072 branding
   brand_color?: string
   hero_image_url?: string
@@ -35,6 +39,7 @@ const EDITABLE = [
   'name_ar', 'name_en', 'name_fr',
   'address_ar', 'address_en', 'address_fr',
   'phone', 'email', 'website', 'timezone', 'currency_preference',
+  'city', 'country', 'tva_registration_number',
   'brand_color', 'hero_image_url', 'tagline_ar', 'tagline_en', 'tagline_fr',
 ] as const
 

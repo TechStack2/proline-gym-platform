@@ -698,7 +698,9 @@
     "error_saving": "Error saving invoice",
     "search_invoices": "Search invoices...",
     "loading": "Loading invoices...",
-    "description": "Manage and view all invoices"
+    "description": "Manage and view all invoices",
+    "tvaLine": "TVA ({rate}%)",
+    "tvaRegistered": "TVA Reg. {number}"
   },
   "status": {
     "active": "Active",
@@ -1298,7 +1300,14 @@
       "enterFrenchName": "Enter French name",
       "unnamed": "PRO LINE Gym",
       "interfaceLanguage": "Interface language",
-      "interfaceLanguageHint": "This device only — sets your display language, not a gym-wide default."
+      "interfaceLanguageHint": "This device only — sets your display language, not a gym-wide default.",
+      "tvaNumber": "TVA registration number",
+      "tvaNumberHint": "Leave empty if you're not TVA-registered — invoices then show no tax line.",
+      "tvaNumberPlaceholder": "e.g. 123456789",
+      "city": "City",
+      "cityPlaceholder": "e.g. Beirut",
+      "country": "Country",
+      "countryPlaceholder": "e.g. Lebanon"
     },
     "exchange": {
       "currentRate": "Current Exchange Rate",
@@ -2638,7 +2647,10 @@
   },
   "invoiceNew": {
     "title": "New invoice",
-    "subtitle": "Issue a dual-currency invoice through the canonical service."
+    "subtitle": "Issue a dual-currency invoice through the canonical service.",
+    "amountPreTva": "Amount (USD, pre-TVA)",
+    "amountUsd": "Amount (USD)",
+    "tvaAutoAdded": "TVA ({rate}%) added automatically."
   },
   "winback": {
     "empty": "No dropped members to win back — everyone is active.",
