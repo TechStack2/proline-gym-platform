@@ -101,7 +101,7 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
                   inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="owner@prolinegym.lb"
+                  placeholder="you@email.com"
                   disabled={loading}
                   className={cn(
                     'w-full rounded-xl border border-gray-200 bg-white py-3 text-base placeholder:text-gray-400',

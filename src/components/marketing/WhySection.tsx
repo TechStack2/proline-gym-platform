@@ -4,6 +4,10 @@ import { Medal, Building2, Users2 } from 'lucide-react';
 
 type WhySectionProps = {
   locale: string;
+  // TENANT-CONTENT: the default gym keeps the curated "Why PRO LINE?" + founder/location
+  // copy; every other tenant gets a brand-neutral variant (no "PRO LINE" / "Fakih
+  // Brothers" / "Sky Business Center" leak).
+  isDefault?: boolean;
 };
 
 // AX-1: copy lives in landing.why.* (the ar/en field pair dropped fr).
@@ -13,9 +17,13 @@ const reasons = [
   { key: 'community', icon: Users2, color: 'from-green-400 to-emerald-600' },
 ];
 
-export function WhySection({ locale }: WhySectionProps) {
+export function WhySection({ locale, isDefault = false }: WhySectionProps) {
   const t = useTranslations('landing.why');
   const isRTL = locale === 'ar';
+  // The coaches/facility descriptions name the Proline founders + the Baabda address;
+  // swap to neutral copy off the default gym.
+  const descKey = (key: string) =>
+    (!isDefault && (key === 'coaches' || key === 'facility') ? `${key}DescAlt` : `${key}Desc`) as Parameters<typeof t>[0];
 
   return (
     <section className="py-20 lg:py-28 bg-white">
@@ -27,7 +35,7 @@ export function WhySection({ locale }: WhySectionProps) {
               isRTL && 'font-arabic'
             )}
           >
-            {t('title')}
+            {isDefault ? t('title') : t('titleAlt')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">
             {t('subtitle')}
@@ -51,7 +59,7 @@ export function WhySection({ locale }: WhySectionProps) {
                   {t(`${reason.key}Title` as Parameters<typeof t>[0])}
                 </h3>
                 <p className="text-gray-500 leading-relaxed">
-                  {t(`${reason.key}Desc` as Parameters<typeof t>[0])}
+                  {t(descKey(reason.key))}
                 </p>
               </div>
             );

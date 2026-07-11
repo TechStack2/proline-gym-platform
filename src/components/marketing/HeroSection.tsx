@@ -22,20 +22,25 @@ export type HeroBranding = {
 type HeroSectionProps = {
   locale: string;
   branding?: HeroBranding;
+  isDefault?: boolean;
 };
 
 const DEFAULT_BRANDING: HeroBranding = { brandColor: DEFAULT_BRAND_COLOR };
 
-export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSectionProps) {
+export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = false }: HeroSectionProps) {
   // AX-1: copy now flows through next-intl (the isRTL?ar:en bypass dropped fr).
   const t = useTranslations('landing.hero');
   const isRTL = locale === 'ar';
-  const logoSrc = branding.logoUrl || '/logo.jpg';
+  // TENANT-CONTENT: only the default gym falls back to the built-in Proline identity
+  // (name / logo / WhatsApp / Instagram). Every other tenant shows its own or nothing —
+  // the CTAs/handle self-hide when empty. The full-bleed hero PHOTO (heavily washed,
+  // no text/logo) keeps a neutral decorative fallback for both.
+  const logoSrc = branding.logoUrl || (isDefault ? '/logo.jpg' : '');
   const heroSrc = branding.heroImageUrl || '/landing/gym-1.jpg';
-  const brandName = branding.name || 'PRO LINE Gym';
+  const brandName = branding.name || (isDefault ? 'PRO LINE Gym' : '');
   const tagline = branding.tagline || t('tagline');
-  const waDigits = (branding.contactWhatsapp || '96170628601').replace(/\D/g, '');
-  const igHandle = (branding.instagramHandle || 'prolinegym.lb').replace(/^@/, '');
+  const waDigits = (branding.contactWhatsapp || (isDefault ? '96170628601' : '')).replace(/\D/g, '');
+  const igHandle = (branding.instagramHandle || (isDefault ? 'prolinegym.lb' : '')).replace(/^@/, '');
   const igFollowers = branding.instagramFollowers ?? null;
 
   return (
@@ -94,17 +99,20 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSection
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-32 text-center">
-        {/* Logo — the resolved gym's logo (default: /logo.jpg) */}
-        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl shadow-2xl ring-2 ring-white/20">
-          <Image
-            src={logoSrc}
-            alt={brandName}
-            width={96}
-            height={96}
-            className="h-full w-full object-cover"
-            priority
-          />
-        </div>
+        {/* Logo — the resolved gym's logo (default gym: /logo.jpg; other tenants: their
+            own, or nothing when unset — never Proline's). */}
+        {logoSrc && (
+          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl shadow-2xl ring-2 ring-white/20">
+            <Image
+              src={logoSrc}
+              alt={brandName}
+              width={96}
+              height={96}
+              className="h-full w-full object-cover"
+              priority
+            />
+          </div>
+        )}
 
         {/* WL-LANDING: the resolved gym's NAME (was implicit in the logo alt only) */}
         <p data-testid="hero-gym-name" className={cn('mb-3 text-2xl font-bold text-white', isRTL && 'font-arabic')}>
@@ -137,9 +145,13 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSection
         <p className="mt-4 mx-auto max-w-2xl text-lg sm:text-xl text-gray-300 leading-relaxed md:min-h-[3.5rem]">
           {t('subheadline')}
         </p>
-        <p className="mt-2 text-sm font-semibold tracking-wide text-gray-300">
-          {t('byline')}
-        </p>
+        {/* TENANT-CONTENT: the "by Fakih Brothers" byline is the Proline founders' credit —
+            default gym only, never on another tenant's hero. */}
+        {isDefault && (
+          <p className="mt-2 text-sm font-semibold tracking-wide text-gray-300">
+            {t('byline')}
+          </p>
+        )}
 
         {/* CTAs */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -149,38 +161,42 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING }: HeroSection
           >
             {t('ctaTrial')}
           </Link>
-          <a
-            href={`https://wa.me/${waDigits}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="hero-wa-cta"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 px-8 py-4 text-base font-semibold text-white hover:bg-white/10 hover:border-white/50 transition-all"
-          >
-            <MessageCircle className="h-5 w-5" />
-            {t('ctaWhatsapp')}
-          </a>
-        </div>
-
-        {/* Instagram handle (per-gym; the follower segment renders only when the
-            gym has a count set — new gyms shouldn't show Proline's social proof) */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <span>📸</span>
-          <a
-            href={`https://instagram.com/${igHandle}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="hero-ig"
-            className="hover:text-primary-400 transition-colors"
-          >
-            @{igHandle}
-          </a>
-          {igFollowers != null && (
-            <>
-              <span className="text-gray-600">•</span>
-              <span data-testid="hero-ig-followers">{igFollowers.toLocaleString('en-US')} {t('followers')}</span>
-            </>
+          {waDigits && (
+            <a
+              href={`https://wa.me/${waDigits}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="hero-wa-cta"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 px-8 py-4 text-base font-semibold text-white hover:bg-white/10 hover:border-white/50 transition-all"
+            >
+              <MessageCircle className="h-5 w-5" />
+              {t('ctaWhatsapp')}
+            </a>
           )}
         </div>
+
+        {/* Instagram handle (per-gym; hidden entirely when the gym has no handle — a new
+            tenant never shows Proline's @handle or its follower social proof). */}
+        {igHandle && (
+          <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400">
+            <span>📸</span>
+            <a
+              href={`https://instagram.com/${igHandle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="hero-ig"
+              className="hover:text-primary-400 transition-colors"
+            >
+              @{igHandle}
+            </a>
+            {igFollowers != null && (
+              <>
+                <span className="text-gray-600">•</span>
+                <span data-testid="hero-ig-followers">{igFollowers.toLocaleString('en-US')} {t('followers')}</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bottom fade to next section */}

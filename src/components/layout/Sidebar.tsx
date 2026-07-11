@@ -12,6 +12,9 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle';
 type SidebarProps = {
   locale: string;
   role: DashboardRole;
+  // TENANT-CONTENT: the USER's gym brand (default gym: /logo.jpg + "PRO LINE Gym").
+  gymName?: string;
+  logoUrl?: string | null;
 };
 
 /**
@@ -27,7 +30,7 @@ const ROLE_LABELS: Record<string, { en: string; ar: string; fr: string }> = {
   receptionist: { en: 'Reception', ar: 'استقبال', fr: 'Réception' },
 };
 
-export function Sidebar({ locale, role }: SidebarProps) {
+export function Sidebar({ locale, role, gymName, logoUrl }: SidebarProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const isRTL = locale === 'ar';
@@ -77,20 +80,25 @@ export function Sidebar({ locale, role }: SidebarProps) {
         isRTL ? 'right-0 border-l' : 'left-0 border-r'
       )}
     >
-      {/* Logo */}
+      {/* Logo — the USER's gym brand (never a hardcode). Falls back to an initials tile
+          when the gym has no logo; the default gym carries /logo.jpg + "PRO LINE Gym". */}
       <div className="flex h-16 items-center gap-3 border-b px-4">
-        <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg">
-          <Image
-            src="/logo.jpg"
-            alt=""
-            width={36}
-            height={36}
-            className="h-full w-full object-cover"
-            priority
-          />
+        <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary-50 font-bold text-primary-600">
+          {logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt=""
+              width={36}
+              height={36}
+              className="h-full w-full object-cover"
+              priority
+            />
+          ) : (
+            <span className="text-sm">{(gymName || '?').charAt(0).toUpperCase()}</span>
+          )}
         </div>
-        <div className={cn('font-bold text-lg', isRTL ? 'font-arabic' : '')}>
-          PRO LINE Gym
+        <div data-testid="sidebar-gym-name" className={cn('font-bold text-lg', isRTL ? 'font-arabic' : '')}>
+          {gymName || ''}
         </div>
       </div>
 

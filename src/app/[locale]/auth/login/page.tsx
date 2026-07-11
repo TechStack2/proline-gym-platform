@@ -205,7 +205,7 @@ export default function LoginPage({ params }: Props) {
                 inputMode="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="owner@prolinegym.lb"
+                placeholder="you@email.com"
                 disabled={loading}
                 className={cn(
                   'w-full rounded-xl border border-gray-200 py-3 text-base',

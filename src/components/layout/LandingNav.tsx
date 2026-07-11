@@ -10,14 +10,16 @@ import { Menu, X } from 'lucide-react';
 
 type LandingNavProps = {
   locale: string;
-  // PROLINE-LANDING-DATA: the resolved gym's identity (fallback = Proline default).
+  // TENANT-CONTENT: the resolved LANDING gym's identity. Only the default gym falls
+  // back to the built-in Proline name/logo; every other tenant shows its own.
   gymName?: string;
   logoUrl?: string;
+  isDefault?: boolean;
 };
 
-export function LandingNav({ locale, gymName, logoUrl }: LandingNavProps) {
-  const brandName = gymName || 'PRO LINE Gym';
-  const logoSrc = logoUrl || '/logo.jpg';
+export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: LandingNavProps) {
+  const brandName = gymName || (isDefault ? 'PRO LINE Gym' : '');
+  const logoSrc = logoUrl || (isDefault ? '/logo.jpg' : '');
   const t = useTranslations('landing');
   const isRTL = locale === 'ar';
   const [scrolled, setScrolled] = useState(false);
@@ -49,16 +51,18 @@ export function LandingNav({ locale, gymName, logoUrl }: LandingNavProps) {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2.5">
-            <div className="relative h-9 w-9 overflow-hidden rounded-lg shadow-sm">
-              <Image
-                src={logoSrc}
-                alt={brandName}
-                width={36}
-                height={36}
-                className="h-full w-full object-cover"
-                priority
-              />
-            </div>
+            {logoSrc && (
+              <div className="relative h-9 w-9 overflow-hidden rounded-lg shadow-sm">
+                <Image
+                  src={logoSrc}
+                  alt={brandName}
+                  width={36}
+                  height={36}
+                  className="h-full w-full object-cover"
+                  priority
+                />
+              </div>
+            )}
             <span
               data-testid="landing-nav-name"
               className={cn(

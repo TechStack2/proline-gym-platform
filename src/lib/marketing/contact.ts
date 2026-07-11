@@ -45,15 +45,27 @@ type ContactColumns = {
   map_lng: number | null;
 } | null | undefined;
 
-export function resolveLandingContact(gym: ContactColumns): LandingContact {
+// TENANT-CONTENT: the honest fallback for a NON-default gym that hasn't filled its own
+// contact — empty, never the Proline founder's email/phone/socials/map. The landing chrome
+// hides whatever is empty (no pretense of another gym's identity).
+export const EMPTY_CONTACT: LandingContact = {
+  whatsapp: '', phone: '', email: '', instagram: '', facebook: '',
+  instagramFollowers: null, mapLat: 0, mapLng: 0,
+};
+
+export function resolveLandingContact(gym: ContactColumns, isDefault: boolean = false): LandingContact {
+  // The built-in Proline defaults are the honest identity ONLY for the default gym; every
+  // other tenant falls back to EMPTY so alifakih998@gmail.com / the Proline phone / socials
+  // / map coords never leak onto another gym's landing.
+  const d = isDefault ? DEFAULT_CONTACT : EMPTY_CONTACT;
   return {
-    whatsapp: (gym?.contact_whatsapp || DEFAULT_CONTACT.whatsapp).replace(/\D/g, ''),
-    phone: gym?.contact_phone || DEFAULT_CONTACT.phone,
-    email: gym?.contact_email || DEFAULT_CONTACT.email,
-    instagram: (gym?.instagram_handle || DEFAULT_CONTACT.instagram).replace(/^@/, ''),
-    facebook: (gym?.facebook_handle || DEFAULT_CONTACT.facebook).replace(/^@/, ''),
+    whatsapp: (gym?.contact_whatsapp || d.whatsapp).replace(/\D/g, ''),
+    phone: gym?.contact_phone || d.phone,
+    email: gym?.contact_email || d.email,
+    instagram: (gym?.instagram_handle || d.instagram).replace(/^@/, ''),
+    facebook: (gym?.facebook_handle || d.facebook).replace(/^@/, ''),
     instagramFollowers: gym?.instagram_followers ?? null,
-    mapLat: gym?.map_lat != null ? Number(gym.map_lat) : DEFAULT_CONTACT.mapLat,
-    mapLng: gym?.map_lng != null ? Number(gym.map_lng) : DEFAULT_CONTACT.mapLng,
+    mapLat: gym?.map_lat != null ? Number(gym.map_lat) : d.mapLat,
+    mapLng: gym?.map_lng != null ? Number(gym.map_lng) : d.mapLng,
   };
 }

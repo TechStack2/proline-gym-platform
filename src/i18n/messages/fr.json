@@ -808,7 +808,8 @@
       "callUs": "Appelez-nous",
       "email": "Email",
       "igStats": "2 760 abonnés • 177 publications",
-      "viewOnGoogle": "Voir sur Google Maps"
+      "viewOnGoogle": "Voir sur Google Maps",
+      "subtitleAlt": "Appelez-nous ou écrivez-nous sur WhatsApp pour réserver votre première séance."
     },
     "why": {
       "title": "Pourquoi PRO LINE ?",
@@ -818,7 +819,10 @@
       "facilityTitle": "Salle moderne",
       "facilityDesc": "Entraînez-vous dans une salle entièrement équipée au Sky Business Center de Baabda. Tapis, sacs et équipements professionnels pour chaque discipline.",
       "communityTitle": "Communauté soudée",
-      "communityDesc": "Rejoignez plus de 2 760 abonnés et une communauté florissante de combattants, de passionnés de fitness et de familles. Adultes, enfants, femmes — chacun a sa place ici."
+      "communityDesc": "Rejoignez plus de 2 760 abonnés et une communauté florissante de combattants, de passionnés de fitness et de familles. Adultes, enfants, femmes — chacun a sa place ici.",
+      "titleAlt": "Pourquoi s’entraîner avec nous ?",
+      "coachesDescAlt": "Entraînez-vous avec des instructeurs certifiés forts d’une expérience internationale.",
+      "facilityDescAlt": "Entraînez-vous dans une installation entièrement équipée et professionnelle."
     },
     "camps": {
       "title": "Camps d'été",

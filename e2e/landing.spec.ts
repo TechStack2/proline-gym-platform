@@ -19,9 +19,10 @@ test('LP · logged-out landing renders live schedule + pricing + disciplines + b
     expect(resp?.status() ?? 0, 'landing should load for a logged-out visitor').toBeLessThan(400);
     await page.waitForLoadState('networkidle').catch(() => {});
 
-    // Brand (saga copy + Fakih Brothers).
+    // Brand (saga copy). TENANT-CONTENT: the run gym is NON-default, so the Proline
+    // founders' credit ("By Fakih Brothers") must NOT leak onto its footer.
     await expect(page.getByRole('heading', { name: /Train Like the Main Character/i })).toBeVisible();
-    await expect(page.getByText(/Fakih Brothers/i).first()).toBeVisible();
+    await expect(page.getByText(/Fakih Brothers/i), 'no Proline founder credit on a tenant landing').toHaveCount(0);
 
     // Disciplines — seeded Muay Thai is gym-scoped + active (anon-readable).
     await expect(page.locator('#disciplines')).toContainText(/Muay Thai/i);

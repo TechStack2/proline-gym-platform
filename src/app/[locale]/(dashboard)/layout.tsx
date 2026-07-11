@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { DashboardLayoutClient } from './_components/DashboardLayoutClient';
 import { FrontDeskOfflineLayer } from '@/components/offline/front-desk-offline-layer';
 import { SentryTags } from '@/components/observability/sentry-tags';
+import { DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
+import { storagePublicUrl } from '@/lib/storage/public-url';
 
 // AX-1 shell identity: per-shell PWA theme-color (staff = brand red). DS-2: now
 // per light/dark — the meta theme-color media queries track the OS prefers-color-
@@ -43,12 +45,21 @@ export default async function DashboardLayout({ children, params }: Props) {
 
   const role = (await getUserRole(supabase, user.id)) as 'owner' | 'head_coach' | 'coach' | 'receptionist' | 'student' | 'parent' | 'external_coach';
 
-  // OBSERVE: the gym slug for Sentry tagging (non-identifying). Best-effort — a null
-  // never blocks the render, and SentryTags no-ops when the SDK is disabled.
-  const { data: gymRow } = await supabase.from('profiles').select('gyms(slug)').eq('id', user.id).maybeSingle();
+  // OBSERVE: the gym slug for Sentry tagging (non-identifying). TENANT-CONTENT: the SAME
+  // read now also carries the user's gym name + logo so the staff shell brands by the
+  // USER's gym (never a hardcoded "PRO LINE Gym" / Host). Best-effort — a null never
+  // blocks the render.
+  const { data: gymRow } = await supabase
+    .from('profiles').select('gyms(slug, name_ar, name_en, name_fr, logo_url)').eq('id', user.id).maybeSingle();
   const rawGym = (gymRow as { gyms?: unknown } | null)?.gyms;
   const gymNode = Array.isArray(rawGym) ? rawGym[0] : rawGym;
-  const gymSlug = (gymNode as { slug?: string } | null | undefined)?.slug ?? null;
+  const g = gymNode as { slug?: string; name_ar?: string; name_en?: string; name_fr?: string; logo_url?: string } | null | undefined;
+  const gymSlug = g?.slug ?? null;
+  // The default gym keeps the static /logo.jpg (zero visual change); other tenants
+  // resolve their own logo (or null → the shell renders an initials placeholder).
+  const isDefaultGym = gymSlug === DEFAULT_GYM_SLUG;
+  const gymName = (locale === 'ar' ? g?.name_ar : locale === 'fr' ? g?.name_fr : g?.name_en) || g?.name_en || '';
+  const gymLogo = isDefaultGym ? '/logo.jpg' : (storagePublicUrl('avatars', g?.logo_url) || null);
 
   return (
     <>
@@ -65,7 +76,7 @@ export default async function DashboardLayout({ children, params }: Props) {
           chrome (NativeHeader/TabBar mobile vs Sidebar/Header desktop) is now
           responsive INSIDE DashboardLayoutClient, around one subtree — the
           PortalLayoutClient pattern. */}
-      <DashboardLayoutClient locale={locale} role={role}>
+      <DashboardLayoutClient locale={locale} role={role} gymName={gymName} logoUrl={gymLogo}>
         {children}
       </DashboardLayoutClient>
     </>

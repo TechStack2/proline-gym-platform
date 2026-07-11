@@ -125,6 +125,10 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // (no ?gym=) the raw `gymSlug` is undefined → the trial RPC got p_gym_slug=null
   // → 'invalid' → dead form. Every gym-scoped section gets the resolved slug.
   const sectionSlug = gym?.slug ?? DEFAULT_GYM_SLUG;
+  // TENANT-CONTENT: only the DEFAULT gym (Proline) may fall back to the built-in Proline
+  // identity (name/logo/address/contact/founder credit). Every other tenant shows its own
+  // row with honest EMPTY fallbacks — no Proline leak. Passed to every chrome surface.
+  const isDefault = sectionSlug === DEFAULT_GYM_SLUG;
   const supabase = await createClient();
   // CATALOG-SCOPE: the trial chips read the same per-gym definer RPC (000080) as
   // DisciplinesSection — no blanket anon table read. Returns id + names, sorted.
@@ -156,7 +160,7 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // resolved gym (fallback = the built-in Proline defaults when NULL). The
   // Nav/Footer render here (not the layout) because only the page can resolve
   // ?gym= — one gym, one identity, every landing surface.
-  const contact = resolveLandingContact(gym);
+  const contact = resolveLandingContact(gym, isDefault);
   const address = gym ? pick(gym.address_ar, gym.address_en, gym.address_fr) : undefined;
   const heroBranding = {
     ...branding,
@@ -188,21 +192,21 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
         data-testid="landing-jsonld"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LandingNav locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} />
-      <HeroSection locale={locale} branding={heroBranding} />
+      <LandingNav locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} isDefault={isDefault} />
+      <HeroSection locale={locale} branding={heroBranding} isDefault={isDefault} />
       <AffiliationsSection locale={locale} gymSlug={sectionSlug} />
       <DisciplinesSection locale={locale} gymSlug={sectionSlug} />
       <ScheduleSection locale={locale} gymSlug={sectionSlug} />
       <ChampionsSection locale={locale} gymSlug={sectionSlug} />
       <CoachesSection locale={locale} gymSlug={sectionSlug} />
       <GallerySection locale={locale} gymSlug={sectionSlug} />
-      <WhySection locale={locale} />
+      <WhySection locale={locale} isDefault={isDefault} />
       <PricingSection locale={locale} gymSlug={sectionSlug} />
       <PtSection locale={locale} gymSlug={sectionSlug} />
       <CampsSection locale={locale} gymSlug={sectionSlug} />
-      <FacilitySection locale={locale} contact={contact} />
+      <FacilitySection locale={locale} contact={contact} isDefault={isDefault} address={address} gymName={branding.name} />
       <TrialCTASection locale={locale} gymSlug={sectionSlug} disciplines={captureDisciplines} />
-      <LandingFooter locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} address={address} contact={contact} />
+      <LandingFooter locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} address={address} contact={contact} isDefault={isDefault} />
     </>
   );
 }
