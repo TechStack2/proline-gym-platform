@@ -127,9 +127,12 @@ test('FAMILY-MODE · a minor gates the invite behind the guardian; the staff ove
     await expect(w(page, 'invite-blocked-guardian')).toBeVisible()
     await expect(w(page, 'portal-access').locator('[data-testid="invite-btn"]'), 'the member invite is gated').toHaveCount(0)
     await page.screenshot({ path: 'screenshots/member-eligibility-gated.png', fullPage: true }).catch(() => {})
-    // Staff override → "can log in" reveals the invite affordance.
+    // Staff override → "can log in" LIFTS the guardian block. Kid One is phone-free, so
+    // the honest revealed state is the "add a phone to invite" prompt (a phone-free member
+    // still can't be invited without a number) — either way the guardian gate is gone.
     await w(page, 'portal-eligibility-yes').click()
-    await expect(w(page, 'portal-access').locator('[data-testid="invite-btn"]')).toBeVisible({ timeout: 15_000 })
+    await expect(w(page, 'portal-access').locator('[data-testid="invite-blocked-guardian"]'), 'the guardian gate lifts').toHaveCount(0, { timeout: 15_000 })
+    await expect(w(page, 'portal-access').locator('[data-testid="invite-needs-phone"]'), 'eligible but phone-free → add-a-phone prompt').toBeVisible({ timeout: 15_000 })
   } finally {
     await ctx.close()
   }
@@ -165,6 +168,8 @@ test('FAMILY-MODE · inviting the guardian issues credentials; a duplicate phone
     await expect(w(page, 'portal-access')).toBeVisible({ timeout: 20_000 })
     await w(page, 'portal-access').locator('[data-testid="invite-btn"]').click()
     await expect(w(page, 'invite-error'), 'the credential invariant blocks the duplicate').toBeVisible({ timeout: 20_000 })
+    // eslint-disable-next-line no-console
+    console.log('MJ1_INVITE_ERROR:', JSON.stringify(await w(page, 'invite-error').textContent()))
     await expect(w(page, 'invite-error')).toContainText(GUARDIAN_NAME)
   } finally {
     await ctx.close()
