@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { FormWizard, ChipRow } from '@/components/shared/form-wizard'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
+import { PasswordStrengthHint } from '@/components/shared/password-strength'
+import { isPasswordValid, PASSWORD_MIN_LENGTH } from '@/lib/utils/password'
 import { WaiverConsentFields } from '@/components/shared/waiver-sign'
 import { signWaiver } from '@/lib/waivers/actions'
 import { CalendarDays, CreditCard, Dumbbell, ClipboardList } from 'lucide-react'
@@ -49,7 +51,9 @@ function PasswordStep({
       <Field label={t('confirmPassword')}>
         <Input type="password" data-testid="ob-password2" value={pw2} onChange={(e) => setPw2(e.target.value)} dir="ltr" autoComplete="new-password" />
       </Field>
-      {pw.length > 0 && pw.length < 10 && <p className="text-xs text-amber-600">{t('passwordTooShort')}</p>}
+      {/* AUTH-DEPTH: shared strength hint; the shared PASSWORD_MIN_LENGTH is the gate. */}
+      <PasswordStrengthHint pw={pw} />
+      {pw.length > 0 && pw.length < PASSWORD_MIN_LENGTH && <p className="text-xs text-amber-600">{t('passwordTooShort')}</p>}
       {pw2.length > 0 && pw !== pw2 && <p className="text-xs text-red-600">{t('passwordMismatch')}</p>}
     </div>
   )
@@ -118,9 +122,10 @@ export function OnboardingClient({
     {
       key: 'password',
       title: t('stepPassword'),
-      // ERROR-HARDEN #4: app-side minimum 10 chars (the cloud GoTrue policy is a
-      // dashboard setting the auditor aligns; this enforces it in the product).
-      valid: pw.length >= 10 && pw === pw2,
+      // AUTH-DEPTH #4: app-side minimum via the shared password policy (the cloud
+      // GoTrue policy is a dashboard setting listed in the report; this enforces it
+      // in the product, one threshold for every set-password surface).
+      valid: isPasswordValid(pw) && pw === pw2,
       // PWD-FOCUS: render via the module-level <PasswordStep> (stable type) so the
       // password inputs are reconciled, not remounted, on each keystroke.
       content: <PasswordStep pw={pw} pw2={pw2} setPw={setPw} setPw2={setPw2} />,

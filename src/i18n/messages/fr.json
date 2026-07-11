@@ -5,6 +5,12 @@
     "tagline": "Plateforme de gestion de salle d'arts martiaux",
     "loading": "Chargement..."
   },
+  "password": {
+    "hint": "une phrase plus longue est plus forte",
+    "strengthWeak": "Faible",
+    "strengthFair": "Bon",
+    "strengthStrong": "Fort"
+  },
   "auth": {
     "login": "Connexion",
     "logout": "Déconnexion",

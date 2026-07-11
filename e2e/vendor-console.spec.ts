@@ -191,6 +191,15 @@ test('VENDOR-CONSOLE-1 · Suspend flips the chip + darkens the landing; Reactiva
       .toHaveAttribute('data-active', 'true', { timeout: 15_000 })
 
     expect(await landingHeroName(browser, GYM_SLUG), 'reactivated gym landing shows its name again').toBe(GYM_NAME)
+
+    // AUDIT PARITY (AUTH-DEPTH REQ3): suspend + reactivate each wrote a durable,
+    // gym-scoped audit_logs row attributed to the platform admin (was a console.log).
+    const auditRes = await svc(`audit_logs?gym_id=eq.${gymId}&table_name=eq.gyms&operation=eq.update&order=created_at.asc&select=changed_by,new_data`)
+    const audits = (await auditRes.json()) as Array<{ changed_by: string; new_data: { is_active: boolean } }>
+    expect(audits.length, 'both gym toggles are audited').toBeGreaterThanOrEqual(2)
+    expect(audits.every((a) => a.changed_by === adminId), 'each row is attributed to the acting platform admin').toBeTruthy()
+    expect(audits.some((a) => a.new_data?.is_active === false) && audits.some((a) => a.new_data?.is_active === true),
+      'the trail captures both the suspend (→false) and reactivate (→true)').toBeTruthy()
   } finally {
     await admin.ctx.close()
   }

@@ -5,6 +5,12 @@
     "tagline": "منصة إدارة صالات الفنون القتالية",
     "loading": "جارٍ التحميل..."
   },
+  "password": {
+    "hint": "عبارة أطول تكون أقوى",
+    "strengthWeak": "ضعيفة",
+    "strengthFair": "جيدة",
+    "strengthStrong": "قوية"
+  },
   "auth": {
     "login": "تسجيل الدخول",
     "logout": "تسجيل الخروج",

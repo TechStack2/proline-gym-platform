@@ -13,6 +13,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { actionError } from '@/lib/errors/action-error';
+import { recordAudit } from '@/lib/audit/log';
 
 type Result = { ok: true; active: boolean } | { ok: false; error: string };
 
@@ -40,12 +41,24 @@ export async function setGymActive(input: { gymId: string; active: boolean }): P
     .from('gyms')
     .update({ is_active: input.active })
     .eq('id', input.gymId)
-    .select('slug, name_en')
+    .select('slug, name_en, is_active')
     .maybeSingle();
   if (error) return { ok: false, error: actionError(error) };
   if (!updated) return { ok: false, error: 'gym-not-found' };
 
-  // 3) Audit trail (at minimum a server log: actor + action + target).
+  // 3) AUDIT PARITY (AUTH-DEPTH REQ3): a durable audit_logs row for the single
+  //    highest-privilege cross-tenant action, attributed to the platform admin and
+  //    scoped to the target gym (so the tenant's owner sees it too). Best-effort —
+  //    never blocks the suspend/reactivate. (The server log stays for ops tailing.)
+  await recordAudit(admin, {
+    tableName: 'gyms',
+    recordId: input.gymId,
+    operation: 'update',
+    gymId: input.gymId,
+    changedBy: user.id,
+    oldData: { is_active: !input.active },
+    newData: { is_active: input.active },
+  });
   console.log(
     `[vendor] setGymActive by ${user.email ?? user.id} (${user.id}): ` +
     `gym ${input.gymId} (${updated.slug ?? '—'} / ${updated.name_en ?? '—'}) → is_active=${input.active}`,
