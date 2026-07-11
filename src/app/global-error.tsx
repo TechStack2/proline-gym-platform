@@ -22,7 +22,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             An unexpected error occurred — please try again. · حدث خطأ غير متوقع — يرجى المحاولة مرة أخرى. · Une erreur est survenue — veuillez réessayer.
           </p>
           <button type="button" onClick={reset} data-testid="error-retry"
-            className="mt-6 rounded-xl bg-[#cd1419] px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]">
+            className="mt-6 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-800">
             Try again · إعادة المحاولة
           </button>
         </div>

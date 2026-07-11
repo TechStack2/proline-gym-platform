@@ -198,7 +198,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                     <FolderOpen className="h-3 w-3" /> {t('actions.file')}
                   </Link>
                   <Link href={`/${locale}/students/${student.id}?pay=1`} data-testid="row-pay"
-                    className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-[#cd1419] hover:bg-red-100">
+                    className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100">
                     <DollarSign className="h-3 w-3" /> {t('actions.pay')}
                   </Link>
                 </div>

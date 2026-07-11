@@ -580,7 +580,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                 return (
                   <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status} data-type={inv.invoice_type}>
                     <span className="flex flex-col">
-                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-[#cd1419] hover:underline">
+                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-primary-700 hover:underline">
                         {inv.invoice_number}
                       </Link>
                       {inv.payer_profile_id && inv.payer_profile_id !== profileId && (
@@ -674,7 +674,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               <ul className="space-y-1.5">
                 {payerInvoices.map((inv: any) => (
                   <li key={inv.id} className="flex items-center justify-between text-xs" data-testid="household-payer-row">
-                    <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-[#cd1419] hover:underline">{inv.invoice_number}</Link>
+                    <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-primary-700 hover:underline">{inv.invoice_number}</Link>
                     <span className="text-gray-500">{localizedName(one(one(inv.students)?.profiles), locale)}</span>
                     <span className={cn('rounded-full px-2 py-0.5 font-medium', STATUS_BADGE[inv.status])}>{statusLabel(inv.status, locale)}</span>
                   </li>

@@ -135,7 +135,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
                 <button key={d.id} type="button" data-testid="ptpkg-disc-chip" data-id={d.id}
                   onClick={() => setF((p) => ({ ...p, disciplineId: p.disciplineId === d.id ? '' : d.id }))}
                   className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                    f.disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
+                    f.disciplineId === d.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
                   {lname(d)}
                 </button>
               ))}
@@ -153,7 +153,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
           <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
           <p className="text-xs text-gray-500">{t('subtitle')}</p>
         </div>
-        <Button size="sm" data-testid="ptpkg-add-btn" disabled={busy} onClick={openCreate} className="shrink-0 bg-[#cd1419] hover:bg-[#a81014]">
+        <Button size="sm" data-testid="ptpkg-add-btn" disabled={busy} onClick={openCreate} className="shrink-0 bg-primary-700 hover:bg-primary-800">
           <Plus className="me-1 h-4 w-4" /> {t('add')}
         </Button>
       </div>

@@ -73,7 +73,7 @@ export async function PaymentsView({ locale, searchParams }: Props) {
             {METHODS.map((m) => <option key={m} value={m}>{methodLabel(m)}</option>)}
           </select>
         </div>
-        <button className="h-9 rounded-md bg-[#cd1419] px-4 text-sm font-medium text-primary-foreground hover:bg-[#a81014]">{t('Filter', 'تصفية', 'Filtrer')}</button>
+        <button className="h-9 rounded-md bg-primary-700 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-800">{t('Filter', 'تصفية', 'Filtrer')}</button>
         <Link href={`/${locale}/money?tab=payments`} className="h-9 rounded-md border px-4 text-sm leading-9 hover:bg-muted">{t('Clear', 'مسح', 'Effacer')}</Link>
       </form>
 
@@ -108,7 +108,7 @@ export async function PaymentsView({ locale, searchParams }: Props) {
                     </td>
                     <td className="p-3">
                       {inv ? (
-                        <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-[#cd1419] hover:underline">{inv.invoice_number}</Link>
+                        <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-primary-700 hover:underline">{inv.invoice_number}</Link>
                       ) : '—'}
                     </td>
                     <td className="p-3">{methodLabel(p.payment_method)}</td>

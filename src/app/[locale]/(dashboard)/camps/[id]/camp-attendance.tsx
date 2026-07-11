@@ -50,7 +50,7 @@ export function CampAttendance({ campId, day, days, kids, locale }: {
         {days.map((d) => (
           <Link key={d} href={`${pathname}?tab=attendance&date=${d}`} data-testid="camp-day-pill" data-date={d}
             className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-              d === day ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
+              d === day ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>
             {fmtPill(d)}
           </Link>
         ))}

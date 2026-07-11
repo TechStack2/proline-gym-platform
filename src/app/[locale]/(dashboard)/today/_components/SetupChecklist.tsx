@@ -28,11 +28,11 @@ export async function SetupChecklist({ locale, gymId }: { locale: string; gymId:
       data-done={doneCount}
       data-total={total}
       dir={isRTL ? 'rtl' : 'ltr'}
-      className="block rounded-2xl border border-[#cd1419]/20 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50"
+      className="block rounded-2xl border border-primary-700/20 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[#cd1419]/10 text-primary-600">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary-700/10 text-primary-600">
             <Sparkles className="h-4 w-4" />
           </span>
           <p className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</p>

@@ -186,7 +186,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                       </div>
                       <p className="text-xs text-gray-500">{fmtDate(inv.created_at)}</p>
                       <Link href={`/${locale}/invoices/${inv.id}/receipt`} data-testid="portal-receipt-link"
-                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#cd1419] hover:underline">
+                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-primary-700 hover:underline">
                         <Printer className="h-3 w-3" /> {t('receipt')}
                       </Link>
                     </div>

@@ -82,7 +82,7 @@ export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; l
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" data-testid="wv-active" checked={isActive} onChange={(e) => setIsActive(e.target.checked)}
-              className="h-4 w-4 accent-[#cd1419]" />
+              className="h-4 w-4 accent-primary-700" />
             {t('activeLabel')}
           </label>
           {bodyChanged && (
@@ -97,7 +97,7 @@ export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; l
     <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'rtl text-right')} data-testid="waiver-settings">
       <div className="flex items-center justify-between">
         <h3 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-          <FileSignature className="h-4 w-4 text-[#cd1419]" /> {t('title')}
+          <FileSignature className="h-4 w-4 text-primary-700" /> {t('title')}
         </h3>
         {tpl && (
           <span data-testid="waiver-template-version"
@@ -115,7 +115,7 @@ export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; l
         </p>
       )}
 
-      <Button size="sm" data-testid="wv-edit-open" onClick={() => setOpen(true)} className="gap-1 bg-[#cd1419] hover:bg-[#a81014]">
+      <Button size="sm" data-testid="wv-edit-open" onClick={() => setOpen(true)} className="gap-1 bg-primary-700 hover:bg-primary-800">
         <Pencil className="h-4 w-4" /> {tpl ? t('edit') : t('create')}
       </Button>
 

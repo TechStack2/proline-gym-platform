@@ -56,7 +56,7 @@ export async function FunnelStrip({ funnel, locale }: { funnel: Funnel; locale: 
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-2xs font-medium uppercase tracking-wider text-gray-400">{t('conversionRate')}</p>
-          <p className="mt-0.5 text-2xl font-bold text-[#cd1419]" data-testid="funnel-rate">{pct}%</p>
+          <p className="mt-0.5 text-2xl font-bold text-primary-700" data-testid="funnel-rate">{pct}%</p>
         </div>
       </div>
 

@@ -120,7 +120,7 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
                 <button key={d} type="button" data-testid="plan-duration-chip" data-value={d}
                   onClick={() => setDuration(d)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                    duration === d ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
+                    duration === d ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                   {t(`preset${d}` as Parameters<typeof t>[0])}
                 </button>
               ))}
@@ -148,7 +148,7 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
     <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'rtl text-right')} data-testid="plan-manager">
       <div className="flex items-center justify-between">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
-        <Button size="sm" data-testid="plan-add-btn" disabled={busy} onClick={() => openWizard(null)} className="bg-[#cd1419] hover:bg-[#a81014]">
+        <Button size="sm" data-testid="plan-add-btn" disabled={busy} onClick={() => openWizard(null)} className="bg-primary-700 hover:bg-primary-800">
           <Plus className="me-1 h-4 w-4" /> {t('add')}
         </Button>
       </div>

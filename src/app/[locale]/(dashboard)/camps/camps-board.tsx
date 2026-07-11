@@ -183,7 +183,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
 
   return (
     <div className="space-y-4">
-      <Button data-testid="camp-add-btn" onClick={openCreate} className="bg-[#cd1419] hover:bg-[#a81014]">
+      <Button data-testid="camp-add-btn" onClick={openCreate} className="bg-primary-700 hover:bg-primary-800">
         <Plus className="me-1 h-4 w-4" /> {t('addCamp')}
       </Button>
 
@@ -196,8 +196,8 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
               className="rounded-2xl border bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <Link href={`/${locale}/camps/${c.id}`} className="flex min-w-0 items-center gap-2.5">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#cd1419]/10">
-                    <Tent className="h-4 w-4 text-[#cd1419]" />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700/10">
+                    <Tent className="h-4 w-4 text-primary-700" />
                   </span>
                   <span className="min-w-0">
                     <span className={cn('block truncate text-sm font-semibold text-gray-900 hover:underline', isRTL && 'font-arabic')}>{lname(c)}</span>

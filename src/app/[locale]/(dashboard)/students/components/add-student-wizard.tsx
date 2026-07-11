@@ -198,7 +198,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
             </F>
           )}
           <label className="flex items-center gap-2 text-xs text-gray-500">
-            <input type="checkbox" data-testid="sw-guardian-skip" checked={gSkip} onChange={(e) => setGSkip(e.target.checked)} className="h-4 w-4 accent-[#cd1419]" />
+            <input type="checkbox" data-testid="sw-guardian-skip" checked={gSkip} onChange={(e) => setGSkip(e.target.checked)} className="h-4 w-4 accent-primary-700" />
             {t('skipGuardian')}
           </label>
         </div>
@@ -220,7 +220,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
               <button key={p.id} type="button" data-testid="sw-plan-chip" data-id={p.id}
                 onClick={() => setPlanId(p.id)}
                 className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                  planId === p.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
+                  planId === p.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                 {p.name} · ${p.price.toFixed(0)}
               </button>
             ))}

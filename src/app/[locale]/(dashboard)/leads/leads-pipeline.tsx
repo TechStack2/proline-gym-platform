@@ -167,7 +167,7 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
             href={`/${locale}/students?tab=prospects${s.key === 'all' ? '' : `&status=${s.key}`}`}
             data-testid={`prospect-chip-${s.key}`}
             data-count={s.count}
-            className={`text-center p-3 rounded-xl border ${s.color} bg-opacity-20 transition-shadow hover:shadow-md ${activeStatus === s.key ? 'ring-2 ring-[#cd1419]/50' : ''}`}
+            className={`text-center p-3 rounded-xl border ${s.color} bg-opacity-20 transition-shadow hover:shadow-md ${activeStatus === s.key ? 'ring-2 ring-primary-700/50' : ''}`}
           >
             <div className="text-2xl font-bold">{s.count}</div>
             <div className="text-xs font-medium mt-0.5">{s.label}</div>

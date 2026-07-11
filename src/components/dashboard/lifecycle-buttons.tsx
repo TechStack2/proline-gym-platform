@@ -24,7 +24,7 @@ export function RenewRowButton({ membershipId, studentId }: { membershipId: stri
     })
   return (
     <button type="button" data-testid="expiring-renew" disabled={pending} onClick={renew}
-      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-50">
+      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-700 px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-800 disabled:opacity-50">
       {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} {t('renewShort')}
     </button>
   )
@@ -44,7 +44,7 @@ export function ResumeRowButton({ membershipId, studentId }: { membershipId: str
     })
   return (
     <button type="button" data-testid="paused-resume" disabled={pending} onClick={resume}
-      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-50">
+      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-700 px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-800 disabled:opacity-50">
       {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />} {t('resumeShort')}
     </button>
   )
@@ -74,7 +74,7 @@ export function ProcessRenewalsButton() {
     })
   return (
     <button type="button" data-testid="process-renewals-now" disabled={pending} onClick={run}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-50">
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-800 disabled:opacity-50">
       {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />} {t('processNow')}
     </button>
   )

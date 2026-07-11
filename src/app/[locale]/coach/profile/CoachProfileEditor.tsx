@@ -108,7 +108,7 @@ export function CoachProfileEditor({
             value={f[`specialization_${l.code}` as keyof Fields]}
             onChange={(e) => set(`specialization_${l.code}` as keyof Fields, e.target.value)}
             placeholder={l.label}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#cd1419] focus:outline-none focus:ring-1 focus:ring-[#cd1419]"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-700 focus:outline-none focus:ring-1 focus:ring-primary-700"
           />
         ))}
       </div>
@@ -125,7 +125,7 @@ export function CoachProfileEditor({
             value={f[`bio_${l.code}` as keyof Fields]}
             onChange={(e) => set(`bio_${l.code}` as keyof Fields, e.target.value)}
             placeholder={`${t('bioLabel')} — ${l.label}`}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#cd1419] focus:outline-none focus:ring-1 focus:ring-[#cd1419]"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-700 focus:outline-none focus:ring-1 focus:ring-primary-700"
           />
         ))}
       </div>
@@ -136,7 +136,7 @@ export function CoachProfileEditor({
           data-testid="coach-save-draft"
           onClick={submit}
           disabled={pendingTx}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-[#a81014] disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800 disabled:opacity-60"
         >
           {pendingTx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {t('save')}
         </button>

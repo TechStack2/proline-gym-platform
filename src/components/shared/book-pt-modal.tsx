@@ -105,7 +105,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
   return (
     <>
       <Button size="sm" data-testid={triggerTestid} onClick={openModal}
-        className={cn(staff ? 'h-7 border bg-white text-xs text-gray-700 hover:bg-gray-50' : 'bg-[#cd1419] hover:bg-[#a81014]')}
+        className={cn(staff ? 'h-7 border bg-white text-xs text-gray-700 hover:bg-gray-50' : 'bg-primary-700 hover:bg-primary-800')}
         variant={staff ? 'outline' : 'primary'}>
         <CalendarPlus className="me-1 h-3.5 w-3.5" /> {triggerLabel ?? t('book')}
       </Button>
@@ -133,7 +133,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                   onChange={(e) => setProposeAt(e.target.value)}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" />
                 <Button data-testid="pt-propose-submit" onClick={submitPropose} disabled={pending}
-                  className="w-full bg-[#cd1419] hover:bg-[#a81014]">
+                  className="w-full bg-primary-700 hover:bg-primary-800">
                   {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Send className="me-1 h-4 w-4" />} {t('sendProposal')}
                 </Button>
                 <button type="button" className="w-full text-center text-xs text-gray-500 hover:underline" onClick={() => setPropose(false)}>
@@ -146,7 +146,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                   <label className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-700">
                     {t('overrideToggle')}
                     <input type="checkbox" data-testid="pt-override-toggle" checked={override}
-                      onChange={(e) => { setOverride(e.target.checked); setWarning('') }} className="h-4 w-4 accent-[#cd1419]" />
+                      onChange={(e) => { setOverride(e.target.checked); setWarning('') }} className="h-4 w-4 accent-primary-700" />
                   </label>
                 )}
 
@@ -162,7 +162,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                     )}
                     <Button data-testid="pt-override-book" disabled={pending || !overrideAt}
                       onClick={() => book(new Date(overrideAt).toISOString(), true)}
-                      className="w-full bg-[#cd1419] hover:bg-[#a81014]">
+                      className="w-full bg-primary-700 hover:bg-primary-800">
                       {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('bookOverride')}
                     </Button>
                   </div>
@@ -177,7 +177,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                         {t('noAvailabilityStaff', { coach: coachName ?? t('theCoach') })}
                       </p>
                       <Link href={`/${locale}/coaches/${coachId}#panel-availability`} data-testid="pt-set-availability-link"
-                        className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[#a81014]">
+                        className="inline-flex items-center gap-1 rounded-full bg-primary-700 px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-800">
                         <CalendarPlus className="h-3.5 w-3.5" /> {t('setAvailability')}
                       </Link>
                     </div>
@@ -193,7 +193,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                           {d.slots.map((s: { iso: string; label: string }) => (
                             <button key={s.iso} type="button" data-testid="pt-slot" data-when={s.iso} disabled={pending}
                               onClick={() => book(s.iso)}
-                              className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-[#cd1419] hover:text-[#cd1419] disabled:opacity-50"
+                              className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-primary-700 hover:text-primary-700 disabled:opacity-50"
                               dir="ltr">
                               {s.label}
                             </button>

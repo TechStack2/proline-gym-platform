@@ -187,7 +187,7 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
     <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'rtl text-right')} data-testid="discipline-manager">
       <div className="flex items-center justify-between">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('manageTitle')}</h3>
-        <Button size="sm" data-testid="discipline-add-btn" disabled={busy} onClick={openCreate} className="bg-[#cd1419] hover:bg-[#a81014]">
+        <Button size="sm" data-testid="discipline-add-btn" disabled={busy} onClick={openCreate} className="bg-primary-700 hover:bg-primary-800">
           <Plus className="me-1 h-4 w-4" /> {t('add')}
         </Button>
       </div>

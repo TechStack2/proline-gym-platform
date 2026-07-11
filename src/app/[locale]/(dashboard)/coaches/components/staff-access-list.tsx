@@ -60,7 +60,7 @@ export function StaffAccessList({
   return (
     <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm" data-testid="staff-access-list" dir={isRTL ? 'rtl' : 'ltr'}>
       <h2 className={cn('mb-1 flex items-center gap-1.5 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-        <ShieldCheck className="h-4 w-4 text-[#cd1419]" /> {t('Team & access', 'الفريق والوصول', 'Équipe et accès')}
+        <ShieldCheck className="h-4 w-4 text-primary-700" /> {t('Team & access', 'الفريق والوصول', 'Équipe et accès')}
       </h2>
       <p className="mb-3 text-xs text-gray-500">
         {t('Everyone with a staff login. Deactivate to retire access without deleting history.',

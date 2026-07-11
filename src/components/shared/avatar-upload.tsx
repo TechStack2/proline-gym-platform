@@ -121,7 +121,7 @@ export function AvatarUpload({
       >
         <Avatar url={url} name={name} size={size} />
         <span className={cn(
-          'absolute -bottom-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#cd1419] text-primary-foreground ring-2 ring-white',
+          'absolute -bottom-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary-700 text-primary-foreground ring-2 ring-white',
           busy && 'opacity-70',
         )}>
           {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}

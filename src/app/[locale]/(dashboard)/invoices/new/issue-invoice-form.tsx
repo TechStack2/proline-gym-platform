@@ -133,7 +133,7 @@ export function IssueInvoiceForm({
 
       {error && <div data-testid="issue-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-      <Button data-testid="issue-submit" onClick={submit} disabled={pending} className="bg-[#cd1419] hover:bg-[#a81014]">
+      <Button data-testid="issue-submit" onClick={submit} disabled={pending} className="bg-primary-700 hover:bg-primary-800">
         {pending ? t('Issuing…', 'جارٍ الإصدار…', 'Émission…') : t('Issue invoice', 'إصدار الفاتورة', 'Émettre la facture')}
       </Button>
     </div>

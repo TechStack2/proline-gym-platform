@@ -56,7 +56,7 @@ export async function PortalCampsSection({ studentId, actingFor, locale }: {
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm" data-testid="portal-camps">
       <h2 className={cn('mb-3 flex items-center gap-2 text-sm font-bold text-gray-900', isRTL && 'font-arabic')}>
-        <Tent className="h-4 w-4 text-[#cd1419]" /> {t('title')}
+        <Tent className="h-4 w-4 text-primary-700" /> {t('title')}
       </h2>
       <div className="space-y-2">
         {(camps as any[]).map((c) => {

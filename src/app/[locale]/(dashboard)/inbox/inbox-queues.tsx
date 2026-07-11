@@ -226,7 +226,7 @@ export function InboxQueues({
                           <button key={c.id} type="button" data-testid="inbox-pt-coach-chip" data-id={c.id}
                             onClick={() => setPtCoach((p) => ({ ...p, [r.id]: c.id }))}
                             className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                              ptCoach[r.id] === c.id ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                              ptCoach[r.id] === c.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                             {c.name}
                           </button>
                         ))}

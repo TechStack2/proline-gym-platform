@@ -252,7 +252,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
           placeholder={msg('coach.students.searchPlaceholder')}
           className={cn(
             'w-full rounded-xl border border-gray-200 bg-white py-2.5 text-sm text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-[#cd1419]/30 focus:border-[#cd1419]',
+            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700',
             'placeholder:text-gray-400 appearance-none',
             isRTL ? 'pr-9 pl-4' : 'pl-9 pr-4'
           )}
@@ -266,7 +266,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
           onChange={e => setDisciplineFilter(e.target.value)}
           className={cn(
             'flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-[#cd1419]/30 focus:border-[#cd1419]'
+            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700'
           )}
         >
           <option value="">{msg('coach.students.allDisciplines')}</option>
@@ -280,7 +280,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
           onChange={e => setBeltFilter(e.target.value)}
           className={cn(
             'flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-[#cd1419]/30 focus:border-[#cd1419]'
+            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700'
           )}
         >
           <option value="">{msg('coach.students.allBelts')}</option>
@@ -325,7 +325,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
               className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors"
             >
               {/* Avatar */}
-              <div className="h-10 w-10 rounded-full bg-[#cd1419]/10 text-[#cd1419] inline-flex items-center justify-center text-sm font-bold flex-shrink-0">
+              <div className="h-10 w-10 rounded-full bg-primary-700/10 text-primary-700 inline-flex items-center justify-center text-sm font-bold flex-shrink-0">
                 {student.first_name?.charAt(0) || '?'}
               </div>
 

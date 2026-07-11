@@ -79,7 +79,7 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
       {/* ── Header: friendly title + derived progress ── */}
       <div>
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#cd1419]/10 text-primary-600">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-700/10 text-primary-600">
             <Sparkles className="h-5 w-5" />
           </span>
           <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
@@ -245,7 +245,7 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
             <span
               className={cn(
                 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                golive.done ? 'bg-green-600 text-primary-foreground' : 'bg-[#cd1419]/10 text-primary-600',
+                golive.done ? 'bg-green-600 text-primary-foreground' : 'bg-primary-700/10 text-primary-600',
               )}
             >
               {golive.done ? <Check className="h-5 w-5" /> : <Rocket className="h-5 w-5" />}
@@ -377,7 +377,7 @@ function MilestoneCard({
         <span
           className={cn(
             'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-            done ? 'bg-green-600 text-primary-foreground' : 'bg-[#cd1419]/10 text-primary-600',
+            done ? 'bg-green-600 text-primary-foreground' : 'bg-primary-700/10 text-primary-600',
           )}
         >
           {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}

@@ -84,7 +84,7 @@ export function WhatsAppSettings({ initial, locale }: { initial: WhatsAppStatus;
       <p className="flex items-center gap-1 text-2xs text-gray-400"><ShieldCheck className="h-3 w-3" /> {t('tokenNote')}</p>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" data-testid="wa-save" disabled={busy} onClick={save} className="bg-[#cd1419] hover:bg-[#a81014]">
+        <Button size="sm" data-testid="wa-save" disabled={busy} onClick={save} className="bg-primary-700 hover:bg-primary-800">
           {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />} {t('save')}
         </Button>
         {saved && <span data-testid="wa-saved" className="text-xs font-medium text-green-600">{t('savedOk')}</span>}

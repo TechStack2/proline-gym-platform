@@ -7,6 +7,7 @@ import { FrontDeskOfflineLayer } from '@/components/offline/front-desk-offline-l
 import { SentryTags } from '@/components/observability/sentry-tags';
 import { DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 import { storagePublicUrl } from '@/lib/storage/public-url';
+import { BrandThemeStyle } from '@/components/shared/brand-theme-style';
 
 // AX-1 shell identity: per-shell PWA theme-color (staff = brand red). DS-2: now
 // per light/dark — the meta theme-color media queries track the OS prefers-color-
@@ -46,15 +47,16 @@ export default async function DashboardLayout({ children, params }: Props) {
   const role = (await getUserRole(supabase, user.id)) as 'owner' | 'head_coach' | 'coach' | 'receptionist' | 'student' | 'parent' | 'external_coach';
 
   // OBSERVE: the gym slug for Sentry tagging (non-identifying). TENANT-CONTENT: the SAME
-  // read now also carries the user's gym name + logo so the staff shell brands by the
-  // USER's gym (never a hardcoded "PRO LINE Gym" / Host). Best-effort — a null never
-  // blocks the render.
+  // read carries the user's gym name + logo so the staff shell brands by the USER's gym
+  // (never a hardcoded "PRO LINE Gym" / Host). WL-THEME: it also carries brand_color →
+  // every primary-* accent follows the gym. Best-effort — a null never blocks the render.
   const { data: gymRow } = await supabase
-    .from('profiles').select('gyms(slug, name_ar, name_en, name_fr, logo_url)').eq('id', user.id).maybeSingle();
+    .from('profiles').select('gyms(slug, name_ar, name_en, name_fr, logo_url, brand_color)').eq('id', user.id).maybeSingle();
   const rawGym = (gymRow as { gyms?: unknown } | null)?.gyms;
   const gymNode = Array.isArray(rawGym) ? rawGym[0] : rawGym;
-  const g = gymNode as { slug?: string; name_ar?: string; name_en?: string; name_fr?: string; logo_url?: string } | null | undefined;
+  const g = gymNode as { slug?: string; name_ar?: string; name_en?: string; name_fr?: string; logo_url?: string; brand_color?: string | null } | null | undefined;
   const gymSlug = g?.slug ?? null;
+  const brandColor = g?.brand_color ?? null;
   // The default gym keeps the static /logo.jpg (zero visual change); other tenants
   // resolve their own logo (or null → the shell renders an initials placeholder).
   const isDefaultGym = gymSlug === DEFAULT_GYM_SLUG;
@@ -63,6 +65,8 @@ export default async function DashboardLayout({ children, params }: Props) {
 
   return (
     <>
+      {/* WL-THEME: the authed gym's brand ramp for every primary-* accent in this shell. */}
+      <BrandThemeStyle brandColor={brandColor} />
       {/* OBSERVE: tag client Sentry events with gym slug + role (never user identity). */}
       <SentryTags gym={gymSlug} role={role} />
       {/* OFF-1: one shared offline layer (banner + installable-PWA affordance) for

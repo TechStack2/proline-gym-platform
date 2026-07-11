@@ -112,7 +112,7 @@ function WinbackCard({
           <WhatsAppShare phone={row.phone} testid="winback-wa"
             message={tw('tmpl.winback', { name: row.name, gym: gymName })} label={tw('share.reachOut')} />
           <Link href={`/${locale}/students/${row.studentId}`} data-testid="winback-reactivate"
-            className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
+            className="inline-flex items-center gap-1 rounded-full bg-primary-700 px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-800">
             <RotateCcw className="h-3.5 w-3.5" /> {t('reactivate')}
           </Link>
         </div>
@@ -132,7 +132,7 @@ function WinbackCard({
               <button key={o} type="button" data-testid="winback-outcome-chip" data-value={o}
                 onClick={() => setOutcome(o)}
                 className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
-                  outcome === o ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
+                  outcome === o ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
                 {t(`outcome.${o}` as Parameters<typeof t>[0])}
               </button>
             ))}
@@ -145,7 +145,7 @@ function WinbackCard({
               dir="ltr" className="h-9 rounded-lg border px-3 text-sm" />
           </div>
           <button type="button" data-testid="winback-log-submit" disabled={busy} onClick={submit}
-            className="inline-flex items-center gap-1 rounded-xl bg-[#cd1419] px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-[#a81014] disabled:opacity-50">
+            className="inline-flex items-center gap-1 rounded-xl bg-primary-700 px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-800 disabled:opacity-50">
             {busy ? <PhoneOff className="h-4 w-4 animate-pulse" /> : <Check className="h-4 w-4" />} {t('save')}
           </button>
         </div>

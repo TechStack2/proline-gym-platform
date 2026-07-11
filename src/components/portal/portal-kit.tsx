@@ -87,7 +87,7 @@ export function PortalCardTitle({
   return (
     <div className={cn('mb-3 flex items-center justify-between gap-2', className)}>
       <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-gray-900">
-        {Icon && <Icon data-testid="portal-brand" className="h-4 w-4 shrink-0 text-[#cd1419]" />}
+        {Icon && <Icon data-testid="portal-brand" className="h-4 w-4 shrink-0 text-primary-700" />}
         <span className="truncate">{children}</span>
       </h3>
       {right}

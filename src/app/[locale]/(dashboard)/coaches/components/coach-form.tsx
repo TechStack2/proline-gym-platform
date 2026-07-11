@@ -247,7 +247,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
                   onClick={() => toggle(d.id)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                     selected.includes(d.id)
-                      ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground'
+                      ? 'border-primary-700 bg-primary-700 text-primary-foreground'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                   {dName(d)}
                 </button>
@@ -299,13 +299,13 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
                   <button type="button" data-testid="coach-access-yes" data-active={giveAccess}
                     onClick={() => setGiveAccess(true)}
                     className={cn('flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
-                      giveAccess ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                      giveAccess ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                     {t('accessYes')}
                   </button>
                   <button type="button" data-testid="coach-access-no" data-active={!giveAccess}
                     onClick={() => setGiveAccess(false)}
                     className={cn('flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
-                      !giveAccess ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                      !giveAccess ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                     {t('accessNo')}
                   </button>
                 </div>

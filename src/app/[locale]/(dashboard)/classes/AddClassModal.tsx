@@ -234,7 +234,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 <button key={d.id} type="button" data-testid="wizard-discipline-chip" data-id={d.id}
                   onClick={() => setDisciplineId(d.id)}
                   className={cn('inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
-                    disciplineId === d.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                    disciplineId === d.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                   <DisciplineIcon iconUrl={d.icon_url} name={d[`name_${locale}`] || d.name_en} size="xs" />
                   {d[`name_${locale}`] || d.name_en}
                 </button>
@@ -250,7 +250,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
               <div data-testid="wizard-no-coaches" className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                 <p className={cn('text-sm text-amber-800', isRTL && 'font-arabic text-right')}>{t('noCoachesHint')}</p>
                 <Link href={`/${locale}/coaches/add`} data-testid="wizard-add-coach-cta"
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#cd1419] px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-[#a81014]">
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-800">
                   <Plus className="h-4 w-4" /> {t('addCoachCta')}
                 </Link>
               </div>
@@ -262,7 +262,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                     <button key={c.id} type="button" data-testid="wizard-coach-chip" data-id={c.id}
                       onClick={() => setCoachId(c.id)}
                       className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
-                        coachId === c.id ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                        coachId === c.id ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                       <Avatar url={one(c.profiles)?.avatar_url} name={name} size="sm" />
                       {name}
                     </button>
@@ -285,7 +285,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 <button key={d} type="button" data-testid="wizard-day-pill" data-dow={d}
                   onClick={() => toggleDay(d)}
                   className={cn('min-w-[3.25rem] rounded-full border px-3 py-2 text-sm font-medium transition-colors',
-                    days.includes(d) ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                    days.includes(d) ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                   {dayLabel(d)}
                 </button>
               ))}
@@ -306,7 +306,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 <button key={p} type="button" data-testid="wizard-preset" data-time={p}
                   onClick={() => applyPreset(p)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium', shared.start === p && Object.keys(overrides).length === 0
-                    ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 text-gray-600 hover:border-gray-300')}
+                    ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300')}
                   dir="ltr">
                   {p}
                 </button>
@@ -386,7 +386,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 <button key={s} type="button" data-testid="wizard-status-pill" data-value={s}
                   onClick={() => setStatus(s)}
                   className={cn('rounded-full border px-4 py-2 text-sm font-medium transition-colors',
-                    status === s ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                    status === s ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                   {t(`statusValues.${s}` as any)}
                 </button>
               ))}
@@ -401,7 +401,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
               <span className="block text-sm font-medium text-gray-900">{t('showOnLanding')}</span>
               <span className="block text-xs text-gray-400">{t('showOnLandingHint')}</span>
             </span>
-            <span className={cn('relative h-6 w-11 rounded-full transition-colors', showOnLanding ? 'bg-[#cd1419]' : 'bg-gray-200')}>
+            <span className={cn('relative h-6 w-11 rounded-full transition-colors', showOnLanding ? 'bg-primary-700' : 'bg-gray-200')}>
               <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', showOnLanding ? (isRTL ? 'right-5' : 'left-5') : (isRTL ? 'right-0.5' : 'left-0.5'))} />
             </span>
           </button>

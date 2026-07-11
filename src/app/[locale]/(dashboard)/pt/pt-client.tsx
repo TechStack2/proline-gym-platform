@@ -555,7 +555,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                             <button key={c.id} type="button" data-testid="pt-req-coach-chip" data-id={c.id}
                               onClick={() => setReqCoach((prev) => ({ ...prev, [req.id]: c.id }))}
                               className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                                reqCoach[req.id] === c.id ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                                reqCoach[req.id] === c.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                               {getCoachName(c)}
                             </button>
                           ))}

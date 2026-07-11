@@ -24,7 +24,7 @@ export function DiaryBookPt({ assignments, locale }: { assignments: DiaryAssignm
     <div className="mt-2 border-t pt-2">
       {!open ? (
         <button type="button" data-testid="diary-book-pt" onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:border-[#cd1419] hover:text-[#cd1419]">
+          className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:border-primary-700 hover:text-primary-700">
           <CalendarPlus className="h-3 w-3" /> {t('book')}
         </button>
       ) : (
@@ -34,7 +34,7 @@ export function DiaryBookPt({ assignments, locale }: { assignments: DiaryAssignm
               <button key={a.id} type="button" data-testid="diary-pt-member-chip"
                 onClick={() => setPicked(a.id)}
                 className={cn('rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                  picked === a.id ? 'border-[#cd1419] bg-red-50 text-[#cd1419]' : 'border-gray-200 text-gray-600')}>
+                  picked === a.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600')}>
                 {a.studentName} · {a.remaining}
               </button>
             ))}

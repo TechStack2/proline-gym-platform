@@ -68,7 +68,7 @@ export default async function StaffProfilePage({ params }: Props) {
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       {/* Avatar + Name Card */}
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
-        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-[#cd1419] text-primary-foreground text-3xl font-bold mb-3">
+        <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-primary-700 text-primary-foreground text-3xl font-bold mb-3">
           {firstName?.charAt(0) || '?'}
         </div>
         <h2 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')}>
@@ -87,7 +87,7 @@ export default async function StaffProfilePage({ params }: Props) {
             return (
               <span
                 key={r.id}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-[#cd1419]"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700"
               >
                 <Shield className="h-3 w-3" />
                 {label}
@@ -158,7 +158,7 @@ export default async function StaffProfilePage({ params }: Props) {
       {/* Edit Profile Form */}
       <form action={updateProfile} className="rounded-2xl bg-white p-6 shadow-sm space-y-5">
         <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-[#cd1419]" />
+          <User className="h-4 w-4 text-primary-700" />
           <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
             {isRTL ? 'تعديل الملف الشخصي' : locale === 'fr' ? 'Modifier le profil' : 'Edit Profile'}
           </h3>
@@ -211,7 +211,7 @@ export default async function StaffProfilePage({ params }: Props) {
             <select
               name="locale"
               defaultValue={profile?.locale || 'ar'}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#cd1419] focus:border-transparent bg-white"
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent bg-white"
             >
               <option value="ar">العربية</option>
               <option value="en">English</option>
@@ -222,7 +222,7 @@ export default async function StaffProfilePage({ params }: Props) {
 
         <button
           type="submit"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#cd1419] text-primary-foreground text-sm font-medium rounded-xl hover:bg-[#b01216] active:bg-[#9a0f13] transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-700 text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary-800 active:bg-primary-800 transition-colors"
         >
           <Save className="h-4 w-4" />
           {isRTL ? 'حفظ التغييرات' : locale === 'fr' ? 'Enregistrer les modifications' : 'Save Changes'}
@@ -265,7 +265,7 @@ function InputField({
         name={name}
         defaultValue={defaultValue}
         dir={dir}
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#cd1419] focus:border-transparent placeholder:text-gray-400"
+        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent placeholder:text-gray-400"
       />
     </div>
   )

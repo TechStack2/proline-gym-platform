@@ -111,7 +111,7 @@ export default async function PortalSchedulePage({ params: { locale } }: Props) 
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-semibold text-gray-900">{className(enr.classes)}</p>
-                      <p className="text-sm text-[#cd1419] font-medium">{discipline(enr.classes?.disciplines)}</p>
+                      <p className="text-sm text-primary-700 font-medium">{discipline(enr.classes?.disciplines)}</p>
                     </div>
                     <div className="text-end">
                       <div className="flex items-center gap-1 text-sm text-gray-600">

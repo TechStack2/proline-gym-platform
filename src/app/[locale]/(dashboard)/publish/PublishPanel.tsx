@@ -310,7 +310,7 @@ function ToggleRow({
           aria-pressed={on}
           className="relative inline-flex items-center disabled:opacity-50"
         >
-          <span className={cn('relative h-6 w-11 rounded-full transition-colors', on ? 'bg-[#cd1419]' : 'bg-gray-200')}>
+          <span className={cn('relative h-6 w-11 rounded-full transition-colors', on ? 'bg-primary-700' : 'bg-gray-200')}>
             <span
               className={cn(
                 'absolute top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-all',

@@ -265,12 +265,20 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   // BUG 3: per-class color chips as a NONCE'D <style> + data-attr, NOT inline
   // style={{}} (SSR'd → stripped by the prod strict style-src CSP). Server component.
   const chipNonce = headers().get('X-CSP-Nonce') ?? ''
-  const chipNorm = (c: string | null | undefined): string =>
-    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : '#cd1419'
-  const chipBgToken = (c: string | null | undefined): string => 's' + chipNorm(c).slice(1)
-  const chipBgCss = [...new Set<string>((todayClasses as any[]).map((s) => chipNorm(s.cls?.color)).concat('#cd1419'))]
+  // WL-THEME-R2: a class with a real per-class colour keeps it (categorical, not brand);
+  // an UNCOLOURED class's left bar falls back to the gym BRAND — `rgb(var(--c-brand-700))`
+  // — not a hardcoded crimson, so the row follows the tenant (the gym blue for a branded
+  // gym; Proline stays crimson because --c-brand-700 defaults to 205 20 25 = #cd1419,
+  // byte-identical). The brand fallback rides the same nonce'd stylesheet (CSP-safe).
+  const chipNorm = (c: string | null | undefined): string | null =>
+    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : null
+  const chipBgToken = (c: string | null | undefined): string => {
+    const n = chipNorm(c)
+    return n ? 's' + n.slice(1) : 'brand'
+  }
+  const chipBgCss = [...new Set<string>((todayClasses as any[]).map((s) => chipNorm(s.cls?.color)).filter(Boolean) as string[])]
     .map((c) => `[data-chipbg="s${c.slice(1)}"]{background-color:${c}}`)
-    .join('')
+    .join('') + '[data-chipbg="brand"]{background-color:rgb(var(--c-brand-700))}'
 
   return (
     <div className="space-y-4">
@@ -285,7 +293,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
             return (
               <div key={s.id} data-testid="today-class-row"
                 className={cn('flex items-center justify-between gap-3 rounded-xl border bg-gray-50/60 px-3 py-2.5 hover:bg-gray-50',
-                  phase === 'now' && 'border-[#cd1419]/40 ring-1 ring-[#cd1419]/30')}>
+                  phase === 'now' && 'border-primary-700/40 ring-1 ring-primary-700/30')}>
                 <Link href={`/${locale}/attendance`} className="flex min-w-0 flex-1 items-center gap-3">
                   <span className="h-9 w-1.5 shrink-0 rounded-full" data-chipbg={chipBgToken(s.cls.color)} />
                   <div className="min-w-0">
@@ -293,7 +301,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                       {clsName(s.cls)}
                       {phase && (
                         <span className={cn('ms-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase',
-                          phase === 'now' ? 'bg-[#cd1419] text-primary-foreground' : 'bg-gray-900 text-white')}>
+                          phase === 'now' ? 'bg-primary-700 text-primary-foreground' : 'bg-gray-900 text-white')}>
                           {t(`cards.${phase}`)}
                         </span>
                       )}
@@ -355,7 +363,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
               <p className="truncate text-sm font-semibold text-gray-900">{localizedName(prof, locale)}</p>
               <p className="text-xs text-gray-500">
                 {lname(one(m.membership_plans))} ·{' '}
-                <span className={cn(today && 'font-bold text-[#cd1419]')}>
+                <span className={cn(today && 'font-bold text-primary-700')}>
                   {today ? t('cards.endsToday') : t('cards.endsOn', { date: fmtDate(m.end_date) })}
                 </span>
               </p>
@@ -375,7 +383,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
               action={
                 <span className="flex shrink-0 items-center gap-1.5">
                   <Link href={`/${locale}/students/${st?.id}?pay=1`} data-testid="chase-pay"
-                    className="inline-flex items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
+                    className="inline-flex items-center gap-1 rounded-full bg-primary-700 px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-800">
                     <DollarSign className="h-3.5 w-3.5" /> {t('cards.recordPayment')}
                   </Link>
                   <WhatsAppShare phone={prof2?.phone} testid="chase-wa"
@@ -478,7 +486,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           <ActionRow key={inv.id} href={`/${locale}/money?tab=invoices`} testid="money-due-row"
             action={
               <Link href={`/${locale}/invoices/${inv.id}`} data-testid="money-record-payment"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-700 px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-800">
                 <DollarSign className="h-3.5 w-3.5" /> {t('cards.recordPayment')}
               </Link>
             }>
@@ -539,7 +547,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           <ActionRow key={r.assignmentId} href={`/${locale}/students/${r.studentId}`} testid="refill-row"
             action={
               <Link href={`/${locale}/students/${r.studentId}?sellpt=${r.packageId}`} data-testid="refill-resell"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#cd1419] px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-[#a81014]">
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-700 px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-800">
                 <RefreshCw className="h-3.5 w-3.5" /> {t('cards.resell')}
               </Link>
             }>

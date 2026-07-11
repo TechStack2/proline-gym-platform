@@ -218,7 +218,7 @@ export default async function StudentsPage({
             data-testid={`chip-${k}`}
             data-count={chipCounts[k]}
             className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-              chip === k ? 'border-[#cd1419] bg-[#cd1419] text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}
+              chip === k ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}
           >
             {t(`chips.${k}`)} · {chipCounts[k]}
           </Link>

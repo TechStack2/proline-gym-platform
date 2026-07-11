@@ -97,7 +97,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div className="flex items-center justify-end">
         <Link href={`/${locale}/invoices/new`} data-testid="new-invoice-btn"
-          className="inline-flex items-center rounded-md bg-[#cd1419] px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-[#a81014]">
+          className="inline-flex items-center rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800">
           <Plus className="me-2 h-4 w-4" /> {t('New invoice', 'فاتورة جديدة', 'Nouvelle facture')}
         </Link>
       </div>
@@ -153,7 +153,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                 return (
                   <tr key={inv.id} className="border-b hover:bg-muted/40" data-testid="invoice-row" data-invoice-number={inv.invoice_number}>
                     <td className="p-3">
-                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono font-medium text-[#cd1419] hover:underline">{inv.invoice_number}</Link>
+                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono font-medium text-primary-700 hover:underline">{inv.invoice_number}</Link>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <span data-testid="invoice-type-badge" data-type={inv.invoice_type || 'other'}
                           className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>

@@ -100,7 +100,7 @@ export function CoachCreatedPanel({
           </div>
 
           <div className="flex items-center justify-end border-t px-5 py-3">
-            <Button size="sm" data-testid="coach-created-done" onClick={done} className="bg-[#cd1419] hover:bg-[#a81014]">
+            <Button size="sm" data-testid="coach-created-done" onClick={done} className="bg-primary-700 hover:bg-primary-800">
               {t('done')}
             </Button>
           </div>
