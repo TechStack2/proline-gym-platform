@@ -1744,6 +1744,18 @@
       "trial_outcome": {
         "title": "Résultat d'essai enregistré",
         "body": "{leadName} — {outcome}"
+      },
+      "member_request": {
+        "title": "Nouvelle demande de membre",
+        "body": "{studentName} a envoyé une demande {kind}"
+      },
+      "member_request_approved": {
+        "title": "Demande approuvée",
+        "body": "Votre demande {kind} a été approuvée"
+      },
+      "member_request_declined": {
+        "title": "Demande refusée",
+        "body": "Votre demande {kind} a été refusée"
       }
     }
   },
@@ -2150,7 +2162,22 @@
     "coachRequired": "Choisissez un coach pour approuver — la formule ne peut pas être réservée sans coach.",
     "coachLabel": "Coach : {coach}",
     "assignCoachToBook": "Assignez un coach pour que le membre puisse réserver",
-    "noCoachesToAssign": "Ajoutez d'abord un coach, puis approuvez."
+    "noCoachesToAssign": "Ajoutez d'abord un coach, puis approuvez.",
+    "memberRequests": "Demandes des membres",
+    "mrKind": {
+      "profile_change": "Modification du profil",
+      "renewal": "Renouvellement",
+      "freeze": "Gel"
+    },
+    "mrField": {
+      "dob": "Date de naissance",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "emergencyName": "Contact d'urgence",
+      "emergencyPhone": "Téléphone d'urgence",
+      "medical": "Notes médicales"
+    },
+    "mrFreezeDays": "Gel · {days} jours"
   },
   "member360": {
     "age": "{age} ans",
@@ -2317,6 +2344,14 @@
       "blockedTitle": "Le tuteur détient l'accès",
       "blockedBody": "Ce membre n'a pas son propre identifiant. Invitez plutôt son tuteur.",
       "toGuardians": "Aller aux tuteurs"
+    },
+    "membership": "Abonnement",
+    "msState": {
+      "active": "Actif",
+      "expiring": "Expire bientôt",
+      "overdue": "En retard",
+      "lapsed": "Terminé",
+      "frozen": "Gelé"
     }
   },
   "promote": {
@@ -2658,7 +2693,20 @@
     "outstanding": "Solde dû",
     "allSettled": "Tout est réglé",
     "invoice": "Facture",
-    "enrolledClasses": "Inscrits"
+    "enrolledClasses": "Inscrits",
+    "requestRenewal": "Demander le renouvellement",
+    "renewalRequested": "Renouvellement demandé — le personnel confirmera",
+    "renewalPending": "Renouvellement demandé",
+    "requestFreeze": "Demander un gel",
+    "freezeRequested": "Gel demandé — le personnel confirmera",
+    "freezePending": "Gel demandé",
+    "freezeTitle": "Demander un gel de l'abonnement",
+    "freezeIntro": "Le personnel applique le gel au comptoir. Minimum {min} jours.",
+    "freezeDays": "Jours",
+    "freezeReason": "Raison (facultatif)",
+    "freezeReasonPh": "ex. voyage, blessure",
+    "cancel": "Annuler",
+    "sendRequest": "Envoyer la demande"
   },
   "portalBilling": {
     "title": "Facturation",
@@ -2693,7 +2741,36 @@
     "emergency": "Contact d'urgence",
     "notSet": "Non défini",
     "medical": "Notes médicales",
-    "guardians": "Tuteurs"
+    "guardians": "Tuteurs",
+    "contactPrefs": "Contact et préférences",
+    "contactEmail": "E-mail",
+    "contactEmailPh": "vous@exemple.com",
+    "prefLocale": "Langue préférée",
+    "localeName": {
+      "ar": "العربية",
+      "en": "English",
+      "fr": "Français"
+    },
+    "save": "Enregistrer",
+    "savedContact": "Coordonnées enregistrées",
+    "err": "Une erreur s'est produite",
+    "noChanges": "Aucun changement à envoyer",
+    "changeSent": "Demande de modification envoyée au personnel",
+    "safetyDetails": "Sécurité et informations personnelles",
+    "safetyHint": "Contact d'urgence, notes médicales, date de naissance et téléphone — le personnel examine ces changements.",
+    "requestChange": "Demander une modification",
+    "changePending": "Vous avez des modifications en attente d'approbation.",
+    "requestChangeTitle": "Demander une modification",
+    "requestChangeIntro": "Le personnel examine et applique ces changements. Laissez un champ inchangé pour le conserver.",
+    "dob": "Date de naissance",
+    "phone": "Téléphone",
+    "phoneCredentialCaveat": "Si vous vous connectez avec ce numéro, votre connexion ne change pas — le personnel met à jour uniquement votre numéro de contact.",
+    "emergencyName": "Nom du contact d'urgence",
+    "emergencyPhone": "Téléphone du contact d'urgence",
+    "noteToStaff": "Note au personnel (facultatif)",
+    "noteToStaffPh": "Tout ce que le personnel doit savoir",
+    "cancel": "Annuler",
+    "sendRequest": "Envoyer la demande"
   },
   "portalSchedule": {
     "title": "Horaire des cours",

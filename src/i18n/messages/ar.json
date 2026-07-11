@@ -1744,6 +1744,18 @@
       "trial_outcome": {
         "title": "تم تسجيل نتيجة التجربة",
         "body": "{leadName} — {outcome}"
+      },
+      "member_request": {
+        "title": "طلب عضو جديد",
+        "body": "أرسل {studentName} طلب {kind}"
+      },
+      "member_request_approved": {
+        "title": "تمت الموافقة على الطلب",
+        "body": "تمت الموافقة على طلب {kind}"
+      },
+      "member_request_declined": {
+        "title": "تم رفض الطلب",
+        "body": "تم رفض طلب {kind}"
       }
     }
   },
@@ -2150,7 +2162,22 @@
     "coachRequired": "اختر مدربًا للموافقة — لا يمكن حجز الباقة بدون مدرب.",
     "coachLabel": "المدرب: {coach}",
     "assignCoachToBook": "عيّن مدربًا حتى يتمكن العضو من الحجز",
-    "noCoachesToAssign": "أضف مدربًا أولًا ثم وافق."
+    "noCoachesToAssign": "أضف مدربًا أولًا ثم وافق.",
+    "memberRequests": "طلبات الأعضاء",
+    "mrKind": {
+      "profile_change": "تعديل الملف",
+      "renewal": "تجديد",
+      "freeze": "تجميد"
+    },
+    "mrField": {
+      "dob": "تاريخ الميلاد",
+      "phone": "الهاتف",
+      "email": "البريد الإلكتروني",
+      "emergencyName": "جهة الطوارئ",
+      "emergencyPhone": "هاتف الطوارئ",
+      "medical": "ملاحظات طبية"
+    },
+    "mrFreezeDays": "تجميد · {days} يوماً"
   },
   "member360": {
     "age": "{age} سنة",
@@ -2317,6 +2344,14 @@
       "blockedTitle": "ولي الأمر يملك الصلاحية",
       "blockedBody": "هذا العضو لا يملك حساب دخول خاص به. ادعُ ولي أمره بدلاً من ذلك.",
       "toGuardians": "الذهاب إلى الأولياء"
+    },
+    "membership": "الاشتراك",
+    "msState": {
+      "active": "نشط",
+      "expiring": "ينتهي قريباً",
+      "overdue": "متأخر",
+      "lapsed": "منتهٍ",
+      "frozen": "مجمّد"
     }
   },
   "promote": {
@@ -2658,7 +2693,20 @@
     "outstanding": "المبلغ المستحق",
     "allSettled": "لا مستحقات",
     "invoice": "فاتورة",
-    "enrolledClasses": "المسجّلة"
+    "enrolledClasses": "المسجّلة",
+    "requestRenewal": "طلب تجديد",
+    "renewalRequested": "تم طلب التجديد — سيؤكّد الموظفون",
+    "renewalPending": "تم طلب التجديد",
+    "requestFreeze": "طلب تجميد",
+    "freezeRequested": "تم طلب التجميد — سيؤكّد الموظفون",
+    "freezePending": "تم طلب التجميد",
+    "freezeTitle": "طلب تجميد الاشتراك",
+    "freezeIntro": "يطبّق الموظفون التجميد عند المكتب. الحد الأدنى {min} يوماً.",
+    "freezeDays": "الأيام",
+    "freezeReason": "السبب (اختياري)",
+    "freezeReasonPh": "مثل السفر أو الإصابة",
+    "cancel": "إلغاء",
+    "sendRequest": "إرسال الطلب"
   },
   "portalBilling": {
     "title": "الفوترة",
@@ -2693,7 +2741,36 @@
     "emergency": "جهة اتصال طوارئ",
     "notSet": "غير محدد",
     "medical": "ملاحظات طبية",
-    "guardians": "أولياء الأمر"
+    "guardians": "أولياء الأمر",
+    "contactPrefs": "التواصل والتفضيلات",
+    "contactEmail": "البريد الإلكتروني",
+    "contactEmailPh": "you@example.com",
+    "prefLocale": "اللغة المفضّلة",
+    "localeName": {
+      "ar": "العربية",
+      "en": "English",
+      "fr": "Français"
+    },
+    "save": "حفظ",
+    "savedContact": "تم حفظ بيانات التواصل",
+    "err": "حدث خطأ ما",
+    "noChanges": "لا تغييرات لإرسالها",
+    "changeSent": "تم إرسال طلب التغيير إلى الموظفين",
+    "safetyDetails": "بيانات السلامة والبيانات الشخصية",
+    "safetyHint": "جهة الطوارئ، الملاحظات الطبية، تاريخ الميلاد والهاتف — يراجع الموظفون هذه التغييرات.",
+    "requestChange": "طلب تغيير",
+    "changePending": "لديك تغييرات بانتظار موافقة الموظفين.",
+    "requestChangeTitle": "طلب تغيير",
+    "requestChangeIntro": "يراجع الموظفون هذه التغييرات ويطبّقونها. اترك الحقل دون تغيير للإبقاء عليه.",
+    "dob": "تاريخ الميلاد",
+    "phone": "الهاتف",
+    "phoneCredentialCaveat": "إذا كنت تسجّل الدخول بهذا الرقم، فلن يتغيّر تسجيل دخولك — يحدّث الموظفون رقم تواصلك فقط.",
+    "emergencyName": "اسم جهة الطوارئ",
+    "emergencyPhone": "هاتف جهة الطوارئ",
+    "noteToStaff": "ملاحظة للموظفين (اختياري)",
+    "noteToStaffPh": "أي شيء يجب أن يعرفه الموظفون",
+    "cancel": "إلغاء",
+    "sendRequest": "إرسال الطلب"
   },
   "portalSchedule": {
     "title": "جدول الحصص",

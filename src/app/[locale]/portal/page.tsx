@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { PortalCampsSection } from './_components/portal-camps'
+import { MembershipLifecycleActions } from './_components/membership-lifecycle-actions'
 import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight, ClipboardList, Dumbbell, Wallet } from 'lucide-react'
 import Link from 'next/link'
@@ -96,7 +97,14 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
     .order('end_date', { ascending: false })
     .limit(5)
   const { data: lcGym } = await supabase
-    .from('gyms').select('renewal_lead_days, dunning_grace_days, name_ar, name_en, name_fr').limit(1).single()
+    .from('gyms').select('renewal_lead_days, dunning_grace_days, freeze_min_chunk_days, name_ar, name_en, name_fr').limit(1).single()
+  // MJ-3: pending lifecycle requests → reflect them honestly on the banner/card.
+  const { data: pendingReqs } = student?.id
+    ? await supabase.from('member_requests').select('kind')
+        .eq('student_id', student.id).in('kind', ['renewal', 'freeze']).eq('status', 'pending')
+    : { data: [] as any[] }
+  const pendingRenewal = ((pendingReqs ?? []) as any[]).some((r) => r.kind === 'renewal')
+  const pendingFreeze = ((pendingReqs ?? []) as any[]).some((r) => r.kind === 'freeze')
   // TENANT-CONTENT: the member's OWN gym name for the belt card subtitle (was a hardcoded
   // i18n "PRO LINE Gym" that leaked onto every tenant's portal).
   const g: any = lcGym
@@ -227,13 +235,23 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
-    {/* ML-1: lifecycle banner — renew at the desk (no self-service) */}
+    {/* ML-1 / MJ-3: lifecycle banner + self-serve request affordances. */}
     {enabledProducts.membership && ['expiring', 'overdue', 'lapsed', 'frozen'].includes(msState) && (
       <div data-testid="portal-lifecycle-banner" data-state={msState}
         className={cn('rounded-2xl p-3 text-sm font-medium',
           msState === 'frozen' ? 'bg-blue-50 text-blue-700' : msState === 'expiring' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700')}>
         {msState === 'frozen' ? t('banner.frozen') : msState === 'expiring' ? t('banner.expiring') : t('banner.lapsed')}
       </div>
+    )}
+    {enabledProducts.membership && student?.id && (
+      <MembershipLifecycleActions
+        locale={locale}
+        studentId={student.id}
+        state={msState}
+        pendingRenewal={pendingRenewal}
+        pendingFreeze={pendingFreeze}
+        freezeMinDays={(lcGym as any)?.freeze_min_chunk_days ?? 7}
+      />
     )}
       <div className="pt-2">
         <h1 className="text-2xl font-bold text-gray-900">

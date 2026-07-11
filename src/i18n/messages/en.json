@@ -1744,6 +1744,18 @@
       "trial_outcome": {
         "title": "Trial outcome recorded",
         "body": "{leadName} — {outcome}"
+      },
+      "member_request": {
+        "title": "New member request",
+        "body": "{studentName} sent a {kind} request"
+      },
+      "member_request_approved": {
+        "title": "Request approved",
+        "body": "Your {kind} request was approved"
+      },
+      "member_request_declined": {
+        "title": "Request declined",
+        "body": "Your {kind} request was declined"
       }
     }
   },
@@ -2150,7 +2162,22 @@
     "coachRequired": "Pick a coach to approve — the package can't be booked without one.",
     "coachLabel": "Coach: {coach}",
     "assignCoachToBook": "Assign a coach so the member can book",
-    "noCoachesToAssign": "Add a coach first, then approve."
+    "noCoachesToAssign": "Add a coach first, then approve.",
+    "memberRequests": "Member requests",
+    "mrKind": {
+      "profile_change": "Profile change",
+      "renewal": "Renewal",
+      "freeze": "Freeze"
+    },
+    "mrField": {
+      "dob": "Date of birth",
+      "phone": "Phone",
+      "email": "Email",
+      "emergencyName": "Emergency contact",
+      "emergencyPhone": "Emergency phone",
+      "medical": "Medical notes"
+    },
+    "mrFreezeDays": "Freeze · {days} days"
   },
   "member360": {
     "age": "{age} yrs",
@@ -2317,6 +2344,14 @@
       "blockedTitle": "Guardian holds access",
       "blockedBody": "This member doesn't hold their own login. Invite their guardian instead.",
       "toGuardians": "Go to guardians"
+    },
+    "membership": "Membership",
+    "msState": {
+      "active": "Active",
+      "expiring": "Expiring soon",
+      "overdue": "Overdue",
+      "lapsed": "Ended",
+      "frozen": "Frozen"
     }
   },
   "promote": {
@@ -2658,7 +2693,20 @@
     "outstanding": "Outstanding",
     "allSettled": "All settled",
     "invoice": "Invoice",
-    "enrolledClasses": "Enrolled"
+    "enrolledClasses": "Enrolled",
+    "requestRenewal": "Request renewal",
+    "renewalRequested": "Renewal requested — staff will confirm",
+    "renewalPending": "Renewal requested",
+    "requestFreeze": "Request freeze",
+    "freezeRequested": "Freeze requested — staff will confirm",
+    "freezePending": "Freeze requested",
+    "freezeTitle": "Request a membership freeze",
+    "freezeIntro": "Staff apply the freeze at the desk. Minimum {min} days.",
+    "freezeDays": "Days",
+    "freezeReason": "Reason (optional)",
+    "freezeReasonPh": "e.g. travel, injury",
+    "cancel": "Cancel",
+    "sendRequest": "Send request"
   },
   "portalBilling": {
     "title": "Billing",
@@ -2693,7 +2741,36 @@
     "emergency": "Emergency Contact",
     "notSet": "Not set",
     "medical": "Medical Notes",
-    "guardians": "Guardians"
+    "guardians": "Guardians",
+    "contactPrefs": "Contact & preferences",
+    "contactEmail": "Email",
+    "contactEmailPh": "you@example.com",
+    "prefLocale": "Preferred language",
+    "localeName": {
+      "ar": "العربية",
+      "en": "English",
+      "fr": "Français"
+    },
+    "save": "Save",
+    "savedContact": "Contact details saved",
+    "err": "Something went wrong",
+    "noChanges": "No changes to send",
+    "changeSent": "Change request sent to staff",
+    "safetyDetails": "Safety & personal details",
+    "safetyHint": "Emergency contact, medical notes, date of birth and phone — staff review these changes.",
+    "requestChange": "Request a change",
+    "changePending": "You have changes awaiting staff approval.",
+    "requestChangeTitle": "Request a change",
+    "requestChangeIntro": "Staff review and apply these. Leave a field unchanged to keep it.",
+    "dob": "Date of birth",
+    "phone": "Phone",
+    "phoneCredentialCaveat": "If you sign in with this number, your login won't change — staff update your contact number only.",
+    "emergencyName": "Emergency contact name",
+    "emergencyPhone": "Emergency contact phone",
+    "noteToStaff": "Note to staff (optional)",
+    "noteToStaffPh": "Anything staff should know",
+    "cancel": "Cancel",
+    "sendRequest": "Send request"
   },
   "portalSchedule": {
     "title": "Class Schedule",
