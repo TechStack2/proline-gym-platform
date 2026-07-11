@@ -38,6 +38,16 @@ async function teardown(gymId: string) {
   await fetch(`${URL}/rest/v1/gyms?id=eq.${gymId}`, { method: 'DELETE', headers: H }).catch(() => {})
 }
 
+// WL-THEME-R2: the base seed gives its class an explicit per-class colour (#E53E3E), which
+// the class-row left-edge bar preserves (categorical, not brand). To exercise the R2 fix —
+// an UNCOLOURED class's bar follows the gym BRAND — null the colour so the bar hits the
+// `data-chipbg="brand"` → `rgb(var(--c-brand-700))` fallback.
+async function nullClassColor(gymId: string) {
+  await fetch(`${URL}/rest/v1/classes?gym_id=eq.${gymId}`, {
+    method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ color: null }),
+  }).catch(() => {})
+}
+
 let blueGymId = ''
 let redGymId = ''
 
@@ -45,6 +55,8 @@ test.beforeAll(async () => {
   if (!URL || !KEY) throw new Error('WL-THEME needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL')
   blueGymId = await seed(SLUG_BLUE, '#1d4ed8')
   redGymId = await seed(SLUG_RED, null)
+  await nullClassColor(blueGymId)
+  await nullClassColor(redGymId)
 })
 test.afterAll(async () => { await teardown(blueGymId); await teardown(redGymId) })
 
@@ -65,6 +77,10 @@ const rootBrand = (page: import('@playwright/test').Page) =>
   page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--c-brand-700').trim())
 const activeTabColor = (page: import('@playwright/test').Page) =>
   page.locator('[data-testid="horizon-today"]').first().evaluate((el) => getComputedStyle(el).color)
+// R2: the /today class-row left-edge bar for an uncoloured class (data-chipbg="brand").
+const classBarColor = (page: import('@playwright/test').Page) =>
+  page.locator('[data-testid="today-class-row"] span[data-chipbg="brand"]').first()
+    .evaluate((el) => getComputedStyle(el).backgroundColor)
 
 test('WL-THEME · a branded gym paints the app product with its colour', async ({ browser }) => {
   test.setTimeout(120_000)
@@ -75,6 +91,8 @@ test('WL-THEME · a branded gym paints the app product with its colour', async (
     expect(await rootBrand(page), '--c-brand-700 is the gym blue (29 78 216)').toBe('29 78 216')
     // A real primary-* utility resolves to it: the active horizon tab is text-primary-700.
     expect(await activeTabColor(page), 'a primary-* accent computes to the gym blue').toBe('rgb(29, 78, 216)')
+    // R2: an uncoloured class's left-edge bar follows the gym brand (not a hardcoded crimson).
+    expect(await classBarColor(page), 'the class-row indicator fallback computes to the gym blue').toBe('rgb(29, 78, 216)')
   } finally {
     await ctx.close()
   }
@@ -87,6 +105,8 @@ test('WL-THEME · an unset brand_color renders the Proline red EXACTLY (byte-ide
     await expect(page.locator('[data-testid="brand-theme"]'), 'no override emitted when brand_color is null').toHaveCount(0)
     expect(await rootBrand(page), '--c-brand-700 is the default crimson (205 20 25)').toBe('205 20 25')
     expect(await activeTabColor(page), 'a primary-* accent computes to the default crimson').toBe('rgb(205, 20, 25)')
+    // R2: the class-row indicator fallback is byte-identical to the old hardcoded #cd1419.
+    expect(await classBarColor(page), 'the class-row indicator fallback is the default crimson').toBe('rgb(205, 20, 25)')
   } finally {
     await ctx.close()
   }
