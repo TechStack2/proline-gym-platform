@@ -60,8 +60,8 @@ test.beforeAll(async () => {
 })
 test.afterAll(async () => { await teardown(blueGymId); await teardown(redGymId) })
 
-async function ownerOnToday(browser: Browser, slug: string) {
-  const ctx = await browser.newContext({ locale: 'en' })
+async function ownerOnToday(browser: Browser, slug: string, opts?: { viewport?: { width: number; height: number } }) {
+  const ctx = await browser.newContext({ locale: 'en', ...(opts?.viewport ? { viewport: opts.viewport } : {}) })
   const page = await ctx.newPage()
   await page.goto('/en/auth/login')
   await page.locator('#email').fill(`owner+${slug}@e2e.local`)
@@ -81,6 +81,13 @@ const activeTabColor = (page: import('@playwright/test').Page) =>
 const classBarColor = (page: import('@playwright/test').Page) =>
   page.locator('[data-testid="today-class-row"] span[data-chipbg="brand"]').first()
     .evaluate((el) => getComputedStyle(el).backgroundColor)
+// WL-CHROME: the light <meta name="theme-color"> content (the PWA/status-bar colour).
+const lightThemeColor = (page: import('@playwright/test').Page) =>
+  page.locator('meta[name="theme-color"][media="(prefers-color-scheme: light)"]').getAttribute('content')
+// WL-CHROME: the STAFF shell chrome bg (top-accent stripe / role badge) — only in the
+// mobile NativeHeader (the <lg shell), so read it on a mobile viewport.
+const bgColor = (page: import('@playwright/test').Page, testid: string) =>
+  page.locator(`[data-testid="${testid}"]`).first().evaluate((el) => getComputedStyle(el).backgroundColor)
 
 test('WL-THEME · a branded gym paints the app product with its colour', async ({ browser }) => {
   test.setTimeout(120_000)
@@ -93,6 +100,8 @@ test('WL-THEME · a branded gym paints the app product with its colour', async (
     expect(await activeTabColor(page), 'a primary-* accent computes to the gym blue').toBe('rgb(29, 78, 216)')
     // R2: an uncoloured class's left-edge bar follows the gym brand (not a hardcoded crimson).
     expect(await classBarColor(page), 'the class-row indicator fallback computes to the gym blue').toBe('rgb(29, 78, 216)')
+    // WL-CHROME: the staff PWA / status-bar theme-color is the gym brand.
+    expect(await lightThemeColor(page), 'the light theme-color meta is the gym brand').toBe('#1d4ed8')
   } finally {
     await ctx.close()
   }
@@ -107,8 +116,32 @@ test('WL-THEME · an unset brand_color renders the Proline red EXACTLY (byte-ide
     expect(await activeTabColor(page), 'a primary-* accent computes to the default crimson').toBe('rgb(205, 20, 25)')
     // R2: the class-row indicator fallback is byte-identical to the old hardcoded #cd1419.
     expect(await classBarColor(page), 'the class-row indicator fallback is the default crimson').toBe('rgb(205, 20, 25)')
+    // WL-CHROME: the theme-color meta is the exact former static #cd1419 (byte-identical).
+    expect(await lightThemeColor(page), 'the light theme-color meta is the default crimson').toBe('#cd1419')
   } finally {
     await ctx.close()
+  }
+})
+
+test('WL-CHROME · the staff shell chrome (accent stripe + role badge) follows the gym brand', async ({ browser }) => {
+  test.setTimeout(120_000)
+  // The stripe + badge live in the mobile NativeHeader (the <lg shell) → a mobile viewport.
+  const MOBILE = { width: 390, height: 844 }
+  // Branded gym → the crimson role chrome becomes the gym blue.
+  const blue = await ownerOnToday(browser, SLUG_BLUE, { viewport: MOBILE })
+  try {
+    expect(await bgColor(blue.page, 'shell-accent-stripe'), 'the staff accent stripe is the gym blue').toBe('rgb(29, 78, 216)')
+    expect(await bgColor(blue.page, 'shell-badge'), 'the STAFF badge sits on the gym blue').toBe('rgb(29, 78, 216)')
+  } finally {
+    await blue.ctx.close()
+  }
+  // Unset gym → the exact former crimson role chrome (byte-identical).
+  const red = await ownerOnToday(browser, SLUG_RED, { viewport: MOBILE })
+  try {
+    expect(await bgColor(red.page, 'shell-accent-stripe'), 'the staff accent stripe stays the default crimson').toBe('rgb(205, 20, 25)')
+    expect(await bgColor(red.page, 'shell-badge'), 'the STAFF badge stays the default crimson').toBe('rgb(205, 20, 25)')
+  } finally {
+    await red.ctx.close()
   }
 })
 

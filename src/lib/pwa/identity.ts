@@ -68,7 +68,7 @@ export function buildGymManifest(gym: LandingGym | null) {
   };
 }
 
-type UserGym = { name_ar: string; name_en: string; name_fr: string; logo_url: string | null };
+type UserGym = { slug: string | null; name_ar: string; name_en: string; name_fr: string; logo_url: string | null; brand_color: string | null };
 
 export const getCurrentUserGym = cache(async (): Promise<UserGym | null> => {
   try {
@@ -85,7 +85,7 @@ export const getCurrentUserGym = cache(async (): Promise<UserGym | null> => {
     if (!profile?.gym_id) return null;
     const { data: gym } = await supabase
       .from('gyms')
-      .select('name_ar, name_en, name_fr, logo_url')
+      .select('slug, name_ar, name_en, name_fr, logo_url, brand_color')
       .eq('id', profile.gym_id)
       .maybeSingle();
     return (gym as UserGym) ?? null;
@@ -93,3 +93,15 @@ export const getCurrentUserGym = cache(async (): Promise<UserGym | null> => {
     return null; // never let identity resolution break metadata → fall back to default
   }
 });
+
+// WL-CHROME: the authed user's PWA / browser status-bar theme colour — the gym brand for a
+// real tenant, the byte-identical Proline crimson for the default gym or any unset field.
+// Mirrors buildGymManifest's theme_color EXACTLY (safeBrandColor → DEFAULT_BRAND_COLOR =
+// DEFAULT_THEME = #cd1419), so the meta tag and the installed manifest agree. Reuses the
+// cached getCurrentUserGym (no extra round-trip). A member (gym row not readable) → null
+// → the default, which is the neutral #cd1419 they'd see anyway.
+export async function getUserThemeColor(): Promise<string> {
+  const gym = await getCurrentUserGym();
+  if (!gym || gym.slug === DEFAULT_GYM_SLUG) return DEFAULT_THEME;
+  return safeBrandColor(gym.brand_color);
+}

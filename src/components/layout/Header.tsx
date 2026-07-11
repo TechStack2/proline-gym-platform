@@ -97,8 +97,11 @@ export function Header({ locale, role, showBell = true, gymName, logoUrl }: Head
           <span className="hidden sm:inline text-sm font-medium text-gray-700 capitalize">
             {label}
           </span>
+          {/* WL-CHROME: the badge sits on the brand --surface, so its text follows the
+              brand's luminance-paired foreground (Proline default fg = white → byte-
+              identical; legible on a light brand too). */}
           <span data-testid="shell-badge" data-shell="staff"
-            className="inline-flex items-center rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-white">
+            className="inline-flex items-center rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-[color:rgb(var(--c-brand-fg))]">
             {t('common.shellStaff')}
           </span>
         </div>
