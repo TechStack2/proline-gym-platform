@@ -34,7 +34,7 @@ export function DiaryBookPt({ assignments, locale }: { assignments: DiaryAssignm
               <button key={a.id} type="button" data-testid="diary-pt-member-chip"
                 onClick={() => setPicked(a.id)}
                 className={cn('rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                  picked === a.id ? 'border-primary-700 bg-red-50 text-primary-700' : 'border-gray-200 text-gray-600')}>
+                  picked === a.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600')}>
                 {a.studentName} · {a.remaining}
               </button>
             ))}

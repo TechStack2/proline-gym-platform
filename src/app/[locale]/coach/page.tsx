@@ -204,7 +204,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
       {/* Premium scan bar — 4 headline numbers, each scoped to a card below */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat icon={Calendar} value={totalToday} label={t('stats.today')} tone="text-blue-600" bg="bg-blue-50" />
-        <Stat icon={Users} value={students.length} label={t('stats.students')} tone="text-primary-700" bg="bg-red-50" brand />
+        <Stat icon={Users} value={students.length} label={t('stats.students')} tone="text-primary-700" bg="bg-primary-50" brand />
         <Stat icon={CalendarDays} value={weekRows.length} label={t('stats.week')} tone="text-violet-600" bg="bg-violet-50" />
         <Stat icon={Dumbbell} value={ptRemaining} label={t('stats.ptSessions')} tone="text-emerald-600" bg="bg-emerald-50" />
       </div>

@@ -197,7 +197,7 @@ export function MemberActions({
                   <button key={c.id} type="button" data-testid="m360-class-option" data-id={c.id}
                     onClick={() => setClassId(c.id)}
                     className={cn('flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm',
-                      classId === c.id ? 'border-primary-700 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                      classId === c.id ? 'border-primary-700 bg-primary-50' : 'border-gray-200 hover:border-gray-300')}>
                     <span className="font-medium text-gray-900">{lname(c)}</span>
                     <span className="text-xs text-gray-500">
                       {c.monthly_fee_usd != null ? `$${Number(c.monthly_fee_usd).toFixed(0)}/${t('mo')}` : '—'}
@@ -236,7 +236,7 @@ export function MemberActions({
                     <button key={c.id} type="button" data-testid="m360-camp-option" data-id={c.id} data-full={full}
                       onClick={() => setCampId(c.id)}
                       className={cn('flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm',
-                        campId === c.id ? 'border-primary-700 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                        campId === c.id ? 'border-primary-700 bg-primary-50' : 'border-gray-200 hover:border-gray-300')}>
                       <span className="min-w-0 truncate text-start font-medium text-gray-900">{cname}</span>
                       <span className="shrink-0 text-xs text-gray-500" dir="ltr">
                         ${Number(c.price_usd).toFixed(0)}

@@ -172,7 +172,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
               <button key={p.id} type="button" data-testid="ms-plan-chip" data-id={p.id}
                 onClick={() => setPlanId(p.id)}
                 className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                  planId === p.id ? 'border-primary-700 bg-red-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700')}>
+                  planId === p.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700')}>
                 {p.name} · ${p.price.toFixed(0)}
               </button>
             ))}

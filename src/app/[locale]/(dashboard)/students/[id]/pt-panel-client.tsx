@@ -216,7 +216,7 @@ export function MemberPtPanel({
                         <button key={c.id} type="button" data-testid="pt-coach-chip" data-id={c.id}
                           onClick={() => setCoachId(c.id)}
                           className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
-                            coachId === c.id ? 'border-primary-700 bg-red-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                            coachId === c.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                           <Avatar url={c.avatarUrl} name={c.name} size="xs" /> {c.name}
                         </button>
                       ))}

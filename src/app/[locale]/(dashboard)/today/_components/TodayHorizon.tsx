@@ -265,12 +265,20 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   // BUG 3: per-class color chips as a NONCE'D <style> + data-attr, NOT inline
   // style={{}} (SSR'd → stripped by the prod strict style-src CSP). Server component.
   const chipNonce = headers().get('X-CSP-Nonce') ?? ''
-  const chipNorm = (c: string | null | undefined): string =>
-    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : '#cd1419'
-  const chipBgToken = (c: string | null | undefined): string => 's' + chipNorm(c).slice(1)
-  const chipBgCss = [...new Set<string>((todayClasses as any[]).map((s) => chipNorm(s.cls?.color)).concat('#cd1419'))]
+  // WL-THEME-R2: a class with a real per-class colour keeps it (categorical, not brand);
+  // an UNCOLOURED class's left bar falls back to the gym BRAND — `rgb(var(--c-brand-700))`
+  // — not a hardcoded crimson, so the row follows the tenant (the gym blue for a branded
+  // gym; Proline stays crimson because --c-brand-700 defaults to 205 20 25 = #cd1419,
+  // byte-identical). The brand fallback rides the same nonce'd stylesheet (CSP-safe).
+  const chipNorm = (c: string | null | undefined): string | null =>
+    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : null
+  const chipBgToken = (c: string | null | undefined): string => {
+    const n = chipNorm(c)
+    return n ? 's' + n.slice(1) : 'brand'
+  }
+  const chipBgCss = [...new Set<string>((todayClasses as any[]).map((s) => chipNorm(s.cls?.color)).filter(Boolean) as string[])]
     .map((c) => `[data-chipbg="s${c.slice(1)}"]{background-color:${c}}`)
-    .join('')
+    .join('') + '[data-chipbg="brand"]{background-color:rgb(var(--c-brand-700))}'
 
   return (
     <div className="space-y-4">

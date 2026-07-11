@@ -306,7 +306,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
                 <button key={p} type="button" data-testid="wizard-preset" data-time={p}
                   onClick={() => applyPreset(p)}
                   className={cn('rounded-full border px-3 py-1.5 text-xs font-medium', shared.start === p && Object.keys(overrides).length === 0
-                    ? 'border-primary-700 bg-red-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300')}
+                    ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300')}
                   dir="ltr">
                   {p}
                 </button>

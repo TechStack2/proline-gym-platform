@@ -87,7 +87,7 @@ export default async function StaffProfilePage({ params }: Props) {
             return (
               <span
                 key={r.id}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-primary-700"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700"
               >
                 <Shield className="h-3 w-3" />
                 {label}

@@ -420,7 +420,7 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                   <li key={c.id}>
                     <button type="button" data-testid="desk-schedule-row" data-class-id={c.classId} onClick={() => setSelectedClass(c.classId)}
                       className={cn('flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm',
-                        selectedClass === c.classId ? 'border-primary-700 bg-red-50' : 'border-gray-100 hover:border-gray-300')}>
+                        selectedClass === c.classId ? 'border-primary-700 bg-primary-50' : 'border-gray-100 hover:border-gray-300')}>
                       <span className="font-medium text-gray-900">{c.name}</span>
                       <span className="inline-flex items-center gap-2 text-xs text-gray-500">
                         <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{c.start}{c.end ? `–${c.end}` : ''}</span>

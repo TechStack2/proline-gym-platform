@@ -119,7 +119,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
 
         {/* Specialization Badge */}
         {specialization && (
-          <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-primary-700">
+          <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
             <Award className="h-3.5 w-3.5" />
             {specialization}
           </span>
