@@ -7,6 +7,12 @@
  * NULL / invalid brand_color → '' (no override): the globals.css DEFAULTS apply, which
  * are the EXACT former Proline hexes, so an unbranded gym is byte-identical.
  *
+ * WL-CHROME: the same block also re-points the STAFF shell chrome (.shell-staff --surface
+ * → the top-accent stripe, active nav item, and role badge) at the brand, so the header
+ * finally matches the product. Only .shell-staff — portal-bronze / coach-graphite are role
+ * hues, not Proline-brand, and stay put. Emitted only when a brand is set, so Proline/unset
+ * keeps the globals crimson (#cd1419 light / #e5484d dark) untouched.
+ *
  * The ramp is anchored at 700 = brand_color (where the crimson sat): lighter steps mix
  * toward white (tints), darker steps toward black (shades) — a coherent, self-consistent
  * scale for any hue. Channels are "R G B" (space-separated) to feed rgb(var(--x)/alpha).
@@ -48,5 +54,10 @@ export function buildBrandChannelsCss(brandColor?: string | null): string {
     '--c-brand-950': chan(shade(base, 0.4)),
     '--c-brand-fg': fg,
   }
-  return `:root{${Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';')}}`
+  const root = `:root{${Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';')}}`
+  // The staff role surface follows the brand on BOTH themes. Brand isn't flipped on dark
+  // (like every primary-* accent), so the dark rule pins the brand too — it must match the
+  // higher-specificity globals `html.dark .shell-staff` rule and win on source order.
+  const staff = `.shell-staff{--surface:rgb(var(--c-brand-700))}html.dark .shell-staff{--surface:rgb(var(--c-brand-700))}`
+  return root + staff
 }

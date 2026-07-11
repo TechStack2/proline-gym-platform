@@ -8,16 +8,21 @@ import { SentryTags } from '@/components/observability/sentry-tags';
 import { DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 import { storagePublicUrl } from '@/lib/storage/public-url';
 import { BrandThemeStyle } from '@/components/shared/brand-theme-style';
+import { getUserThemeColor } from '@/lib/pwa/identity';
 
-// AX-1 shell identity: per-shell PWA theme-color (staff = brand red). DS-2: now
-// per light/dark — the meta theme-color media queries track the OS prefers-color-
-// scheme (the app default is 'system', so they follow the in-app theme for the
-// common case). Dark status bar = the #131317 ground shared by all shells.
-export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#cd1419' },
-    { media: '(prefers-color-scheme: dark)', color: '#131317' },
-  ],
+// AX-1 shell identity: the staff PWA theme-color (the OS status bar / browser chrome).
+// WL-CHROME: it now follows the SIGNED-IN user's gym brand (byte-identical Proline crimson
+// for the default gym or an unset colour), so the installed app + status bar match the
+// product — aligned with the per-gym manifest theme_color. DS-2: the dark status bar stays
+// the #131317 ground shared by all shells; only the light value carries the brand.
+export async function generateViewport(): Promise<Viewport> {
+  const themeColor = await getUserThemeColor();
+  return {
+    themeColor: [
+      { media: '(prefers-color-scheme: light)', color: themeColor },
+      { media: '(prefers-color-scheme: dark)', color: '#131317' },
+    ],
+  }
 }
 
 type Props = {

@@ -29,10 +29,16 @@ export type NativeHeaderProps = {
 // portal=cool teal. Tenant-clean: keyed by ROLE-shell, never by gym.
 // DS-1: the shell badge now carries the per-role --surface accent (reception=crimson,
 // coach=graphite, member=bronze) — the "which surface" identity chip. `bar` is unused
-// (the visible stripe reads var(--shell-accent); the PWA theme-color lives in each
-// shell's layout.tsx viewport — deliberately left on the prior scheme for now).
+// (the visible stripe reads var(--shell-accent)). WL-CHROME: the STAFF --surface (stripe +
+// badge) now follows the gym brand (brand.ts .shell-staff override) and the staff PWA
+// theme-color is the gym brand (the dashboard layout's generateViewport); coach/portal keep
+// their role hues.
 const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { bar: string; badge: string; labelKey: string }> = {
-  staff: { bar: '#cd1419', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellStaff' },
+  // WL-CHROME: the STAFF badge sits on the brand surface, so its text follows the brand's
+  // luminance-paired foreground (--c-brand-fg: white on a dark brand, near-black on a light
+  // one). Proline's default fg is white → byte-identical. Portal/coach badges sit on the
+  // role hues (bronze/graphite), so they keep plain white.
+  staff: { bar: '#cd1419', badge: 'bg-[color:var(--surface)] text-[color:rgb(var(--c-brand-fg))]', labelKey: 'shellStaff' },
   coach: { bar: '#d4af37', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellCoach' },
   portal: { bar: '#0e7490', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellMember' },
 };

@@ -30,6 +30,16 @@ describe('WL-THEME · buildBrandChannelsCss', () => {
     expect(buildBrandChannelsCss('#facc15')).toContain('--c-brand-fg:26 26 26') // light yellow
   })
 
+  it('WL-CHROME: repoints the staff shell surface at the brand (both themes), only when set', () => {
+    const css = buildBrandChannelsCss('#1d4ed8')
+    // The staff role chrome (top stripe + active nav + badge) follows the brand.
+    expect(css).toContain('.shell-staff{--surface:rgb(var(--c-brand-700))}')
+    // Dark must pin the brand too (brand isn't flipped on dark; beats the globals dark rule).
+    expect(css).toContain('html.dark .shell-staff{--surface:rgb(var(--c-brand-700))}')
+    // NULL brand → no override at all → the globals crimson stands (byte-identical).
+    expect(buildBrandChannelsCss(null)).toBe('')
+  })
+
   it('emits the full 12-var ramp with lighter tints and darker shades', () => {
     const css = buildBrandChannelsCss('#1d4ed8')
     for (const k of ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950', 'fg']) {
