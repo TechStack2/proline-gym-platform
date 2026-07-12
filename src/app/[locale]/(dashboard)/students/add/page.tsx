@@ -10,8 +10,12 @@ import { getEnabledProducts } from '@/lib/gym/products'
  */
 export default async function AddStudentPage({
   params: { locale },
+  searchParams,
 }: {
   params: { locale: string }
+  // MJ-5: lead → member convert opens this pre-filled (name + normalized phone,
+  // optional family mode). Just prefill — staff still drive the wizard.
+  searchParams?: { prefillName?: string; prefillPhone?: string; mode?: string }
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -40,6 +44,9 @@ export default async function AddStudentPage({
       }))}
       locale={locale}
       membershipEnabled={products.membership}
+      initialNameEn={searchParams?.prefillName || undefined}
+      initialPhone={searchParams?.prefillPhone || undefined}
+      initialMode={searchParams?.mode === 'family' ? 'family' : undefined}
     />
   )
 }

@@ -47,12 +47,17 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
   </div>
 )
 
-export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = true }: {
+export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = true, initialNameEn, initialPhone, initialMode }: {
   gymId: string
   plans: Plan[]
   locale: string
   // NO-MEMBERSHIP: omit the (optional) Plan step on gyms that don't sell membership.
   membershipEnabled?: boolean
+  // MJ-5: lead → member conversion pre-fill (name + normalized phone; optional
+  // family mode when the lead looks like a household). Just prefill — no automation.
+  initialNameEn?: string
+  initialPhone?: string
+  initialMode?: 'solo' | 'family'
 }) {
   const t = useTranslations('studentWizard')
   const router = useRouter()
@@ -60,13 +65,14 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
   const [open, setOpen] = useState(true)
   const [busy, setBusy] = useState(false)
 
-  // MJ-1: solo is the default → existing specs/flows unchanged.
-  const [mode, setMode] = useState<'solo' | 'family'>('solo')
+  // MJ-1: solo is the default → existing specs/flows unchanged. MJ-5: a lead
+  // convert may open this pre-filled in family mode.
+  const [mode, setMode] = useState<'solo' | 'family'>(initialMode ?? 'solo')
 
   // ── SOLO ──
   const [nameAr, setNameAr] = useState('')
-  const [nameEn, setNameEn] = useState('')
-  const [phone, setPhone] = useState('')
+  const [nameEn, setNameEn] = useState(initialMode === 'family' ? '' : (initialNameEn ?? ''))
+  const [phone, setPhone] = useState(initialMode === 'family' ? '' : (initialPhone ?? ''))
   const [dob, setDob] = useState('')
   const [gender, setGender] = useState<'male' | 'female'>('male')
   const [gPhone, setGPhone] = useState('')
@@ -76,9 +82,9 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
   const [gSkip, setGSkip] = useState(false)
   const [planId, setPlanId] = useState('')
 
-  // ── FAMILY ──
-  const [fgPhone, setFgPhone] = useState('')
-  const [fgName, setFgName] = useState('')
+  // ── FAMILY ── (MJ-5: seed the guardian from the converting lead when in family mode)
+  const [fgPhone, setFgPhone] = useState(initialMode === 'family' ? (initialPhone ?? '') : '')
+  const [fgName, setFgName] = useState(initialMode === 'family' ? (initialNameEn ?? '') : '')
   const [fgFound, setFgFound] = useState<{ profileId: string; name: string; kidCount: number } | null>(null)
   const [fgSearched, setFgSearched] = useState(false)
   const [kids, setKids] = useState<Kid[]>([emptyKid()])

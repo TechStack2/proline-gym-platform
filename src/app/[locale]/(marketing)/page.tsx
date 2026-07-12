@@ -21,6 +21,7 @@ import { PtSection } from '@/components/marketing/PtSection';
 import { CampsSection } from '@/components/marketing/CampsSection';
 import { FacilitySection } from '@/components/marketing/FacilitySection';
 import { TrialCTASection } from '@/components/marketing/TrialCTASection';
+import { JoinCTASection } from '@/components/marketing/JoinCTASection';
 
 export const dynamic = 'force-dynamic';
 
@@ -202,6 +203,9 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
       <GallerySection locale={locale} gymSlug={sectionSlug} />
       <WhySection locale={locale} isDefault={isDefault} />
       <PricingSection locale={locale} gymSlug={sectionSlug} />
+      {/* MJ-5 JOIN-DOOR: the prominent "Request to join" CTA — every gym landing,
+          right after the plans (the decision moment). Lands a source=landing lead. */}
+      <JoinCTASection locale={locale} gymSlug={sectionSlug} />
       <PtSection locale={locale} gymSlug={sectionSlug} />
       <CampsSection locale={locale} gymSlug={sectionSlug} />
       <FacilitySection locale={locale} contact={contact} isDefault={isDefault} address={address} gymName={branding.name} />

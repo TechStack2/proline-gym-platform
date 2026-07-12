@@ -2591,14 +2591,12 @@ export type Database = {
       }
       submit_public_lead: {
         Args: {
-          p_first_name: string
+          p_gym_slug: string
+          p_name: string
           p_phone: string
-          p_source?: string
-          p_notes?: string
-          p_last_name?: string
-          p_email?: string
-          p_program?: string
-          p_gym_slug?: string | null
+          p_interests?: string[] | null
+          p_note?: string | null
+          p_honeypot?: string | null
         }
         Returns: string
       }

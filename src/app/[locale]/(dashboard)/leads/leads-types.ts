@@ -21,6 +21,7 @@ export interface Lead {
   source: string;
   source_detail?: string;
   interested_discipline_id?: string;
+  interest_categories?: string[] | null; // MJ-5: landing "request to join" product interests
   notes?: string;
   status: LeadStatus;
   campaign_id?: string; // GRW-1 attribution
@@ -122,6 +123,7 @@ export const SOURCE_ICONS: Record<string, string> = {
   facebook: '💬',
   whatsapp: '📱',
   website: '🌐',
+  landing: '🚪', // MJ-5: the public landing "request to join" door
   phone: '📞',
   walk_in: '🚶',
   referral: '🤝',

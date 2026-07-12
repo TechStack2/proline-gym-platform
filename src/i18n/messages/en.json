@@ -876,6 +876,29 @@
       "title": "Meet Our Coaches",
       "subtitle": "World-class martial artists in your corner — and more joining the roster.",
       "comingSoon": "Coming soon"
+    },
+    "joinCta": {
+      "title": "Request to join",
+      "subtitle": "Tell us who you are and what you're interested in — our team will reach out to get you started. No account needed.",
+      "nameLabel": "Your name",
+      "namePh": "First and last name",
+      "phoneLabel": "Phone (WhatsApp)",
+      "interestLabel": "I'm interested in",
+      "interest": {
+        "membership": "Membership",
+        "classes": "Classes",
+        "pt": "Personal training",
+        "camp": "Camp"
+      },
+      "noteLabel": "Anything else? (optional)",
+      "notePh": "e.g. two kids, ages 8 and 10",
+      "send": "Request to join",
+      "noPromise": "We'll contact you — no account is created and nothing is charged.",
+      "fillAll": "Please add your name and phone.",
+      "submitFailed": "Couldn't send your request. Please try again.",
+      "tooMany": "Too many requests — please try again in a minute.",
+      "thanksTitle": "Thanks — we've got your request",
+      "thanksBody": "Our team will contact you shortly to get you started."
     }
   },
   "belts": {
@@ -996,7 +1019,8 @@
       "whatsapp": "WhatsApp",
       "referral": "Referral",
       "website": "Website",
-      "other": "Other"
+      "other": "Other",
+      "landing": "Landing"
     },
     "field": {
       "first_name": "First name",
@@ -1026,7 +1050,14 @@
     },
     "guardian_default": "Guardian",
     "freshInquiry": "New",
-    "campaignsLink": "Campaigns"
+    "campaignsLink": "Campaigns",
+    "interest": {
+      "membership": "Membership",
+      "classes": "Classes",
+      "pt": "PT",
+      "camp": "Camp"
+    },
+    "convert_as_family": "Set up as a family instead →"
   },
   "camps": {
     "title": "Camps",

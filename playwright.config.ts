@@ -563,6 +563,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MJ-5 JOIN-DOOR: anon "request to join" from a non-default gym landing →
+      // source=landing lead + interests → convert pre-fill + 24h dedupe.
+      // Hermetic own gym (its own owner); anchored testMatch.
+      name: 'join-door',
+      dependencies: ['setup'],
+      testMatch: /\/mj5-join-door\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // B3 (family/household): guardian switcher → request-for-kid → payer
       // invoice → household billing → desk payment + the RLS negative.
       // Switches roles internally (owner + parent).
