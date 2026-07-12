@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Calendar, Clock, DollarSign, Loader2, RefreshCw } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Calendar, Clock, DollarSign, Loader2, RefreshCw, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { requestClassRegistration, cancelMyRegistration } from './actions'
@@ -10,6 +12,7 @@ import { useErrorText } from '@/lib/errors/use-error-text';
 
 const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DAYS_AR = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
+const DAYS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
 
 type Reg = { id: string; status: string; waitlist_position: number | null; end_date: string | null }
 type ClassItem = {
@@ -21,8 +24,8 @@ type ClassItem = {
 
 export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { classes: ClassItem[]; locale: string; hasStudent: boolean; kidId?: string }) {
   const isRTL = locale === 'ar'
-  const t = (en: string, ar: string) => (isRTL ? ar : en)
-  const DAYS = isRTL ? DAYS_AR : DAYS_EN
+  const t = useTranslations('portalClasses')
+  const DAYS = locale === 'ar' ? DAYS_AR : locale === 'fr' ? DAYS_FR : DAYS_EN
   // CYCLE-VIZ: recurring-monthly framing, computed from the registration's
   // end_date (000034: end_date = start_date + 1 month). No backend change.
   const monthlyWord = locale === 'ar' ? 'شهري' : locale === 'fr' ? 'Mensuel' : 'Monthly'
@@ -35,9 +38,9 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
   const [error, setError] = useState('')
 
   function statusLabel(r: Reg): string {
-    if (r.status === 'active') return t('Active', 'نشط')
-    if (r.status === 'requested') return t('Requested', 'بانتظار الموافقة')
-    if (r.status === 'waitlisted') return t(`Waitlist #${r.waitlist_position ?? ''}`, `قائمة الانتظار #${r.waitlist_position ?? ''}`)
+    if (r.status === 'active') return t('statusActive')
+    if (r.status === 'requested') return t('statusRequested')
+    if (r.status === 'waitlisted') return t('statusWaitlist', { n: r.waitlist_position ?? '' })
     return r.status
   }
   const statusStyle: Record<string, string> = {
@@ -56,7 +59,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
     })
   }
   function cancel(regId: string, classId: string) {
-    if (!window.confirm(t('Cancel this registration?', 'إلغاء هذا التسجيل؟'))) return
+    if (!window.confirm(t('confirmCancel'))) return
     setError(''); setBusyId(classId)
     startTransition(async () => {
       const res = await cancelMyRegistration(regId)
@@ -67,7 +70,17 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
   }
 
   if (classes.length === 0) {
-    return <div className="rounded-2xl bg-white p-6 text-center text-sm text-gray-400 shadow-sm">{t('No classes available.', 'لا توجد حصص متاحة.')}</div>
+    // Guided empty state: lead with the next step (browse the timetable).
+    return (
+      <div data-testid="portal-classes-empty" className={cn('rounded-2xl bg-white p-8 text-center shadow-sm', isRTL && 'font-arabic')}>
+        <CalendarDays className="mx-auto h-10 w-10 text-primary-300" aria-hidden />
+        <p className="mt-3 text-sm font-medium text-gray-700">{t('emptyTitle')}</p>
+        <Link href={`/${locale}/portal/schedule`} data-testid="portal-classes-empty-cta"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800">
+          <Calendar className="h-4 w-4" aria-hidden /> {t('emptyCta')}
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -103,7 +116,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
                 {c.monthly_fee_usd != null && (
                   <p className="inline-flex items-center gap-0.5 text-sm font-bold text-gray-900">
                     <DollarSign className="h-3.5 w-3.5" />{Number(c.monthly_fee_usd).toFixed(2)}
-                    <span className="text-xs font-normal text-gray-400">/{t('mo', 'شهر')}</span>
+                    <span className="text-xs font-normal text-gray-400">/{t('perMonth')}</span>
                   </p>
                 )}
               </div>
@@ -118,13 +131,13 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
                   </span>
                   <button data-testid="cancel-reg-btn" disabled={busy} onClick={() => cancel(reg.id, c.id)}
                     className="rounded-md border px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-                    {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('Cancel', 'إلغاء')}
+                    {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('cancelReg')}
                   </button>
                 </>
               ) : (
                 <button data-testid="request-btn" disabled={busy || !hasStudent} onClick={() => request(c.id)}
                   className="rounded-md bg-primary-700 px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-800 disabled:opacity-50">
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('Request', 'تسجيل')}
+                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('request')}
                 </button>
               )}
             </div>

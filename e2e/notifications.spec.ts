@@ -49,7 +49,7 @@ async function seedPtApproval(browser: Browser, testInfo: import('@playwright/te
     );
     await expect(card, `the "${PACKAGE_EN}" package should be offered`).toBeVisible({ timeout: 15_000 });
     await card.getByRole('button', { name: /request this package/i }).click();
-    await card.locator('select').selectOption({ label: COACH_EN });
+    await card.getByTestId('pt-request-coach-chip').filter({ hasText: COACH_EN }).click();
     await card.getByRole('button', { name: /send request/i }).click();
     await expect(
       student.page.getByText(/request sent/i).first(),

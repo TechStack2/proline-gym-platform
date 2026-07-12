@@ -1220,6 +1220,7 @@
     "my_requests": "Mes demandes",
     "available_packages": "Forfaits disponibles",
     "preferred_coach_optional": "Coach préféré (facultatif)",
+    "no_coach_preference": "Aucune préférence",
     "send_request": "Envoyer la demande",
     "request_this_package": "Demander ce forfait",
     "request_success": "Demande envoyée — le staff la traitera",
@@ -1243,6 +1244,7 @@
     "my_pt_students_subtitle": "Vos élèves de coaching privé assignés",
     "no_pt_students": "Aucun élève PT assigné pour l'instant",
     "no_sessions": "Aucune séance",
+    "empty_hint": "Choisissez une formule ci-dessous pour demander vos premières séances.",
     "schedule": "Planifier",
     "complete": "Terminer",
     "no_show": "Absence",
@@ -1938,7 +1940,9 @@
     "no_rank_yet": "Aucun grade enregistré",
     "promotion_history": "Historique des promotions",
     "no_history": "Aucune promotion",
-    "no_student": "Aucun profil membre trouvé"
+    "no_student": "Aucun profil membre trouvé",
+    "empty_hint": "Assistez aux cours pour obtenir votre première ceinture.",
+    "empty_cta": "Voir les cours"
   },
   "setupChecklist": {
     "title": "Terminez la configuration de votre salle",
@@ -2662,6 +2666,7 @@
     "modeFamily": "Une famille",
     "family": {
       "title": "Ajouter une famille",
+      "create": "Créer la famille",
       "guardian": "Tuteur",
       "guardianHint": "Commencez par le parent ou le tuteur — c'est le contact de la famille. Saisissez son numéro une fois.",
       "guardianName": "Nom du tuteur",
@@ -2737,7 +2742,8 @@
     "freezeReason": "Raison (facultatif)",
     "freezeReasonPh": "ex. voyage, blessure",
     "cancel": "Annuler",
-    "sendRequest": "Envoyer la demande"
+    "sendRequest": "Envoyer la demande",
+    "upNext": "À venir"
   },
   "portalBilling": {
     "title": "Facturation",
@@ -2761,7 +2767,8 @@
       "cancelled": "Annulée",
       "refunded": "Remboursée",
       "partial": "Partielle"
-    }
+    },
+    "allSettled": "Tout est réglé — rien à payer."
   },
   "portalProfile": {
     "member": "Membre",
@@ -2811,7 +2818,17 @@
   },
   "portalClasses": {
     "title": "Cours",
-    "subtitle": "Inscrivez-vous à un cours récurrent pour un tarif mensuel"
+    "subtitle": "Inscrivez-vous à un cours récurrent pour un tarif mensuel",
+    "statusActive": "Actif",
+    "statusRequested": "En attente",
+    "statusWaitlist": "Liste d'attente #{n}",
+    "confirmCancel": "Annuler cette inscription ?",
+    "perMonth": "mois",
+    "cancelReg": "Annuler",
+    "request": "S'inscrire",
+    "actingFor": "Vous agissez pour : {name}",
+    "emptyTitle": "Aucun cours proposé pour l'instant",
+    "emptyCta": "Voir l'horaire"
   },
   "invoiceNew": {
     "title": "Nouvelle facture",
@@ -3120,18 +3137,18 @@
     "updateAvailable": "Nouvelle version disponible",
     "updateAction": "Actualiser",
     "cardTitle": "Installer l'application",
-    "cardDescription": "Installez Proline sur cet appareil pour un accueil plus rapide et prêt hors ligne.",
+    "cardDescription": "Installez {gym} sur cet appareil pour un accueil plus rapide et prêt hors ligne.",
     "alreadyInstalledHint": "Déjà installée ? Vous pouvez masquer ceci.",
     "steps": {
       "macSafari": {
-        "title": "Ajouter Proline au Dock (Safari)",
+        "title": "Ajouter {gym} au Dock (Safari)",
         "s1": "Ouvrez le menu Fichier — ou le bouton Partager — dans Safari.",
         "s2": "Choisissez « Ajouter au Dock »."
       },
       "chromiumDesktop": {
         "title": "Installer depuis la barre d'adresse (Chrome / Edge)",
         "s1": "Cliquez sur l'icône d'installation (⊕) à droite de la barre d'adresse.",
-        "s2": "Ou ouvrez le menu ⋮ et choisissez « Installer Proline »."
+        "s2": "Ou ouvrez le menu ⋮ et choisissez « Installer {gym} »."
       },
       "iosSafari": {
         "title": "Ajouter à l'écran d'accueil (Safari)",

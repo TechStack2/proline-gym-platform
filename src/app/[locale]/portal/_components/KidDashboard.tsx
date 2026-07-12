@@ -119,7 +119,9 @@ export async function KidDashboard({
 
   const dayNames = isRTL
     ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
-    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    : locale === 'fr'
+      ? ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   const regBadge: Record<string, string> = {
     active: 'bg-green-100 text-green-700', requested: 'bg-yellow-100 text-yellow-700',

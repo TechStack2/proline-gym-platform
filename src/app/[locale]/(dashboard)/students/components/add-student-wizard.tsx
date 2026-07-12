@@ -503,7 +503,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
         title={mode === 'family' ? t('family.title') : t('title')}
         steps={mode === 'family' ? familySteps : soloSteps}
         onSubmit={mode === 'family' ? submitFamily : submitSolo}
-        submitLabel={t('create')}
+        submitLabel={mode === 'family' ? t('family.create') : t('create')}
         busy={busy}
         locale={locale}
         testid="add-student-wizard"

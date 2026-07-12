@@ -38,6 +38,15 @@ export function PtRequestClient({ packages, coaches, locale }: Props) {
   const [coachId, setCoachId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Chip styling — selected chip gets the primary fill (the no-dropdown convention).
+  const chipCls = (active: boolean) =>
+    cn(
+      'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+      active
+        ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+        : 'border-gray-200 bg-white text-gray-600 hover:border-primary-300',
+    );
+
   const handleRequest = async (pkgId: string) => {
     setSubmitting(true);
     try {
@@ -98,18 +107,24 @@ export function PtRequestClient({ packages, coaches, locale }: Props) {
 
               {selectedPkg === pkg.id ? (
                 <div className="space-y-2 pt-2 border-t">
-                  <select
-                    className="w-full px-3 py-2 text-sm border rounded-lg"
-                    value={coachId}
-                    onChange={(e) => setCoachId(e.target.value)}
-                  >
-                    <option value="">{t('preferred_coach_optional')}</option>
+                  {/* PT PICKER: guided coach chips (no dropdown) — the J3/M2-D idiom.
+                      "No preference" is the default; picking a coach is optional. */}
+                  <p className={cn('text-xs font-medium text-gray-600', isRTL && 'font-arabic')}>{t('preferred_coach_optional')}</p>
+                  <div className="flex flex-wrap gap-1.5" data-testid="pt-request-coach-picker">
+                    <button type="button" data-testid="pt-request-coach-chip" data-id=""
+                      onClick={() => setCoachId('')} className={chipCls(coachId === '')}>
+                      {t('no_coach_preference')}
+                    </button>
                     {coaches.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <button key={c.id} type="button" data-testid="pt-request-coach-chip" data-id={c.id}
+                        onClick={() => setCoachId(c.id)} className={chipCls(coachId === c.id)}>
+                        {c.name}
+                      </button>
                     ))}
-                  </select>
-                  <div className="flex gap-2">
+                  </div>
+                  <div className="flex gap-2 pt-1">
                     <button
+                      data-testid="pt-request-send"
                       disabled={submitting}
                       onClick={() => handleRequest(pkg.id)}
                       className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
@@ -118,6 +133,7 @@ export function PtRequestClient({ packages, coaches, locale }: Props) {
                       {t('send_request')}
                     </button>
                     <button
+                      data-testid="pt-request-cancel"
                       onClick={() => { setSelectedPkg(null); setCoachId(''); }}
                       className="rounded-lg border px-3 py-2 text-sm text-gray-600"
                     >
@@ -127,6 +143,7 @@ export function PtRequestClient({ packages, coaches, locale }: Props) {
                 </div>
               ) : (
                 <button
+                  data-testid="pt-request-open"
                   onClick={() => setSelectedPkg(pkg.id)}
                   className="w-full rounded-lg border border-primary-700/30 px-3 py-2 text-sm font-medium text-primary-700"
                 >

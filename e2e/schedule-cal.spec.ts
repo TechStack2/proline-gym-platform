@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis } from './helpers';
+import { vis, untilConsistent } from './helpers';
 
 /**
  * IA-3 — Schedule unification (Cycle 5 / V1).
@@ -54,7 +54,7 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
     const card = student.page.locator(`[data-testid="pt-package-card"][data-package-name="${PT_PACKAGE}"]`).first();
     await expect(card).toBeVisible({ timeout: 15_000 });
     await card.getByRole('button', { name: /request this package/i }).click();
-    await card.locator('select').selectOption({ label: COACH_EN });
+    await card.getByTestId('pt-request-coach-chip').filter({ hasText: COACH_EN }).click();
     await card.getByRole('button', { name: /send request/i }).click();
     await expect(student.page.getByText(/request sent/i).first()).toBeVisible({ timeout: 15_000 });
 
@@ -65,9 +65,17 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
     await expect(vis(owner.page, '[data-testid="inbox-pt-row"]').filter({ hasText: PT_PACKAGE })).toHaveCount(0, { timeout: 15_000 });
 
     // ── C1: the coach schedules TODAY (RPC default now()); 2nd booking overlaps ──
-    await coach.page.goto('/en/coach/pt');
+    // APPROVE-READ RACE: the inbox approve above commits the pt_assignment; the coach
+    // roster read can race that commit on a lagging replica (a one-shot goto renders an
+    // empty roster). Re-fetch a fresh roster until the approved package appears.
+    await untilConsistent(async () => {
+      await coach.page.goto('/en/coach/pt');
+      await expect(
+        coach.page.locator(`[data-testid="pt-roster-row"][data-package-en="${PT_PACKAGE}"]`).first(),
+        'the coached 10-pack appears on the run coach roster',
+      ).toBeVisible({ timeout: 5_000 });
+    });
     const roster = coach.page.locator(`[data-testid="pt-roster-row"][data-package-en="${PT_PACKAGE}"]`).first();
-    await expect(roster, 'the coached 10-pack appears on the run coach roster').toBeVisible({ timeout: 15_000 });
     const assignmentId = await roster.getAttribute('data-assignment-id');
     const sessionSel = `[data-testid="pt-session-row"][data-assignment-id="${assignmentId}"]`;
 
@@ -81,10 +89,15 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
       coach.page.locator('[data-testid="pt-conflict-warning"]').first(),
       'overlap renders the non-blocking warning',
     ).toBeVisible({ timeout: 15_000 });
-    await expect(
-      coach.page.locator(`${sessionSel}[data-status="scheduled"]`),
-      'booking still completes (non-blocking)',
-    ).toHaveCount(2, { timeout: 15_000 });
+    // The 2nd booking commits on click (the warning is informational, non-blocking) but
+    // the in-place session list can miss the just-committed row — re-fetch until both show.
+    await untilConsistent(async () => {
+      await coach.page.goto('/en/coach/pt');
+      await expect(
+        coach.page.locator(`${sessionSel}[data-status="scheduled"]`),
+        'booking still completes (non-blocking)',
+      ).toHaveCount(2, { timeout: 5_000 });
+    });
     await noMissing(coach.page);
 
     // ── Day · Coach diary: the coach column shows BOTH species; PT → lifecycle ──

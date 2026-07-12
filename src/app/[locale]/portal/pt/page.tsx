@@ -161,7 +161,11 @@ export default async function PortalPtPage({ params }: Props) {
           </span>
         </div>
         {cards.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">{t('no_sessions')}</p>
+          // Guided empty: name the next step (pick a package from the catalog below).
+          <div data-testid="portal-pt-empty" className="rounded-2xl bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-medium text-gray-700">{t('no_sessions')}</p>
+            <p className="mt-1 text-xs text-gray-400">{t('empty_hint')}</p>
+          </div>
         ) : (
           cards.map((d) => (
             <PtPackageCard

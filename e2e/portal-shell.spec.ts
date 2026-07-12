@@ -59,3 +59,31 @@ test('PORTAL-SHELL · /ar portal renders the responsive title RTL-clean (no miss
     await m.ctx.close();
   }
 });
+
+// MJ-4 FR COMPLETENESS: the portal renders French clean — no MISSING_MESSAGE (a
+// missing fr key) AND no isRTL?ar:en English leak. The Classes tab is the sharpest
+// probe (it held all five of the fixed content bypasses); its French subtitle must
+// render and the English one must be absent.
+test('PORTAL-SHELL · /fr portal renders French clean (no missing keys, no English leak)', async ({ browser }) => {
+  const m = await openPortal(browser, MOBILE, 'fr');
+  try {
+    await m.page.goto('/fr/portal/classes');
+    await m.page.waitForLoadState('networkidle').catch(() => {});
+    await expect(m.page.locator('[data-testid="native-large-title"]'), '/fr mobile: chrome title shows').toBeVisible({ timeout: 15_000 });
+    await expect(m.page.locator('body'), '/fr portal has no missing i18n keys').not.toContainText('MISSING_MESSAGE');
+    await expect(m.page.locator('body'), '/fr Classes renders its French copy').toContainText('Inscrivez-vous');
+    await expect(m.page.locator('body'), '/fr Classes does not fall back to the English subtitle').not.toContainText('Register for a recurring');
+    await m.page.screenshot({ path: 'screenshots/mj4-fr-classes.png', fullPage: true }).catch(() => {}); // VISUAL: fr portal
+    // VISUAL: the reordered portal home (next-session-first) in French.
+    await m.page.goto('/fr/portal');
+    await m.page.waitForLoadState('networkidle').catch(() => {});
+    await m.page.screenshot({ path: 'screenshots/mj4-portal-home-fr.png', fullPage: true }).catch(() => {});
+    // VISUAL: a guided empty state (progress tab leads with the "browse classes" action
+    // when no rank is recorded). Best-effort — depends on the fixture's belt data.
+    await m.page.goto('/en/portal/progress');
+    await m.page.waitForLoadState('networkidle').catch(() => {});
+    await m.page.screenshot({ path: 'screenshots/mj4-empty-progress.png', fullPage: true }).catch(() => {});
+  } finally {
+    await m.ctx.close();
+  }
+});

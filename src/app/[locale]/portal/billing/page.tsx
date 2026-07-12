@@ -203,9 +203,10 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
             })}
           </div>
         ) : (
-          <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
-            <FileText className="mx-auto h-10 w-10 text-gray-300 mb-2" />
-            <p className="text-sm text-gray-400">{t('noInvoices')}</p>
+          <div data-testid="portal-billing-empty" className="rounded-2xl bg-white p-6 text-center shadow-sm">
+            <CheckCircle className="mx-auto h-10 w-10 text-green-400 mb-2" />
+            <p className="text-sm font-medium text-gray-700">{t('noInvoices')}</p>
+            <p className="mt-1 text-xs text-gray-400">{t('allSettled')}</p>
           </div>
         )}
       </div>

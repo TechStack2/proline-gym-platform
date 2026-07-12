@@ -89,7 +89,7 @@ export default async function PortalClassesPage({ params: { locale }, searchPara
       </div>
       {kid && (
         <p data-testid="acting-for-kid" className="rounded-xl bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700">
-          {isRTL ? `أنت تتصرف نيابة عن: ${kid.name}` : `Acting for: ${kid.name}`}
+          {tt('actingFor', { name: kid.name })}
         </p>
       )}
       <PortalClassesClient classes={classes} locale={locale} hasStudent={!!student} kidId={kid?.id} />

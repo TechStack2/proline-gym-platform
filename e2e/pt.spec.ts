@@ -49,7 +49,8 @@ test('PT slice: student request → staff approve+invoice → coach delivers →
     await expect(card, `the "${PACKAGE_EN}" package should be offered to the student`).toBeVisible();
 
     await card.getByRole('button', { name: /request this package/i }).click();
-    await card.locator('select').selectOption({ label: COACH_EN }); // preferred coach
+    await card.getByTestId('pt-request-coach-chip').filter({ hasText: COACH_EN }).click(); // preferred coach (chips, no dropdown)
+    await card.screenshot({ path: 'screenshots/mj4-pt-chips.png' }).catch(() => {}); // VISUAL: the guided coach chips
     await card.getByRole('button', { name: /send request/i }).click();
 
     // The request goes through the request_pt SECURITY DEFINER RPC; the page
