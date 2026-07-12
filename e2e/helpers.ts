@@ -119,3 +119,30 @@ export async function untilConsistent(
     intervals: opts.intervals ?? [500, 1_000, 2_000, 3_000, 5_000],
   });
 }
+
+/**
+ * AWAITEFFECT (MJ-4 addendum — the J6 poll-DB-commit-first idiom, generalized).
+ *
+ * For approve/mutate flows where a UI assertion reflects a SERVER COMMIT that can
+ * lag a read replica (staff approves → renew_now/freeze_membership + the request
+ * flips status → the optimistic row hides). A one-shot UI assert — even with a
+ * budget — can observe a stale snapshot and flake. Poll a SERVICE-ROLE read
+ * (spec-side, RLS-free) for the COMMITTED effect first; only then assert the UI
+ * with its normal budget, so the UI check is deterministic.
+ *
+ * `pollFn` MUST be a read-only predicate returning truthy once the effect is
+ * durable — it re-runs every `interval`; NEVER perform a mutation inside it.
+ * Throws (fails the test) if the effect never commits within `budget`.
+ */
+export async function awaitEffect(
+  pollFn: () => boolean | Promise<boolean>,
+  opts: { budget?: number; interval?: number } = {},
+): Promise<void> {
+  await expect
+    .poll(async () => (await pollFn()) === true, {
+      timeout: opts.budget ?? 25_000,
+      intervals: opts.interval ? [opts.interval] : [500, 1_000, 2_000],
+      message: 'awaitEffect: the backend effect did not commit before the UI assertion',
+    })
+    .toBe(true);
+}
