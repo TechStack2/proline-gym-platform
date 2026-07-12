@@ -15,11 +15,22 @@
 #   PROJECTS="portal-shell coach-shell" ./scripts/e2e-local.sh
 #   PW_ARGS="--repeat-each=2" PROJECTS="off2" ./scripts/e2e-local.sh
 #   E2E_WORKERS=2 PROJECTS="b3" ./scripts/e2e-local.sh   # override worker/gym count
+#   SHARD="2/2" ./scripts/e2e-local.sh              # reproduce CI shard 2/2's files (single stack)
 #
 # Knobs (env):
 #   PROJECTS     space-separated playwright projects; empty = FULL suite (default)
 #   PW_ARGS      extra args appended to `playwright test` (mirrors the CI pw_args input)
 #   E2E_WORKERS  worker slots = isolated gyms seeded = playwright workers (default 2, == CI)
+#   SHARD        "N/M" → run only that Playwright file-shard on the FULL path (repro a CI shard)
+#
+# ── UNION-SHARD: CI↔LOCAL PARITY (intentional divergence, NOT drift) ──────────────────
+# CI (.github/workflows/e2e.yml) splits the FULL union into 2 PARALLEL jobs, each on
+# its OWN isolated stack (`--shard=1/2` and `--shard=2/2`) — that halves the per-stack
+# spec load to fight replica-lag flakes. LOCALLY there is ONE machine → ONE stack, so
+# this script runs the WHOLE union on a single stack by default (no --shard). Every
+# other step (from-zero replay, grants, per-worker seeds, build, workers) is byte-for-
+# byte the CI path. To reproduce a specific CI shard's FILE set here, pass SHARD="N/2".
+# ──────────────────────────────────────────────────────────────────────────────────
 #
 # ── NODE-20 PARITY NOTE ───────────────────────────────────────────────────────────
 # CI pins Node 20 (`actions/setup-node` → node-version: 20). This Mac runs Node 24.
@@ -155,9 +166,13 @@ if [ -n "${PROJECTS// /}" ]; then
   echo "  ▶ TARGETED run: setup + smoke + [${PROJECTS}] ${PW_ARGS}"
   E2E_TIERED=1 npx playwright test $ARGS ${PW_ARGS}
 else
-  # ── FULL union gate (every project) — the regression guard, unchanged ──
-  echo "  ▶ FULL union gate (all projects) ${PW_ARGS}"
-  npm run test:e2e -- ${PW_ARGS}
+  # ── FULL union gate (every project) — the regression guard. ──
+  # UNION-SHARD parity: single stack locally (see header). Optional SHARD="N/M"
+  # reproduces one CI shard's file set on this one stack.
+  SHARD_ARG=""
+  [ -n "${SHARD:-}" ] && SHARD_ARG="--shard=${SHARD}"
+  echo "  ▶ FULL union gate (all projects) ${SHARD_ARG} ${PW_ARGS}"
+  npm run test:e2e -- ${SHARD_ARG} ${PW_ARGS}
 fi
 
 # Success/teardown/timing are handled by the EXIT trap.

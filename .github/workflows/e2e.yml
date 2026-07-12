@@ -60,13 +60,54 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  # UNION-SHARD: decide the shard fan-out. The FULL union (push-to-main, or a bare
+  # dispatch with empty `projects`) splits into 2 PARALLEL shards — each its OWN
+  # isolated Supabase stack + `--shard=N/2` (Playwright splits by FILE). A TARGETED
+  # dispatch (-f projects=…) stays a SINGLE job (shards=[1] → no split), byte-
+  # identical to before. Halving the per-stack spec load is the point: under the
+  # grown union, replica lag outran older specs' budgets and flakes rotated; each
+  # shard now carries ~half the files against a full-power stack.
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.decide.outputs.shards }}   # JSON array → the e2e matrix
+      total: ${{ steps.decide.outputs.total }}     # shard count (2 union / 1 targeted)
+    steps:
+      - id: decide
+        env:
+          PROJECTS: ${{ inputs.projects }}   # empty on push and on a bare dispatch
+        run: |
+          if [ -n "${PROJECTS// /}" ]; then
+            echo 'shards=[1]' >> "$GITHUB_OUTPUT"    # TARGETED → single job, no --shard split
+            echo 'total=1'    >> "$GITHUB_OUTPUT"
+            echo "▶ targeted dispatch (projects='${PROJECTS}') → 1 job"
+          else
+            echo 'shards=[1,2]' >> "$GITHUB_OUTPUT"  # FULL union → 2 parallel shards
+            echo 'total=2'      >> "$GITHUB_OUTPUT"
+            echo "▶ full union → 2 sharded jobs (own stack each)"
+          fi
+
   e2e:
+    needs: prepare
+    # UNION-SHARD: one job per shard. fail-fast:false so a red in shard 1 still lets
+    # shard 2 finish (the summary job aggregates); each leg boots its OWN stack.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.prepare.outputs.shards) }}
     # CI-LOCAL: default ubuntu-latest (UNCHANGED). The `runner` dispatch input can
     # opt into a self-hosted runner; on `push` (the union gate) inputs.runner is
     # empty → the expression resolves to ubuntu-latest, so the default is inert.
     runs-on: ${{ (inputs.runner == 'self' && 'self-hosted') || 'ubuntu-latest' }}
     timeout-minutes: 45
     env:
+      # UNION-SHARD: this leg's shard index + the total (2 union / 1 targeted).
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ needs.prepare.outputs.total }}
+      # Per-shard artifact suffix so the two legs don't collide on upload; EMPTY on a
+      # single-job targeted run → the old `e2e-screenshots`/`playwright-report` names
+      # (byte-identical download behavior for the targeted path).
+      ARTIFACT_SUFFIX: ${{ needs.prepare.outputs.total != '1' && format('-shard{0}', matrix.shard) || '' }}
       # G1: WhatsApp dispatch runs in RECORD mode under CI (no external Meta call;
       # the outbound queue is written so routing is verifiable). The enc key is a
       # CI test value (record mode sends nothing); prod uses a real secret.
@@ -211,16 +252,22 @@ jobs:
             E2E_TIERED=1 npx playwright test $ARGS ${PW_ARGS}
           else
             # ── FULL union gate (push-to-main + bare dispatch): the regression guard,
-            #    every project, UNCHANGED. No E2E_TIERED → no `smoke` project added. ──
-            echo "▶ FULL union gate (all projects) ${PW_ARGS}"
-            npm run test:e2e -- ${PW_ARGS}
+            #    every project. UNION-SHARD: this leg runs its OWN half of the FILES
+            #    (--shard=N/2) against its OWN full-power stack. Playwright shards by
+            #    file and runs each project's `setup` dependency within THIS shard, so
+            #    the shard gets its full fixture set (auth setup ×10). No E2E_TIERED →
+            #    no `smoke` project added (union already includes every project). ──
+            echo "▶ FULL union gate — shard ${SHARD_INDEX}/${SHARD_TOTAL} ${PW_ARGS}"
+            npm run test:e2e -- --shard=${SHARD_INDEX}/${SHARD_TOTAL} ${PW_ARGS}
           fi
 
       # ── FK proof (now LOCAL): a notification to a LOGIN-LESS member persists
       #    (000032 FK → profiles). Runs against worker-slot 0's gym. Pre-000032 the
       #    direct INSERT errors 23503 (→auth.users); post-fix it succeeds.
       - name: Verify login-less member notifications persist (FK → profiles)
-        if: ${{ inputs.projects == '' }}
+        # UNION-SHARD: a stack-level (not spec-level) proof; each shard has an
+        # identical seeded stack, so run it once — on shard 1 of the union only.
+        if: ${{ inputs.projects == '' && matrix.shard == 1 }}
         run: |
           set -euo pipefail
           SLUG="${E2E_GYM_SLUG_BASE}-w0"
@@ -259,7 +306,8 @@ jobs:
       #    row. Pre-000065 the un-guarded class_requested fan-out FK-violates (23503)
       #    and rolls back the whole registration; post-fix it succeeds. Slot-0 gym.
       - name: Verify class registration survives a profile-less staff notify recipient (REG-FIX)
-        if: ${{ inputs.projects == '' }}
+        # UNION-SHARD: stack-level proof — run once, on shard 1 of the union only.
+        if: ${{ inputs.projects == '' && matrix.shard == 1 }}
         run: |
           set -euo pipefail
           SLUG="${E2E_GYM_SLUG_BASE}-w0"
@@ -325,7 +373,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-screenshots
+          # UNION-SHARD: per-shard name (-shard1/-shard2) so the two legs don't
+          # collide; EMPTY suffix on a targeted single-job run → the old name.
+          name: e2e-screenshots${{ env.ARTIFACT_SUFFIX }}
           path: screenshots/
           if-no-files-found: ignore
 
@@ -333,10 +383,27 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report${{ env.ARTIFACT_SUFFIX }}
           path: playwright-report/
           if-no-files-found: ignore
 
       - name: Stop the local stack
         if: always()
         run: supabase stop --no-backup || true
+
+  # UNION-SHARD: the single required check for branch protection. Green ONLY if
+  # every e2e shard leg is green (needs.e2e.result aggregates the whole matrix →
+  # 'success' iff all legs succeeded). Point branch protection at THIS job.
+  union-green:
+    needs: e2e
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate the shard results
+        run: |
+          echo "e2e matrix result = ${{ needs.e2e.result }}"
+          if [ "${{ needs.e2e.result }}" != "success" ]; then
+            echo "::error::the E2E behavior-green gate failed — one or more shards were not green"
+            exit 1
+          fi
+          echo "✅ E2E behavior-green gate: all shards green"
