@@ -876,6 +876,29 @@
       "title": "Nos Coachs",
       "subtitle": "Des artistes martiaux de classe mondiale dans votre coin — et d'autres rejoignent l'équipe.",
       "comingSoon": "Bientôt"
+    },
+    "joinCta": {
+      "title": "Demander à rejoindre",
+      "subtitle": "Dites-nous qui vous êtes et ce qui vous intéresse — notre équipe vous contactera pour démarrer. Aucun compte requis.",
+      "nameLabel": "Votre nom",
+      "namePh": "Prénom et nom",
+      "phoneLabel": "Téléphone (WhatsApp)",
+      "interestLabel": "Je suis intéressé par",
+      "interest": {
+        "membership": "Abonnement",
+        "classes": "Cours",
+        "pt": "Coaching personnel",
+        "camp": "Stage"
+      },
+      "noteLabel": "Autre chose ? (facultatif)",
+      "notePh": "ex. deux enfants de 8 et 10 ans",
+      "send": "Demander à rejoindre",
+      "noPromise": "Nous vous contacterons — aucun compte n'est créé et rien n'est facturé.",
+      "fillAll": "Veuillez indiquer votre nom et votre téléphone.",
+      "submitFailed": "Échec de l'envoi. Veuillez réessayer.",
+      "tooMany": "Trop de demandes — réessayez dans une minute.",
+      "thanksTitle": "Merci — nous avons votre demande",
+      "thanksBody": "Notre équipe vous contactera sous peu pour démarrer."
     }
   },
   "belts": {
@@ -996,7 +1019,8 @@
       "whatsapp": "WhatsApp",
       "referral": "Recommandation",
       "website": "Site web",
-      "other": "Autre"
+      "other": "Autre",
+      "landing": "Page d'accueil"
     },
     "field": {
       "first_name": "Prénom",
@@ -1026,7 +1050,14 @@
     },
     "guardian_default": "Tuteur",
     "freshInquiry": "Nouveau",
-    "campaignsLink": "Campagnes"
+    "campaignsLink": "Campagnes",
+    "interest": {
+      "membership": "Abonnement",
+      "classes": "Cours",
+      "pt": "PT",
+      "camp": "Stage"
+    },
+    "convert_as_family": "Configurer en famille →"
   },
   "camps": {
     "title": "Camps",

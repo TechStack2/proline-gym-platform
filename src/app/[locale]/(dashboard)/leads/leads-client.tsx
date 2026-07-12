@@ -405,6 +405,17 @@ export function LeadsClient({
                     </div>
                   )}
                   {disc && <p className="text-gray-500">{localizedName(disc, 'name')}</p>}
+                  {/* MJ-5: the landing "request to join" product interests as chips. */}
+                  {lead.interest_categories && lead.interest_categories.length > 0 && (
+                    <div data-testid="lead-interests" className="flex flex-wrap gap-1">
+                      {lead.interest_categories.map((k) => (
+                        <span key={k} data-testid="lead-interest-chip" data-value={k}
+                          className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">
+                          {t(`interest.${k}` as Parameters<typeof t>[0])}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {trial && (
                     <p className="text-xs text-purple-600 flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
@@ -799,7 +810,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // Convert modal (T5 — plan picker + soft duplicate-phone warning)
 // ─────────────────────────────────────────────────────────────────────────────
 function ConvertModal({
-  lead, plans, isRTL, planLabel, onClose, onConverted, gymId,
+  lead, plans, locale, isRTL, planLabel, onClose, onConverted, gymId,
 }: {
   lead: Lead;
   plans: MembershipPlan[];
@@ -902,6 +913,22 @@ function ConvertModal({
         <p className="text-sm text-gray-500">
           {t('convert_subtitle', { name: `${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() })}
         </p>
+
+        {/* MJ-5: the lead's name + normalized phone carry straight into the member —
+            no retyping. Or set them up as a family (guardian + kids), pre-filled. */}
+        <div data-testid="convert-prefill" className="rounded-xl border bg-gray-50 p-3">
+          <p className="text-sm text-gray-800">
+            <span className="font-medium">{`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim()}</span>
+            {lead.phone ? <span dir="ltr"> · {lead.phone}</span> : null}
+          </p>
+          <a
+            data-testid="convert-as-family"
+            href={`/${locale}/students/add?prefillName=${encodeURIComponent(`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim())}&prefillPhone=${encodeURIComponent(lead.phone ?? '')}&mode=family`}
+            className="mt-1 inline-block text-xs font-medium text-primary-700 hover:underline"
+          >
+            {t('convert_as_family')}
+          </a>
+        </div>
 
         {dupWarning && (
           <div data-testid="dup-phone-warning" className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg p-2">
