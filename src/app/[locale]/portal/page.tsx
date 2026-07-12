@@ -253,6 +253,30 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         freezeMinDays={(lcGym as any)?.freeze_min_chunk_days ?? 7}
       />
     )}
+      {/* MJ-4 HIERARCHY: what's ON today, surfaced first (below the actionable
+          lifecycle banner, above the static greeting/glance). The self-view cards
+          keep self-next-class/self-next-pt too — this is the prominent top glance. */}
+      {(nextClassLabel || nextPt) && (
+        <div data-testid="portal-next-session" className="rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
+          <p className={cn('text-xs font-semibold uppercase tracking-wide text-primary-700', isRTL && 'font-arabic')}>{t('upNext')}</p>
+          <div className="mt-2 space-y-1.5">
+            {nextClassLabel && (
+              <div className="flex items-center gap-2 text-sm text-gray-800">
+                <CalendarDays className="h-4 w-4 shrink-0 text-primary-600" aria-hidden />
+                <span className="text-gray-500">{t('nextClass')}:</span>
+                <span className="font-medium" dir="ltr">{nextClassLabel}</span>
+              </div>
+            )}
+            {nextPt && (
+              <div className="flex items-center gap-2 text-sm text-gray-800">
+                <Dumbbell className="h-4 w-4 shrink-0 text-primary-600" aria-hidden />
+                <span className="text-gray-500">{t('nextPt')}:</span>
+                <span className="font-medium" dir="ltr">{new Date(nextPt.scheduled_at).toLocaleString(dateLocale(locale), { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="pt-2">
         <h1 className="text-2xl font-bold text-gray-900">
           {t('welcome')}{firstName ? `, ${firstName}` : ''} 👋

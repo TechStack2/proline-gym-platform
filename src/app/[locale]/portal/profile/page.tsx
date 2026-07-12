@@ -130,7 +130,7 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
             const gd: any = Array.isArray(g.guardians) ? g.guardians[0] : g.guardians
             return (
               <DetailRow key={i} icon={User}
-                label={isRTL ? gd?.relationship_ar || gd?.relationship_en : gd?.relationship_en}
+                label={isRTL ? (gd?.relationship_ar || gd?.relationship_en) : (locale === 'fr' ? (gd?.relationship_fr || gd?.relationship_en) : gd?.relationship_en)}
                 value={guardianLabel(g)}
               />
             )

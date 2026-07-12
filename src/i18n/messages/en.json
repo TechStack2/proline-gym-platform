@@ -1189,6 +1189,7 @@
     "my_requests": "My requests",
     "available_packages": "Available packages",
     "preferred_coach_optional": "Preferred coach (optional)",
+    "no_coach_preference": "No preference",
     "send_request": "Send request",
     "request_this_package": "Request this package",
     "request_success": "Request sent — staff will review it",
@@ -1212,6 +1213,7 @@
     "my_pt_students_subtitle": "Your assigned personal-training students",
     "no_pt_students": "No PT students assigned yet",
     "no_sessions": "No sessions yet",
+    "empty_hint": "Pick a package below to request your first sessions.",
     "schedule": "Schedule",
     "complete": "Complete",
     "no_show": "No-show",
@@ -1907,7 +1909,9 @@
     "no_rank_yet": "No rank recorded yet",
     "promotion_history": "Promotion history",
     "no_history": "No promotions yet",
-    "no_student": "No member profile found"
+    "no_student": "No member profile found",
+    "empty_hint": "Attend classes to earn your first belt.",
+    "empty_cta": "Browse classes"
   },
   "setupChecklist": {
     "title": "Finish setting up your gym",
@@ -2631,6 +2635,7 @@
     "modeFamily": "A family",
     "family": {
       "title": "Add a family",
+      "create": "Create family",
       "guardian": "Guardian",
       "guardianHint": "Start with the parent or guardian — they're the family's contact. Enter their phone once.",
       "guardianName": "Guardian name",
@@ -2706,7 +2711,8 @@
     "freezeReason": "Reason (optional)",
     "freezeReasonPh": "e.g. travel, injury",
     "cancel": "Cancel",
-    "sendRequest": "Send request"
+    "sendRequest": "Send request",
+    "upNext": "Up next"
   },
   "portalBilling": {
     "title": "Billing",
@@ -2730,7 +2736,8 @@
       "cancelled": "Cancelled",
       "refunded": "Refunded",
       "partial": "Partial"
-    }
+    },
+    "allSettled": "You're all caught up — nothing due."
   },
   "portalProfile": {
     "member": "Member",
@@ -2780,7 +2787,17 @@
   },
   "portalClasses": {
     "title": "Classes",
-    "subtitle": "Register for a recurring class for a monthly fee"
+    "subtitle": "Register for a recurring class for a monthly fee",
+    "statusActive": "Active",
+    "statusRequested": "Requested",
+    "statusWaitlist": "Waitlist #{n}",
+    "confirmCancel": "Cancel this registration?",
+    "perMonth": "mo",
+    "cancelReg": "Cancel",
+    "request": "Request",
+    "actingFor": "Acting for: {name}",
+    "emptyTitle": "No classes offered yet",
+    "emptyCta": "See the timetable"
   },
   "invoiceNew": {
     "title": "New invoice",
@@ -3089,18 +3106,18 @@
     "updateAvailable": "New version available",
     "updateAction": "Refresh",
     "cardTitle": "Install the app",
-    "cardDescription": "Install Proline on this device for a faster, offline-ready front desk.",
+    "cardDescription": "Install {gym} on this device for a faster, offline-ready front desk.",
     "alreadyInstalledHint": "Already installed? You can dismiss this.",
     "steps": {
       "macSafari": {
-        "title": "Add Proline to your Dock (Safari)",
+        "title": "Add {gym} to your Dock (Safari)",
         "s1": "Open the File menu — or the Share button — in Safari.",
         "s2": "Choose “Add to Dock”."
       },
       "chromiumDesktop": {
         "title": "Install from the address bar (Chrome / Edge)",
         "s1": "Click the install icon (⊕) at the right of the address bar.",
-        "s2": "Or open the ⋮ menu and choose “Install Proline”."
+        "s2": "Or open the ⋮ menu and choose “Install {gym}”."
       },
       "iosSafari": {
         "title": "Add to Home Screen (Safari)",

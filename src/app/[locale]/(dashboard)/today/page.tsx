@@ -34,9 +34,12 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: profile } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('gym_id, gyms:gym_id (name_ar, name_en, name_fr)').eq('id', user.id).single()
   const gymId = profile?.gym_id
   if (!gymId) return null
+  // TENANT-CONTENT: gym-derived name for the white-labelled install card.
+  const g: any = Array.isArray((profile as any)?.gyms) ? (profile as any).gyms[0] : (profile as any)?.gyms
+  const gymName: string = (locale === 'ar' ? g?.name_ar : locale === 'fr' ? g?.name_fr : g?.name_en) || g?.name_en || ''
 
   const now = new Date()
   const horizon: Horizon = parseHorizon(searchParams?.h)
@@ -75,7 +78,7 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
 
       {/* PWA-INSTALL: dismissible, platform-aware "Install the app" affordance for the
           front-desk laptop (the offline guarantee). Renders nothing once installed. */}
-      <InstallAppCard locale={locale} />
+      <InstallAppCard locale={locale} gymName={gymName} />
 
       {/* ONBOARDING-CHECKLIST: derived first-run setup guide — renders only while
           setup is incomplete, hides itself once every applicable item is done. */}

@@ -142,13 +142,18 @@ test('SELF-SERVE · medical change request → staff approve → applied', async
     await expect(row).toBeVisible({ timeout: 20_000 })
     await s.page.screenshot({ path: 'screenshots/mj3-staff-inbox.png', fullPage: true }).catch(() => {})
     await row.locator('[data-testid="inbox-member-approve"]').click()
+    // AWAITEFFECT: wait for the approve to COMMIT (the requested medical note is applied)
+    // before asserting the optimistic hide — a replica-lagged read can't fail it now.
+    await awaitEffect(async () => {
+      const [st] = await svcJson(`students?id=eq.${memberStudentId}&select=medical_notes`)
+      return st?.medical_notes === note
+    }, { budget: 25_000, interval: 500 })
     await expect(row).toBeHidden({ timeout: 15_000 })
   } finally {
     await s.ctx.close()
   }
 
   // Applied: the member's medical notes now carry the requested value.
-  // (The inbox hides the row optimistically, so poll until the approve commits.)
   await expect(async () => {
     const [st] = await svcJson(`students?id=eq.${memberStudentId}&select=medical_notes`)
     expect(st?.medical_notes).toBe(note)

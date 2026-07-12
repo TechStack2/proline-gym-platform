@@ -43,7 +43,7 @@ test('PT delivery: schedule → complete (E1) → exhausted-block (E2) → resto
       const card = s.page.locator(`[data-testid="pt-package-card"][data-package-name="${PACKAGE_EN}"]`);
       await expect(card, `the "${PACKAGE_EN}" package should be offered`).toBeVisible({ timeout: 15_000 });
       await card.getByRole('button', { name: /request this package/i }).click();
-      await card.locator('select').selectOption({ label: COACH_EN });
+      await card.getByTestId('pt-request-coach-chip').filter({ hasText: COACH_EN }).click();
       await card.getByRole('button', { name: /send request/i }).click();
       await expect(s.page.getByText(/request sent/i).first()).toBeVisible({ timeout: 15_000 });
     } finally {

@@ -1,6 +1,6 @@
 import { test, expect, type Browser } from '@playwright/test'
 import { ROLES } from './roles'
-import { vis } from './helpers'
+import { vis, untilConsistent } from './helpers'
 
 /**
  * MEMBER360-PORTAL — the member's own drillable premium 360 hub (portal home).
@@ -42,10 +42,17 @@ test.describe.serial('MEMBER360-PORTAL · member drillable 360 hub', () => {
       await expect(hub.getByTestId('self-pt-remaining').first(), 'self-pt-remaining preserved').toBeVisible()
       await expect(hub.getByTestId('self-next-class').first(), 'self-next-class preserved').toBeVisible()
 
-      // RECONCILE (billing): open-invoice rows sum to the balance headline (when any are open).
-      const billing = vis(page, '[data-testid="card-billing"]').first()
-      const billingCount = Number(await billing.getAttribute('data-count'))
-      if (billingCount > 0) {
+      // RECONCILE (billing): open-invoice rows sum to the balance headline. Karim is a
+      // SHARED fixture that ml1 mutates concurrently (issues/pays a renewal invoice), so a
+      // single SSR snapshot can catch the balance headline and the open-invoice rows
+      // mid-mutation and drift by an invoice. Re-fetch a FRESH snapshot and re-reconcile
+      // until they agree — the shared-fixture sibling of the awaitEffect idiom (the "poll"
+      // option: this test owns no single committed effect, the write comes from ml1).
+      await untilConsistent(async () => {
+        await page.goto('/en/portal')
+        const billing = vis(page, '[data-testid="card-billing"]').first()
+        const billingCount = Number(await billing.getAttribute('data-count'))
+        if (billingCount === 0) return
         await vis(page, '[data-testid="billing-drill"]').first().locator('summary').click()
         const rows = page.locator('[data-testid="billing-row"]:visible')
         const n = await rows.count()
@@ -53,7 +60,7 @@ test.describe.serial('MEMBER360-PORTAL · member drillable 360 hub', () => {
         for (let i = 0; i < n; i++) sum += Number((await rows.nth(i).getAttribute('data-v')) || 0)
         const balTxt = (await vis(page, '[data-testid="billing-balance"]').first().innerText()).replace(/[^0-9.]/g, '')
         expect(Math.round(sum), 'billing rows reconcile to the balance').toBe(Math.round(Number(balTxt)))
-      }
+      })
 
       // RECONCILE (classes): the attendance drill rows count to the card headline.
       const cls = vis(page, '[data-testid="card-portal-recent-attendance"]').first()

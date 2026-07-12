@@ -14,13 +14,18 @@ import { cn } from '@/lib/utils'
 import { usePwaInstall } from '@/lib/pwa/use-pwa-install'
 import { Download, X, CheckCircle2 } from 'lucide-react'
 
-export function InstallAppCard({ locale }: { locale: string }) {
+export function InstallAppCard({ locale, gymName }: { locale: string; gymName?: string }) {
   const t = useTranslations('pwa')
   const isRTL = locale === 'ar'
   const { canPrompt, shouldOffer, instructions, dismiss, promptInstall } = usePwaInstall()
 
   // Already installed (standalone) / dismissed → no nag.
   if (!shouldOffer) return null
+
+  // TENANT-CONTENT: the install card is white-labelled — the gym's own name +
+  // initial, not the hardcoded "Proline"/"PL". Falls back only if no gym resolved.
+  const gym = (gymName || '').trim()
+  const initial = gym ? gym.charAt(0).toUpperCase() : 'PL'
 
   const onInstall = async () => {
     const outcome = await promptInstall()
@@ -32,10 +37,10 @@ export function InstallAppCard({ locale }: { locale: string }) {
       className="rounded-2xl border border-primary-700/20 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-700 text-sm font-extrabold text-primary-foreground">PL</div>
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-700 text-sm font-extrabold text-primary-foreground">{initial}</div>
           <div>
             <p className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('cardTitle')}</p>
-            <p className="mt-0.5 text-xs text-gray-500">{t('cardDescription')}</p>
+            <p className="mt-0.5 text-xs text-gray-500">{t('cardDescription', { gym })}</p>
           </div>
         </div>
         <button type="button" data-testid="install-app-dismiss" onClick={dismiss} aria-label={t('dismissButton')}
@@ -54,10 +59,10 @@ export function InstallAppCard({ locale }: { locale: string }) {
         // No native prompt (macOS Safari, or eligible browser that didn't fire it) →
         // platform-aware manual steps.
         <div data-testid="install-app-instructions" className="mt-3 rounded-xl bg-gray-50 p-3">
-          <p className="text-xs font-semibold text-gray-800">{t(`steps.${instructions}.title`)}</p>
+          <p className="text-xs font-semibold text-gray-800">{t(`steps.${instructions}.title`, { gym })}</p>
           <ol className={cn('mt-1.5 list-decimal space-y-1 text-xs text-gray-600', isRTL ? 'pr-4' : 'pl-4')}>
-            <li>{t(`steps.${instructions}.s1`)}</li>
-            <li>{t(`steps.${instructions}.s2`)}</li>
+            <li>{t(`steps.${instructions}.s1`, { gym })}</li>
+            <li>{t(`steps.${instructions}.s2`, { gym })}</li>
           </ol>
           <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-gray-400">
             <CheckCircle2 className="h-3 w-3" /> {t('alreadyInstalledHint')}

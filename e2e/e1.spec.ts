@@ -235,13 +235,19 @@ test('E1 · capacity race-safe (3 → full, 4th blocked) → attendance → Toda
       'approved request leaves the inbox',
     ).toHaveCount(0, { timeout: 15_000 });
 
-    // Confirmed + invoiced through the same RPC — the kid card flips.
-    await guardian.page.goto(guardian.page.url());
-    await expect(
-      vis(guardian.page, `[data-testid="portal-camp-card"][data-name-en="${CAMP_NAME}"]`).first()
-        .getByTestId('portal-camp-status'),
-      'approval confirms the registration (same writer)',
-    ).toHaveAttribute('data-status', 'confirmed', { timeout: 15_000 });
+    // Confirmed + invoiced through the same RPC — the kid card flips. A ONE-SHOT reload
+    // can read a replica-lagged 'pending' (the "stuck pending" flake); re-fetch a fresh
+    // snapshot until the commit is visible. untilConsistent is e1's read-retry idiom
+    // (the awaitEffect sibling for a spec with no service-role reader). Short inner
+    // timeout so the retries cycle.
+    await untilConsistent(async () => {
+      await guardian.page.goto(guardian.page.url());
+      await expect(
+        vis(guardian.page, `[data-testid="portal-camp-card"][data-name-en="${CAMP_NAME}"]`).first()
+          .getByTestId('portal-camp-status'),
+        'approval confirms the registration (same writer)',
+      ).toHaveAttribute('data-status', 'confirmed', { timeout: 5_000 });
+    });
   } finally {
     await owner.ctx.close();
     await guardian.ctx.close();

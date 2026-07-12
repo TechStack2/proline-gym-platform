@@ -1189,6 +1189,7 @@
     "my_requests": "طلباتي",
     "available_packages": "الباقات المتاحة",
     "preferred_coach_optional": "المدرّب المفضّل (اختياري)",
+    "no_coach_preference": "بلا تفضيل",
     "send_request": "إرسال الطلب",
     "request_this_package": "اطلب هذه الباقة",
     "request_success": "تم إرسال الطلب — سيراجعه الموظفون",
@@ -1212,6 +1213,7 @@
     "my_pt_students_subtitle": "الطلاب المسندون إليك للتدريب الشخصي",
     "no_pt_students": "لا يوجد طلاب تدريب شخصي بعد",
     "no_sessions": "لا توجد جلسات بعد",
+    "empty_hint": "اختر باقة من الأسفل لطلب جلساتك الأولى.",
     "schedule": "جدولة",
     "complete": "إكمال",
     "no_show": "لم يحضر",
@@ -1907,7 +1909,9 @@
     "no_rank_yet": "لا توجد رتبة مسجلة بعد",
     "promotion_history": "سجل الترقيات",
     "no_history": "لا توجد ترقيات بعد",
-    "no_student": "لم يتم العثور على ملف عضو"
+    "no_student": "لم يتم العثور على ملف عضو",
+    "empty_hint": "احضر الحصص لتحصل على أول حزام.",
+    "empty_cta": "تصفّح الحصص"
   },
   "setupChecklist": {
     "title": "أكمل إعداد ناديك",
@@ -2631,6 +2635,7 @@
     "modeFamily": "عائلة",
     "family": {
       "title": "إضافة عائلة",
+      "create": "إنشاء العائلة",
       "guardian": "ولي الأمر",
       "guardianHint": "ابدأ بالوالد أو ولي الأمر — فهو جهة اتصال العائلة. أدخل رقمه مرة واحدة.",
       "guardianName": "اسم ولي الأمر",
@@ -2706,7 +2711,8 @@
     "freezeReason": "السبب (اختياري)",
     "freezeReasonPh": "مثل السفر أو الإصابة",
     "cancel": "إلغاء",
-    "sendRequest": "إرسال الطلب"
+    "sendRequest": "إرسال الطلب",
+    "upNext": "التالي"
   },
   "portalBilling": {
     "title": "الفوترة",
@@ -2730,7 +2736,8 @@
       "cancelled": "ملغي",
       "refunded": "مسترجع",
       "partial": "جزئي"
-    }
+    },
+    "allSettled": "كل شيء مسدَّد — لا مستحقات."
   },
   "portalProfile": {
     "member": "عضو",
@@ -2780,7 +2787,17 @@
   },
   "portalClasses": {
     "title": "الحصص",
-    "subtitle": "سجّل في حصة متكررة برسوم شهرية"
+    "subtitle": "سجّل في حصة متكررة برسوم شهرية",
+    "statusActive": "نشط",
+    "statusRequested": "بانتظار الموافقة",
+    "statusWaitlist": "قائمة الانتظار #{n}",
+    "confirmCancel": "إلغاء هذا التسجيل؟",
+    "perMonth": "شهر",
+    "cancelReg": "إلغاء",
+    "request": "تسجيل",
+    "actingFor": "أنت تتصرف نيابة عن: {name}",
+    "emptyTitle": "لا توجد حصص متاحة بعد",
+    "emptyCta": "عرض الجدول"
   },
   "invoiceNew": {
     "title": "إصدار فاتورة",
@@ -3089,18 +3106,18 @@
     "updateAvailable": "يتوفّر إصدار جديد",
     "updateAction": "تحديث",
     "cardTitle": "ثبّت التطبيق",
-    "cardDescription": "ثبّت برو لاين على هذا الجهاز لمكتب أمامي أسرع وجاهز للعمل دون اتصال.",
+    "cardDescription": "ثبّت {gym} على هذا الجهاز لمكتب أمامي أسرع وجاهز للعمل دون اتصال.",
     "alreadyInstalledHint": "مثبّت مسبقاً؟ يمكنك إخفاء هذا.",
     "steps": {
       "macSafari": {
-        "title": "أضِف برو لاين إلى الـ Dock (سفاري)",
+        "title": "أضِف {gym} إلى الـ Dock (سفاري)",
         "s1": "افتح قائمة File — أو زر المشاركة — في سفاري.",
         "s2": "اختر «Add to Dock»."
       },
       "chromiumDesktop": {
         "title": "التثبيت من شريط العنوان (كروم / إيدج)",
         "s1": "انقر أيقونة التثبيت (⊕) على يمين شريط العنوان.",
-        "s2": "أو افتح قائمة ⋮ واختر «Install Proline»."
+        "s2": "أو افتح قائمة ⋮ واختر «Install {gym}»."
       },
       "iosSafari": {
         "title": "أضِف إلى الشاشة الرئيسية (سفاري)",

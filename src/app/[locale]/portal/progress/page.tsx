@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
@@ -141,8 +142,14 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="text-sm text-gray-400 text-center py-2">{t('no_rank_yet')}</p>
+        <div data-testid="portal-progress-empty" className="rounded-2xl bg-white p-6 text-center shadow-sm">
+          <Target className="mx-auto h-10 w-10 text-primary-300 mb-2" aria-hidden />
+          <p className="text-sm font-medium text-gray-700">{t('no_rank_yet')}</p>
+          <p className="mt-1 text-xs text-gray-400">{t('empty_hint')}</p>
+          <Link href={`/${locale}/portal/classes`} data-testid="portal-progress-empty-cta"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800">
+            {t('empty_cta')}
+          </Link>
         </div>
       )}
 
