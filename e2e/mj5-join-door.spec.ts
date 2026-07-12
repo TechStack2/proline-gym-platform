@@ -137,10 +137,12 @@ test('JOIN-DOOR · convert pre-fills name + phone; "set up as family" opens the 
     expect(href).toContain('prefillPhone=')
     await famLink.click()
     // The wizard opens in family mode with the guardian seeded from the lead.
+    // (fam-guardian-name only renders after a search; the always-visible
+    // fam-guardian-phone carries the pre-filled, normalized number.)
     await expect(w(o.page, 'add-student-wizard')).toBeVisible({ timeout: 20_000 })
     await w(o.page, 'sw-mode-family').click().catch(() => {})
     await expect(w(o.page, 'sw-mode')).toHaveAttribute('data-mode', 'family', { timeout: 10_000 })
-    await expect(w(o.page, 'fam-guardian-name')).toHaveValue(JOIN_NAME, { timeout: 10_000 })
+    await expect(w(o.page, 'fam-guardian-phone')).toHaveValue(JOIN_PHONE, { timeout: 10_000 })
   } finally {
     await o.ctx.close()
   }
