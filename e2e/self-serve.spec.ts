@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
-import { vis } from './helpers'
+import { vis, awaitEffect } from './helpers'
 
 /**
  * MJ-3 SELF-SERVE — member/guardian profile edits + lifecycle requests, end-to-end.
@@ -177,6 +177,12 @@ test('SELF-SERVE · renewal request → inbox → staff approve', async ({ brows
     const row = vis(s.page, '[data-testid="inbox-member-row"][data-kind="renewal"]').first()
     await expect(row).toBeVisible({ timeout: 20_000 })
     await row.locator('[data-testid="inbox-member-approve"]').click()
+    // AWAITEFFECT: wait for the approve to COMMIT (renew_now + the request → approved)
+    // before asserting the optimistic hide — a replica-lagged read can't fail it now.
+    await awaitEffect(async () => {
+      const rows = await svcJson(`member_requests?student_id=eq.${memberStudentId}&kind=eq.renewal&select=status&order=created_at.desc&limit=1`)
+      return rows[0]?.status === 'approved'
+    }, { budget: 25_000, interval: 500 })
     await expect(row).toBeHidden({ timeout: 15_000 })
   } finally {
     await s.ctx.close()
@@ -215,6 +221,12 @@ test('SELF-SERVE · freeze request → staff approve → membership paused', asy
     const row = vis(s.page, '[data-testid="inbox-member-row"][data-kind="freeze"]').first()
     await expect(row).toBeVisible({ timeout: 20_000 })
     await row.locator('[data-testid="inbox-member-approve"]').click()
+    // AWAITEFFECT: wait for freeze_membership to COMMIT (a membership paused) before
+    // the optimistic-hide assertion, so the read race can't fail the UI check.
+    await awaitEffect(async () => {
+      const rows = await svcJson(`student_memberships?student_id=eq.${memberStudentId}&select=status`)
+      return rows.some((m) => m.status === 'paused')
+    }, { budget: 25_000, interval: 500 })
     await expect(row).toBeHidden({ timeout: 15_000 })
   } finally {
     await s.ctx.close()
