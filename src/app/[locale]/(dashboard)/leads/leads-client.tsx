@@ -262,7 +262,7 @@ export function LeadsClient({
           />
         </div>
         <select
-          className="px-3 py-2 text-sm border rounded-lg bg-white focus:ring-2 focus:ring-primary-500"
+          className="px-3 py-2 text-sm border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
         >
@@ -626,7 +626,7 @@ function TrialPanel({
               data-testid="trial-date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="flex-1 px-2 py-1 text-xs border rounded"
+              className="flex-1 px-2 py-1 text-xs border rounded bg-white text-gray-900"
             />
             <select
               data-testid="trial-time"
@@ -715,17 +715,17 @@ function AddLeadModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('field.first_name')}>
-              <input data-testid="lead-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 w-full rounded-md border px-3 text-sm" />
+              <input data-testid="lead-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900" />
             </Field>
             <Field label={t('field.last_name')}>
-              <input data-testid="lead-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 w-full rounded-md border px-3 text-sm" />
+              <input data-testid="lead-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900" />
             </Field>
           </div>
           <Field label={t('field.phone')}>
-            <input data-testid="lead-phone" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="h-9 w-full rounded-md border px-3 text-sm" />
+            <input data-testid="lead-phone" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900" />
           </Field>
           <Field label={t('field.email')}>
-            <input data-testid="lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className="h-9 w-full rounded-md border px-3 text-sm" />
+            <input data-testid="lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900" />
           </Field>
         </div>
       ),
@@ -760,10 +760,10 @@ function AddLeadModal({
             </div>
           </Field>
           <Field label={t('field.source_detail')}>
-            <input data-testid="lead-source-detail" value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} className="h-9 w-full rounded-md border px-3 text-sm" />
+            <input data-testid="lead-source-detail" value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900" />
           </Field>
           <Field label={t('field.notes')}>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="h-9 w-full rounded-md border px-3 text-sm" />
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900" />
           </Field>
         </div>
       ),
@@ -945,14 +945,14 @@ function ConvertModal({
             placeholder="+961…"
             value={guardianPhone}
             onChange={(e) => setGuardianPhone(e.target.value)}
-            className="h-9 w-full rounded-md border px-3 text-sm"
+            className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900"
           />
           <input
             data-testid="convert-guardian-name"
             placeholder={t('guardian_name_placeholder')}
             value={guardianName}
             onChange={(e) => setGuardianName(e.target.value)}
-            className="h-9 w-full rounded-md border px-3 text-sm"
+            className="h-9 w-full rounded-md border bg-white px-3 text-sm text-gray-900"
           />
         </div>
 

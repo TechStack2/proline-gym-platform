@@ -168,3 +168,43 @@ test('VISUAL-POLISH · R2 — dark-mode fields show typed text (login + a dashbo
     await ar.close();
   }
 });
+
+test('VISUAL-POLISH · R2 addendum — the Add Lead wizard fields show typed text in dark (owner repro) + leads page/date', async ({ browser }) => {
+  test.setTimeout(90_000);
+  const owner = await browser.newContext({ storageState: ROLES.owner.storage, locale: 'en' });
+  await owner.addInitScript(() => localStorage.setItem('theme', 'dark'));
+  try {
+    const p = await owner.newPage();
+    await p.goto('/en/leads');
+    await expect(p.locator('[data-testid="add-lead-button"]:visible').first()).toBeVisible({ timeout: 20_000 });
+    // Evidence: the whole leads page in dark (includes any lead card's :624 trial-date input).
+    await p.screenshot({ path: 'screenshots/visual-polish-leads-dark.png', fullPage: true });
+
+    // The owner's EXACT repro: the Add Lead wizard's native <input>s must show typed text
+    // in dark — the field must flip to a DARK surface (not UA-white) AND its text to LIGHT.
+    await p.locator('[data-testid="add-lead-button"]:visible').first().click();
+    const modal = p.locator('[data-testid="add-lead-modal"]:visible');
+    await expect(modal).toBeVisible({ timeout: 15_000 });
+    const first = modal.getByTestId('lead-first-name');
+    await first.fill('Dark');
+    await modal.getByTestId('lead-last-name').fill('ModeVisible');
+    await modal.getByTestId('lead-phone').fill('+96170123456');
+    await modal.getByTestId('lead-email').fill('visible@dark.test');
+    const { bg, color } = await first.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { bg: s.backgroundColor, color: s.color };
+    });
+    expect(bg, `Add-Lead field flipped to a dark surface (was "${bg}")`).not.toBe('rgb(255, 255, 255)');
+    expect(color, `Add-Lead field text is light in dark (was "${color}")`).not.toBe('rgb(0, 0, 0)');
+    await p.screenshot({ path: 'screenshots/visual-polish-addlead-dark-typed.png' });
+
+    // Best-effort: a lead card's :624 trial-date input, if this gym has a lead in that state.
+    const dateInput = p.getByTestId('trial-date').first();
+    if (await dateInput.count()) {
+      await dateInput.scrollIntoViewIfNeeded().catch(() => {});
+      await p.screenshot({ path: 'screenshots/visual-polish-trial-date-dark.png' }).catch(() => {});
+    }
+  } finally {
+    await owner.close();
+  }
+});
