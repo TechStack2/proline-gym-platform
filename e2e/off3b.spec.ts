@@ -18,23 +18,34 @@ async function ownerPage(browser: Browser, locale = 'en') {
 
 /** White-box: queue a lead intent straight into the Dexie outbox (the desk DB is
  *  open at v4 once /desk has mounted). disciplineId set to a bogus-but-valid UUID
- *  forces an FK rejection on flush (the conflict path). */
-const injectLead = (page: Page, opId: string, first: string, disciplineId: string | null) =>
-  page.evaluate(({ opId, first, disciplineId }) => new Promise<void>((resolve, reject) => {
-    const open = indexedDB.open('proline_offline_db')
-    open.onsuccess = () => {
-      const db = open.result
-      const tx = db.transaction('pending_leads', 'readwrite')
-      tx.objectStore('pending_leads').put({
-        op_id: opId, first_name: first, last_name: 'Walkin', phone: '70999050', email: null,
-        source: 'walk_in', source_detail: null, discipline_id: disciplineId, notes: null,
-        client_ts: new Date().toISOString(), status: 'pending',
-      })
-      tx.oncomplete = () => { db.close(); resolve() }
-      tx.onerror = () => reject(tx.error)
-    }
-    open.onerror = () => reject(open.error)
-  }), { opId, first, disciplineId })
+ *  forces an FK rejection on flush (the conflict path).
+ *
+ *  RETRY-ON-NAVIGATION: the desk/leads route can fire a late Next client-navigation
+ *  that tears down the evaluate context mid-write ("Execution context was destroyed"
+ *  — the rotating off3b flake, seen at both :97 and :142). `op_id` is the store's
+ *  PRIMARY KEY (`pending_leads: 'op_id, …'`), so `put` is idempotent; a torn-down
+ *  attempt aborts its IndexedDB tx without committing, and a settled attempt writes
+ *  exactly one row — so retrying the whole evaluate until it survives is safe and
+ *  never double-records (the idempotency/conflict proofs are unchanged). */
+async function injectLead(page: Page, opId: string, first: string, disciplineId: string | null) {
+  await expect(async () => {
+    await page.evaluate(({ opId, first, disciplineId }) => new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('proline_offline_db')
+      open.onsuccess = () => {
+        const db = open.result
+        const tx = db.transaction('pending_leads', 'readwrite')
+        tx.objectStore('pending_leads').put({
+          op_id: opId, first_name: first, last_name: 'Walkin', phone: '70999050', email: null,
+          source: 'walk_in', source_detail: null, discipline_id: disciplineId, notes: null,
+          client_ts: new Date().toISOString(), status: 'pending',
+        })
+        tx.oncomplete = () => { db.close(); resolve() }
+        tx.onerror = () => reject(tx.error)
+      }
+      open.onerror = () => reject(open.error)
+    }), { opId, first, disciplineId })
+  }).toPass({ timeout: 20_000, intervals: [250, 500, 1_000, 2_000] })
+}
 
 const leadCards = (page: Page, fullName: string) =>
   page.locator(`[data-testid="lead-card"][data-lead-name="${fullName}"]:visible`)
@@ -43,6 +54,16 @@ async function flushFromDesk(page: Page) {
   await page.goto('/en/desk')
   await expect(vis(page, '[data-testid="desk-pending-bar"]').first()).toBeVisible({ timeout: 15_000 })
   await vis(page, '[data-testid="desk-sync-pending"]').first().click()
+}
+
+/** Queue a lead from a MOUNTED /desk, rather than injecting straight after the
+ *  /leads verify (below) where a late navigation is likeliest. Belt-and-suspenders
+ *  with injectLead's own retry: anchor to a freshly-loaded /desk (where the Dexie DB
+ *  is guaranteed open at v4) so the evaluate runs against the most settled page. */
+async function injectLeadOnDesk(page: Page, opId: string, first: string, disciplineId: string | null) {
+  await page.goto('/en/desk')
+  await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 15_000 })
+  await injectLead(page, opId, first, disciplineId)
 }
 
 test.describe('OFF-3b · offline lead capture (3rd outbox path)', () => {
@@ -101,11 +122,8 @@ test.describe('OFF-3b · offline lead capture (3rd outbox path)', () => {
     const full = `${first} Walkin`
     const opId = randomUUID()
     try {
-      await page.goto('/en/desk')
-      await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 15_000 })
-
-      // First push.
-      await injectLead(page, opId, first, null)
+      // First push (injected from a mounted /desk — see injectLeadOnDesk).
+      await injectLeadOnDesk(page, opId, first, null)
       await flushFromDesk(page)
       await expect(vis(page, '[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 30_000 })
       await untilConsistent(async () => {
@@ -113,12 +131,19 @@ test.describe('OFF-3b · offline lead capture (3rd outbox path)', () => {
         await expect(leadCards(page, full)).toHaveCount(1, { timeout: 5_000 })
       }, { timeout: 40_000 })
 
-      // Re-push the SAME op_id → addLead de-dups → still exactly one.
-      await injectLead(page, opId, first, null)
+      // Re-push the SAME op_id → addLead de-dups → still exactly one. Inject again
+      // from a mounted /desk (NOT the /leads page just read above — that raced a late
+      // navigation and destroyed the evaluate context).
+      await injectLeadOnDesk(page, opId, first, null)
       await flushFromDesk(page)
       await expect(vis(page, '[data-testid="desk-pending-bar"]')).toHaveCount(0, { timeout: 30_000 })
-      await page.goto('/en/leads')
-      await expect(leadCards(page, full), 're-push of the same op_id did not duplicate').toHaveCount(1, { timeout: 15_000 })
+      // Reload-consistent read (still EXACTLY one — the idempotency proof is intact;
+      // toHaveCount(1) fails on 0 or 2): a single-shot /leads read can observe a stale
+      // replica snapshot, so re-goto per attempt instead of polling one stale DOM.
+      await untilConsistent(async () => {
+        await page.goto('/en/leads')
+        await expect(leadCards(page, full), 're-push of the same op_id did not duplicate').toHaveCount(1, { timeout: 5_000 })
+      }, { timeout: 40_000 })
     } finally {
       await ctx.close()
     }
