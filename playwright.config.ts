@@ -1080,6 +1080,17 @@ export default defineConfig({
       testMatch: /\/perf-1\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // VISUAL-POLISH: the pre-walkthrough visual-audit fixes as behaviour + evidence —
+      // R1 body resolves Geist (landing/login/dashboard), R3/R4 the landing is coherent
+      // under html.dark + the mounted ThemeToggle flips it (hero stays light-on-dark),
+      // R5 a mid-page load starts the sticky nav SOLID, and dark screenshots for R2/R3.
+      // Opens its own anon + owner contexts → must NOT pin a session. testMatch ANCHORED.
+      name: 'visual-polish',
+      dependencies: ['setup'],
+      testMatch: /\/visual-polish\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     // E2E-TIERED — the `smoke` project materializes ONLY under E2E_TIERED=1 (the
     // targeted branch-run path: `gh workflow run e2e.yml -f projects="<slice>"`).
     // It is ABSENT from the default config, so the FULL push-to-main union gate's

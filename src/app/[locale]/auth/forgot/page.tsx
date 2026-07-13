@@ -104,7 +104,7 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
                   placeholder="you@email.com"
                   disabled={loading}
                   className={cn(
-                    'w-full rounded-xl border border-gray-200 bg-white py-3 text-base placeholder:text-gray-400',
+                    'w-full rounded-xl border border-gray-200 bg-white py-3 text-base text-gray-900 placeholder:text-gray-400',
                     'focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4',

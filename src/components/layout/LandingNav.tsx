@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { Menu, X } from 'lucide-react';
 
@@ -27,6 +28,13 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
+    // R5 STICKY-HARDEN: seed from the ACTUAL scroll position on mount. A load mid-page
+    // (an in-page anchor like /#pricing, a reload, or the browser's scroll restoration)
+    // fires no scroll event, so the bar must self-correct to SOLID on mount rather than
+    // starting transparent-over-content (unreadable light text on a white section).
+    // WebKit note: scroll fires on window with { passive:true } here as in Chromium; the
+    // initial call removes the one case (no event on load) that WebKit also exhibits.
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -67,7 +75,7 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
               data-testid="landing-nav-name"
               className={cn(
                 'text-lg font-bold tracking-tight transition-colors',
-                scrolled ? 'text-secondary-900' : 'text-white',
+                scrolled ? 'text-secondary-900' : 'text-white dark:text-zinc-50',
                 isRTL && 'font-arabic'
               )}
             >
@@ -83,13 +91,17 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
                 href={link.href}
                 className={cn(
                   'text-sm font-medium transition-colors hover:text-primary-500',
-                  scrolled ? 'text-gray-600' : 'text-white/90'
+                  scrolled ? 'text-gray-600' : 'text-white/90 dark:text-zinc-100'
                 )}
               >
                 {link.label}
               </a>
             ))}
             <LanguageSwitcher locale={locale} />
+            {/* R4: theme toggle in the desktop cluster. Over the (dark) hero it reads
+                light like the sibling nav items; once scrolled it falls back to the
+                toggle's default neutral (which flips correctly on the dark bar). */}
+            <ThemeToggle className={cn(!scrolled && 'text-white hover:bg-white/10 hover:text-white dark:text-zinc-50')} />
             {/* MJ-2 FRONT DOOR: the member sign-in link. Staff-only credential gate —
                 there is NO public registration link (the public path is request → leads). */}
             <Link
@@ -99,7 +111,7 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
                 'rounded-lg px-4 py-2 text-sm font-semibold transition-all',
                 scrolled
                   ? 'bg-primary-600 text-primary-foreground hover:bg-primary-700'
-                  : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                  : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm dark:bg-zinc-100/20 dark:text-zinc-50 dark:hover:bg-zinc-100/30'
               )}
             >
               {t('nav.login') || 'Member sign-in'}
@@ -111,7 +123,7 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
             onClick={() => setMobileOpen(!mobileOpen)}
             className={cn(
               'md:hidden rounded-lg p-2 transition-colors',
-              scrolled ? 'text-gray-600 hover:bg-gray-100' : 'text-white hover:bg-white/10'
+              scrolled ? 'text-gray-600 hover:bg-gray-100' : 'text-white hover:bg-white/10 dark:text-zinc-50'
             )}
             aria-label="Menu"
           >
@@ -134,8 +146,11 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
                 {link.label}
               </a>
             ))}
-            <div className="pt-2 border-t">
+            <div className="flex items-center gap-2 pt-2 border-t">
               <LanguageSwitcher locale={locale} variant="inline" />
+              {/* R4: theme toggle in the mobile menu (the panel is bg-white → flips to a
+                  dark sheet, and the toggle's default neutral flips with it). */}
+              <ThemeToggle />
             </div>
             <Link
               href={`/${locale}/auth/login`}

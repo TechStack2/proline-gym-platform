@@ -57,27 +57,27 @@ export function JoinCTASection({ locale, gymSlug }: JoinCTASectionProps) {
 
   if (success) {
     return (
-      <section id="join" className="py-20 lg:py-28 bg-gradient-to-br from-gray-900 to-gray-800">
+      <section id="join" className="py-20 lg:py-28 bg-gradient-to-br from-gray-900 to-gray-800 dark:from-zinc-900 dark:to-zinc-800">
         <div className="mx-auto max-w-lg px-4 text-center">
-          <CheckCircle className="mx-auto h-16 w-16 text-white/80" />
-          <h2 className={cn('mt-6 text-3xl font-bold text-white', isRTL && 'text-right font-arabic')} data-testid="join-success">
+          <CheckCircle className="mx-auto h-16 w-16 text-white/80 dark:text-zinc-300" />
+          <h2 className={cn('mt-6 text-3xl font-bold text-white dark:text-zinc-50', isRTL && 'text-right font-arabic')} data-testid="join-success">
             {t('thanksTitle')}
           </h2>
-          <p className="mt-3 text-lg text-white/80">{t('thanksBody')}</p>
+          <p className="mt-3 text-lg text-white/80 dark:text-zinc-300">{t('thanksBody')}</p>
         </div>
       </section>
     );
   }
 
   return (
-    <section id="join" className="py-20 lg:py-28 bg-gradient-to-br from-gray-900 to-gray-800">
+    <section id="join" className="py-20 lg:py-28 bg-gradient-to-br from-gray-900 to-gray-800 dark:from-zinc-900 dark:to-zinc-800">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className={cn('text-3xl sm:text-4xl font-bold text-white', isRTL && 'text-right font-arabic')}>
+            <h2 className={cn('text-3xl sm:text-4xl font-bold text-white dark:text-zinc-50', isRTL && 'text-right font-arabic')}>
               {t('title')}
             </h2>
-            <p className="mt-4 text-lg text-white/80 leading-relaxed">{t('subtitle')}</p>
+            <p className="mt-4 text-lg text-white/80 leading-relaxed dark:text-zinc-300">{t('subtitle')}</p>
           </div>
 
           <div className="rounded-2xl bg-white p-6 sm:p-8 shadow-elevation-3">
@@ -88,7 +88,7 @@ export function JoinCTASection({ locale, gymSlug }: JoinCTASectionProps) {
                 </label>
                 <input id="join-name" type="text" value={name} onChange={(e) => setName(e.target.value)}
                   placeholder={t('namePh')} disabled={loading} data-testid="join-name"
-                  className={cn('w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 placeholder:text-gray-400',
+                  className={cn('w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 text-gray-900 placeholder:text-gray-400',
                     'focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50',
                     isRTL && 'text-right')} />
               </div>
@@ -99,7 +99,7 @@ export function JoinCTASection({ locale, gymSlug }: JoinCTASectionProps) {
                 </label>
                 <input id="join-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
                   placeholder="+961 70 123 456" disabled={loading} dir="ltr" data-testid="join-phone"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 placeholder:text-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50" />
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50" />
               </div>
 
               {/* Product-interest chips (multi-select; no commitment — just interest) */}
@@ -126,7 +126,7 @@ export function JoinCTASection({ locale, gymSlug }: JoinCTASectionProps) {
                 </label>
                 <textarea id="join-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2}
                   placeholder={t('notePh')} disabled={loading} data-testid="join-note"
-                  className={cn('w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 placeholder:text-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50', isRTL && 'text-right')} />
+                  className={cn('w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50', isRTL && 'text-right')} />
               </div>
 
               {/* Honeypot: off-screen, not announced — bots fill it. */}

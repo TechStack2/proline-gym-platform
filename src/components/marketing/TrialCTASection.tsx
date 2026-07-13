@@ -76,11 +76,11 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
     return (
       <section id="trial" className="py-20 lg:py-28 bg-gradient-to-br from-primary-600 to-primary-800">
         <div className="mx-auto max-w-lg px-4 text-center">
-          <CheckCircle className="mx-auto h-16 w-16 text-white/80" />
-          <h2 className={cn('mt-6 text-3xl font-bold text-white', isRTL && 'text-right font-arabic')} data-testid="trial-success">
+          <CheckCircle className="mx-auto h-16 w-16 text-primary-foreground/80" />
+          <h2 className={cn('mt-6 text-3xl font-bold text-primary-foreground', isRTL && 'text-right font-arabic')} data-testid="trial-success">
             {t('gotIt')}
           </h2>
-          <p className="mt-3 text-lg text-white/80">
+          <p className="mt-3 text-lg text-primary-foreground/80">
             {t('whatsapp24')}
           </p>
         </div>
@@ -94,10 +94,10 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Text side */}
           <div>
-            <h2 className={cn('text-3xl sm:text-4xl font-bold text-white', isRTL && 'text-right font-arabic')}>
+            <h2 className={cn('text-3xl sm:text-4xl font-bold text-primary-foreground', isRTL && 'text-right font-arabic')}>
               {t('title')}
             </h2>
-            <p className="mt-4 text-lg text-white/80 leading-relaxed">
+            <p className="mt-4 text-lg text-primary-foreground/80 leading-relaxed">
               {t('subtitle')}
             </p>
           </div>
@@ -111,7 +111,7 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
                 </label>
                 <input id="trial-name" type="text" value={name} onChange={(e) => setName(e.target.value)}
                   placeholder={t('namePh')} disabled={loading} data-testid="trial-name"
-                  className={cn('w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 placeholder:text-gray-400',
+                  className={cn('w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 text-gray-900 placeholder:text-gray-400',
                     'focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50',
                     isRTL && 'text-right')} />
               </div>
@@ -122,7 +122,7 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
                 </label>
                 <input id="trial-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
                   placeholder="+961 70 123 456" disabled={loading} dir="ltr" data-testid="trial-phone"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 placeholder:text-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50" />
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:opacity-50" />
               </div>
 
               {/* Interest chips — the gym's disciplines (no dropdown, per design-system) */}
