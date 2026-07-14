@@ -208,6 +208,11 @@ export function MemberActions({
                   </button>
                 ))}
               </div>
+              {/* BILL-GUARDS R3: registration honesty — a free class says so; silence
+                  is impossible (the fee preview is shown per class option above). */}
+              {classId && classes.find((c) => c.id === classId)?.monthly_fee_usd === 0 && (
+                <p data-testid="m360-free-notice" className="rounded-lg bg-green-50 px-3 py-2 text-xs font-medium text-green-700">{t('freeNoInvoice')}</p>
+              )}
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">{t('discountPct')}</label>
                 <Input type="number" min="0" max="100" data-testid="m360-discount" value={discount}

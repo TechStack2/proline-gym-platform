@@ -89,6 +89,7 @@
     "campaigns": "Campagnes"
   },
   "common": {
+    "free": "Gratuit",
     "phoneAlsoUsedBy": "Aussi utilisé par {name} — les familles peuvent partager",
     "genericError": "Une erreur est survenue. Veuillez réessayer.",
     "save": "Enregistrer",
@@ -2255,6 +2256,7 @@
       "registerTitle": "Inscrire {name} à un cours",
       "pickClass": "Choisissez d’abord un cours",
       "discountPct": "Remise % (optionnel)",
+      "freeNoInvoice": "Gratuit — aucune facture ne sera émise",
       "registerConfirm": "Inscrire et approuver",
       "registered": "Inscrit — actif sur le dossier",
       "registeredWaitlisted": "Cours complet — ajouté à la liste d’attente",
@@ -2743,6 +2745,8 @@
     "freezeReasonPh": "ex. voyage, blessure",
     "cancel": "Annuler",
     "sendRequest": "Envoyer la demande",
+    "outstandingTitle": "Solde impayé",
+    "outstandingCount": "{count} impayé(s) — voir la facturation",
     "upNext": "À venir"
   },
   "portalBilling": {

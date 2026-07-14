@@ -125,7 +125,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <F label={t('sessions')}><Input data-testid="ptpkg-add-sessions" type="number" min="1" value={f.sessions} onChange={(e) => setF((p) => ({ ...p, sessions: e.target.value }))} /></F>
-            <F label={t('priceUsd')}><Input data-testid="ptpkg-add-price" type="number" min="0" step="0.01" value={f.price} onChange={(e) => setF((p) => ({ ...p, price: e.target.value }))} /></F>
+            <F label={t('priceUsd')}><div className="flex items-center gap-1"><Input data-testid="ptpkg-add-price" type="number" min="0" step="0.01" className="flex-1" value={f.price} onChange={(e) => setF((p) => ({ ...p, price: e.target.value }))} /><button type="button" data-testid="ptpkg-free" onClick={() => setF((p) => ({ ...p, price: '0' }))} className={cn('shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium', f.price.trim() !== '' && Number(f.price) === 0 ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>{tc('free')}</button></div></F>
             <F label={t('validityDays')}><Input data-testid="ptpkg-add-validity" type="number" min="1" value={f.validity} onChange={(e) => setF((p) => ({ ...p, validity: e.target.value }))} /></F>
           </div>
           {disciplines.length > 0 && (

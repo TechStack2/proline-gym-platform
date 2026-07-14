@@ -41,6 +41,7 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
 
 export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId: string; locale: string }) {
   const t = useTranslations('settings.planManager')
+  const tc = useTranslations('common')
   const router = useRouter()
   const isRTL = locale === 'ar'
 
@@ -111,7 +112,7 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
       content: (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <F label={`${t('priceUsd')} *`}><Input dir="ltr" type="number" data-testid="plan-price-usd" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} /></F>
+            <F label={`${t('priceUsd')} *`}><div className="flex items-center gap-1"><Input dir="ltr" type="number" data-testid="plan-price-usd" className="flex-1" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} /><button type="button" data-testid="plan-free" onClick={() => setPriceUsd('0')} className={cn('shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium', priceUsd.trim() !== '' && Number(priceUsd) === 0 ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>{tc('free')}</button></div></F>
             <F label={t('priceLbp')}><Input dir="ltr" type="number" data-testid="plan-price-lbp" value={priceLbp} onChange={(e) => setPriceLbp(e.target.value)} /></F>
           </div>
           <F label={`${t('duration')} *`}>

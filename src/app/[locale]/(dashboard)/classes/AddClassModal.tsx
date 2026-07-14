@@ -70,6 +70,7 @@ function plusOneHour(hhmm: string): string {
 
 export default function AddClassModal({ disciplines, coaches, locale, onClose, onSuccess, editClass }: AddClassModalProps) {
   const t = useTranslations('classes.wizard')
+  const tc = useTranslations('common')
   const errCaught = useCaughtErrorText();
   const router = useRouter()
   const isRTL = locale === 'ar'
@@ -132,7 +133,9 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
       if (days.length === 0) return false
       return days.every((d) => { const dt = timeFor(d); return !!(dt.start && dt.end && dt.start < dt.end) })
     }
-    if (s === 3) return !!(capacity && capacity >= 1)
+    // BILL-GUARDS R1: cost is REQUIRED — a numeric fee ≥ 0 (the "Free" chip writes 0).
+    // NULL can no longer be produced by the UI (was `fee ? parseFloat : null`).
+    if (s === 3) return !!(capacity && capacity >= 1) && fee.trim() !== '' && !Number.isNaN(Number(fee)) && Number(fee) >= 0
     return true
   }
 
@@ -154,7 +157,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
         discipline_id: disciplineId,
         coach_id: coachId,
         max_capacity: capacity,
-        monthly_fee_usd: fee ? parseFloat(fee) : null,
+        monthly_fee_usd: parseFloat(fee), // BILL-GUARDS R1: required by validateStep(3) → never NULL
         status,
         show_on_landing: showOnLanding,
       }
@@ -375,6 +378,12 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
               <Input type="number" min="0" step="0.01" data-testid="class-monthly-fee" placeholder="0.00"
                 value={fee} onChange={(e) => setFee(e.target.value)} className="w-36" dir="ltr" />
               <span className="text-xs text-gray-400">/{t('mo')}</span>
+              {/* BILL-GUARDS R1: explicit "Free" (writes 0) so a missing fee is never NULL. */}
+              <button type="button" data-testid="class-fee-free" onClick={() => setFee('0')}
+                className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                  fee.trim() !== '' && Number(fee) === 0 ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                {tc('free')}
+              </button>
             </div>
             <p className="mt-1 text-xs text-gray-400">{t('feeHint')}</p>
           </div>

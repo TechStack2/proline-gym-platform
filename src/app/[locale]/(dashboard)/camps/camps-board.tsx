@@ -56,6 +56,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('camps')
+  const tc = useTranslations('common')
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -162,7 +163,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
       key: 'pricing', title: t('stepPricing'), valid: f.priceUsd !== '' && Number(f.priceUsd) >= 0,
       content: (
         <div className="grid grid-cols-2 gap-3">
-          <F label={t('priceUsd')}><Input type="number" min="0" step="0.01" data-testid="camp-price-usd" value={f.priceUsd} onChange={(e) => setF((p) => ({ ...p, priceUsd: e.target.value }))} /></F>
+          <F label={t('priceUsd')}><div className="flex items-center gap-1"><Input type="number" min="0" step="0.01" data-testid="camp-price-usd" className="flex-1" value={f.priceUsd} onChange={(e) => setF((p) => ({ ...p, priceUsd: e.target.value }))} /><button type="button" data-testid="camp-free" onClick={() => setF((p) => ({ ...p, priceUsd: '0' }))} className={cn('shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium', f.priceUsd.trim() !== '' && Number(f.priceUsd) === 0 ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300')}>{tc('free')}</button></div></F>
           <F label={t('priceLbp')}><Input type="number" min="0" data-testid="camp-price-lbp" value={f.priceLbp} onChange={(e) => setF((p) => ({ ...p, priceLbp: e.target.value }))} placeholder={t('optional')} /></F>
         </div>
       ),

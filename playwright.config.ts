@@ -1091,6 +1091,15 @@ export default defineConfig({
       testMatch: /\/visual-polish\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // BILL-GUARDS: cost required (wizard fee gate), NULL-fee registration blocked
+      // (hermetic own gym — a NULL-fee class is inserted server-side), and the portal
+      // home outstanding-balance card. testMatch ANCHORED.
+      name: 'bill-guards',
+      dependencies: ['setup'],
+      testMatch: /\/bill-guards\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     // E2E-TIERED — the `smoke` project materializes ONLY under E2E_TIERED=1 (the
     // targeted branch-run path: `gh workflow run e2e.yml -f projects="<slice>"`).
     // It is ABSENT from the default config, so the FULL push-to-main union gate's

@@ -64,6 +64,23 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
   }
   const selectedKid = kids.find((k) => k.id === searchParams?.kid) ?? null
 
+  // BILL-GUARDS R6: the guardian's HOUSEHOLD outstanding, netted across ALL linked
+  // kids (additive guardian RLS) — surfaced on the per-kid home so a family sees what
+  // it owes without a click. 0 → the card self-hides in KidDashboard.
+  let householdOutstanding = 0
+  let householdOpenCount = 0
+  if (kids.length > 0) {
+    const kidIds = kids.map((k) => k.id)
+    const { data: hhInv } = await supabase
+      .from('invoices').select('id, total_usd, status').in('student_id', kidIds).in('status', [...OPEN_INVOICE_STATUSES])
+    const hhInvoices = (hhInv ?? []) as any[]
+    const { data: hhPays } = hhInvoices.length
+      ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', hhInvoices.map((i) => i.id))
+      : { data: [] as any[] }
+    householdOutstanding = outstandingUsd(hhInvoices, hhPays)
+    householdOpenCount = hhInvoices.length
+  }
+
   // Guardian with no own membership and no kid selected → default to the first kid.
   if (!selectedKid && !student && kids.length > 0) {
     const { redirect } = await import('next/navigation')
@@ -78,6 +95,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         kid={selectedKid}
         kids={kids}
         hasOwn={!!student}
+        householdOutstanding={householdOutstanding}
+        householdOpenCount={householdOpenCount}
       />
     )
   }
@@ -253,6 +272,22 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         freezeMinDays={(lcGym as any)?.freeze_min_chunk_days ?? 7}
       />
     )}
+      {/* BILL-GUARDS R6: outstanding balance surfaced on HOME without a click. Empty
+          (nothing owed) = NO card — don't celebrate a zero. Links into billing. */}
+      {balanceDue > 0.005 && (
+        <Link href={`/${locale}/portal/billing`} data-testid="portal-outstanding-balance" data-amount={balanceDue.toFixed(2)}
+          className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600"><Wallet className="h-5 w-5" aria-hidden /></div>
+            <div>
+              <p className={cn('text-sm font-semibold text-red-800', isRTL && 'font-arabic')}>{t('outstandingTitle')}</p>
+              <p className={cn('text-xs text-red-600', isRTL && 'font-arabic')}>{t('outstandingCount', { count: openInvoices.length })}</p>
+            </div>
+          </div>
+          <span className="text-lg font-bold text-red-800" dir="ltr">${balanceDue.toFixed(2)}</span>
+        </Link>
+      )}
+
       {/* MJ-4 HIERARCHY: what's ON today, surfaced first (below the actionable
           lifecycle banner, above the static greeting/glance). The self-view cards
           keep self-next-class/self-next-pt too — this is the prominent top glance. */}
