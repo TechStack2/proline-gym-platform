@@ -194,6 +194,8 @@
      their bg-white/gray-50 + text-gray-900 already flip coherently to dark cards. */
   html.dark .landing-dark {
     --c-white: 255 255 255;
+    --c-secondary-800: 56 56 56;
+    --c-secondary-900: 37 37 37;
     --c-secondary-950: 31 31 31;
     --c-gray-300: 209 213 219;
     --c-gray-400: 156 163 175;
