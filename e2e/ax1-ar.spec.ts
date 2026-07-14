@@ -70,9 +70,11 @@ test('AX-1 · /ar renders Arabic on every shell + brand font without layout shif
       ).trim();
       expect(displayVar, 'the --font-display-arabic token is defined on <body>').not.toBe('');
       const h1Family = await h1.evaluate((el) => getComputedStyle(el).fontFamily);
-      expect(h1Family.replace(/\s/g, ''), `hero h1 leads with the Alexandria display token (was "${h1Family}")`).toContain(
-        displayVar.replace(/\s/g, '').split(',')[0],
-      );
+      // Normalize whitespace AND quotes: the CSS var keeps its quotes ("__x","__x_Fallback"),
+      // but getComputedStyle returns the mangled family names UNQUOTED — compare bare.
+      const norm = (s: string) => s.replace(/["'\s]/g, '');
+      const token = norm(displayVar).split(',')[0];
+      expect(norm(h1Family), `hero h1 leads with the Alexandria display token (was "${h1Family}")`).toContain(token);
       // …and the display face is HEADINGS-ONLY: body Arabic copy stays IBM Plex Sans
       // Arabic (the hero sub-headline paragraph), so the superfamily is unchanged.
       const bodyFamily = await page
