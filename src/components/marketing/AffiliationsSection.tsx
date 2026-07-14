@@ -41,7 +41,7 @@ export async function AffiliationsSection({ locale, gymSlug }: AffiliationsSecti
       <section id="affiliations" className="bg-secondary-950 py-14 lg:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <h2 className={cn('text-2xl sm:text-3xl font-bold text-white', isRTL && 'font-arabic')}>
+            <h2 className={cn('font-display text-2xl sm:text-3xl font-bold text-white')}>
               {t('title')}
             </h2>
             <p className="mt-2 text-sm text-gray-400 max-w-xl mx-auto">{t('subtitle')}</p>
@@ -80,7 +80,7 @@ export async function AffiliationsSection({ locale, gymSlug }: AffiliationsSecti
     <section id="affiliations" className="bg-secondary-950 py-14 lg:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
-          <h2 className={cn('text-2xl sm:text-3xl font-bold text-white', isRTL && 'font-arabic')}>
+          <h2 className={cn('font-display text-2xl sm:text-3xl font-bold text-white')}>
             {t('title')}
           </h2>
           <p className="mt-2 text-sm text-gray-400 max-w-xl mx-auto">{t('subtitle')}</p>

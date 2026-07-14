@@ -127,8 +127,13 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
         {/* Headline */}
         <h1
           className={cn(
-            'text-4xl sm:text-5xl lg:text-6xl xl:text-display-lg font-bold text-white leading-tight',
-            isRTL ? 'font-arabic' : 'tracking-tight'
+            // DISPLAY-FONT: Anton (EN) / Alexandria ExtraBold (AR) via .font-display-hero
+            // (globals.css) — it owns font-family/weight/transform + the AR optical ramp
+            // (both scripts, via its [dir="rtl"] rule), so NO font-arabic here: twMerge
+            // treats font-display-hero + font-arabic as one font-family group and would
+            // drop the earlier one. The size/color/leading classes below stay.
+            'font-display-hero text-4xl sm:text-5xl lg:text-6xl xl:text-display-lg font-bold text-white leading-tight',
+            !isRTL && 'tracking-tight'
           )}
         >
           {t('headline')}

@@ -66,7 +66,7 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
     <section id="pricing" className="py-20 lg:py-28 bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
-          <h2 className={cn('text-3xl sm:text-4xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
+          <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-secondary-900')}>
             {t('title')}
           </h2>
           <p className="mt-3 text-gray-500 max-w-xl mx-auto">

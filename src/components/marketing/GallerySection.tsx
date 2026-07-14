@@ -34,7 +34,7 @@ export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
       <section id="gallery" className="bg-secondary-950 py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className={cn('text-3xl sm:text-4xl font-bold text-white', isRTL && 'font-arabic')}>
+            <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-white')}>
               {t('title')}
             </h2>
             <p className="mt-3 text-gray-400 max-w-2xl mx-auto">{t('subtitle')}</p>
@@ -84,7 +84,7 @@ export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
     <section id="gallery" className="bg-secondary-950 py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className={cn('text-3xl sm:text-4xl font-bold text-white', isRTL && 'font-arabic')}>
+          <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-white')}>
             {t('title')}
           </h2>
           <p className="mt-3 text-gray-400 max-w-2xl mx-auto">{t('subtitle')}</p>

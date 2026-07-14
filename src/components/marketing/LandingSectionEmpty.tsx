@@ -32,7 +32,7 @@ export function LandingSectionEmpty({
     <section id={id} className={cn(bgClass, compact ? 'py-14 lg:py-16' : 'py-20 lg:py-28')}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
-          <h2 className={cn('text-3xl sm:text-4xl font-bold text-white', isRTL && 'font-arabic')}>{title}</h2>
+          <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-white')}>{title}</h2>
           {subtitle && <p className="mx-auto mt-3 max-w-2xl text-gray-400">{subtitle}</p>}
         </div>
         <div
