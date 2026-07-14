@@ -31,8 +31,9 @@ export function WhySection({ locale, isDefault = false }: WhySectionProps) {
         <div className="text-center mb-14">
           <h2
             className={cn(
-              'text-3xl sm:text-4xl font-bold text-secondary-900',
-              isRTL && 'font-arabic'
+              // DISPLAY-FONT: .font-display owns the AR font too (via [dir="rtl"]); no
+              // font-arabic here — twMerge would drop the earlier font-family class.
+              'font-display text-3xl sm:text-4xl font-bold text-secondary-900'
             )}
           >
             {isDefault ? t('title') : t('titleAlt')}

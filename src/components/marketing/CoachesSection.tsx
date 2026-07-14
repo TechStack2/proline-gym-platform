@@ -58,7 +58,7 @@ export async function CoachesSection({ locale, gymSlug }: CoachesSectionProps) {
           <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600/15 ring-1 ring-primary-500/30">
             <Award className="h-6 w-6 text-primary-400" />
           </div>
-          <h2 className={cn('text-3xl sm:text-4xl font-bold text-white', isRTL && 'font-arabic')}>
+          <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-white')}>
             {t('title')}
           </h2>
           <p className="mt-3 text-gray-400 max-w-2xl mx-auto">{t('subtitle')}</p>

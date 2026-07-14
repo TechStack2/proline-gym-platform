@@ -1,6 +1,7 @@
 import { DevSwCleanup } from '@/components/dev/sw-cleanup'
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import { IBM_Plex_Sans_Arabic } from 'next/font/google';
+import localFont from 'next/font/local';
 import { GeistSans } from 'geist/font/sans';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -32,6 +33,32 @@ const arabic = IBM_Plex_Sans_Arabic({
   weight: ['400', '500', '600', '700'],
   variable: '--font-arabic',
   display: 'swap',
+});
+
+// DISPLAY-FONT (owner-approved Option A): a DISPLAY superfamily for LANDING
+// display headings ONLY (hero headline + marketing section titles) — the
+// .font-display / .font-display-hero utilities in globals.css consume these two
+// tokens. Body/UI type everywhere stays Geist + IBM Plex Sans Arabic (untouched).
+// Self-hosted via next/font/local (woff2 in ./fonts) — NO CDN link (prod CSP is
+// strict; fonts must be same-origin). Each ships a metrics-adjusted fallback
+// (adjustFontFallback default) so display:'swap' reflows minimally.
+const displayLatin = localFont({
+  // Anton — a condensed, single-weight (400) uppercase-natured display face (EN/FR).
+  src: '../fonts/anton-latin-400.woff2',
+  weight: '400',
+  style: 'normal',
+  variable: '--font-display-latin',
+  display: 'swap',
+});
+const displayArabic = localFont({
+  // Alexandria ExtraBold (800) — the Arabic display companion (AR headings only).
+  // preload:false — only rendered under [dir="rtl"], so English pages don't fetch it.
+  src: '../fonts/alexandria-arabic-800.woff2',
+  weight: '800',
+  style: 'normal',
+  variable: '--font-display-arabic',
+  display: 'swap',
+  preload: false,
 });
 
 type Props = {
@@ -118,6 +145,8 @@ export default async function RootLayout({ children, params }: Props) {
         className={cn(
           GeistSans.variable,
           arabic.variable,
+          displayLatin.variable,
+          displayArabic.variable,
           'min-h-screen bg-gray-50',
           isRTL ? 'font-arabic' : 'font-latin'
         )}

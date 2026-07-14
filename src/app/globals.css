@@ -422,3 +422,46 @@
     margin: 0 auto;
   }
 }
+
+/* ─── DISPLAY-FONT — landing display headings (Anton EN / Alexandria ExtraBold AR) ───
+   Owner-approved Option A. Two opt-in utilities used ONLY on the landing hero
+   headline (.font-display-hero) + marketing section titles (.font-display); body/UI
+   type is untouched. Tokens (--font-display-latin / --font-display-arabic) are the
+   next/font/local faces wired in the root layout. UNLAYERED + at end-of-file so it
+   wins the font-family/weight tie vs Tailwind's .font-bold/.font-arabic (equal
+   specificity → later source wins); the [dir="rtl"] size rules win vs the Latin
+   text-* utilities by specificity (0,2,0 > 0,1,0). */
+.font-display,
+.font-display-hero {
+  font-family: var(--font-display-latin), var(--font-latin);
+  font-weight: 400;            /* Anton ships a single 400 weight — never faux-bold it */
+  text-transform: uppercase;   /* Anton is uppercase-natured (applied, not retyped) */
+  letter-spacing: 0.005em;
+}
+/* AR display: Alexandria ExtraBold; Arabic has no case; never track Arabic. */
+[dir="rtl"] .font-display,
+[dir="rtl"] .font-display-hero {
+  font-family: var(--font-display-arabic), var(--font-arabic);
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* AR per-script optical ramp (arabic-first/rtl-arabic-design floor ≥1.1×). Alexandria
+   at the Latin px reads smaller than condensed/tall Anton, so size AR display headings
+   EXPLICITLY under [dir="rtl"] — responsive, ≥1.1× the Latin size at every breakpoint.
+   These fully govern the AR heading size (they beat every text-* utility, incl. the
+   existing [dir="rtl"] .text-3xl ramp, by later source order), so the Latin size
+   classes on the element stay LTR-only. */
+[dir="rtl"] .font-display        { font-size: 2.375rem; line-height: 1.3; }   /* ≥1.1× text-3xl/4xl */
+[dir="rtl"] .font-display-hero   { font-size: 2.75rem;  line-height: 1.2; }   /* ≥1.1× text-4xl (2.25) */
+@media (min-width: 640px) {
+  [dir="rtl"] .font-display      { font-size: 2.625rem; }                     /* ≥1.1× text-4xl (2.25) */
+  [dir="rtl"] .font-display-hero { font-size: 3.4rem;  }                      /* ≥1.1× text-5xl (3)    */
+}
+@media (min-width: 1024px) {
+  [dir="rtl"] .font-display-hero { font-size: 4.2rem;  }                      /* ≥1.1× text-6xl (3.75) */
+}
+@media (min-width: 1280px) {
+  [dir="rtl"] .font-display-hero { font-size: 3.4rem;  }                      /* matches the Latin display-lg (3) step-down, ramped */
+}

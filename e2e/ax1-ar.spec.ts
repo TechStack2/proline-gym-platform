@@ -57,12 +57,31 @@ test('AX-1 · /ar renders Arabic on every shell + brand font without layout shif
       await assertArabicActive(page, '/ar (landing)', 'تدرّب كبطل القصة'); // hero headline
       await assertArabicActive(page, '/ar (landing pricing)', 'خطط العضوية'); // pricing title
 
-      // Brand font: the hero h1 computes to the next/font-hosted IBM Plex Sans
-      // Arabic family (next/font mangles the name — match loosely).
+      // DISPLAY-FONT: the hero headline is now a DISPLAY heading — Alexandria
+      // ExtraBold (the --font-display-arabic next/font token), NOT the body face.
+      // next/font mangles the family name, so assert against the token the CSS var
+      // actually resolves to (deterministic) instead of a human-readable name.
       const h1 = page.locator('h1').first();
       await expect(h1).toBeVisible();
-      const family = await h1.evaluate((el) => getComputedStyle(el).fontFamily);
-      expect(family, `hero font-family was "${family}"`).toMatch(/IBM[ _]?Plex[ _]?Sans[ _]?Arabic/i);
+      const displayVar = (
+        await page.evaluate(() =>
+          getComputedStyle(document.body).getPropertyValue('--font-display-arabic'),
+        )
+      ).trim();
+      expect(displayVar, 'the --font-display-arabic token is defined on <body>').not.toBe('');
+      const h1Family = await h1.evaluate((el) => getComputedStyle(el).fontFamily);
+      // Normalize whitespace AND quotes: the CSS var keeps its quotes ("__x","__x_Fallback"),
+      // but getComputedStyle returns the mangled family names UNQUOTED — compare bare.
+      const norm = (s: string) => s.replace(/["'\s]/g, '');
+      const token = norm(displayVar).split(',')[0];
+      expect(norm(h1Family), `hero h1 leads with the Alexandria display token (was "${h1Family}")`).toContain(token);
+      // …and the display face is HEADINGS-ONLY: body Arabic copy stays IBM Plex Sans
+      // Arabic (the hero sub-headline paragraph), so the superfamily is unchanged.
+      const bodyFamily = await page
+        .locator('section.landing-dark p')
+        .first()
+        .evaluate((el) => getComputedStyle(el).fontFamily);
+      expect(bodyFamily, `hero body font was "${bodyFamily}"`).toMatch(/IBM[ _]?Plex[ _]?Sans[ _]?Arabic/i);
 
       // CLS budget: the size-adjusted fallback must make the swap shift-free.
       const cls = await page.evaluate(

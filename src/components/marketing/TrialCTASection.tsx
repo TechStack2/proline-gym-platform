@@ -94,7 +94,7 @@ export function TrialCTASection({ locale, gymSlug, disciplines = [] }: TrialCTAS
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Text side */}
           <div>
-            <h2 className={cn('text-3xl sm:text-4xl font-bold text-primary-foreground', isRTL && 'text-right font-arabic')}>
+            <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-primary-foreground', isRTL && 'text-right')}>
               {t('title')}
             </h2>
             <p className="mt-4 text-lg text-primary-foreground/80 leading-relaxed">

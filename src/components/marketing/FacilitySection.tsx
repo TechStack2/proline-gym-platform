@@ -89,7 +89,7 @@ export function FacilitySection({ locale, contact = EMPTY_CONTACT, isDefault = f
 
           {/* Contact info */}
           <div>
-            <h2 className={cn('text-3xl sm:text-4xl font-bold text-secondary-900', isRTL && 'font-arabic')}>
+            <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-secondary-900')}>
               {t('title')}
             </h2>
             <p className="mt-3 text-gray-500 leading-relaxed">

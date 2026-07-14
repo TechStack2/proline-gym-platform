@@ -74,7 +74,7 @@ export function JoinCTASection({ locale, gymSlug }: JoinCTASectionProps) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className={cn('text-3xl sm:text-4xl font-bold text-white dark:text-zinc-50', isRTL && 'text-right font-arabic')}>
+            <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-white dark:text-zinc-50', isRTL && 'text-right')}>
               {t('title')}
             </h2>
             <p className="mt-4 text-lg text-white/80 leading-relaxed dark:text-zinc-300">{t('subtitle')}</p>
