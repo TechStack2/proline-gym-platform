@@ -143,6 +143,20 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/ci/assert-definer-posture.sql
           echo "✅ DEFINER-POSTURE guard GREEN — no PUBLIC/anon leak; every definer function pins search_path."
 
+      - name: Assert the four newly-covered tables are on the audit trail (AUDIT-TRIGGERS proof)
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y postgresql-client; fi
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          # AUDIT-TRIGGERS (000099): coaches/classes/camps/user_roles carried no audit
+          # trigger — staff could mutate them (incl. privilege grants on user_roles) with
+          # no trail. This proof INSERT/UPDATE/DELETEs a throwaway row in each of the four
+          # tables and RAISEs (→ psql exits non-zero under ON_ERROR_STOP=1) if any of the
+          # create/update/delete audit_logs rows is missing. All in a ROLLBACK'd txn — no
+          # persisted test data. Dropping any of the four triggers turns this step red.
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/ci/assert-audit-triggers.sql
+          echo "✅ AUDIT-TRIGGERS proof GREEN — coaches/classes/camps/user_roles each write create+update+delete audit rows."
+
       - name: Stop the local stack
         if: always()
         run: supabase stop --no-backup || true
