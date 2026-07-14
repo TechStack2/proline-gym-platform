@@ -89,6 +89,7 @@
     "campaigns": "الحملات"
   },
   "common": {
+    "free": "مجاني",
     "phoneAlsoUsedBy": "مستخدَم أيضاً من قبل {name} — يمكن للعائلات المشاركة",
     "genericError": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "save": "حفظ",
@@ -2255,6 +2256,7 @@
       "registerTitle": "تسجيل {name} في حصة",
       "pickClass": "اختر حصة أولاً",
       "discountPct": "نسبة الخصم % (اختياري)",
+      "freeNoInvoice": "مجاناً — لن تصدر فاتورة",
       "registerConfirm": "تسجيل وموافقة",
       "registered": "تم التسجيل — فعّال في الملف",
       "registeredWaitlisted": "الحصة ممتلئة — أُضيف إلى لائحة الانتظار",
@@ -2743,6 +2745,8 @@
     "freezeReasonPh": "مثل السفر أو الإصابة",
     "cancel": "إلغاء",
     "sendRequest": "إرسال الطلب",
+    "outstandingTitle": "رصيد مستحق",
+    "outstandingCount": "{count} غير مدفوعة — عرض الفواتير",
     "upNext": "التالي"
   },
   "portalBilling": {

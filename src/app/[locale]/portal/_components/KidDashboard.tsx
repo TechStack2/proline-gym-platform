@@ -22,15 +22,19 @@ import { ProfileSelfServe } from '../profile/profile-self-serve'
  * link into the household billing view. No self-cancel (staff-mediated, B2).
  */
 export async function KidDashboard({
-  locale, kid, kids, hasOwn,
+  locale, kid, kids, hasOwn, householdOutstanding = 0, householdOpenCount = 0,
 }: {
   locale: string
   kid: { id: string; name: string }
   kids: { id: string; name: string; avatarUrl?: string | null }[]
   hasOwn: boolean
+  // BILL-GUARDS R6: the family's netted outstanding across ALL linked kids.
+  householdOutstanding?: number
+  householdOpenCount?: number
 }) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('family')
+  const th = await getTranslations('portalHome')
   const supabase = await createClient()
 
   const [
@@ -130,6 +134,21 @@ export async function KidDashboard({
 
   return (
     <div className={cn('p-4 space-y-5', isRTL && 'rtl')} data-testid="kid-dashboard" data-kid-id={kid.id}>
+      {/* BILL-GUARDS R6: the family's HOUSEHOLD outstanding across all kids, surfaced
+          on the guardian home without a click. Empty (nothing owed) = NO card. */}
+      {householdOutstanding > 0.005 && (
+        <Link href={`/${locale}/portal/billing`} data-testid="portal-outstanding-balance" data-amount={householdOutstanding.toFixed(2)}
+          className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600"><CreditCard className="h-5 w-5" aria-hidden /></div>
+            <div>
+              <p className={cn('text-sm font-semibold text-red-800', isRTL && 'font-arabic')}>{th('outstandingTitle')}</p>
+              <p className={cn('text-xs text-red-600', isRTL && 'font-arabic')}>{th('outstandingCount', { count: householdOpenCount })}</p>
+            </div>
+          </div>
+          <span className="text-lg font-bold text-red-800" dir="ltr">${householdOutstanding.toFixed(2)}</span>
+        </Link>
+      )}
       {/* Switcher */}
       <div className="flex flex-wrap gap-2" data-testid="kid-switcher">
         {hasOwn && (

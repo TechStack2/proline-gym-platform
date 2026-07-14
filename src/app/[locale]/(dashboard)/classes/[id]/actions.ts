@@ -1,18 +1,20 @@
 'use server';
 
 /**
- * Class enrollment server action (Cycle 5 / 24-R, T1).
+ * Class enrollment server action (Cycle 5 / 24-R, T1 → BILL-GUARDS R4).
  *
- * Idempotent enroll (upsert is_active=true on the UNIQUE(class_id, student_id))
- * + an enrollment_confirmed notification to the student and any linked guardians,
- * using the sanctioned F2 pattern (RETURNING-free, authed staff client). The
- * legacy EnrollStudentModal inserted a non-existent `status` column and searched
- * non-existent student name columns — this action is the corrected write path.
+ * ENROLL-UNIFY: putting a student in a class now goes through the ONE billing door —
+ * the B2 request→approve registration chain — instead of a direct class_enrollments
+ * upsert that bypassed billing. approve → _activate_class_registration issues the
+ * upfront invoice when the class has a fee (0 = free → no invoice) AND still projects
+ * the class_enrollments roster row every attendance/roster surface reads, so that
+ * consumer is unchanged. Idempotent + retry-safe: if the member already has an
+ * open/active registration for this class we treat it as done (the seed pre-enrolls
+ * some members via class_enrollments with no registration row — the first enroll
+ * creates one; the E1 dup-open guard would otherwise reject a retry).
  */
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { createNotification } from '@/lib/notifications/create';
-import { studentNotificationRecipients } from '@/lib/notifications/recipients';
 import { actionError } from '@/lib/errors/action-error';
 
 export async function enrollStudent(input: {
@@ -27,44 +29,29 @@ export async function enrollStudent(input: {
     .select('gym_id')
     .eq('id', user.id)
     .single();
-  const gymId = profile?.gym_id;
-  if (!gymId) return { ok: false, error: 'no_gym' };
+  if (!profile?.gym_id) return { ok: false, error: 'no_gym' };
 
-  const { error } = await supabase
-    .from('class_enrollments')
-    .upsert(
-      { class_id: input.classId, student_id: input.studentId, is_active: true },
-      { onConflict: 'class_id, student_id' },
-    );
-  if (error) return { ok: false, error: actionError(error) };
+  // Idempotent: only open the door if there's no live registration already.
+  const { data: existing } = await supabase
+    .from('class_registrations')
+    .select('id')
+    .eq('class_id', input.classId)
+    .eq('student_id', input.studentId)
+    .in('status', ['requested', 'active', 'waitlisted', 'suspended'])
+    .maybeSingle();
 
-  // enrollment_confirmed → student (+ guardians). Best-effort side-effect.
-  try {
-    const { data: cls } = await supabase
-      .from('classes')
-      .select('name_en')
-      .eq('id', input.classId)
-      .single();
-    const className = cls?.name_en ?? '';
-    const recipients = await studentNotificationRecipients(supabase, input.studentId);
-    for (const recipientProfileId of recipients) {
-      await createNotification(
-        {
-          recipientProfileId,
-          gymId,
-          type: 'enrollment_confirmed',
-          titleKey: 'messages.enrollment_confirmed.title',
-          bodyKey: 'messages.enrollment_confirmed.body',
-          params: { className },
-          entityType: 'class',
-          entityId: input.classId,
-          actionUrl: '/portal/schedule',
-        },
-        supabase,
-      );
-    }
-  } catch (e) {
-    console.error('[enrollStudent] enrollment_confirmed notify failed (non-fatal):', e);
+  if (!existing) {
+    const { data: reg, error: reqErr } = await supabase.rpc('request_class_registration', {
+      p_class_id: input.classId,
+      p_student_id: input.studentId,
+    });
+    if (reqErr) return { ok: false, error: actionError(reqErr) };
+    const { error: appErr } = await supabase.rpc('approve_class_registration', {
+      p_reg_id: (reg as any).id,
+      p_discount_pct: 0,
+      p_discount_amount_usd: 0,
+    });
+    if (appErr) return { ok: false, error: actionError(appErr) };
   }
 
   revalidatePath('/[locale]/(dashboard)/classes/[id]', 'page');

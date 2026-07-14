@@ -111,9 +111,12 @@ test('Activity loop: enroll → attend (transition-guarded) → atomic promote �
     const s = await contextFor(browser, 'student');
     try {
       await s.page.goto('/en/notifications');
+      // BILL-GUARDS R4 ENROLL-UNIFY: enrolling now routes through the billing door
+      // (request→approve), so the member receives the class_approved notification —
+      // was enrollment_confirmed from the retired direct-write bypass.
       await expect(
-        s.page.locator('p:visible', { hasText: 'Enrollment confirmed' }).first(),
-        'enrollment_confirmed should be readable by the student',
+        s.page.locator('[data-testid="notification-item"][data-notification-type="class_approved"]:visible').first(),
+        'class_approved (via the unified billing door) should be readable by the student',
       ).toBeVisible({ timeout: 15_000 });
       await s.page.goto('/en/portal/schedule');
       await expect(

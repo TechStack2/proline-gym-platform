@@ -10,8 +10,9 @@ export const ptPackageInsertSchema = z.object({
   description_en: z.string().optional().nullable(),
   description_fr: z.string().optional().nullable(),
   session_count: z.number().int().positive('Session count must be a positive integer'),
-  price_usd: z.number().positive('Price USD must be a positive number'),
-  price_lbp: z.number().positive('Price LBP must be a positive number').optional().nullable(),
+  // BILL-GUARDS R1: 0 = explicitly free (the "Free" chip) → nonnegative, not positive.
+  price_usd: z.number().nonnegative('Price USD must be zero or a positive number'),
+  price_lbp: z.number().nonnegative('Price LBP must be zero or a positive number').optional().nullable(),
   gym_id: z.string().uuid('Invalid gym ID'),
   coach_id: z.string().uuid('Invalid coach ID').optional().nullable(),
   validity_days: z.number().int().positive().optional().nullable(),

@@ -102,13 +102,11 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
 
   // ── shared helpers ──
   const insertMembership = async (studentId: string, pid: string) => {
-    const plan = plans.find((p) => p.id === pid)
-    if (!plan) return
-    const end = new Date(Date.now() + plan.durationDays * 864e5).toISOString().slice(0, 10)
-    const { error } = await supabase.from('student_memberships').insert({
-      student_id: studentId, plan_id: pid,
-      start_date: new Date().toISOString().slice(0, 10), end_date: end, status: 'active',
-    })
+    // BILL-GUARDS R5: an initial membership sale now ISSUES an invoice like every other
+    // product (was a direct student_memberships insert with no bill). sell_membership
+    // (000098) computes end_date from the plan duration + bills the plan price via
+    // _system_issue_invoice (0 = explicitly free → no invoice), gym-scoped + is_staff.
+    const { error } = await supabase.rpc('sell_membership', { p_student_id: studentId, p_plan_id: pid })
     if (error) throw error
   }
 

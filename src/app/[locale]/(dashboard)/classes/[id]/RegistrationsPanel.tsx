@@ -84,6 +84,12 @@ export function RegistrationsPanel({
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
                   <span className="text-sm font-medium" data-testid="reg-student">{r.studentName}</span>
                   <div className="flex items-center gap-2">
+                    {/* BILL-GUARDS R3: fee preview + free-notice so approval is never silent. */}
+                    <span className="text-xs font-medium" data-testid="reg-fee">
+                      {r.monthly_fee_usd === 0
+                        ? <span className="text-green-700">{t('Free — no invoice', 'مجاناً — لا فاتورة', 'Gratuit — sans facture')}</span>
+                        : <span className="text-gray-500">{r.monthly_fee_usd != null ? `$${Number(r.monthly_fee_usd).toFixed(0)}` : '—'}</span>}
+                    </span>
                     <Input type="number" min="0" max="100" placeholder={t('disc %', 'خصم %', 'remise %')} data-testid="discount-pct"
                       className="h-8 w-20 text-xs" value={discount[r.id] ?? ''} onChange={(e) => setDiscount({ ...discount, [r.id]: e.target.value })} />
                     <Button size="sm" data-testid="approve-btn" disabled={pending}

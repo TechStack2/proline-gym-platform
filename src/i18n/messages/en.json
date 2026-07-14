@@ -89,6 +89,7 @@
     "campaigns": "Campaigns"
   },
   "common": {
+    "free": "Free",
     "phoneAlsoUsedBy": "Also used by {name} — families can share",
     "genericError": "Something went wrong. Please try again.",
     "save": "Save",
@@ -2255,6 +2256,7 @@
       "registerTitle": "Register {name} to a class",
       "pickClass": "Pick a class first",
       "discountPct": "Discount % (optional)",
+      "freeNoInvoice": "Free — no invoice will be issued",
       "registerConfirm": "Register & approve",
       "registered": "Registered — active on the file",
       "registeredWaitlisted": "Class full — added to the waitlist",
@@ -2743,6 +2745,8 @@
     "freezeReasonPh": "e.g. travel, injury",
     "cancel": "Cancel",
     "sendRequest": "Send request",
+    "outstandingTitle": "Outstanding balance",
+    "outstandingCount": "{count} unpaid — view billing",
     "upNext": "Up next"
   },
   "portalBilling": {
