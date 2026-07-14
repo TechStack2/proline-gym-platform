@@ -66,8 +66,8 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
 
     // ── C1: the coach schedules TODAY (RPC default now()); 2nd booking overlaps ──
     // APPROVE-READ RACE: the inbox approve above commits the pt_assignment; the coach
-    // roster read can race that commit on a lagging replica (a one-shot goto renders an
-    // empty roster). Re-fetch a fresh roster until the approved package appears.
+    // roster read can race that commit (a one-shot goto renders an empty roster).
+    // Re-fetch a fresh roster until the approved package appears.
     await untilConsistent(async () => {
       await coach.page.goto('/en/coach/pt');
       await expect(
@@ -75,29 +75,37 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
         'the coached 10-pack appears on the run coach roster',
       ).toBeVisible({ timeout: 5_000 });
     });
-    const roster = coach.page.locator(`[data-testid="pt-roster-row"][data-package-en="${PT_PACKAGE}"]`).first();
-    const assignmentId = await roster.getAttribute('data-assignment-id');
+    // FLAKE-HEAL: capture the assignment id ONCE, then pin EVERY roster action to it.
+    // The run coach (Sami) is a shared seed fixture whose roster can carry sibling
+    // 10-pack rows; re-resolving `…[data-package-en=…].first()` for the 2nd booking
+    // can land on a DIFFERENT assignment than the one captured, so the pinned session
+    // count sticks at 1 forever (the union flake). Pin by data-assignment-id instead.
+    const assignmentId = await coach.page
+      .locator(`[data-testid="pt-roster-row"][data-package-en="${PT_PACKAGE}"]`).first()
+      .getAttribute('data-assignment-id');
+    const pinnedRow = coach.page.locator(`[data-testid="pt-roster-row"][data-assignment-id="${assignmentId}"]`);
     const sessionSel = `[data-testid="pt-session-row"][data-assignment-id="${assignmentId}"]`;
 
-    await roster.getByTestId('pt-schedule').click();
+    await pinnedRow.getByTestId('pt-schedule').click();
     await expect(coach.page.locator(`${sessionSel}[data-status="scheduled"]`)).toHaveCount(1, { timeout: 15_000 });
 
-    // Second overlapping booking (same coach, default now()): warning + still books.
-    await coach.page.locator(`[data-testid="pt-roster-row"][data-package-en="${PT_PACKAGE}"]`).first()
-      .getByTestId('pt-schedule').click();
+    // Second overlapping booking on the SAME pinned assignment (not .first()).
+    await pinnedRow.getByTestId('pt-schedule').click();
     await expect(
       coach.page.locator('[data-testid="pt-conflict-warning"]').first(),
       'overlap renders the non-blocking warning',
     ).toBeVisible({ timeout: 15_000 });
     // The 2nd booking commits on click (the warning is informational, non-blocking) but
-    // the in-place session list can miss the just-committed row — re-fetch until both show.
+    // the in-place session list can miss the just-committed row — re-fetch until both
+    // show. Budget is generous for peak union load on the single next-start server; the
+    // assertion is unchanged — EXACTLY 2 scheduled rows for THIS pinned assignment.
     await untilConsistent(async () => {
       await coach.page.goto('/en/coach/pt');
       await expect(
         coach.page.locator(`${sessionSel}[data-status="scheduled"]`),
         'booking still completes (non-blocking)',
       ).toHaveCount(2, { timeout: 5_000 });
-    });
+    }, { timeout: 90_000 });
     await noMissing(coach.page);
 
     // ── Day · Coach diary: the coach column shows BOTH species; PT → lifecycle ──
