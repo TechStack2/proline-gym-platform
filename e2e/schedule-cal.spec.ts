@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, untilConsistent } from './helpers';
+import { vis, untilConsistent, awaitEffect } from './helpers';
 
 /**
  * IA-3 — Schedule unification (Cycle 5 / V1).
@@ -20,6 +20,19 @@ import { vis, untilConsistent } from './helpers';
 const PT_PACKAGE = '10 Sessions Pack';
 const COACH_EN = 'Sami';
 const SEEDED_CLASS = 'Muay Thai Beginner';
+
+// SCHED-SPEC-FIX — read the COMMITTED booking fact (RLS-free) so the "still books"
+// proof asserts what durably landed in pt_sessions, not a replica-lagged/aborted UI read.
+const SVC_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SVC_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+async function committedScheduled(assignmentId: string): Promise<number> {
+  const res = await fetch(
+    `${SVC_URL}/rest/v1/pt_sessions?assignment_id=eq.${assignmentId}&status=eq.scheduled&select=id`,
+    { headers: { apikey: SVC_KEY as string, Authorization: `Bearer ${SVC_KEY}` } },
+  );
+  if (!res.ok) throw new Error(`committedScheduled: ${res.status} ${await res.text()}`);
+  return ((await res.json()) as unknown[]).length;
+}
 
 async function ctxFor(browser: Browser, role: keyof typeof ROLES) {
   const ctx = await browser.newContext({ storageState: ROLES[role].storage, locale: 'en' });
@@ -83,29 +96,56 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
     const assignmentId = await coach.page
       .locator(`[data-testid="pt-roster-row"][data-package-en="${PT_PACKAGE}"]`).first()
       .getAttribute('data-assignment-id');
-    const pinnedRow = coach.page.locator(`[data-testid="pt-roster-row"][data-assignment-id="${assignmentId}"]`);
-    const sessionSel = `[data-testid="pt-session-row"][data-assignment-id="${assignmentId}"]`;
+    expect(assignmentId, 'the roster row carries an assignment id').toBeTruthy();
+    // R3 — the pin is also :visible-scoped, so no hidden responsive twin can be clicked.
+    const pinnedRow = vis(coach.page, `[data-testid="pt-roster-row"][data-assignment-id="${assignmentId}"]`).first();
+    const scheduledRows = () =>
+      vis(coach.page, `[data-testid="pt-session-row"][data-assignment-id="${assignmentId}"][data-status="scheduled"]`);
 
-    await pinnedRow.getByTestId('pt-schedule').click();
-    await expect(coach.page.locator(`${sessionSel}[data-status="scheduled"]`)).toHaveCount(1, { timeout: 15_000 });
+    // R4 — baseline this pinned assignment's COMMITTED scheduled count so a retry (which
+    // re-drives the request→approve onto a fresh assignment) can't drift the absolute
+    // count; every assertion below is a delta off `base`.
+    if (!SVC_URL || !SVC_KEY) throw new Error('SCHED-SPEC-FIX needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL');
+    const base = await committedScheduled(assignmentId!);
 
-    // Second overlapping booking on the SAME pinned assignment (not .first()).
+    // ── First booking ───────────────────────────────────────────────────────────
     await pinnedRow.getByTestId('pt-schedule').click();
+    // R1 — gate on the WRITE signal (sonner success on the coach path), never a bare
+    // read: the in-flight server action can't be aborted before it commits.
+    await expect(
+      coach.page.locator('[data-sonner-toast]').filter({ hasText: /scheduled/i }).first(),
+      'the first booking confirms',
+    ).toBeVisible({ timeout: 15_000 });
+    // R2 — assert the committed fact, then the (now-durable) UI count.
+    await awaitEffect(async () => (await committedScheduled(assignmentId!)) >= base + 1, { budget: 30_000 });
+    await expect(scheduledRows(), 'first session shows').toHaveCount(base + 1, { timeout: 15_000 });
+
+    // Let the first toast auto-dismiss so the second booking's toast is unambiguous.
+    await expect(coach.page.locator('[data-sonner-toast]')).toHaveCount(0, { timeout: 10_000 });
+
+    // ── Second overlapping booking on the SAME pinned assignment (not .first()) ────
+    await pinnedRow.getByTestId('pt-schedule').click();
+    // The "overlap warns but never blocks" proof — the non-blocking warning renders…
     await expect(
       coach.page.locator('[data-testid="pt-conflict-warning"]').first(),
       'overlap renders the non-blocking warning',
     ).toBeVisible({ timeout: 15_000 });
-    // The 2nd booking commits on click (the warning is informational, non-blocking) but
-    // the in-place session list can miss the just-committed row — re-fetch until both
-    // show. Budget is generous for peak union load on the single next-start server; the
-    // assertion is unchanged — EXACTLY 2 scheduled rows for THIS pinned assignment.
+    // …R1: gate navigation on the WRITE toast — the residual was navigate-on-warning
+    // (a READ signal emitted BEFORE the write) racing the in-flight 2nd action; this
+    // waits for the write to confirm first, so the goto below can never abort it.
+    await expect(
+      coach.page.locator('[data-sonner-toast]').filter({ hasText: /scheduled/i }).first(),
+      'the second booking confirms (never blocks)',
+    ).toBeVisible({ timeout: 15_000 });
+    // R2: the committed fact — a genuinely-lost/misrouted 2nd write fails LOUDLY here
+    // (not as a flaky UI timeout), disambiguating a lost write from replica lag.
+    await awaitEffect(async () => (await committedScheduled(assignmentId!)) >= base + 2, { budget: 30_000 });
+    // …only now read the UI count; the row is already durable, so this is deterministic.
+    // EXACTLY base+2 scheduled rows for THIS pinned assignment — the ==2 proof, intact.
     await untilConsistent(async () => {
       await coach.page.goto('/en/coach/pt');
-      await expect(
-        coach.page.locator(`${sessionSel}[data-status="scheduled"]`),
-        'booking still completes (non-blocking)',
-      ).toHaveCount(2, { timeout: 5_000 });
-    }, { timeout: 90_000 });
+      await expect(scheduledRows(), 'booking still completes (non-blocking)').toHaveCount(base + 2, { timeout: 5_000 });
+    });
     await noMissing(coach.page);
 
     // ── Day · Coach diary: the coach column shows BOTH species; PT → lifecycle ──
