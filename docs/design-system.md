@@ -3,7 +3,7 @@
 > One page. Every rule here is one the codebase actually follows — utilities exist in `tailwind.config.ts` / `globals.css`. Later slices style against THIS, not against vibes.
 
 ## Type scale (both scripts)
-Arabic = **IBM Plex Sans Arabic** (`--font-arabic`, via next/font, weights 400/500/700, swap + size-adjusted fallback). Latin = **Inter** (`--font-latin`). Arabic runs ~4% taller per glyph: keep the same rem sizes — never bump sizes for ar; use `font-arabic` only where mixed-content needs forcing (html[lang=ar] already sets it globally).
+Arabic = **IBM Plex Sans Arabic** (`--font-arabic`, via next/font, weights 400/500/700, swap + size-adjusted fallback). Latin = **Geist** (`--font-latin` → `var(--font-geist-sans)`, self-hosted via the `geist` package). Arabic runs ~4% taller per glyph: keep the same rem sizes — never bump sizes for ar; use `font-arabic` only where mixed-content needs forcing (html[lang=ar] already sets it globally).
 
 | Role | Class | Size/leading | Weight |
 |---|---|---|---|

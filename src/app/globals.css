@@ -179,6 +179,27 @@
   html.dark .shell-staff  { --surface: #e5484d; } /* reception crimson → brightened */
   html.dark .shell-portal { --surface: #d97706; } /* member bronze → brighter amber */
   html.dark .shell-coach  { --surface: #64748b; } /* coach graphite → brighter slate */
+
+  /* R3 LANDING DARK PASS: the marketing HERO + FOOTER are DESIGNED-dark surfaces —
+     near-black background + light text in BOTH themes (a hero is dark in light mode
+     too). The DS-2 channel-var flip (html.dark) would invert them — the near-black
+     wash/footer washes to near-WHITE and every `text-white`/`text-gray-3xx` flips to
+     near-black — wrecking the designed look. This class RESETS the neutral channel
+     vars those two surfaces consume back to their :root (light-mode) values within the
+     subtree, so html.dark leaves the designed dark look intact. Light mode is byte-
+     identical (html.dark never matches → this rule never runs). CSP-safe (a stylesheet
+     class, not an inline style). NOTE: --c-gray-50 is deliberately NOT reset — the
+     hero's bottom fade uses `from-gray-50` and SHOULD flip so it blends into the (now
+     dark) next content section. The neutral content sections in between are untouched:
+     their bg-white/gray-50 + text-gray-900 already flip coherently to dark cards. */
+  html.dark .landing-dark {
+    --c-white: 255 255 255;
+    --c-secondary-950: 31 31 31;
+    --c-gray-300: 209 213 219;
+    --c-gray-400: 156 163 175;
+    --c-gray-500: 107 114 128;
+    --c-gray-600: 75 85 99;
+  }
 }
 
 @layer base {
@@ -207,13 +228,32 @@
      LIGHT here — DS-2 INVERTS the gray scale; the var-backed neutrals flip the right way.)
      Element specificity (0,0,1) < any bg/text utility (0,1,0), so custom-styled selects
      keep their own colors — this only themes the un-styled ones. */
-  select {
+  select,
+  input,
+  textarea {
     color-scheme: light;
     background-color: rgb(var(--c-white));
     color: rgb(var(--c-gray-900));
   }
-  html.dark select {
+  html.dark select,
+  html.dark input,
+  html.dark textarea {
     color-scheme: dark;
+  }
+
+  /* R2 AUTOFILL: Chrome/WebKit paint -webkit-autofill'd fields with a forced light
+     background + near-black text via an internal UA layer that IGNORES color-scheme,
+     so a dark-mode autofilled login/trial form reads dark-on-light. Repaint the field
+     to the (flipped) DS-2 dark surface + near-white text; the inset box-shadow is the
+     only lever that overrides the UA autofill background. */
+  html.dark input:-webkit-autofill,
+  html.dark input:-webkit-autofill:hover,
+  html.dark input:-webkit-autofill:focus,
+  html.dark textarea:-webkit-autofill,
+  html.dark select:-webkit-autofill {
+    -webkit-text-fill-color: rgb(var(--c-gray-900));
+    caret-color: rgb(var(--c-gray-900));
+    -webkit-box-shadow: 0 0 0 1000px rgb(var(--c-white)) inset;
   }
 
   /* ─── RTL Support ─── */
@@ -235,6 +275,19 @@
   html[lang="en"] body,
   html[lang="fr"] body {
     font-family: var(--font-latin);
+  }
+
+  /* R1 LATIN-FONT FIX: --font-latin is declared at :root (above) as
+     `var(--font-geist-sans), …`, but geist's GeistSans.variable defines
+     --font-geist-sans on <body> (layout.tsx), NOT on :root. A var() inside a custom
+     property is substituted where that property is COMPUTED, so at :root the
+     reference is invalid-at-computed-value-time → --font-latin (and thus every Latin
+     `font-family: var(--font-latin)`) collapsed to the UA default, and English text
+     rendered the system font instead of Geist. Re-anchor the alias on <body>, where
+     --font-geist-sans IS in scope, so it resolves to Geist. (Arabic is unaffected:
+     next/font sets --font-arabic directly on <body>, overriding the :root alias there.) */
+  body {
+    --font-latin: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   }
 
   /* ─── AR-TYPE — Arabic typography fidelity (dabbira-validated model) ───

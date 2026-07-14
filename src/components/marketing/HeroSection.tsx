@@ -44,7 +44,7 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
   const igFollowers = branding.instagramFollowers ?? null;
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="landing-dark relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Full-bleed gym photo (no baked-in text). Every usable source photo is
           portrait/square (the only landscape file, hero.jpg, has baked text), so
           object-cover crops it to a vertical band — see the wash below for why

@@ -209,7 +209,7 @@ export default function LoginPage({ params }: Props) {
                 disabled={loading}
                 className={cn(
                   'w-full rounded-xl border border-gray-200 py-3 text-base',
-                  'bg-white placeholder:text-gray-400',
+                  'bg-white text-gray-900 placeholder:text-gray-400',
                   'focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100',
                   'disabled:cursor-not-allowed disabled:opacity-50',
                   isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'
@@ -242,7 +242,7 @@ export default function LoginPage({ params }: Props) {
                 disabled={loading}
                 className={cn(
                   'w-full rounded-xl border border-gray-200 py-3 text-base',
-                  'bg-white placeholder:text-gray-400',
+                  'bg-white text-gray-900 placeholder:text-gray-400',
                   'focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100',
                   'disabled:cursor-not-allowed disabled:opacity-50',
                   isRTL ? 'pr-12 pl-12 text-right' : 'pl-12 pr-12'

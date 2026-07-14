@@ -64,7 +64,7 @@ export function Header({ locale, role, showBell = true, gymName, logoUrl }: Head
             placeholder={t('common.search')}
             className={cn(
               'w-full rounded-lg border border-gray-200 py-2 text-sm',
-              'bg-gray-50 placeholder:text-gray-400',
+              'bg-gray-50 text-gray-900 placeholder:text-gray-400',
               'focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100',
               isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'
             )}
