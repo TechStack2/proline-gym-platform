@@ -67,23 +67,24 @@ test('BILL-GUARDS R1 · the class wizard requires a fee (Next blocked until a fe
   const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale: 'en' })
   const page = await ctx.newPage()
   try {
-    await page.goto('/en/schedule')
-    await vis(page, '[data-testid="add-class-btn"]').click()
-    // Step 1 — basics
-    await page.getByTestId('class-name-en').fill('Fee Guard Wizard')
-    await page.locator('[data-testid="wizard-discipline-chip"]').first().click()
-    await page.locator('[data-testid="wizard-coach-chip"]').first().click()
-    await page.getByTestId('wizard-next').click()
-    // Step 2 — a day + time
-    await page.locator('[data-testid="wizard-day-pill"]').first().click()
-    await page.locator('[data-testid="wizard-preset"]').first().click()
-    await page.getByTestId('wizard-next').click()
+    // The (dashboard) shell mounts content TWICE (hidden + visible) → the wizard's
+    // `fee` state is duplicated; scope EVERY interaction to the VISIBLE modal so the
+    // Free click and the Next assertion hit the SAME instance. Entry = /en/classes
+    // (the proven createClassViaWizard flow); step-2 defaults a day+time (no click).
+    await page.goto('/en/classes')
+    await vis(page, '[data-testid="add-class-btn"]').first().click()
+    const wiz = page.locator('[data-testid="class-wizard"]:visible')
+    await wiz.getByTestId('class-name-en').fill('Fee Guard Wizard')
+    await wiz.locator('[data-testid="wizard-discipline-chip"]').first().click()
+    await wiz.locator('[data-testid="wizard-coach-chip"]').first().click()
+    await wiz.getByTestId('wizard-next').click() // → step 2
+    await wiz.getByTestId('wizard-next').click() // step 2 defaults → step 3
     // Step 3 — capacity set, fee EMPTY → Next is blocked (NULL can't be produced)
-    await page.getByTestId('class-capacity').fill('10')
-    await expect(page.getByTestId('wizard-next'), 'Next is blocked while the fee is empty').toBeDisabled()
+    await wiz.getByTestId('class-capacity').fill('10')
+    await expect(wiz.getByTestId('wizard-next'), 'Next is blocked while the fee is empty').toBeDisabled()
     // The explicit "Free" chip writes 0 → the required-fee gate is satisfied
-    await page.getByTestId('class-fee-free').click()
-    await expect(page.getByTestId('wizard-next'), 'Free (=0) satisfies the required fee').toBeEnabled()
+    await wiz.getByTestId('class-fee-free').click()
+    await expect(wiz.getByTestId('wizard-next'), 'Free (=0) satisfies the required fee').toBeEnabled()
   } finally {
     await ctx.close()
   }
