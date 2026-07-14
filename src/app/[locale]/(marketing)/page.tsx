@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
+import { getLandingGym, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
+import { classifyHost, resolveTenantSlug, vendorRedirectUrl, type HostClass } from '@/lib/host/resolver';
+import { PLATFORM_BRAND } from '@/lib/brand';
 import { getLandingMeta } from '@/lib/marketing/seo';
 import { storagePublicUrl } from '@/lib/storage/public-url';
 import { VendorLanding } from '@/components/marketing/VendorLanding';
@@ -33,13 +36,14 @@ type Props = {
   searchParams?: { gym?: string; vendor?: string };
 };
 
-// SEO-PER-GYM: the request's gym slug — ?gym= (CI/preview) WINS, then a mapped
-// custom domain (proxied Host), then undefined → the default demo gym downstream.
-// Shared by generateMetadata (the <head>) and the body so both resolve the SAME gym.
-async function resolveRequestSlug(searchParams?: { gym?: string }): Promise<string | undefined> {
+// PRAXELLA-DOOR R1: classify the request Host through the ONE central resolver —
+// (i) vendor host (praxella.com/www/VENDOR_LANDING_HOSTS or ?vendor=1) → the vendor
+// landing; (iii) <slug>.praxella.com → that gym; (iv) else → custom-domain lookup /
+// DEFAULT. Shared by generateMetadata (the <head>) and the body so both agree.
+function classifyRequest(searchParams?: { vendor?: string }): { rawHost: string | null; cls: HostClass } {
   const hdrs = headers();
-  const domainSlug = await getGymSlugByDomain(hdrs.get('x-forwarded-host') || hdrs.get('host'));
-  return searchParams?.gym || domainSlug || undefined;
+  const rawHost = hdrs.get('x-forwarded-host') || hdrs.get('host');
+  return { rawHost, cls: classifyHost(rawHost, { forceVendor: searchParams?.vendor === '1' }) };
 }
 
 // WL-BRANDING-DATA: build the `:root{--brand…}` CSS from the resolved gym's brand
@@ -57,23 +61,6 @@ function buildBrandCss(brand: string): string {
   return `:root{--brand:${brand};--brand-dark:${shade(0.82)};--brand-soft:rgba(${r},${g},${b},0.1)}`;
 }
 
-// VENDOR-LANDING: is this a request for the VENDOR product page (Gym 360 Pro),
-// not a tenant gym landing? True when the request Host is a configured vendor host
-// (env VENDOR_LANDING_HOSTS, comma-sep; default EMPTY → zero prod change until the
-// owner points Proline at its own domain) OR ?vendor=1 (preview). Otherwise the
-// tenant/DEFAULT_GYM_SLUG resolution below is UNCHANGED.
-function isVendorRequest(searchParams?: { vendor?: string }): boolean {
-  if (searchParams?.vendor === '1') return true;
-  const hosts = (process.env.VENDOR_LANDING_HOSTS || '')
-    .split(',')
-    .map((h) => h.trim().toLowerCase().split(':')[0])
-    .filter(Boolean);
-  if (hosts.length === 0) return false;
-  const hdrs = headers();
-  const host = (hdrs.get('x-forwarded-host') || hdrs.get('host') || '').trim().toLowerCase().split(':')[0];
-  return !!host && hosts.includes(host);
-}
-
 /**
  * SEO-PER-GYM: per-gym <head> (title/description/OG + JSON-LD name/address/phone/IG).
  * Lives on the PAGE, not the layout, because only a page can read searchParams —
@@ -81,19 +68,21 @@ function isVendorRequest(searchParams?: { vendor?: string }): boolean {
  * today's curated `seo` copy byte-identically (see getLandingMeta).
  */
 export async function generateMetadata({ params: { locale }, searchParams }: Props): Promise<Metadata> {
-  // VENDOR-LANDING: the vendor page gets its OWN <head> (Gym 360 Pro), not a
+  const { rawHost, cls } = classifyRequest(searchParams);
+  // PRAXELLA-DOOR R5: the vendor page gets its OWN <head> (Praxella), not a
   // tenant's. Absolute title → the app-wide "%s | PRO LINE Gym" template can't
-  // leak the tenant brand onto the vendor product page.
-  if (isVendorRequest(searchParams)) {
+  // leak the tenant brand onto the platform's marketing page.
+  if (cls.kind === 'vendor') {
     const t = await getTranslations({ locale, namespace: 'vendor' });
     return {
       title: { absolute: t('meta.title') },
       description: t('meta.description'),
-      applicationName: t('hero.name'),
+      applicationName: PLATFORM_BRAND.name,
       robots: { index: true, follow: true },
     };
   }
-  const gymSlug = await resolveRequestSlug(searchParams);
+  // Subdomain gyms keep gym metadata; an unknown subdomain (body redirects) → default.
+  const gymSlug = await resolveTenantSlug(rawHost, searchParams?.gym, cls);
   const { metadata } = await getLandingMeta(locale, gymSlug);
   return metadata;
 }
@@ -107,21 +96,31 @@ export async function generateMetadata({ params: { locale }, searchParams }: Pro
 export default async function LandingPage({ params: { locale }, searchParams }: Props) {
   setRequestLocale(locale); // pages render independently of layouts — both need it
 
-  // VENDOR-LANDING: a vendor request renders the Gym 360 Pro product page and
+  // PRAXELLA-DOOR R1: a vendor request renders the Praxella marketing page and
   // returns — no tenant gym resolution, no catalog reads, no tenant chrome.
-  if (isVendorRequest(searchParams)) {
+  const { rawHost, cls } = classifyRequest(searchParams);
+  if (cls.kind === 'vendor') {
     return <VendorLanding locale={locale} />;
+  }
+  // A malformed *.praxella.com subdomain → clean redirect to the vendor apex (never 500).
+  if (cls.kind === 'subdomain-invalid') {
+    redirect(vendorRedirectUrl());
   }
 
   // WL-DOMAIN-ROUTING: which gym is this request for? ?gym= (explicit; CI + preview)
-  // WINS, then the request Host (a mapped custom domain), then DEFAULT_GYM_SLUG (the
-  // vendor/Railway domain → the demo — nothing regresses). Same resolution as the
-  // <head> (generateMetadata) so the metadata + JSON-LD match the rendered gym.
-  const gymSlug = await resolveRequestSlug(searchParams);
+  // WINS, then a <slug>.praxella.com subdomain, then a mapped custom domain, then
+  // DEFAULT_GYM_SLUG (Railway/localhost → the demo — nothing regresses). Same
+  // resolution as the <head> (generateMetadata) so metadata + JSON-LD match.
+  const gymSlug = await resolveTenantSlug(rawHost, searchParams?.gym, cls);
 
   // GRW-1: gym's active disciplines (anon-readable, 000035) → trial-capture
   // interest chips. One fetch here keeps the chips id-accurate for the RPC.
   const gym = await getLandingGym(gymSlug || DEFAULT_GYM_SLUG);
+  // An unknown <slug>.praxella.com (no such gym) → clean redirect to the vendor apex,
+  // NOT the default gym (a subdomain typo shouldn't silently serve Proline).
+  if (cls.kind === 'subdomain' && !gym) {
+    redirect(vendorRedirectUrl());
+  }
   // AX-2 (defect 4): the RESOLVED, post-fallback slug. On the bare prod landing
   // (no ?gym=) the raw `gymSlug` is undefined → the trial RPC got p_gym_slug=null
   // → 'invalid' → dead form. Every gym-scoped section gets the resolved slug.

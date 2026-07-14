@@ -3282,21 +3282,22 @@
   },
   "vendor": {
     "meta": {
-      "title": "Gym 360 Pro — White-label management for martial-arts & boutique gyms",
-      "description": "The all-in-one, Arabic-first platform to run your gym: scheduling, attendance, belts, dual-currency billing, PT, camps, leads, an offline PWA and WhatsApp — fully on your own brand."
+      "title": "Praxella — Run your gym or studio, all in one platform",
+      "description": "Praxella is the Arabic-first platform to run your gym: memberships, classes, PT, dual-currency billing, WhatsApp, an offline front desk, leads and more."
     },
     "nav": {
       "features": "Features",
       "who": "Who it's for",
       "pricing": "Pricing",
-      "cta": "Book a demo"
+      "cta": "Request a demo",
+      "how": "How it works"
     },
     "hero": {
-      "badge": "White-label gym platform",
+      "badge": "Gym & studio management",
       "name": "Gym 360 Pro",
-      "tagline": "Run your whole gym from one platform",
-      "subtitle": "Scheduling, attendance, belts, dual-currency billing, PT, camps and leads — Arabic-first, offline-ready, and fully on your own brand.",
-      "ctaPrimary": "Book a demo",
+      "tagline": "Run your gym, not your spreadsheets",
+      "subtitle": "Memberships, classes, PT, dual-currency billing, WhatsApp, an offline front desk and more — Arabic-first, and built for how gyms in the region really operate.",
+      "ctaPrimary": "Request a demo",
       "ctaSecondary": "See the features"
     },
     "features": {
@@ -3397,12 +3398,12 @@
     },
     "footer": {
       "tagline": "The white-label platform for martial-arts & boutique gyms.",
-      "rights": "Gym 360 Pro. All rights reserved."
+      "rights": "All rights reserved."
     },
     "console": {
-      "brand": "Gym 360 Pro",
+      "brand": "Praxella",
       "signOut": "Sign out",
-      "title": "Gym 360 Pro — Vendor Console",
+      "title": "Praxella — Vendor Console",
       "summary": "{gyms} gyms · {active} active",
       "onboardCta": "Onboard a new gym",
       "colGym": "Gym",
@@ -3426,7 +3427,75 @@
       "confirmSuspend": "Suspend gym",
       "confirmReactivate": "Reactivate gym",
       "cancel": "Cancel",
-      "suspendFailed": "Couldn't update the gym. Please try again."
+      "suspendFailed": "Couldn't update the gym. Please try again.",
+      "requestsLink": "Requests"
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "subtitle": "From sign-up to your front desk in days, not months.",
+      "stepLabel": "Step {n}",
+      "step1": {
+        "title": "Tell us about your gym",
+        "desc": "Request a demo and we set up your gym — disciplines, classes, plans and branding."
+      },
+      "step2": {
+        "title": "Add your members & schedule",
+        "desc": "Import members, build your weekly timetable, and configure billing in your currencies."
+      },
+      "step3": {
+        "title": "Go live",
+        "desc": "Open your front desk, publish your landing page, and start taking attendance and payments."
+      }
+    },
+    "demo": {
+      "title": "See Praxella on your gym",
+      "subtitle": "Leave your details and we'll set up a personal walkthrough on your own gym's data.",
+      "nameLabel": "Your name",
+      "namePh": "Full name",
+      "businessLabel": "Business name",
+      "businessPh": "Your gym or studio",
+      "activityLabel": "What do you run?",
+      "activity": {
+        "gym": "Gym",
+        "martial_arts": "Martial arts",
+        "gymnastics": "Gymnastics",
+        "dance": "Dance",
+        "other": "Other"
+      },
+      "phoneLabel": "Phone / WhatsApp",
+      "emailLabel": "Email",
+      "emailPh": "you@example.com",
+      "cityLabel": "City",
+      "cityPh": "City",
+      "messageLabel": "Anything else? (optional)",
+      "messagePh": "Tell us about your gym",
+      "send": "Request a demo",
+      "fillAll": "Please add your name and phone.",
+      "submitFailed": "Couldn't send that. Please try again.",
+      "tooMany": "Too many requests. Please try again in a minute.",
+      "noPromise": "We'll reach out to schedule your walkthrough. No commitment.",
+      "thanksTitle": "Thanks — we'll be in touch",
+      "thanksBody": "We've received your request and will contact you shortly to set up your demo."
+    },
+    "requests": {
+      "title": "Demo requests",
+      "subtitle": "Prospects who asked for a Praxella walkthrough.",
+      "empty": "No requests yet.",
+      "backToConsole": "Back to console",
+      "received": "Received",
+      "statusNew": "New",
+      "statusContacted": "Contacted",
+      "statusClosed": "Closed",
+      "markContacted": "Mark contacted",
+      "markClosed": "Mark closed",
+      "reopen": "Reopen",
+      "colContact": "Contact",
+      "colBusiness": "Business",
+      "colActivity": "Activity",
+      "colLocation": "City",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "updateFailed": "Couldn't update the request. Please try again."
     }
   },
   "publish": {

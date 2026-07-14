@@ -366,6 +366,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PRAXELLA-DOOR: the vendor landing's request-demo form → platform_leads
+      // (submit_platform_lead, 000100) → the (vendor) console Requests inbox →
+      // mark-contacted via the gated server action. Seeds its OWN platform-admin
+      // fixture + a uniquely-tagged lead (hermetic).
+      name: 'praxella-door',
+      dependencies: ['setup'],
+      testMatch: /\/praxella-door\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // WL-BRANDING-DATA: the marketing landing renders the resolved gym's
       // brand_color via a nonce'd :root{--brand} + var(--brand) classes. Unset →
       // Proline red; a distinct brand_color → that color; no CSP violation. Seeds
