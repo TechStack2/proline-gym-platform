@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
 import { ROLES } from './roles';
-import { vis, visibleShell, expectNotification, createClassViaWizard } from './helpers';
+import { vis, visibleShell, expectNotification, untilConsistent } from './helpers';
 
 /**
  * IA-1 — journey-centric nav + Inbox + Today (Cycle 5 / V1).
@@ -16,15 +16,48 @@ import { vis, visibleShell, expectNotification, createClassViaWizard } from './h
  *     action) → registration active + invoiced + roster + Karim notified,
  *     and Karim's portal shell shows the unread bell badge (IA-1 mount).
  */
-const RUN = Date.now().toString().slice(-6);
-const CLASS_NAME = `IA Class ${RUN}`;
-
 async function ctxFor(browser: Browser, role: keyof typeof ROLES, viewport?: { width: number; height: number }) {
   const ctx = await browser.newContext({ storageState: ROLES[role].storage, locale: 'en', ...(viewport ? { viewport } : {}) });
   return { ctx, page: await ctx.newPage() };
 }
 async function noMissing(page: Page) {
   await expect(page.locator('body')).not.toContainText('MISSING_MESSAGE');
+}
+
+/**
+ * Create a class through the UX-1 wizard and PROVE it is fee-bearing before use.
+ *
+ * FLAKE-HEAL: the shared createClassViaWizard fills the step-3 fields (capacity +
+ * monthly fee) then immediately advances and submits. Under fast (solo) timing the
+ * submit can read the fee/capacity state before React commits the fill → the class
+ * persists with a NULL fee. That silently breaks THIS test's core proof: a
+ * zero/NULL net means _activate_class_registration issues NO invoice, so the
+ * approved registration can never show "Invoiced" (and, once Lane B's BILL-GUARDS
+ * lands, NULL-fee activation will RAISE outright). So drive the wizard here and, on
+ * the REVIEW step, wait until the committed fee ($fee) is shown before submitting —
+ * the review renders exactly the state the submit persists, so this guarantees the
+ * write. Fee-explicit by design so it survives the BILL-GUARDS change.
+ */
+async function createFeeClass(page: Page, nameEn: string, capacity: string, fee: string) {
+  await page.getByTestId('add-class-btn').click();
+  await page.getByTestId('class-name-en').fill(nameEn);
+  await page.locator('[data-testid="wizard-discipline-chip"]').first().click();
+  await page.locator('[data-testid="wizard-coach-chip"]').first().click();
+  await page.getByTestId('wizard-next').click();   // basics → schedule (Monday preselected)
+  await page.getByTestId('wizard-next').click();   // schedule → pricing
+  await page.getByTestId('class-capacity').fill(capacity);
+  await page.getByTestId('class-monthly-fee').fill(fee);
+  await page.getByTestId('wizard-next').click();   // pricing → review
+  // COMMIT GUARANTEE: the review shows the fee/capacity STATE that submit persists,
+  // so waiting for "$fee" here forces the step-3 fills to be committed before submit
+  // (capacity is filled in the same step → committed in the same render).
+  await expect(
+    page.locator('[data-testid="class-wizard"]'),
+    'wizard committed the monthly fee before submit',
+  ).toContainText(`$${fee}`);
+  await page.getByTestId('wizard-submit').click();
+  await expect(page.getByTestId('wizard-success')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('[data-testid="class-wizard"]')).toHaveCount(0, { timeout: 10_000 });
 }
 
 const WORKSPACES = ['today', 'inbox', 'members', 'schedule', 'money', 'team', 'settings'] as const;
@@ -94,19 +127,22 @@ test('IA-1 · cross-role: portal request → staff inbox badge + inline approve 
   test.setTimeout(200_000);
   const owner = await ctxFor(browser, 'owner');
   const student = await ctxFor(browser, 'student'); // Karim
+  // Own-fixture: a globally-unique class name per invocation so retries (a fresh
+  // worker each) and sibling specs never share a card in the run gym's list.
+  const className = `IA Class ${Date.now().toString().slice(-6)}-${Math.random().toString(16).slice(2, 6)}`;
   try {
-    // ── Owner creates a class with a monthly fee (UX-1 wizard) ──
+    // ── Owner creates a fee-bearing class (UX-1 wizard; fee committed before submit) ──
     await owner.page.goto('/en/classes');
-    await createClassViaWizard(owner.page, { nameEn: CLASS_NAME, capacity: '5', fee: '30' });
-    await expect(vis(owner.page, '[data-testid="class-card"]').filter({ hasText: CLASS_NAME }).first())
+    await createFeeClass(owner.page, className, '5', '30');
+    await expect(vis(owner.page, '[data-testid="class-card"]').filter({ hasText: className }).first())
       .toBeVisible({ timeout: 15_000 });
-    await vis(owner.page, '[data-testid="class-card"]').filter({ hasText: CLASS_NAME }).first().click();
+    await vis(owner.page, '[data-testid="class-card"]').filter({ hasText: className }).first().click();
     await expect(owner.page).toHaveURL(/\/classes\/[0-9a-f-]{36}/, { timeout: 15_000 });
     const detailUrl = owner.page.url();
 
     // ── Karim requests it in the portal ──
     await student.page.goto('/en/portal/classes');
-    const card = vis(student.page, '[data-testid="portal-class-card"]').filter({ hasText: CLASS_NAME }).first();
+    const card = vis(student.page, '[data-testid="portal-class-card"]').filter({ hasText: className }).first();
     await expect(card).toBeVisible({ timeout: 15_000 });
     await card.getByTestId('request-btn').click();
     await expect(card.getByTestId('reg-status')).toHaveAttribute('data-status', 'requested', { timeout: 15_000 });
@@ -115,21 +151,25 @@ test('IA-1 · cross-role: portal request → staff inbox badge + inline approve 
     await owner.page.goto('/en/inbox');
     await expect(vis(owner.page, '[data-testid="inbox-badge"]').first(), 'sidebar inbox badge shows pending work')
       .toBeVisible({ timeout: 15_000 });
-    const row = vis(owner.page, '[data-testid="inbox-reg-row"]').filter({ hasText: 'Karim' }).filter({ hasText: CLASS_NAME }).first();
+    const row = vis(owner.page, '[data-testid="inbox-reg-row"]').filter({ hasText: 'Karim' }).filter({ hasText: className }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     await noMissing(owner.page);
     await row.getByTestId('inbox-approve').click();
     await expect(
-      vis(owner.page, '[data-testid="inbox-reg-row"]').filter({ hasText: CLASS_NAME }),
+      vis(owner.page, '[data-testid="inbox-reg-row"]').filter({ hasText: className }),
       'approved request leaves the inbox queue',
     ).toHaveCount(0, { timeout: 15_000 });
 
     // ── Round-trip state: active + invoiced + on the roster (existing B2 surfaces) ──
-    await owner.page.goto(detailUrl);
-    const active = vis(owner.page, '[data-testid="reg-row"][data-status="active"]').filter({ hasText: 'Karim' }).first();
-    await expect(active).toBeVisible({ timeout: 15_000 });
-    await expect(active).toContainText('Invoiced');
-    await expect(vis(owner.page, '[data-testid="enrolled-student"]').filter({ hasText: 'Karim' }).first()).toBeVisible();
+    // Reload-consistent: re-fetch the class detail until the approve's commit is
+    // visible (active + Invoiced + roster), rather than reading a single snapshot.
+    await untilConsistent(async () => {
+      await owner.page.goto(detailUrl);
+      const active = vis(owner.page, '[data-testid="reg-row"][data-status="active"]').filter({ hasText: 'Karim' }).first();
+      await expect(active).toBeVisible({ timeout: 5_000 });
+      await expect(active).toContainText('Invoiced');
+      await expect(vis(owner.page, '[data-testid="enrolled-student"]').filter({ hasText: 'Karim' }).first()).toBeVisible({ timeout: 5_000 });
+    }, { timeout: 40_000 });
 
     // ── Karim is notified + his portal shell shows the unread bell badge (IA-1) ──
     await expectNotification(student.page, 'class_approved');

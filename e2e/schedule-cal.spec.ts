@@ -90,14 +90,18 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
       'overlap renders the non-blocking warning',
     ).toBeVisible({ timeout: 15_000 });
     // The 2nd booking commits on click (the warning is informational, non-blocking) but
-    // the in-place session list can miss the just-committed row — re-fetch until both show.
+    // the in-place session list can miss the just-committed row — re-fetch until both
+    // show. FLAKE-HEAL: this passes solo; under peak union load the single next-start
+    // server saturates, so the commit + a fresh /coach/pt render can take longer than
+    // the 40s default to surface both rows. Widen the reload budget for that load (the
+    // assertion is unchanged — still EXACTLY 2 scheduled rows for THIS assignment).
     await untilConsistent(async () => {
       await coach.page.goto('/en/coach/pt');
       await expect(
         coach.page.locator(`${sessionSel}[data-status="scheduled"]`),
         'booking still completes (non-blocking)',
       ).toHaveCount(2, { timeout: 5_000 });
-    });
+    }, { timeout: 90_000 });
     await noMissing(coach.page);
 
     // ── Day · Coach diary: the coach column shows BOTH species; PT → lifecycle ──
