@@ -58,7 +58,7 @@ export async function addLead(
   const clientUuid = input.clientUuid ?? null;
   if (clientUuid) {
     const { data: existing } = await supabase
-      .from('leads').select('id').eq('client_uuid' as 'id', clientUuid).maybeSingle();
+      .from('leads').select('id').eq('client_uuid', clientUuid).maybeSingle();
     if (existing) return { ok: true, leadId: existing.id };
   }
 
@@ -78,8 +78,8 @@ export async function addLead(
       interested_discipline_id: parsed.data.discipline_id || null,
       notes: parsed.data.notes || null,
       status: 'new',
-      client_uuid: clientUuid, // bridge: additive 000064 column, lags generated types
-    } as never)
+      client_uuid: clientUuid,
+    })
     .select('id')
     .single();
   if (error) {
@@ -87,7 +87,7 @@ export async function addLead(
     // fetch the canonical lead and return it instead of erroring.
     if (clientUuid && error.code === '23505') {
       const { data: dup } = await supabase
-        .from('leads').select('id').eq('client_uuid' as 'id', clientUuid).maybeSingle();
+        .from('leads').select('id').eq('client_uuid', clientUuid).maybeSingle();
       if (dup) return { ok: true, leadId: dup.id };
     }
     return { ok: false, error: actionError(error) };
@@ -309,10 +309,7 @@ export async function discardOfflineLead(input: {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'unauthenticated' };
-  // Bridge: discard_offline_lead (000064) isn't in the generated Functions yet.
-  const { error } = await (supabase.rpc as unknown as (
-    fn: string, args: Record<string, unknown>,
-  ) => Promise<{ error: { message: string } | null }>)('discard_offline_lead', {
+  const { error } = await supabase.rpc('discard_offline_lead', {
     p_op_id: input.opId,
     p_name: input.name,
     p_reason: input.reason,
