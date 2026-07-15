@@ -445,6 +445,13 @@
     "discipline": "الاختصاص",
     "quickActions": "إجراءات سريعة",
     "schedules": "المواعيد",
+    "completeness": {
+      "incomplete": "غير مكتمل",
+      "gap": {
+        "schedule": "لا يوجد جدول",
+        "coach": "لا يوجد مدرب"
+      }
+    },
     "wizard": {
       "title": "حصة جديدة",
       "close": "إغلاق",
@@ -465,6 +472,7 @@
       "monthlyFee": "الرسوم الشهرية (دولار)",
       "mo": "شهر",
       "feeHint": "يمكن للأعضاء التسجيل في هذه الحصة برسوم شهرية.",
+      "scheduleGapWarn": "لا يوجد جدول لهذه الحصة بعد — لن تظهر في الجدول الزمني. يمكنك إضافة المواعيد الآن أو الحفظ وتحديدها لاحقاً.",
       "status": "الحالة",
       "statusValues": {
         "scheduled": "مجدولة",
@@ -1538,7 +1546,8 @@
         "notConnected": "غير مُعدّ",
         "active": "نشط",
         "classesCount": "{n} حصص · {m} على الصفحة",
-        "addClasses": "أضف حصصاً"
+        "addClasses": "أضف حصصاً",
+        "classesIncomplete": "{n} بحاجة إلى إعداد"
       },
       "links": {
         "classes": "الحصص",

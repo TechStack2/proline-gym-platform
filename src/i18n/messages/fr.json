@@ -445,6 +445,13 @@
     "discipline": "Discipline",
     "quickActions": "Actions rapides",
     "schedules": "Horaires",
+    "completeness": {
+      "incomplete": "Incomplet",
+      "gap": {
+        "schedule": "Pas d'horaire",
+        "coach": "Pas de coach"
+      }
+    },
     "wizard": {
       "title": "Nouveau cours",
       "close": "Fermer",
@@ -465,6 +472,7 @@
       "monthlyFee": "Frais mensuels (USD)",
       "mo": "mois",
       "feeHint": "Les membres peuvent s'inscrire à ce cours pour un tarif mensuel.",
+      "scheduleGapWarn": "Ce cours n'a pas encore d'horaire — il n'apparaîtra pas dans l'emploi du temps. Vous pouvez ajouter des créneaux maintenant ou enregistrer et les définir plus tard.",
       "status": "Statut",
       "statusValues": {
         "scheduled": "Programmé",
@@ -1538,7 +1546,8 @@
         "notConnected": "Non configuré",
         "active": "Actif",
         "classesCount": "{n} cours · {m} en ligne",
-        "addClasses": "Ajouter des cours"
+        "addClasses": "Ajouter des cours",
+        "classesIncomplete": "{n} à configurer"
       },
       "links": {
         "classes": "Cours",

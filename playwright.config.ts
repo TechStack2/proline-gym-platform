@@ -218,6 +218,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // COMPLETENESS: warn-and-allow product completeness + Incomplete badges.
+      // Hermetic — seeds its OWN gym (seed_e2e_wl_gym → seed_e2e_gym), creates a
+      // no-schedule class through the wizard (proving the schedule hard-block became
+      // warn-and-allow), asserts the Incomplete badge on the class card + the Manage
+      // index Classes card, then tears the gym down. Anchored with a leading slash.
+      name: 'completeness',
+      dependencies: ['setup'],
+      testMatch: /\/completeness\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // J6 GO-LIVE-PANEL: the /publish page (owner/head_coach). Toggles a seeded
       // class's landing visibility and proves the anon ?gym= landing reflects it
       // (get_landing_schedule's show_on_landing gate) both via the definer RPC and

@@ -130,7 +130,9 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
   const validateStep = (s: number): boolean => {
     if (s === 1) return !!(nameEn.trim() && disciplineId && coachId)
     if (s === 2) {
-      if (days.length === 0) return false
+      // COMPLETENESS R2: no schedule is a WARN (surfaced at review), never a hard
+      // block — so 0 days is "valid" here (J3 warn-and-allow). Selected days must
+      // still carry coherent times.
       return days.every((d) => { const dt = timeFor(d); return !!(dt.start && dt.end && dt.start < dt.end) })
     }
     // BILL-GUARDS R1: cost is REQUIRED — a numeric fee ≥ 0 (the "Free" chip writes 0).
@@ -423,6 +425,13 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
         <div className="space-y-3" data-testid="wizard-review">
           {error && (
             <div data-testid="wizard-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+          )}
+          {/* COMPLETENESS R2: J3 warn-and-allow — an honest heads-up that a class with
+              no schedule slot won't show on the timetable. Submit is NOT blocked. */}
+          {days.length === 0 && (
+            <div data-testid="wizard-completeness-warn" className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <p className={cn('text-sm font-medium text-amber-800', isRTL && 'font-arabic text-right')}>{t('scheduleGapWarn')}</p>
+            </div>
           )}
           <div className="rounded-2xl border bg-gray-50 p-4">
             <p className={cn('text-base font-bold text-gray-900', isRTL && 'font-arabic')}>{nameEn}</p>
