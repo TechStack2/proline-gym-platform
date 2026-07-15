@@ -387,6 +387,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PRAXELLA-BRAND-IMPL: capture the six REAL product screens the vendor-landing
+      // vignettes are modeled on (screenshot-only, seeded data → owner fidelity pairs).
+      name: 'praxella-fidelity',
+      dependencies: ['setup'],
+      testMatch: /\/praxella-fidelity-capture\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // WL-BRANDING-DATA: the marketing landing renders the resolved gym's
       // brand_color via a nonce'd :root{--brand} + var(--brand) classes. Unset →
       // Proline red; a distinct brand_color → that color; no CSP violation. Seeds
