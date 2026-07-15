@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
-import { Building2, Plus, Users } from 'lucide-react';
+import { Building2, Plus, Users, Inbox } from 'lucide-react';
 import { VendorGymActions } from './vendor-gym-actions';
 
 // Super-admin surface — always per-request (reads the caller's session + gate).
@@ -53,13 +53,22 @@ export default async function VendorConsolePage({ params: { locale } }: { params
             <Building2 className="h-4 w-4" /> {t('summary', { gyms: gyms.length, active: activeCount })}
           </p>
         </div>
-        <Link
-          href={`/${locale}/onboard`}
-          data-testid="vendor-onboard-link"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-800"
-        >
-          <Plus className="h-4 w-4" /> {t('onboardCta')}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/${locale}/requests`}
+            data-testid="vendor-requests-link"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <Inbox className="h-4 w-4" /> {t('requestsLink')}
+          </Link>
+          <Link
+            href={`/${locale}/onboard`}
+            data-testid="vendor-onboard-link"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-800"
+          >
+            <Plus className="h-4 w-4" /> {t('onboardCta')}
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">

@@ -43,7 +43,7 @@ WITH anon_allow(fn) AS (
     ('get_landing_class_fees'),('get_landing_plans'),('get_landing_pt'),
     ('get_landing_schedule'),('get_landing_images'),('get_public_gym'),
     ('get_gym_slug_by_domain'),('get_camp_spots_left'),('submit_trial_inquiry'),
-    ('submit_public_lead'),
+    ('submit_public_lead'),('submit_platform_lead'),
     -- RLS_HELPER (referenced by CREATE POLICY predicates; anon → null/false)
     ('is_staff'),('get_user_role'),('get_user_gym_id'),('is_gym_admin'),
     ('is_platform_admin'),('is_active_gym'),('is_public_class'),('is_guardian_of'),
@@ -73,7 +73,7 @@ DECLARE
     'get_landing_class_fees','get_landing_plans','get_landing_pt',
     'get_landing_schedule','get_landing_images','get_public_gym',
     'get_gym_slug_by_domain','get_camp_spots_left','submit_trial_inquiry',
-    'submit_public_lead',
+    'submit_public_lead','submit_platform_lead',
     'is_staff','get_user_role','get_user_gym_id','is_gym_admin','is_platform_admin',
     'is_active_gym','is_public_class','is_guardian_of','is_guardian_of_profile',
     'recipient_in_gym'

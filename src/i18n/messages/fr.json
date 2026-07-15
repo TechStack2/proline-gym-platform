@@ -3282,22 +3282,23 @@
   },
   "vendor": {
     "meta": {
-      "title": "Gym 360 Pro — Gestion en marque blanche pour salles d'arts martiaux et boutiques",
-      "description": "La plateforme tout-en-un, pensée d'abord pour l'arabe, pour gérer votre salle : planning, présences, ceintures, facturation bi-devise, coaching, stages, prospects, PWA hors ligne et WhatsApp — entièrement à votre marque."
+      "title": "Praxella — Gérez votre salle ou studio, tout en une plateforme",
+      "description": "Praxella est la plateforme arabophone d'abord pour gérer votre salle : abonnements, cours, coaching, facturation bi-devise, WhatsApp, un accueil hors ligne, prospects et plus."
     },
     "nav": {
       "features": "Fonctions",
       "who": "Pour qui",
       "pricing": "Tarifs",
-      "cta": "Demander une démo"
+      "cta": "Demander une démo",
+      "how": "Comment ça marche"
     },
     "hero": {
-      "badge": "Plateforme de salle en marque blanche",
+      "badge": "Gestion de salles & studios",
       "name": "Gym 360 Pro",
-      "tagline": "Gérez toute votre salle depuis une seule plateforme",
-      "subtitle": "Planning, présences, ceintures, facturation bi-devise, coaching, stages et prospects — pensée d'abord pour l'arabe, prête hors ligne, et entièrement à votre marque.",
+      "tagline": "Gérez votre salle, pas vos tableurs",
+      "subtitle": "Abonnements, cours, coaching, facturation bi-devise, WhatsApp, un accueil hors ligne et plus — arabophone d'abord, et pensé pour le fonctionnement réel des salles de la région.",
       "ctaPrimary": "Demander une démo",
-      "ctaSecondary": "Voir les fonctions"
+      "ctaSecondary": "Voir les fonctionnalités"
     },
     "features": {
       "title": "Tout ce qui fait tourner votre salle",
@@ -3397,12 +3398,12 @@
     },
     "footer": {
       "tagline": "La plateforme en marque blanche pour salles d'arts martiaux et boutiques.",
-      "rights": "Gym 360 Pro. Tous droits réservés."
+      "rights": "Tous droits réservés."
     },
     "console": {
-      "brand": "Gym 360 Pro",
+      "brand": "Praxella",
       "signOut": "Se déconnecter",
-      "title": "Gym 360 Pro — Console fournisseur",
+      "title": "Praxella — Console fournisseur",
       "summary": "{gyms} salles · {active} actives",
       "onboardCta": "Ajouter une nouvelle salle",
       "colGym": "Salle",
@@ -3426,7 +3427,75 @@
       "confirmSuspend": "Suspendre la salle",
       "confirmReactivate": "Réactiver la salle",
       "cancel": "Annuler",
-      "suspendFailed": "Impossible de mettre à jour la salle. Réessayez."
+      "suspendFailed": "Impossible de mettre à jour la salle. Réessayez.",
+      "requestsLink": "Demandes"
+    },
+    "howItWorks": {
+      "title": "Comment ça marche",
+      "subtitle": "De l'inscription à votre accueil en quelques jours, pas en mois.",
+      "stepLabel": "Étape {n}",
+      "step1": {
+        "title": "Parlez-nous de votre salle",
+        "desc": "Demandez une démo et nous configurons votre salle — disciplines, cours, forfaits et identité."
+      },
+      "step2": {
+        "title": "Ajoutez vos membres et votre planning",
+        "desc": "Importez les membres, construisez votre planning hebdomadaire et configurez la facturation dans vos devises."
+      },
+      "step3": {
+        "title": "Lancez-vous",
+        "desc": "Ouvrez votre accueil, publiez votre page et commencez à prendre présences et paiements."
+      }
+    },
+    "demo": {
+      "title": "Voyez Praxella sur votre salle",
+      "subtitle": "Laissez vos coordonnées et nous organisons une démonstration personnalisée sur les données de votre salle.",
+      "nameLabel": "Votre nom",
+      "namePh": "Nom complet",
+      "businessLabel": "Nom de l'établissement",
+      "businessPh": "Votre salle ou studio",
+      "activityLabel": "Que gérez-vous ?",
+      "activity": {
+        "gym": "Salle de sport",
+        "martial_arts": "Arts martiaux",
+        "gymnastics": "Gymnastique",
+        "dance": "Danse",
+        "other": "Autre"
+      },
+      "phoneLabel": "Téléphone / WhatsApp",
+      "emailLabel": "E-mail",
+      "emailPh": "vous@exemple.com",
+      "cityLabel": "Ville",
+      "cityPh": "Ville",
+      "messageLabel": "Autre chose ? (facultatif)",
+      "messagePh": "Parlez-nous de votre salle",
+      "send": "Demander une démo",
+      "fillAll": "Veuillez indiquer votre nom et votre téléphone.",
+      "submitFailed": "Échec de l'envoi. Veuillez réessayer.",
+      "tooMany": "Trop de demandes. Réessayez dans une minute.",
+      "noPromise": "Nous vous contacterons pour planifier votre démonstration. Sans engagement.",
+      "thanksTitle": "Merci — nous vous recontactons",
+      "thanksBody": "Nous avons reçu votre demande et vous contacterons sous peu pour organiser votre démo."
+    },
+    "requests": {
+      "title": "Demandes de démo",
+      "subtitle": "Les prospects ayant demandé une démonstration de Praxella.",
+      "empty": "Aucune demande pour le moment.",
+      "backToConsole": "Retour à la console",
+      "received": "Reçu",
+      "statusNew": "Nouveau",
+      "statusContacted": "Contacté",
+      "statusClosed": "Clôturé",
+      "markContacted": "Marquer contacté",
+      "markClosed": "Clôturer",
+      "reopen": "Rouvrir",
+      "colContact": "Contact",
+      "colBusiness": "Établissement",
+      "colActivity": "Activité",
+      "colLocation": "Ville",
+      "colStatus": "Statut",
+      "colActions": "Actions",
+      "updateFailed": "Échec de la mise à jour. Veuillez réessayer."
     }
   },
   "publish": {
