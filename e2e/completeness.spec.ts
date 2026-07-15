@@ -83,6 +83,8 @@ test('COMPLETENESS · a no-schedule class warns-and-allows, badges Incomplete, a
     // Step 4 — review: the honest schedule warning shows; submit is NOT blocked.
     await expect(owner.page.getByTestId('wizard-completeness-warn'), 'review warns about the missing schedule').toBeVisible()
     await expect(owner.page.getByTestId('wizard-completeness-warn')).toContainText(/won't appear on the timetable/i)
+    // SHOT (en): the save-time warn-and-allow at review.
+    await owner.page.screenshot({ path: 'screenshots/completeness-save-warning-en.png' }).catch(() => {})
     await owner.page.getByTestId('wizard-submit').click()
     await expect(owner.page.getByTestId('wizard-success'), 'the class still saves (proceed allowed)').toBeVisible({ timeout: 15_000 })
     await expect(owner.page.locator('[data-testid="class-wizard"]')).toHaveCount(0, { timeout: 10_000 })
@@ -93,6 +95,9 @@ test('COMPLETENESS · a no-schedule class warns-and-allows, badges Incomplete, a
     await expect(mine.getByTestId('class-incomplete'), 'incomplete class is badged').toBeVisible()
     await expect(mine.getByTestId('class-incomplete')).toContainText(/Incomplete/i)
     await expect(mine.getByTestId('class-incomplete')).toContainText(/No schedule/i)
+    // SHOT (en): the Incomplete badge on the class card.
+    await mine.scrollIntoViewIfNeeded().catch(() => {})
+    await owner.page.screenshot({ path: 'screenshots/completeness-badge-en.png' }).catch(() => {})
 
     // R3a (no noise) — a COMPLETE seeded class (Muay Thai Beginner, weekday schedules)
     // shows NO badge.
@@ -105,6 +110,31 @@ test('COMPLETENESS · a no-schedule class warns-and-allows, badges Incomplete, a
     const incompleteChip = owner.page.getByTestId('settings-classes-incomplete')
     await expect(incompleteChip, 'the Manage Classes card flags the gap').toBeVisible({ timeout: 20_000 })
     await expect(incompleteChip).toContainText(/need setup/i)
+    // SHOT (en): the "N need setup" chip on the Manage index Classes card.
+    await incompleteChip.scrollIntoViewIfNeeded().catch(() => {})
+    await owner.page.screenshot({ path: 'screenshots/completeness-manage-en.png' }).catch(() => {})
+
+    // ── Arabic (RTL) visual pass — the class already exists, so navigate + shoot. ──
+    await owner.page.goto('/ar/settings')
+    await expect(owner.page.getByTestId('settings-classes-incomplete')).toBeVisible({ timeout: 20_000 })
+    await owner.page.screenshot({ path: 'screenshots/completeness-manage-ar.png' }).catch(() => {})
+    await owner.page.goto('/ar/classes')
+    const mineAr = owner.page.locator('[data-testid="class-card"]').filter({ hasText: className }).first()
+    await expect(mineAr.getByTestId('class-incomplete')).toBeVisible({ timeout: 15_000 })
+    await mineAr.scrollIntoViewIfNeeded().catch(() => {})
+    await owner.page.screenshot({ path: 'screenshots/completeness-badge-ar.png' }).catch(() => {})
+    // SHOT (ar): re-open the wizard, drop the default day, reach review → the AR warn.
+    await owner.page.getByTestId('add-class-btn').click()
+    await owner.page.getByTestId('class-name-en').fill(`${className} AR`)
+    await owner.page.locator('[data-testid="wizard-discipline-chip"]').first().click()
+    await owner.page.locator('[data-testid="wizard-coach-chip"]').first().click()
+    await owner.page.getByTestId('wizard-next').click()
+    await owner.page.locator('[data-testid="wizard-day-pill"][data-dow="1"]').click()
+    await owner.page.getByTestId('wizard-next').click()
+    await owner.page.getByTestId('class-monthly-fee').fill('30')
+    await owner.page.getByTestId('wizard-next').click()
+    await expect(owner.page.getByTestId('wizard-completeness-warn')).toBeVisible({ timeout: 15_000 })
+    await owner.page.screenshot({ path: 'screenshots/completeness-save-warning-ar.png' }).catch(() => {})
   } finally {
     await owner.ctx.close()
   }
