@@ -467,3 +467,16 @@
 @media (min-width: 1280px) {
   [dir="rtl"] .font-display-hero { font-size: 3.4rem;  }                      /* matches the Latin display-lg (3) step-down, ramped */
 }
+
+/* ─── PRAXELLA-BRAND — the logotype wordmark (PraxellaLogo). Anton, uppercase,
+   tracked +9%, in EVERY locale (a brand name is not translated → NOT the RTL
+   Alexandria switch of .font-display). Global (not landing-scoped) because the
+   lockup also renders in the vendor console header; only applied where the class
+   is used, so tenant surfaces are untouched. ─── */
+.px-wordmark {
+  font-family: var(--font-display-latin), var(--font-latin);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  line-height: 1;
+}

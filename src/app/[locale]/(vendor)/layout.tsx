@@ -26,7 +26,6 @@ export default async function VendorLayout({ children, params: { locale } }: Pro
         <VendorHeader
           email={user.email ?? ''}
           locale={locale}
-          brand={t('brand')}
           signOutLabel={t('signOut')}
         />
       )}
