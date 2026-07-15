@@ -8,14 +8,14 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { PraxellaLogo } from '@/components/brand/PraxellaLogo';
 
 export function VendorHeader({
-  email, locale, brand, signOutLabel,
+  email, locale, signOutLabel,
 }: {
   email: string;
   locale: string;
-  brand: string;
   signOutLabel: string;
 }) {
   const router = useRouter();
@@ -31,9 +31,8 @@ export function VendorHeader({
   return (
     <header data-testid="vendor-header" className="border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
-        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-          <ShieldCheck className="h-4 w-4 text-primary-600" /> {brand}
-        </span>
+        <PraxellaLogo markSize={20} className="text-gray-900" wordClassName="text-[15px]" />
+        <span className="sr-only" data-testid="vendor-brand">Praxella</span>
         <div className="flex items-center gap-3">
           <span data-testid="vendor-user-email" dir="ltr" className="max-w-[40vw] truncate text-xs text-gray-500">
             {email}
