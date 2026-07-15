@@ -40,15 +40,14 @@ export default async function NewInvoicePage({ params: { locale } }: Props) {
     .maybeSingle()
 
   // BILL-LOCALIZE: the gym's per-gym tax rate (000074) + TVA registration drive an
-  // HONEST issuance hint — no hardcoded "11% TVA". tax_rate isn't in the generated types
-  // yet (stale re 000074) → read via a narrow cast.
+  // HONEST issuance hint — no hardcoded "11% TVA".
   const { data: gymTax } = await supabase
     .from('gyms')
     .select('tax_rate, tva_registration_number')
     .eq('id', gymId)
     .maybeSingle()
-  const taxRate = Number((gymTax as { tax_rate?: number | null } | null)?.tax_rate ?? 0)
-  const tvaRegistered = !!(gymTax as { tva_registration_number?: string | null } | null)?.tva_registration_number
+  const taxRate = Number(gymTax?.tax_rate ?? 0)
+  const tvaRegistered = !!gymTax?.tva_registration_number
 
   return (
     <div className={`space-y-6 p-6 ${isRTL ? 'rtl text-right' : ''}`}>

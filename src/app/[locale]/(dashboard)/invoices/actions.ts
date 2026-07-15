@@ -90,9 +90,7 @@ export async function recordPayment(input: {
     p_exchange_rate: input.exchangeRate ?? null,
     p_payment_date: input.paymentDate ?? null,
     p_client_uuid: input.clientUuid ?? null,
-    // Bridge: the generated Args type lags the additive p_client_uuid (000062);
-    // the RPC accepts it. Same pattern as the repo's other Supabase-type bridges.
-  } as unknown as Database['public']['Functions']['record_payment']['Args']);
+  });
   if (error) return { ok: false, error: actionError(error) };
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${input.invoiceId}`);
@@ -162,10 +160,7 @@ export async function discardOfflinePayment(input: {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'unauthenticated' };
-  // Bridge: discard_offline_payment (000063) isn't in the generated Functions yet.
-  const { error } = await (supabase.rpc as unknown as (
-    fn: string, args: Record<string, unknown>,
-  ) => Promise<{ error: { message: string } | null }>)('discard_offline_payment', {
+  const { error } = await supabase.rpc('discard_offline_payment', {
     p_op_id: input.opId,
     p_invoice_id: input.invoiceId,
     p_amount_usd: input.amountUsd,
