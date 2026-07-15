@@ -20,7 +20,7 @@ async function getClasses(searchParams: { [key: string]: string | undefined }) {
     .select(`
       *,
       discipline:disciplines(id, name_ar, name_en, name_fr),
-      coach:coaches(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
+      coach:coaches(id, is_active, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
       schedules:class_schedules(*)
     `)
     .eq('gym_id', me?.gym_id ?? '')

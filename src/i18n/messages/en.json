@@ -445,6 +445,13 @@
     "discipline": "Discipline",
     "quickActions": "Quick Actions",
     "schedules": "Schedules",
+    "completeness": {
+      "incomplete": "Incomplete",
+      "gap": {
+        "schedule": "No schedule",
+        "coach": "No coach"
+      }
+    },
     "wizard": {
       "title": "New class",
       "close": "Close",
@@ -465,6 +472,7 @@
       "monthlyFee": "Monthly fee (USD)",
       "mo": "mo",
       "feeHint": "Members can register for this class for a monthly fee.",
+      "scheduleGapWarn": "This class has no schedule yet — it won't appear on the timetable. You can add slots now or save and set them later.",
       "status": "Status",
       "statusValues": {
         "scheduled": "Scheduled",
@@ -1538,7 +1546,8 @@
         "notConnected": "Not set up",
         "active": "Active",
         "classesCount": "{n} classes · {m} on page",
-        "addClasses": "Add classes"
+        "addClasses": "Add classes",
+        "classesIncomplete": "{n} need setup"
       },
       "links": {
         "classes": "Classes",

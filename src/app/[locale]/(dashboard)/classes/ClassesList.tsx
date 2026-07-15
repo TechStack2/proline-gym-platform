@@ -24,6 +24,7 @@ import {
 import AddClassModal from './AddClassModal'
 import { cn } from '@/lib/utils'
 import { localizedName } from '@/lib/names'
+import { classCompletenessGaps } from '@/lib/products/completeness'
 
 interface ClassesListProps {
   classes: any[]
@@ -176,7 +177,10 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
 
             {/* Classes Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredClasses.map((classItem) => (
+              {filteredClasses.map((classItem) => {
+                // COMPLETENESS R3: warn-level gaps for this class (no schedule / inactive coach).
+                const gaps = classCompletenessGaps(classItem)
+                return (
                 <Card
                   key={classItem.id}
                   data-testid="class-card"
@@ -208,7 +212,20 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                         </Button>
                       </div>
                     </div>
-                    
+
+                    {/* COMPLETENESS R3: Incomplete badge + one-line what's-missing.
+                        Complete classes render nothing here (no celebratory noise). */}
+                    {gaps.length > 0 && (
+                      <div data-testid="class-incomplete" className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5">
+                        <Badge variant="outline" className="border-amber-300 bg-amber-100 text-amber-800">
+                          {t('completeness.incomplete')}
+                        </Badge>
+                        <span className={cn('text-xs text-amber-700', isRTL && 'font-arabic')}>
+                          {gaps.map((g) => t(`completeness.gap.${g}` as any)).join(' · ')}
+                        </span>
+                      </div>
+                    )}
+
                     {classItem.coach && (
                       <div className="flex items-center text-sm text-muted-foreground mb-2" data-testid="class-coach">
                         <Users className="h-4 w-4 me-2" />
@@ -250,7 +267,8 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                )
+              })}
             </div>
 
             {filteredClasses.length === 0 && (

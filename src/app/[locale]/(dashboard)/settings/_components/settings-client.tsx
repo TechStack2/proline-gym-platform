@@ -64,17 +64,19 @@ type Props = {
   /** M2-E CLASS-HOME: LIVE Classes chip — total active classes · how many on the public page. */
   classesCount?: number;
   classesOnLandingCount?: number;
+  /** COMPLETENESS R3: how many live classes are half-configured (no schedule / inactive coach). */
+  incompleteClassesCount?: number;
 };
 
 type ChipTone = 'ready' | 'todo' | 'neutral';
-function Chip({ tone, children }: { tone: ChipTone; children: React.ReactNode }) {
+function Chip({ tone, children, testid = 'settings-card-chip' }: { tone: ChipTone; children: React.ReactNode; testid?: string }) {
   const styles: Record<ChipTone, string> = {
     ready: 'bg-green-50 text-green-700 border-green-200',
     todo: 'bg-amber-50 text-amber-700 border-amber-200',
     neutral: 'bg-gray-100 text-gray-600 border-gray-200',
   };
   return (
-    <span data-testid="settings-card-chip" className={cn('shrink-0 rounded-full border px-2 py-0.5 text-2xs font-medium', styles[tone])}>
+    <span data-testid={testid} className={cn('shrink-0 rounded-full border px-2 py-0.5 text-2xs font-medium', styles[tone])}>
       {children}
     </span>
   );
@@ -84,7 +86,7 @@ export function SettingsClient({
   locale, gym, rates, plans, disciplines, ptTypes, initialTab,
   whatsappStatus, waiverTemplate, ptNoShowForfeits, ptLateCancelWindowHours,
   showMembership = true, showCamps = true, campsCount = 0,
-  classesCount = 0, classesOnLandingCount = 0,
+  classesCount = 0, classesOnLandingCount = 0, incompleteClassesCount = 0,
 }: Props & { initialTab?: string }) {
   const t = useTranslations('settings');
   const isRTL = locale === 'ar';
@@ -188,8 +190,12 @@ export function SettingsClient({
     // M2-E: Classes card (links to the classes surface). Live chip = N classes · M on page.
     {
       kind: 'link', id: 'classes', icon: GraduationCap, href: `/${locale}/classes`,
+      // COMPLETENESS R3: when some live classes are half-configured, the Manage card
+      // warns "N need setup" instead of the celebratory count — a one-tap route to fix.
       chip: classesCount > 0
-        ? <Chip tone="ready">{t('manage.chips.classesCount', { n: classesCount, m: classesOnLandingCount })}</Chip>
+        ? (incompleteClassesCount > 0
+            ? <Chip tone="todo" testid="settings-classes-incomplete">{t('manage.chips.classesIncomplete', { n: incompleteClassesCount })}</Chip>
+            : <Chip tone="ready">{t('manage.chips.classesCount', { n: classesCount, m: classesOnLandingCount })}</Chip>)
         : <Chip tone="todo">{t('manage.chips.addClasses')}</Chip>,
     },
     {

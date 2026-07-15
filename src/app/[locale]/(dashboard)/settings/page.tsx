@@ -6,6 +6,7 @@ import { SettingsClient } from './_components/settings-client';
 import { getWhatsAppStatus } from './_components/whatsapp-actions';
 import { getWaiverTemplate } from './_components/waiver-actions';
 import { parseEnabledProducts } from '@/lib/gym/products';
+import { isClassComplete } from '@/lib/products/completeness';
 
 type Props = { params: { locale: string }; searchParams?: { tab?: string } };
 
@@ -42,6 +43,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     { count: campsCount },
     { count: classesCount },
     { count: classesOnLandingCount },
+    { data: classesForCompleteness },
   ] = await Promise.all([
     // Exchange rates, ordered by date desc
     supabase.from('exchange_rates').select('*').eq('gym_id', gymId).order('rate_date', { ascending: false }).limit(50),
@@ -66,7 +68,14 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     // classes + how many are shown on the public page (show_on_landing).
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('gym_id', gymId).eq('is_active', true).is('deleted_at', null),
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('gym_id', gymId).eq('is_active', true).eq('show_on_landing', true).is('deleted_at', null),
+    // COMPLETENESS R3: the Manage index Classes card flags how many live classes are
+    // half-configured (no schedule slot / inactive coach). One gym-scoped read with the
+    // schedule + coach-active shape the shared helper needs.
+    supabase.from('classes').select('id, schedules:class_schedules(id), coach:coaches(is_active)').eq('gym_id', gymId).eq('is_active', true).is('deleted_at', null),
   ]);
+
+  // COMPLETENESS R3: count via the shared model (warn-level; never blocks anything).
+  const incompleteClassesCount = (classesForCompleteness ?? []).filter((c) => !isClassComplete(c as any)).length;
 
   return (
     <div className="space-y-6">
@@ -106,6 +115,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
           campsCount={campsCount ?? 0}
           classesCount={classesCount ?? 0}
           classesOnLandingCount={classesOnLandingCount ?? 0}
+          incompleteClassesCount={incompleteClassesCount}
         />
       </Suspense>
     </div>
