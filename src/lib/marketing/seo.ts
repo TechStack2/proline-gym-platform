@@ -16,8 +16,9 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getLandingGym, DEFAULT_GYM_SLUG, resolveLandingContact } from './gym';
-import { SITE_URL, OG_IMAGE_PATH, buildGymJsonLd } from '@/lib/seo';
+import { SITE_URL, LOCALES, OG_IMAGE_PATH, buildGymJsonLd } from '@/lib/seo';
 import { storagePublicUrl } from '@/lib/storage/public-url';
+import { canonicalUrl, hreflangAlternates } from '@/lib/host/canonical';
 
 // og:locale codes (language_TERRITORY) for the three supported locales.
 const OG_LOCALE: Record<string, string> = { ar: 'ar_LB', en: 'en_US', fr: 'fr_FR' };
@@ -90,9 +91,13 @@ export async function getLandingMeta(
     title: isDefault ? title : { absolute: title },
     description,
     applicationName: brandName,
+    // OXY-HOST R4: ABSOLUTE canonical + hreflang on the canonical origin. hreflang
+    // MUST be absolute (Next resolves `canonical` against metadataBase but not the
+    // `languages` map), so build both explicitly. Default gym / SITE_URL origin →
+    // the same absolute URLs it resolved to before.
     alternates: {
-      canonical: `/${locale}`,
-      languages: { ar: '/ar', en: '/en', fr: '/fr', 'x-default': '/en' },
+      canonical: canonicalUrl(origin, locale),
+      languages: hreflangAlternates(origin, LOCALES, 'en'),
     },
     openGraph: {
       type: 'website',
