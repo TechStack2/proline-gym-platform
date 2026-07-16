@@ -1,4 +1,4 @@
-import { test, type BrowserContext, type Page } from '@playwright/test'
+import { test, expect, type BrowserContext, type Page } from '@playwright/test'
 import { execSync } from 'node:child_process'
 
 /**
@@ -58,6 +58,19 @@ test.describe('DEMO-GYM marketing capture', () => {
       stdio: 'inherit',
       timeout: 180_000,
     })
+  })
+
+  // Idempotency proof: run the seed twice more (default, no --reset) and assert the
+  // readiness summary is byte-identical → re-running converges to the same state.
+  test('seed is idempotent (run twice → identical readiness summary)', () => {
+    const runSummary = () => {
+      const out = execSync('node scripts/seed-demo-gym.js', { env: { ...process.env, DEMO_SEED_PASSWORD: PWD }, encoding: 'utf8', timeout: 180_000 })
+      const json = out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1)
+      return JSON.parse(json)
+    }
+    const a = runSummary()
+    const b = runSummary()
+    expect(b).toEqual(a)
   })
 
   for (const loc of ['en', 'ar'] as const) {
