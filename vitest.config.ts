@@ -4,7 +4,9 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // src unit tests + the OXY-HOST Cloudflare Worker's pure-logic tests (plain
+    // ESM, no Workers runtime required — infra/cf-worker/src/*.test.mjs).
+    include: ['src/**/*.test.ts', 'infra/cf-worker/**/*.test.mjs'],
   },
   resolve: {
     alias: {

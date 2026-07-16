@@ -1,0 +1,27 @@
+# OXY-HOST · R3 — Praxella custom-domain reverse proxy (Cloudflare Worker).
+# Streams tenant custom-domain traffic to the Railway origin, adding the identity
+# headers the app trusts (X-Praxella-Host + X-Praxella-Proxy-Key). See README.md.
+
+name = "praxella-proxy"
+main = "src/worker.mjs"
+compatibility_date = "2024-11-01"
+
+# The Railway origin the proxy streams to (the ONLY Railway host — railway-prod-url).
+# A plain var (not a secret); override per environment with `--var` or an [env.*] block.
+[vars]
+ORIGIN_HOST = "proline.up.railway.app"
+
+# PROXY_HOST_SECRET is a SECRET — NEVER committed. Set it out-of-band and use the
+# SAME value as the app's PROXY_HOST_SECRET env on Railway:
+#   npx wrangler secret put PROXY_HOST_SECRET
+# (Absent secret → the app ignores X-Praxella-Host and falls back to the Host
+#  header, so a misconfigured proxy fails safe to DEFAULT rather than trusting it.)
+
+# Routes are attached PER TENANT during onboarding (docs/runbooks/custom-domain.md),
+# not hardcoded here, so one Worker serves every custom domain. Example:
+#   routes = [
+#     { pattern = "proline-gym.com/*",     zone_name = "proline-gym.com" },
+#     { pattern = "www.proline-gym.com/*", zone_name = "proline-gym.com" },
+#   ]
+# (www.<domain> is 301'd to the apex inside the Worker, but the route must still
+#  cover www so the redirect is issued.)

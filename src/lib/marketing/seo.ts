@@ -36,6 +36,11 @@ function splitAddress(addr: string): { streetAddress: string; addressLocality: s
 export async function getLandingMeta(
   locale: string,
   gymSlug: string | undefined,
+  // OXY-HOST R4: the canonical origin (scheme+host) this gym's landing canonicalizes
+  // to — its primary custom domain else its <slug>.praxella.com subdomain, resolved
+  // by the caller (canonicalOrigin). Defaults to SITE_URL → the default gym + any
+  // unmapped host stay byte-identical to pre-OXY-HOST behavior.
+  origin: string = SITE_URL,
 ): Promise<{ metadata: Metadata; jsonLd: Record<string, unknown> }> {
   const [gym, tSeo, tApp] = await Promise.all([
     getLandingGym(gymSlug || DEFAULT_GYM_SLUG),
@@ -56,7 +61,7 @@ export async function getLandingMeta(
   const title = isDefault ? tSeo('title') : perGymTitle;
   const description = isDefault ? tSeo('description') : perGymTitle;
   const ogAlt = isDefault ? tSeo('ogAlt') : brandName;
-  const url = `${SITE_URL}/${locale}`;
+  const url = `${origin}/${locale}`;
 
   // OG image: the gym's hero (or logo) when set, else the committed default card.
   // width/height 1200×630 are only truthful for that committed asset.
@@ -76,7 +81,9 @@ export async function getLandingMeta(
       : [{ url: ogImagePath, alt: ogAlt }];
 
   const metadata: Metadata = {
-    metadataBase: new URL(SITE_URL),
+    // canonical + hreflang + og:url resolve against this base → absolute on the
+    // gym's canonical host. Default gym / unmapped host → SITE_URL (unchanged).
+    metadataBase: new URL(origin),
     // Default → a string title (the app-wide "%s | PRO LINE Gym" template applies,
     // as today → byte-identical). A tenant → absolute, so the Proline brand
     // template doesn't leak into another gym's title.
@@ -115,7 +122,7 @@ export async function getLandingMeta(
     !isDefault && addr
       ? splitAddress(addr)
       : { streetAddress: tSeo('streetAddress'), addressLocality: tSeo('addressLocality') };
-  const jsonLdImage = ogImagePath.startsWith('http') ? ogImagePath : `${SITE_URL}${ogImagePath}`;
+  const jsonLdImage = ogImagePath.startsWith('http') ? ogImagePath : `${origin}${ogImagePath}`;
   const jsonLd = buildGymJsonLd({
     name: gymName || tApp('name'),
     locale,

@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
 import { classifyHost, resolveTenantSlug, vendorRedirectUrl, type HostClass } from '@/lib/host/resolver';
+import { effectiveHost } from '@/lib/host/effective-host';
+import { canonicalOrigin, aliasRedirectTarget } from '@/lib/host/canonical';
+import { getGymPrimaryDomain } from '@/lib/host/primary-domain';
 import { PLATFORM_BRAND } from '@/lib/brand';
 import { getLandingMeta } from '@/lib/marketing/seo';
 import { storagePublicUrl } from '@/lib/storage/public-url';
@@ -42,7 +45,9 @@ type Props = {
 // DEFAULT. Shared by generateMetadata (the <head>) and the body so both agree.
 function classifyRequest(searchParams?: { vendor?: string }): { rawHost: string | null; cls: HostClass } {
   const hdrs = headers();
-  const rawHost = hdrs.get('x-forwarded-host') || hdrs.get('host');
+  // OXY-HOST R2: the trusted host — the Worker's proxy-gated X-Praxella-Host, else
+  // the plain Host. NOT x-forwarded-host (spoofable / edge-overwritten — R1).
+  const rawHost = effectiveHost(hdrs);
   return { rawHost, cls: classifyHost(rawHost, { forceVendor: searchParams?.vendor === '1' }) };
 }
 
@@ -83,7 +88,16 @@ export async function generateMetadata({ params: { locale }, searchParams }: Pro
   }
   // Subdomain gyms keep gym metadata; an unknown subdomain (body redirects) → default.
   const gymSlug = await resolveTenantSlug(rawHost, searchParams?.gym, cls);
-  const { metadata } = await getLandingMeta(locale, gymSlug);
+  // OXY-HOST R4: canonicalize to the gym's primary custom domain (when a reader
+  // supplies one) else self (subdomain / mapped custom domain) else SITE_URL
+  // (default gym / unmapped → byte-identical). Feeds rel=canonical + hreflang + og:url.
+  const primaryDomain = await getGymPrimaryDomain(gymSlug);
+  const origin = canonicalOrigin(rawHost, cls, {
+    mappedByDomain: cls.kind === 'other' && !searchParams?.gym && !!gymSlug,
+    hasGymParam: !!searchParams?.gym,
+    primaryDomain,
+  });
+  const { metadata } = await getLandingMeta(locale, gymSlug, origin);
   return metadata;
 }
 
@@ -112,6 +126,15 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // DEFAULT_GYM_SLUG (Railway/localhost → the demo — nothing regresses). Same
   // resolution as the <head> (generateMetadata) so metadata + JSON-LD match.
   const gymSlug = await resolveTenantSlug(rawHost, searchParams?.gym, cls);
+
+  // OXY-HOST R4: if this request arrived on a NON-primary alias (its subdomain or a
+  // secondary custom domain) of a gym that HAS a primary custom domain, 301 to the
+  // primary (locale preserved). Null primaryDomain (no reader yet / no custom domain)
+  // → no redirect, byte-identical. Runs before any catalog read.
+  if (!searchParams?.gym) {
+    const aliasTarget = aliasRedirectTarget(rawHost, await getGymPrimaryDomain(gymSlug), `/${locale}`);
+    if (aliasTarget) redirect(aliasTarget);
+  }
 
   // GRW-1: gym's active disciplines (anon-readable, 000035) → trial-capture
   // interest chips. One fetch here keeps the chips id-accurate for the RPC.

@@ -115,6 +115,11 @@ jobs:
       WHATSAPP_TOKEN_ENC_KEY: 'ci-test-enc-key-not-a-secret'
       # Run-scoped login password (matches the seed default; a test value, not a secret).
       E2E_PASSWORD: 'E2eTestPass!23'
+      # OXY-HOST: the proxy identity secret. Set here so effectiveHost trusts the
+      # Worker's X-Praxella-Host when the matching X-Praxella-Proxy-Key is sent
+      # (custom-domain resolution tests). A CI test value, NOT a real secret; prod
+      # sets its own PROXY_HOST_SECRET (same value as the CF Worker binding).
+      PROXY_HOST_SECRET: 'e2e-oxy-host-proxy-secret'
       # ISO-DB: disable the per-IP auth rate limit for this run only — 4×5 logins
       # from one CI IP would otherwise 429 the login page. NEVER set in prod.
       E2E_TEST_MODE: '1'
