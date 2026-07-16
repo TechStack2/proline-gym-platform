@@ -3511,7 +3511,8 @@
         "ops": "Operations",
         "portals": "Portals",
         "region": "Built for the region",
-        "demo": "Request a demo"
+        "demo": "Request a demo",
+        "signin": "Sign in"
       },
       "hero": {
         "badge": "Gym & studio operations platform",

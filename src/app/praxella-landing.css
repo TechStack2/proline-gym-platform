@@ -348,3 +348,10 @@ html.dark .px-landing {
 .px-landing .foot-links { display: flex; gap: 22px; flex-wrap: wrap; }
 .px-landing .foot-links a { text-decoration: none; }
 .px-landing .foot-links a:hover { color: #fff; }
+
+/* ── DEMO-GYM SHOT-SWAP ── real demo-gym product screenshots replace the drawn
+   vignettes; the card / phone chrome (.board, .viz, .phone) stays. Class-based
+   sizing only (CSP: no inline style attributes). Per-locale src set in TSX. */
+.px-landing .board-shot { display: block; width: 100%; height: auto; border-radius: 10px; margin-top: 2px; }
+.px-landing .viz-shot { display: block; width: 100%; height: auto; border-radius: 10px; }
+.px-landing .papp-shot { display: block; width: 100%; height: auto; border-radius: 19px; }

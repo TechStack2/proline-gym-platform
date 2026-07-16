@@ -12,6 +12,8 @@ type LandingImageProps = {
   fallbackClassName?: string;
   /** Short label shown inside the placeholder when the file is missing. Defaults to alt. */
   fallbackLabel?: string;
+  /** Load eagerly (above-the-fold). Defaults to lazy — existing callers unchanged. */
+  eager?: boolean;
 };
 
 /**
@@ -25,6 +27,7 @@ export function LandingImage({
   className,
   fallbackClassName,
   fallbackLabel,
+  eager = false,
 }: LandingImageProps) {
   const [errored, setErrored] = useState(false);
 
@@ -51,7 +54,7 @@ export function LandingImage({
     <img
       src={src}
       alt={alt}
-      loading="lazy"
+      loading={eager ? 'eager' : 'lazy'}
       onError={() => setErrored(true)}
       className={className}
     />

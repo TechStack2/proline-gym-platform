@@ -38,6 +38,11 @@
  */
 'use strict';
 
+// @supabase/supabase-js v2 realtime (isows) throws "Node 20 without native WebSocket"
+// when createClient runs on a Node without a global WebSocket. We never open a
+// realtime channel, so a no-op stub satisfies the check (never instantiated).
+if (typeof globalThis.WebSocket === 'undefined') globalThis.WebSocket = class {};
+
 const { createClient } = require('@supabase/supabase-js');
 
 // ─── args / env ────────────────────────────────────────────────────────────────
@@ -341,7 +346,7 @@ async function main() {
   };
   await mk('mtBeg', 'Muay Thai Beginner', 'مواي تاي مبتدئ', 'Muay Thaï Débutant', disc.mt, cSami, 16, 40, '#0E7490', 'Main Floor');
   await mk('mtPro', 'Muay Thai Pro', 'مواي تاي محترفين', 'Muay Thaï Pro', disc.mt, cSami, 12, 55, '#0891B2', 'Main Floor');
-  await mk('bjjK', 'BJJ Kids', 'جوجيتسو أطفال', 'JJB Enfants', disc.bjj, cMaya, 14, 45, '#155E75', 'Studio B');
+  await mk('bjjK', 'BJJ Kids', 'جوجيتسو أطفال', 'JJB Enfants', disc.bjj, cMaya, 12, 45, '#155E75', 'Studio B');
   await mk('bjjA', 'BJJ Adults', 'جوجيتسو كبار', 'JJB Adultes', disc.bjj, cMaya, 20, 50, '#0E7490', 'Studio B');
   await mk('box', 'Boxing Fundamentals', 'أساسيات الملاكمة', 'Boxe Bases', disc.mt, cRani, 18, 45, '#0891B2', 'Ring');
   await mk('fit', 'Conditioning', 'لياقة بدنية', 'Conditionnement', disc.fit, cRani, 24, 35, '#155E75', 'Main Floor');
@@ -402,13 +407,14 @@ async function main() {
       status, auto_renew: true, lapsed_at: lapsed ? isoTs(lapsed) : null,
     });
 
-    // enrollments — varied fill: BJJ Adults FULL, Muay Thai Beginner near-full, rest mid.
+    // enrollments — varied fill: BJJ Kids FULL (12/12), Muay Thai Beginner near-full
+    // (~13/16), the rest mid/light. (lapsed members are not enrolled)
     if (status === 'active') {
       const enroll = [];
-      if (i < 12) enroll.push(cls.bjjA);            // 12 → toward FULL for a mid-cap class
-      if (i < 14) enroll.push(cls.mtBeg);           // ~14/16 near-full
-      if (i >= 2 && i < 10) enroll.push(cls.box);   // mid
-      if (i >= 3 && i < 9) enroll.push(cls.bjjK);   // mid
+      if (i < 12) enroll.push(cls.bjjK);            // 12/12 FULL (cap 12)
+      if (i < 14) enroll.push(cls.mtBeg);           // ~13/16 near-full (cap 16)
+      if (i >= 2 && i < 11) enroll.push(cls.bjjA);  // ~9/20 mid
+      if (i >= 3 && i < 9) enroll.push(cls.box);    // mid
       if (i % 3 === 0) enroll.push(cls.fit);        // light
       if (i % 4 === 0) enroll.push(cls.mtPro);      // light
       await insMany('class_enrollments', enroll.map((c) => ({ class_id: c, student_id: stu.id, is_active: true })));
