@@ -485,14 +485,17 @@ async function main() {
   ]);
 
   // 17. leads pipeline — rows in each stage (feeds the signups board capture).
+  // NOTE: uniform keys across every row — a mixed-key array insert makes PostgREST
+  // fill absent keys with explicit NULL (overriding column DEFAULTs), which trips
+  // leads.created_at NOT NULL. So created_at + converted_* appear on every row.
   const leadRows = await insMany('leads', [
-    { gym_id: gymId, first_name: 'Walid', last_name: 'Nakhle', phone: '+96171000001', source: 'instagram', status: 'new', created_at: isoTs(new Date(now.getTime() - 2 * 3600e3)) },
-    { gym_id: gymId, first_name: 'Carla', last_name: 'Maroun', phone: '+96171000002', source: 'walk_in', status: 'new', created_at: isoTs(new Date(now.getTime() - 5 * 3600e3)) },
-    { gym_id: gymId, first_name: 'Georges', last_name: 'Saadeh', phone: '+96171000003', source: 'referral', status: 'contacted', created_at: isoTs(d(today, -2)) },
-    { gym_id: gymId, first_name: 'Nadine', last_name: 'Khoury', phone: '+96171000004', source: 'instagram', status: 'trial_scheduled', created_at: isoTs(d(today, -3)) },
-    { gym_id: gymId, first_name: 'Bilal', last_name: 'Hamdan', phone: '+96171000005', source: 'phone', status: 'lost', created_at: isoTs(d(today, -6)) },
-    { gym_id: gymId, first_name: 'Joelle', last_name: 'Aractingi', phone: '+96171000010', source: 'instagram', status: 'converted', converted_student_id: students[1], converted_at: isoTs(d(month0, 3)) },
-    { gym_id: gymId, first_name: 'Marc', last_name: 'Doumit', phone: '+96171000011', source: 'walk_in', status: 'converted', converted_student_id: students[3], converted_at: isoTs(d(month0, 7)) },
+    { gym_id: gymId, first_name: 'Walid', last_name: 'Nakhle', phone: '+96171000001', source: 'instagram', status: 'new', converted_student_id: null, converted_at: null, created_at: isoTs(new Date(now.getTime() - 2 * 3600e3)) },
+    { gym_id: gymId, first_name: 'Carla', last_name: 'Maroun', phone: '+96171000002', source: 'walk_in', status: 'new', converted_student_id: null, converted_at: null, created_at: isoTs(new Date(now.getTime() - 5 * 3600e3)) },
+    { gym_id: gymId, first_name: 'Georges', last_name: 'Saadeh', phone: '+96171000003', source: 'referral', status: 'contacted', converted_student_id: null, converted_at: null, created_at: isoTs(d(today, -2)) },
+    { gym_id: gymId, first_name: 'Nadine', last_name: 'Khoury', phone: '+96171000004', source: 'instagram', status: 'trial_scheduled', converted_student_id: null, converted_at: null, created_at: isoTs(d(today, -3)) },
+    { gym_id: gymId, first_name: 'Bilal', last_name: 'Hamdan', phone: '+96171000005', source: 'phone', status: 'lost', converted_student_id: null, converted_at: null, created_at: isoTs(d(today, -6)) },
+    { gym_id: gymId, first_name: 'Joelle', last_name: 'Aractingi', phone: '+96171000010', source: 'instagram', status: 'converted', converted_student_id: students[1], converted_at: isoTs(d(month0, 3)), created_at: isoTs(d(month0, 3)) },
+    { gym_id: gymId, first_name: 'Marc', last_name: 'Doumit', phone: '+96171000011', source: 'walk_in', status: 'converted', converted_student_id: students[3], converted_at: isoTs(d(month0, 7)), created_at: isoTs(d(month0, 7)) },
   ]);
   const nadine = leadRows.find((l) => l.first_name === 'Nadine');
   if (nadine) {
