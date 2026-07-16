@@ -11,6 +11,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { actionError } from '@/lib/errors/action-error';
 import { normalizePhone } from '@/lib/utils/phone';
+import type { OfficeHours } from '@/lib/marketing/office-hours';
 
 export type GymSettingsInput = {
   name_ar?: string
@@ -34,6 +35,18 @@ export type GymSettingsInput = {
   tagline_ar?: string
   tagline_en?: string
   tagline_fr?: string
+  // LANDING-CUSTOM (000078/000101): public contact + socials + map + hours
+  contact_phone?: string
+  contact_whatsapp?: string
+  contact_email?: string
+  instagram_handle?: string
+  facebook_handle?: string
+  tiktok_handle?: string
+  youtube_handle?: string
+  instagram_followers?: string | number | null
+  map_lat?: string | number | null
+  map_lng?: string | number | null
+  office_hours?: OfficeHours | null
 }
 
 const EDITABLE = [
@@ -42,30 +55,54 @@ const EDITABLE = [
   'phone', 'email', 'website', 'timezone', 'currency_preference',
   'city', 'country', 'tva_registration_number',
   'brand_color', 'hero_image_url', 'tagline_ar', 'tagline_en', 'tagline_fr',
+  // LANDING-CUSTOM public string fields
+  'contact_phone', 'contact_whatsapp', 'contact_email',
+  'instagram_handle', 'facebook_handle', 'tiktok_handle', 'youtube_handle',
 ] as const
+
+// LANDING-CUSTOM: numeric public fields (parsed + range-checked, not string-trimmed).
+const NUMERIC: { key: 'instagram_followers' | 'map_lat' | 'map_lng'; min: number; max: number }[] = [
+  { key: 'instagram_followers', min: 0, max: 1_000_000_000 },
+  { key: 'map_lat', min: -90, max: 90 },
+  { key: 'map_lng', min: -180, max: 180 },
+]
 
 export async function saveGymSettings(
   input: GymSettingsInput,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   // Whitelist + trim; '' → NULL so clearing a field truly clears it.
-  const payload: Record<string, string | null> = {}
+  const payload: Record<string, string | number | null | OfficeHours> = {}
   for (const key of EDITABLE) {
     const v = input[key]
     if (v === undefined) continue
     payload[key] = typeof v === 'string' && v.trim() !== '' ? v.trim() : null
   }
+
+  // LANDING-CUSTOM: numeric fields — '' / null → NULL; else a finite in-range number.
+  for (const { key, min, max } of NUMERIC) {
+    const v = input[key]
+    if (v === undefined) continue
+    if (v === null || (typeof v === 'string' && v.trim() === '')) { payload[key] = null; continue }
+    const n = Number(v)
+    if (!Number.isFinite(n) || n < min || n > max) return { ok: false, error: 'invalid_number' }
+    payload[key] = key === 'instagram_followers' ? Math.round(n) : n
+  }
+
+  // LANDING-CUSTOM: office_hours JSONB — object or explicit null (don't render).
+  if (input.office_hours !== undefined) payload.office_hours = input.office_hours ?? null
+
   if (Object.keys(payload).length === 0) return { ok: false, error: 'nothing_to_save' }
 
   // MJ-2: store the gym's contact phone in the canonical shape (display formats it).
-  if (payload.phone) payload.phone = normalizePhone(payload.phone) || null
+  if (typeof payload.phone === 'string') payload.phone = normalizePhone(payload.phone) || null
 
-  if (payload.brand_color && !/^#[0-9a-fA-F]{6}$/.test(payload.brand_color)) {
+  if (typeof payload.brand_color === 'string' && !/^#[0-9a-fA-F]{6}$/.test(payload.brand_color)) {
     return { ok: false, error: 'invalid_color' }
   }
-  if (payload.currency_preference && !['USD', 'LBP', 'BOTH'].includes(payload.currency_preference.toUpperCase())) {
+  if (typeof payload.currency_preference === 'string' && !['USD', 'LBP', 'BOTH'].includes(payload.currency_preference.toUpperCase())) {
     return { ok: false, error: 'invalid_currency' }
   }
-  if (payload.currency_preference) payload.currency_preference = payload.currency_preference.toUpperCase()
+  if (typeof payload.currency_preference === 'string') payload.currency_preference = payload.currency_preference.toUpperCase()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

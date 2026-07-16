@@ -209,7 +209,7 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
       <CampsSection locale={locale} gymSlug={sectionSlug} />
       <FacilitySection locale={locale} contact={contact} isDefault={isDefault} address={address} gymName={branding.name} />
       <TrialCTASection locale={locale} gymSlug={sectionSlug} disciplines={captureDisciplines} />
-      <LandingFooter locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} address={address} contact={contact} isDefault={isDefault} />
+      <LandingFooter locale={locale} gymName={branding.name} logoUrl={branding.logoUrl} address={address} contact={contact} officeHours={gym?.office_hours ?? null} isDefault={isDefault} />
     </>
   );
 }

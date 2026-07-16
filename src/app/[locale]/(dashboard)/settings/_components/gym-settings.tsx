@@ -10,13 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Building2, Mail, Globe, Camera, Loader2, Palette,
-  ImageIcon, type LucideIcon,
+  ImageIcon, Share2, MapPin, Clock, type LucideIcon,
 } from 'lucide-react';
 import { downscaleImage } from '@/components/shared/avatar-upload';
 import { storagePublicUrl } from '@/lib/storage/public-url';
 import { saveGymSettings } from './gym-actions';
 import { TimezonePicker } from './timezone-picker';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
+import { parseMapLink } from '@/lib/marketing/map-link';
+import { DAY_KEYS, defaultOfficeHours, normalizeOfficeHours, hasOfficeHours, type DayKey, type OfficeHours } from '@/lib/marketing/office-hours';
 
 type GymData = {
   id?: string;
@@ -41,6 +43,18 @@ type GymData = {
   tagline_ar?: string;
   tagline_en?: string;
   tagline_fr?: string;
+  // LANDING-CUSTOM (000078/000101): public contact + socials + map + hours
+  contact_phone?: string | null;
+  contact_whatsapp?: string | null;
+  contact_email?: string | null;
+  instagram_handle?: string | null;
+  instagram_followers?: number | null;
+  facebook_handle?: string | null;
+  tiktok_handle?: string | null;
+  youtube_handle?: string | null;
+  map_lat?: number | null;
+  map_lng?: number | null;
+  office_hours?: OfficeHours | null;
 } | null;
 
 type Props = {
@@ -112,17 +126,20 @@ async function uploadGymHero(gymId: string, file: File): Promise<string> {
 
 // ERROR-COPY: keys owned by the gym.err namespace keep their tailored copy; any other
 // key (the stable keys from actionError) falls back to friendly, shared errors.* copy.
-const GYM_ERR_KEYS = new Set(['invalid_color', 'invalid_currency', 'not_allowed', 'nothing_to_save', 'no_gym', 'not_signed_in']);
+const GYM_ERR_KEYS = new Set(['invalid_color', 'invalid_currency', 'invalid_number', 'not_allowed', 'nothing_to_save', 'no_gym', 'not_signed_in']);
 
 // M2-D WIZARD-POLISH: each J5 section saves independently. saveGymSettings already
 // accepts a PARTIAL payload (it skips undefined keys), so a section save sends only its
 // own fields. Field lists mirror the JSX sections below.
-type SectionKey = 'identity' | 'contact' | 'localization' | 'branding';
+type SectionKey = 'identity' | 'contact' | 'localization' | 'branding' | 'publicPage' | 'hours';
 const SECTION_FIELDS: Record<SectionKey, string[]> = {
   identity: ['name_en', 'name_ar', 'name_fr', 'tva_registration_number'],
   contact: ['phone', 'email', 'website', 'address_en', 'address_ar', 'address_fr'],
   localization: ['timezone', 'currency_preference', 'city', 'country'],
   branding: ['brand_color', 'hero_image_url', 'tagline_en', 'tagline_ar', 'tagline_fr'],
+  // publicPage + hours build their payloads directly in saveSection (numbers + JSONB).
+  publicPage: [],
+  hours: [],
 };
 
 export function GymSettings({ gym, locale }: Props) {
@@ -152,9 +169,35 @@ export function GymSettings({ gym, locale }: Props) {
     tagline_ar: gym?.tagline_ar ?? '',
     tagline_en: gym?.tagline_en ?? '',
     tagline_fr: gym?.tagline_fr ?? '',
+    // LANDING-CUSTOM: public contact + socials + map (numbers kept as strings in the form)
+    contact_phone: gym?.contact_phone ?? '',
+    contact_whatsapp: gym?.contact_whatsapp ?? '',
+    contact_email: gym?.contact_email ?? '',
+    instagram_handle: gym?.instagram_handle ?? '',
+    instagram_followers: gym?.instagram_followers != null ? String(gym.instagram_followers) : '',
+    facebook_handle: gym?.facebook_handle ?? '',
+    tiktok_handle: gym?.tiktok_handle ?? '',
+    youtube_handle: gym?.youtube_handle ?? '',
+    map_lat: gym?.map_lat != null ? String(gym.map_lat) : '',
+    map_lng: gym?.map_lng != null ? String(gym.map_lng) : '',
   }));
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  // LANDING-CUSTOM: office-hours editor state (structured; separate from the string form).
+  const [hoursEnabled, setHoursEnabled] = useState(() => hasOfficeHours(gym?.office_hours));
+  const [officeHours, setOfficeHours] = useState<OfficeHours>(() => normalizeOfficeHours(gym?.office_hours));
+  const setDay = (day: DayKey, patch: Partial<OfficeHours[DayKey]>) =>
+    setOfficeHours((prev) => ({ ...prev, [day]: { ...prev[day], ...patch } }));
+  // Map: paste a Google-Maps link → parse → fill lat/lng; a manual lat/lng fallback stays.
+  const [mapLink, setMapLink] = useState('');
+  const [mapParseError, setMapParseError] = useState(false);
+  const applyMapLink = () => {
+    const parsed = parseMapLink(mapLink);
+    if (!parsed) { setMapParseError(true); return; }
+    setMapParseError(false);
+    setForm((prev) => ({ ...prev, map_lat: String(parsed.lat), map_lng: String(parsed.lng) }));
+  };
 
   // M2-D: per-section save state (was one shared save/saved/error).
   const [savingSec, setSavingSec] = useState<SectionKey | null>(null);
@@ -191,11 +234,21 @@ export function GymSettings({ gym, locale }: Props) {
   const saveSection = async (section: SectionKey) => {
     setSavingSec(section); setSavedSec(null); setSectionError(null); setFieldError(null);
     const fb = (val: string, en: string) => val.trim() || en.trim();
-    const payload: Record<string, string> = {};
-    for (const k of SECTION_FIELDS[section]) payload[k] = (form as Record<string, string>)[k];
-    if (section === 'identity') { payload.name_ar = fb(form.name_ar, form.name_en); payload.name_fr = fb(form.name_fr, form.name_en); }
-    if (section === 'contact') { payload.address_ar = fb(form.address_ar, form.address_en); payload.address_fr = fb(form.address_fr, form.address_en); }
-    if (section === 'branding') { payload.tagline_ar = fb(form.tagline_ar, form.tagline_en); payload.tagline_fr = fb(form.tagline_fr, form.tagline_en); }
+    const payload: Record<string, unknown> = {};
+    if (section === 'publicPage') {
+      // Public contact + socials (strings) + map coordinates (parsed by the action).
+      for (const k of ['contact_phone', 'contact_whatsapp', 'contact_email', 'instagram_handle', 'facebook_handle', 'tiktok_handle', 'youtube_handle', 'instagram_followers', 'map_lat', 'map_lng'] as const) {
+        payload[k] = form[k];
+      }
+    } else if (section === 'hours') {
+      // Enabled → the structured object; disabled → NULL (footer keeps its i18n fallback).
+      payload.office_hours = hoursEnabled ? officeHours : null;
+    } else {
+      for (const k of SECTION_FIELDS[section]) payload[k] = (form as Record<string, string>)[k];
+      if (section === 'identity') { payload.name_ar = fb(form.name_ar, form.name_en); payload.name_fr = fb(form.name_fr, form.name_en); }
+      if (section === 'contact') { payload.address_ar = fb(form.address_ar, form.address_en); payload.address_fr = fb(form.address_fr, form.address_en); }
+      if (section === 'branding') { payload.tagline_ar = fb(form.tagline_ar, form.tagline_en); payload.tagline_fr = fb(form.tagline_fr, form.tagline_en); }
+    }
     const res = await saveGymSettings(payload as Parameters<typeof saveGymSettings>[0]);
     setSavingSec(null);
     if (res.ok) {
@@ -446,6 +499,133 @@ export function GymSettings({ gym, locale }: Props) {
           <Input data-testid="gym-tagline-fr" value={form.tagline_fr} onChange={set('tagline_fr')} className="rounded-lg border p-2" />
         </F>
         {saveBar('branding')}
+      </Section>
+
+      {/* ── Public page: contact + socials + map (000078/000101) ── */}
+      <Section icon={Share2} title={t('gym.sectionPublic')} rtl={isRTL} id="public">
+        <p className={cn('-mt-1 text-2xs text-gray-400', isRTL && 'font-arabic')}>{t('gym.publicHint')}</p>
+        {/* Public contact — distinct from the internal ops phone/email above. */}
+        <div className="grid grid-cols-2 gap-3">
+          <F label={t('gym.contactPhone')}>
+            <Input data-testid="gym-contact-phone" dir="ltr" value={form.contact_phone} onChange={set('contact_phone')} className="rounded-lg border p-2" type="tel" placeholder="+961 …" />
+          </F>
+          <F label={t('gym.contactWhatsapp')}>
+            <Input data-testid="gym-contact-whatsapp" dir="ltr" value={form.contact_whatsapp} onChange={set('contact_whatsapp')} className="rounded-lg border p-2" type="tel" placeholder="+961 …" />
+          </F>
+        </div>
+        <F label={t('gym.contactEmail')}>
+          <Input data-testid="gym-contact-email" dir="ltr" value={form.contact_email} onChange={set('contact_email')} className="rounded-lg border p-2" type="email" placeholder="hello@…" />
+        </F>
+        {/* Socials — handles only (no leading @); followers is the hero social-proof count. */}
+        <div className="grid grid-cols-2 gap-3">
+          <F label={t('gym.instagram')} hint={t('gym.handleHint')}>
+            <Input data-testid="gym-instagram" dir="ltr" value={form.instagram_handle} onChange={set('instagram_handle')} className="rounded-lg border p-2" placeholder="prolinegym.lb" />
+          </F>
+          <F label={t('gym.instagramFollowers')}>
+            <Input data-testid="gym-instagram-followers" dir="ltr" inputMode="numeric" value={form.instagram_followers} onChange={set('instagram_followers')} className="rounded-lg border p-2" placeholder="0" />
+          </F>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <F label={t('gym.facebook')} hint={t('gym.handleHint')}>
+            <Input data-testid="gym-facebook" dir="ltr" value={form.facebook_handle} onChange={set('facebook_handle')} className="rounded-lg border p-2" />
+          </F>
+          <F label={t('gym.tiktok')} hint={t('gym.handleHint')}>
+            <Input data-testid="gym-tiktok" dir="ltr" value={form.tiktok_handle} onChange={set('tiktok_handle')} className="rounded-lg border p-2" />
+          </F>
+        </div>
+        <F label={t('gym.youtube')} hint={t('gym.handleHint')}>
+          <Input data-testid="gym-youtube" dir="ltr" value={form.youtube_handle} onChange={set('youtube_handle')} className="rounded-lg border p-2" />
+        </F>
+
+        {/* Map picker — paste a Google-Maps link → parse @lat,lng; manual lat/lng fallback. */}
+        <div className="space-y-2 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+          <label className={cn('flex items-center gap-1.5 text-xs font-medium text-gray-600', isRTL && 'font-arabic')}>
+            <MapPin className="h-3.5 w-3.5 text-primary-600" /> {t('gym.mapLocation')}
+          </label>
+          <p className={cn('text-2xs text-gray-400', isRTL && 'font-arabic')}>{t('gym.mapHint')}</p>
+          <div className="flex gap-2">
+            <Input
+              data-testid="gym-map-link"
+              dir="ltr"
+              value={mapLink}
+              onChange={(e) => { setMapLink(e.target.value); setMapParseError(false); }}
+              className="rounded-lg border p-2"
+              placeholder="https://maps.google.com/…"
+            />
+            <Button type="button" size="sm" variant="outline" data-testid="gym-map-apply" onClick={applyMapLink} className="rounded-lg whitespace-nowrap">
+              {t('gym.mapUseLink')}
+            </Button>
+          </div>
+          {mapParseError && (
+            <p data-testid="gym-map-parse-error" className="text-xs text-red-600">{t('gym.mapParseError')}</p>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <F label={t('gym.mapLat')}>
+              <Input data-testid="gym-map-lat" dir="ltr" inputMode="decimal" value={form.map_lat} onChange={set('map_lat')} className="rounded-lg border p-2" placeholder="33.833104" />
+            </F>
+            <F label={t('gym.mapLng')}>
+              <Input data-testid="gym-map-lng" dir="ltr" inputMode="decimal" value={form.map_lng} onChange={set('map_lng')} className="rounded-lg border p-2" placeholder="35.541895" />
+            </F>
+          </div>
+          {(() => {
+            const lat = Number(form.map_lat), lng = Number(form.map_lng);
+            if (!form.map_lat || !form.map_lng || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            const d = 0.01;
+            const bbox = `${lng - d}%2C${lat - d}%2C${lng + d}%2C${lat + d}`;
+            return (
+              <iframe
+                data-testid="gym-map-preview"
+                title={t('gym.mapLocation')}
+                className="h-40 w-full rounded-lg border"
+                loading="lazy"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`}
+              />
+            );
+          })()}
+        </div>
+        {saveBar('publicPage')}
+      </Section>
+
+      {/* ── Opening hours (000101) ── */}
+      <Section icon={Clock} title={t('gym.sectionHours')} rtl={isRTL} id="hours">
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            data-testid="gym-hours-enabled"
+            checked={hoursEnabled}
+            onChange={(e) => { setHoursEnabled(e.target.checked); if (e.target.checked && !hasOfficeHours(gym?.office_hours)) setOfficeHours(defaultOfficeHours()); }}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+          <span className={cn(isRTL && 'font-arabic')}>{t('gym.hoursEnable')}</span>
+        </label>
+        <p className={cn('text-2xs text-gray-400', isRTL && 'font-arabic')}>{t('gym.hoursHint')}</p>
+        {hoursEnabled && (
+          <div className="space-y-2" data-testid="gym-hours-editor">
+            {DAY_KEYS.map((day) => (
+              <div key={day} className="flex items-center gap-2" data-testid={`gym-hours-row-${day}`}>
+                <span className={cn('w-24 shrink-0 text-sm text-gray-700', isRTL && 'font-arabic')}>{t(`gym.days.${day}` as Parameters<typeof t>[0])}</span>
+                <label className="flex items-center gap-1 text-xs text-gray-500">
+                  <input
+                    type="checkbox"
+                    data-testid={`gym-hours-closed-${day}`}
+                    checked={officeHours[day].closed}
+                    onChange={(e) => setDay(day, { closed: e.target.checked })}
+                    className="h-3.5 w-3.5 rounded border-gray-300"
+                  />
+                  {t('gym.hoursClosed')}
+                </label>
+                {!officeHours[day].closed && (
+                  <div className="flex items-center gap-1.5" dir="ltr">
+                    <Input data-testid={`gym-hours-open-${day}`} type="time" value={officeHours[day].open} onChange={(e) => setDay(day, { open: e.target.value })} className="w-28 rounded-lg border p-1.5" />
+                    <span className="text-gray-400">–</span>
+                    <Input data-testid={`gym-hours-close-${day}`} type="time" value={officeHours[day].close} onChange={(e) => setDay(day, { close: e.target.value })} className="w-28 rounded-lg border p-1.5" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {saveBar('hours')}
       </Section>
     </div>
   );

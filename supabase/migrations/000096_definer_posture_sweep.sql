@@ -87,7 +87,13 @@ DECLARE
     'get_landing_class_fees','get_landing_plans','get_landing_pt',
     'get_landing_schedule','get_landing_images','get_public_gym',
     'get_gym_slug_by_domain','get_camp_spots_left','submit_trial_inquiry',
-    'submit_public_lead'
+    'submit_public_lead',
+    -- 000101 (LANDING-CUSTOM): submit_platform_lead is created later, in 000100,
+    -- and grants itself anon there. Naming it here keeps THIS sweep's canonical
+    -- allowlist correct so a future re-invocation of the sweep does not revoke its
+    -- anon grant. Inert on the from-zero replay (not yet in pg_proc when 000096
+    -- applies) and on prod (000096 already applied, not re-run).
+    'submit_platform_lead'
   ];
   -- RLS policy predicates (must stay executable by whatever role reaches the policy).
   rls_helper text[] := ARRAY[

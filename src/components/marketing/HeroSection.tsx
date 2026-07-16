@@ -44,7 +44,7 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
   const igFollowers = branding.instagramFollowers ?? null;
 
   return (
-    <section className="landing-dark relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="landing-dark relative h-[min(88vh,820px)] min-h-[560px] flex items-center justify-center overflow-hidden">
       {/* Full-bleed gym photo (no baked-in text). Every usable source photo is
           portrait/square (the only landscape file, hero.jpg, has baked text), so
           object-cover crops it to a vertical band — see the wash below for why
@@ -204,8 +204,10 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
         )}
       </div>
 
-      {/* Bottom fade to next section */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent" />
+      {/* Bottom fade INTO the next section — the Affiliations band is bg-secondary-950
+          (dark in both themes), so fade to that, not to gray-50 (which left a
+          light seam against the dark band on wide desktop). */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-secondary-950 to-transparent" />
     </section>
   );
 }

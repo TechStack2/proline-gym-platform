@@ -68,6 +68,22 @@ jobs:
           supabase db reset
           echo "✅ supabase db reset exited 0 — the full migration chain replays clean from zero."
 
+      # TYPES-REGEN TEMP (LANDING-CUSTOM): emit the generated types from the from-zero
+      # schema (incl. 000101's office_hours/tiktok/youtube) as an artifact for the lane
+      # to commit verbatim. Reverted before the slice finalizes.
+      - name: TYPES-REGEN generate + upload database types
+        run: |
+          set -euo pipefail
+          supabase gen types typescript --local > src/types/database.generated.ts
+          echo "--- head ---"; head -12 src/types/database.generated.ts
+          echo "--- office_hours present? ---"; grep -c office_hours src/types/database.generated.ts
+      - name: TYPES-REGEN upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-types
+          path: src/types/database.generated.ts
+          if-no-files-found: error
+
       - name: Assert the replay landed (chain + the Phase-0-flagged risks)
         run: |
           set -euo pipefail
