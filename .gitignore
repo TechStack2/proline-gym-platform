@@ -61,3 +61,6 @@ screenshots/
 
 # DB-migration scratch — never commit
 migrate_out/
+
+# session scratch (never commit — may contain CI logs w/ secrets)
+scratchpad/

@@ -395,6 +395,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DEMO-GYM + SHOT-SWAP: seed the demo gym (scripts/seed-demo-gym.js) into the
+      // local stack, then capture the six real product surfaces (EN+AR) that replace
+      // the landing vignettes. Self-seeds + self-logs-in → no 'setup' dependency.
+      name: 'demo-capture',
+      testMatch: /\/demo-marketing-capture\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // WL-BRANDING-DATA: the marketing landing renders the resolved gym's
       // brand_color via a nonce'd :root{--brand} + var(--brand) classes. Unset →
       // Proline red; a distinct brand_color → that color; no CSP violation. Seeds

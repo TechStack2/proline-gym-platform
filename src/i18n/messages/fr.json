@@ -3511,7 +3511,8 @@
         "ops": "Opérations",
         "portals": "Portails",
         "region": "Pensé pour la région",
-        "demo": "Demander une démo"
+        "demo": "Demander une démo",
+        "signin": "Se connecter"
       },
       "hero": {
         "badge": "Plateforme de gestion des salles & studios",
