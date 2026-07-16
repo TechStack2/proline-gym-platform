@@ -30,9 +30,22 @@ test('PRAXELLA-BRAND-IMPL · ?vendor=1 renders the Praxella design, no tenant ca
     await expect(page.getByTestId('vendor-nav-cta')).toBeVisible()
     await expect(page.getByTestId('vendor-cta')).toBeVisible()
 
+    // DEMO-GYM SHOT-SWAP R4: the vendor 'Sign in' link → the platform login (relative,
+    // host-preserving; the middleware routes a platform admin to /vendor).
+    const signin = page.getByTestId('vendor-nav-signin')
+    await expect(signin).toBeVisible()
+    await expect(signin).toHaveAttribute('href', /\/auth\/login$/)
+
     // Hero week board + verticals strip.
     await expect(page.getByTestId('vendor-board')).toBeVisible()
     await expect(page.getByTestId('vendor-verticals')).toBeVisible()
+
+    // DEMO-GYM SHOT-SWAP R3: the vignette frames now hold REAL demo-gym screenshots
+    // (the drawn mocks are gone). The hero board + the portal phones carry an <img>
+    // sourced from /marketing/demo/<locale>/… (the frame chrome is unchanged).
+    await expect(page.locator('[data-testid="vendor-board"] img')).toHaveAttribute('src', /\/marketing\/demo\/en\/board\./)
+    await expect(page.locator('[data-testid="vendor-phone"][data-portal="member"] img')).toHaveAttribute('src', /\/marketing\/demo\/en\/member\./)
+    await expect(page.locator('[data-testid="vendor-ops-split"][data-op="pt"] img')).toHaveAttribute('src', /\/marketing\/demo\/en\/pt\./)
 
     // Operations trio (signups · schedule · PT) as three alternating splits.
     await expect(page.getByTestId('vendor-ops')).toBeVisible()
