@@ -77,6 +77,8 @@ test('LANDING-CUSTOM · public contact + socials + map + office hours save and r
 
     await vis(owner.page, '[data-testid="gym-save-publicPage"]').first().click()
     await expect(vis(owner.page, '[data-testid="gym-save-ok-publicPage"]').first(), 'public page saved').toBeVisible({ timeout: 15_000 })
+    // Let the save's router.refresh() settle before the next save (avoid a re-render race).
+    await owner.page.waitForLoadState('networkidle').catch(() => {})
 
     // ── Settings → Opening hours ───────────────────────────────────────────────
     await vis(owner.page, '[data-testid="gym-hours-enabled"]').first().check()
@@ -88,36 +90,45 @@ test('LANDING-CUSTOM · public contact + socials + map + office hours save and r
     await owner.page.screenshot({ path: 'screenshots/landing-custom-settings-hours-en.png' }).catch(() => {})
     await vis(owner.page, '[data-testid="gym-save-hours"]').first().click()
     await expect(vis(owner.page, '[data-testid="gym-save-ok-hours"]').first(), 'hours saved').toBeVisible({ timeout: 15_000 })
-
-    // ── Landing render (this gym) ──────────────────────────────────────────────
-    await owner.page.goto(`/en?gym=${encodeURIComponent(SLUG)}`, { waitUntil: 'domcontentloaded' })
-    await expect(owner.page.getByTestId('hero-gym-name'), 'the gym landing renders').toBeVisible({ timeout: 15_000 })
-
-    // R3 — full contact set in the footer.
-    await expect(owner.page.getByTestId('footer-phone'), 'phone renders').toContainText('234 567')
-    await expect(owner.page.getByTestId('footer-phone'), 'phone is tap-to-call').toHaveAttribute('href', /^tel:/)
-    await expect(owner.page.getByTestId('footer-email'), 'email renders').toContainText(email)
-    await expect(owner.page.getByTestId('footer-email')).toHaveAttribute('href', `mailto:${email}`)
-    await expect(owner.page.getByTestId('footer-wa'), 'WhatsApp deep link').toHaveAttribute('href', /wa\.me\//)
-    await expect(owner.page.getByTestId('footer-tiktok'), 'TikTok social link').toHaveAttribute('href', /tiktok\.com\/@lcust\.tt/)
-
-    // R3 — data-driven office hours (localized day names; Monday range; Sunday Closed).
-    const hours = owner.page.getByTestId('footer-hours')
-    await expect(hours, 'office hours render from data').toBeVisible()
-    await expect(hours).toContainText('15:00')
-    await expect(hours).toContainText('22:00')
-    await expect(hours, 'a closed day shows Closed').toContainText('Closed')
-    await hours.scrollIntoViewIfNeeded().catch(() => {})
-    await owner.page.screenshot({ path: 'screenshots/landing-custom-footer-en.png' }).catch(() => {})
-
-    // ── Arabic (RTL) footer render ─────────────────────────────────────────────
-    await owner.page.goto(`/ar?gym=${encodeURIComponent(SLUG)}`, { waitUntil: 'domcontentloaded' })
-    const hoursAr = owner.page.getByTestId('footer-hours')
-    await expect(hoursAr, 'AR office hours render').toBeVisible({ timeout: 15_000 })
-    await expect(hoursAr, 'AR closed label').toContainText('مغلق')
-    await hoursAr.scrollIntoViewIfNeeded().catch(() => {})
-    await owner.page.screenshot({ path: 'screenshots/landing-custom-footer-ar.png' }).catch(() => {})
-  } finally {
     await owner.ctx.close()
+
+    // ── Landing render — a FRESH ANON context (the public landing redirects an
+    //    authenticated staff user into the dashboard; ax2/adm1/wl-landing pattern).
+    //    This also proves the saves PERSISTED (anon reads via get_public_gym). ──
+    const anon = await browser.newContext({ locale: 'en' })
+    const lp = await anon.newPage()
+    try {
+      await lp.goto(`/en?gym=${encodeURIComponent(SLUG)}`, { waitUntil: 'domcontentloaded' })
+      await expect(lp.getByTestId('hero-gym-name'), 'the gym landing renders').toBeVisible({ timeout: 15_000 })
+
+      // R3 — full contact set in the footer.
+      await expect(lp.getByTestId('footer-phone'), 'phone renders').toContainText('234 567')
+      await expect(lp.getByTestId('footer-phone'), 'phone is tap-to-call').toHaveAttribute('href', /^tel:/)
+      await expect(lp.getByTestId('footer-email'), 'email renders').toContainText(email)
+      await expect(lp.getByTestId('footer-email')).toHaveAttribute('href', `mailto:${email}`)
+      await expect(lp.getByTestId('footer-wa'), 'WhatsApp deep link').toHaveAttribute('href', /wa\.me\//)
+      await expect(lp.getByTestId('footer-tiktok'), 'TikTok social link').toHaveAttribute('href', /tiktok\.com\/@lcust\.tt/)
+
+      // R3 — data-driven office hours (Monday range from data; Sunday Closed).
+      const hours = lp.getByTestId('footer-hours')
+      await expect(hours, 'office hours render from data').toBeVisible()
+      await expect(hours).toContainText('15:00')
+      await expect(hours).toContainText('22:00')
+      await expect(hours, 'a closed day shows Closed').toContainText('Closed')
+      await hours.scrollIntoViewIfNeeded().catch(() => {})
+      await lp.screenshot({ path: 'screenshots/landing-custom-footer-en.png' }).catch(() => {})
+
+      // ── Arabic (RTL) footer render ───────────────────────────────────────────
+      await lp.goto(`/ar?gym=${encodeURIComponent(SLUG)}`, { waitUntil: 'domcontentloaded' })
+      const hoursAr = lp.getByTestId('footer-hours')
+      await expect(hoursAr, 'AR office hours render').toBeVisible({ timeout: 15_000 })
+      await expect(hoursAr, 'AR closed label').toContainText('مغلق')
+      await hoursAr.scrollIntoViewIfNeeded().catch(() => {})
+      await lp.screenshot({ path: 'screenshots/landing-custom-footer-ar.png' }).catch(() => {})
+    } finally {
+      await anon.close()
+    }
+  } finally {
+    await owner.ctx.close().catch(() => {})
   }
 })
