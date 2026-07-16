@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getLandingGym, getGymSlugByDomain, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 import { buildGymManifest } from '@/lib/pwa/identity';
+import { effectiveHost } from '@/lib/host/effective-host';
 
 // PWA-IDENTITY: the web-app manifest is fetched at INSTALL time, so per-gym
 // identity needs a dynamic route (a static public/manifest.json can't resolve a
@@ -14,7 +15,7 @@ import { buildGymManifest } from '@/lib/pwa/identity';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request): Promise<NextResponse> {
-  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const host = effectiveHost(request.headers); // OXY-HOST: trusted host (proxy-gated), not x-forwarded-host
   let gym = null;
   try {
     const slug = (await getGymSlugByDomain(host)) || DEFAULT_GYM_SLUG;
@@ -28,7 +29,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       'Content-Type': 'application/manifest+json',
       // Per-request (Host-scoped) → let a shared cache vary and stay short-lived.
       'Cache-Control': 'public, max-age=0, must-revalidate',
-      Vary: 'x-forwarded-host, host',
+      Vary: 'host, x-praxella-host',
     },
   });
 }

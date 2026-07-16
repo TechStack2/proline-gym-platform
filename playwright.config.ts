@@ -327,6 +327,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // OXY-HOST: the proxy-gated trusted host + SEO canonicalization. A proxied
+      // custom domain (X-Praxella-Host + secret key) resolves that gym; the same
+      // header WITHOUT the key is ignored (→ DEFAULT); rel=canonical + hreflang +
+      // robots/sitemap follow the canonical host; unmapped host stays SITE_URL.
+      name: 'oxy-host',
+      dependencies: ['setup'],
+      testMatch: /oxy-host\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // CATALOG-SCOPE (Phase 4 SECURITY): the anon key can no longer bulk-read the
       // catalog tables (000080 dropped the *_public_read policies); the per-gym
       // definer RPCs return only the queried gym's rows. Seeds its own two gyms.

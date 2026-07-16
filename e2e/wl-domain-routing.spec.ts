@@ -4,8 +4,9 @@ import { test, expect, type Browser } from '@playwright/test'
  * WL-DOMAIN-ROUTING — the app resolves which gym a request is for by its DOMAIN.
  *
  * A branded gym (seed_e2e_wl_gym) is mapped to a custom domain (gym_domains). The
- * request Host is mocked via `x-forwarded-host` (the proxied host Cloudflare/
- * Railway/Vercel set). Asserts:
+ * proxied host is mocked via the OXY-HOST proxy channel — X-Praxella-Host +
+ * X-Praxella-Proxy-Key (the CF Worker's identity headers), trusted only because CI
+ * sets PROXY_HOST_SECRET. (x-forwarded-host is no longer trusted — R1/R2.) Asserts:
  *   · mapped domain (no ?gym) → THAT gym's branded landing renders
  *   · ?gym=slug still works (regression)
  *   · an unmapped host (vendor/Railway domain) → the DEFAULT gym (no regression)
@@ -19,6 +20,10 @@ const DOMAIN = `wl-dom-${BASE}.test`.toLowerCase()
 const BRAND = '#22aa33'
 const NAME = 'Domain Dojo'
 const DEFAULT_BRAND = '#cd1419'
+// OXY-HOST: the proxy identity headers (mimic the CF Worker). Trusted because CI
+// sets PROXY_HOST_SECRET to this same value.
+const PROXY_KEY = process.env.PROXY_HOST_SECRET || ''
+const proxyHeaders = (domain: string) => ({ 'x-praxella-host': domain, 'x-praxella-proxy-key': PROXY_KEY })
 
 async function seedWl(slug: string, brand: string, name: string): Promise<string> {
   const res = await fetch(`${URL}/rest/v1/rpc/seed_e2e_wl_gym`, {
@@ -47,8 +52,8 @@ test.beforeAll(async () => {
 })
 
 test('WL-DOMAIN-ROUTING · a mapped custom domain renders THAT gym\'s branded landing (no ?gym)', async ({ browser }) => {
-  // Mock the proxied Host to the mapped domain.
-  const ctx = await browser.newContext({ locale: 'en', extraHTTPHeaders: { 'x-forwarded-host': DOMAIN } })
+  // Mock the proxied Host to the mapped domain (via the OXY-HOST proxy channel).
+  const ctx = await browser.newContext({ locale: 'en', extraHTTPHeaders: proxyHeaders(DOMAIN) })
   const page = await ctx.newPage()
   try {
     await page.goto('/en') // NO ?gym — resolution is by domain

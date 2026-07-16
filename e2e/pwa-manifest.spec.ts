@@ -57,7 +57,10 @@ test.beforeAll(async () => {
 })
 
 test('PWA-IDENTITY · a mapped domain manifest carries THAT gym name/color/icon', async ({ request }) => {
-  const res = await request.get('/manifest.webmanifest', { headers: { 'x-forwarded-host': DOMAIN } })
+  // OXY-HOST: proxied host via the Worker identity channel (not x-forwarded-host).
+  const res = await request.get('/manifest.webmanifest', {
+    headers: { 'x-praxella-host': DOMAIN, 'x-praxella-proxy-key': process.env.PROXY_HOST_SECRET || '' },
+  })
   expect(res.status(), 'the dynamic manifest route responds').toBe(200)
   expect(res.headers()['content-type'], 'served as a web manifest').toContain('application/manifest+json')
   const m = await res.json()
