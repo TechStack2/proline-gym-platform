@@ -81,12 +81,13 @@ test('R4 · rel=canonical + hreflang render on the canonical (custom) host', asy
   // canonical → this gym's custom domain, /en (attribute order-tolerant)
   expect(html, 'canonical points at the custom domain').toMatch(
     new RegExp(`rel="canonical"[^>]*href="https://${DOMAIN}/en"|href="https://${DOMAIN}/en"[^>]*rel="canonical"`))
-  // hreflang alternates for every locale + x-default, absolute on the custom host
+  // hreflang alternates for every locale + x-default, absolute on the custom host.
+  // NOTE: React emits the attribute as hrefLang (camelCase) → match case-insensitively.
   for (const loc of ['ar', 'en', 'fr']) {
     expect(html, `hreflang ${loc} on the custom host`).toMatch(
-      new RegExp(`hreflang="${loc}"[^>]+href="https://${DOMAIN}/${loc}"|href="https://${DOMAIN}/${loc}"[^>]+hreflang="${loc}"`))
+      new RegExp(`hreflang="${loc}"[^>]+href="https://${DOMAIN}/${loc}"|href="https://${DOMAIN}/${loc}"[^>]+hreflang="${loc}"`, 'i'))
   }
-  expect(html, 'x-default present').toMatch(/hreflang="x-default"/)
+  expect(html, 'x-default present').toMatch(/hreflang="x-default"/i)
   // og:url follows the canonical host
   expect(html, 'og:url on the custom host').toMatch(
     new RegExp(`property="og:url"[^>]+content="https://${DOMAIN}/en"`))
