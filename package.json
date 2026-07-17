@@ -40,10 +40,12 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-hook-form": "^7.77.0",
+    "read-excel-file": "^9.3.2",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^2.5.0",
     "tailwindcss-animate": "^1.0.7",
+    "write-excel-file": "^4.1.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

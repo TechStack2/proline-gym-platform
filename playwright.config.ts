@@ -246,6 +246,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // IMPORT-MEMBERS: hermetic own gym — template → upload an Arabic .xlsx fixture →
+      // preview dispositions → import profile-only members (+ guardian) → Lapsed
+      // win-back chip → idempotent re-upload → zero invoices. Own gym so the real
+      // member/guardian writes never perturb the shared run gym.
+      name: 'import-members',
+      dependencies: ['setup'],
+      testMatch: /\/import-members\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // J6 GO-LIVE-PANEL: the /publish page (owner/head_coach). Toggles a seeded
       // class's landing visibility and proves the anon ?gym= landing reflects it
       // (get_landing_schedule's show_on_landing gate) both via the definer RPC and
