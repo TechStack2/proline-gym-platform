@@ -148,6 +148,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PRINT-FIX: the thermal 80mm receipt renders as white paper (no dark bleed),
+      // ships a scoped @page (no browser chrome), and emits a PDF from a dark session.
+      // Reads the shared gym's seeded invoice; owner context via ROLES.owner.storage.
+      name: 'print-receipt',
+      dependencies: ['setup'],
+      testMatch: /print-receipt\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Admin Presentation Repair (Prompt AR): classes/students/coaches/schedule/
       // payments render real normalized data. Owner-only; runs after billing so a
       // settled invoice already exists in the gym (and AR also self-issues one).
