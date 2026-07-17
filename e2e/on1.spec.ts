@@ -52,14 +52,14 @@ async function signIn(page: Page, login: string, password: string) {
 async function completeOnboarding(page: Page, newPassword: string) {
   await expect(page, 'forced to onboarding').toHaveURL(/\/onboarding/, { timeout: 20_000 })
   const w = (tid: string) => page.locator(`[data-testid="${tid}"]:visible`).first()
-  // ERROR-HARDEN #4: a too-short password is rejected APP-SIDE — the step gate
-  // (min 10) keeps Next disabled and shows the localized hint. Probe with a
+  // ERROR-HARDEN #4 / AUTH-EASE: a too-short password is rejected APP-SIDE — the step
+  // gate (min 8) keeps Next disabled and shows the localized hint. Probe with a
   // 6-char password before typing the real one.
   await w('ob-password').fill('abc123')
   await w('ob-password2').fill('abc123')
   await expect(page.locator('[data-testid="wizard-next"]:visible').first(),
-    'a 6-char password cannot advance (app-side min 10)').toBeDisabled()
-  await expect(page.getByText(/At least 10 characters|10 أحرف/), 'the localized too-short hint shows').toBeVisible()
+    'a 6-char password cannot advance (app-side min 8)').toBeDisabled()
+  await expect(page.getByText(/At least 8 characters|8 أحرف/), 'the localized too-short hint shows').toBeVisible()
   await w('ob-password').fill('')
   await w('ob-password2').fill('')
   // PWD-FOCUS guard: type the password ONE CHARACTER AT A TIME (pressSequentially,

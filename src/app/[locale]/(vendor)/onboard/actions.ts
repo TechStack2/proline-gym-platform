@@ -1,7 +1,7 @@
 'use server';
 
-import crypto from 'crypto';
 import { z } from 'zod';
+import { generateTempPassword } from '@/lib/auth/temp-password';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { gymCanonicalOrigin } from '@/lib/host/primary-domain';
@@ -49,7 +49,7 @@ export async function onboardGym(input: unknown): Promise<OnboardResult> {
 
   // 3) Privileged writes (service-role; only reached AFTER the gate passed).
   const admin = createAdminClient();
-  const tempPassword = 'Gp' + crypto.randomBytes(9).toString('base64url').replace(/[^a-zA-Z0-9]/g, '') + '#7a';
+  const tempPassword = generateTempPassword();
 
   // 3a) Gym. Explicit sensible defaults (owner refines in Settings).
   const { data: gym, error: ge } = await admin
