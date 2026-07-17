@@ -844,6 +844,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // TRIAL-SLOTS: trials book real class occurrences / PT availability. Hermetic own
+      // gym — occurrence picker (full→overbook), attendance-sheet TRIAL check-in, PT slot
+      // picker excludes class hours, zero invoices. Needs SUPABASE_SERVICE_ROLE_KEY.
+      name: 'trial-slots',
+      dependencies: ['setup'],
+      testMatch: /trial-slots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ON-1 portal invites: adopts login-less profiles into auth users.
       name: 'on1',
       dependencies: ['setup'],

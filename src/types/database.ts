@@ -3236,6 +3236,7 @@ export type Database = {
           assigned_coach_id: string | null
           class_id: string | null
           created_at: string
+          fee_usd: number
           feedback: string | null
           id: string
           interested: boolean | null
@@ -3250,6 +3251,7 @@ export type Database = {
           assigned_coach_id?: string | null
           class_id?: string | null
           created_at?: string
+          fee_usd?: number
           feedback?: string | null
           id?: string
           interested?: boolean | null
@@ -3264,6 +3266,7 @@ export type Database = {
           assigned_coach_id?: string | null
           class_id?: string | null
           created_at?: string
+          fee_usd?: number
           feedback?: string | null
           id?: string
           interested?: boolean | null
@@ -4063,6 +4066,15 @@ export type Database = {
           sessions_total: number
           status: Database["public"]["Enums"]["pt_session_status_enum"]
           student_name: string
+        }[]
+      }
+      get_class_trials: {
+        Args: { p_class_id: string; p_date: string }
+        Returns: {
+          id: string
+          lead_name: string
+          show_up: boolean
+          status: Database["public"]["Enums"]["trial_status_enum"]
         }[]
       }
       get_coach_trials: {
@@ -4911,7 +4923,9 @@ export type Database = {
       }
       schedule_trial: {
         Args: {
+          p_class_id?: string
           p_coach_id: string
+          p_fee_usd?: number
           p_lead_id: string
           p_scheduled_date: string
           p_scheduled_time: string

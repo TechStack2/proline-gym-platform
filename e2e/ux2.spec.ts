@@ -209,10 +209,11 @@ test('UX-2 · trials loop both outcomes: schedule → coach notified+day surface
       await owner.page.goto(`/en/leads?search=${last}`);
       const card = owner.page.locator(`[data-testid="lead-card"][data-lead-name="UX2 ${last}"]:visible`).first();
       await expect(card).toBeVisible({ timeout: 15_000 });
+      // TRIAL-SLOTS: book today's real Muay Thai occurrence (Sami, every weekday) —
+      // the first "Muay Thai" option is today's, so the trial lands on today's roster.
       await card.getByRole('button', { name: /Schedule Trial/i }).click();
-      await card.getByTestId('trial-date').fill(today());
-      await card.getByTestId('trial-time').selectOption('17:00');
-      await card.getByTestId('trial-coach').selectOption({ label: COACH_EN });
+      const occ = card.getByTestId('trial-occurrence');
+      await occ.selectOption(await occ.locator('option', { hasText: 'Muay Thai' }).first().getAttribute('value') as string);
       await card.getByTestId('trial-confirm').click();
       await expect(card.locator('[data-testid="lead-card"], [data-testid="trial-confirm"]').first()).toBeHidden({ timeout: 15_000 }).catch(() => {});
     }

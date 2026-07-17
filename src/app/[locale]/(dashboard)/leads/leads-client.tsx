@@ -16,11 +16,11 @@ import {
 import { useDebounce } from '@/hooks/useDebounce';
 import { FormWizard } from '@/components/shared/form-wizard';
 import type {
-  Lead, LeadStatus, Discipline, StatusFilter, GymCoach, MembershipPlan, TrialInfo, InviteInfo, LeadSource,
+  Lead, LeadStatus, Discipline, StatusFilter, GymCoach, MembershipPlan, TrialInfo, InviteInfo, LeadSource, ClassOccurrence, PtTrialSlot,
 } from './leads-types';
 import { LEAD_STATUSES, LEAD_SOURCES, LEADS_LIMIT } from './leads-types';
 import { leadStatusUpdateSchema } from '@/lib/validators/leads.schema';
-import { addLead, scheduleTrial, recordTrialOutcome, convertLead } from './actions';
+import { addLead, scheduleTrial, recordTrialOutcome, convertLead, getCoachTrialSlots } from './actions';
 import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Props = {
@@ -30,6 +30,7 @@ type Props = {
   coaches: GymCoach[];
   plans: MembershipPlan[];
   trials: TrialInfo[];
+  occurrences: ClassOccurrence[];
   invites: InviteInfo[];
   gymId: string;
   gymName: string; // WL-TEMPLATES: the caller's gym localized name (for the lead-reply wa.me msg)
@@ -47,7 +48,6 @@ const TRANSLATED_STATUS_MAP = {
   lost: 'status.lost',
 } as const satisfies Record<LeadStatus, string>;
 
-const TIME_SLOTS = ['09:00', '10:00', '11:00', '16:00', '17:00', '18:00', '19:00'];
 
 type ConvertResult = { invoiceNumber: string; totalUsd: number; inviteStatus: string };
 
@@ -58,6 +58,7 @@ export function LeadsClient({
   coaches,
   plans,
   trials,
+  occurrences,
   invites,
   gymId,
   gymName,
@@ -416,14 +417,21 @@ export function LeadsClient({
                       ))}
                     </div>
                   )}
-                  {trial && (
-                    <p className="text-xs text-purple-600 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {t('trial_on')} {trial.scheduled_date}
-                      {trial.scheduled_time ? ` · ${trial.scheduled_time.slice(0, 5)}` : ''}
-                      {trial.status !== 'scheduled' ? ` · ${t(`trial_status.${trial.status}` as Parameters<typeof t>[0])}` : ''}
-                    </p>
-                  )}
+                  {trial && (() => {
+                    // TRIAL-SLOTS R5: the card shows WHAT (class name or PT), WHEN, and
+                    // WITH WHOM — and, once the outcome is in, attended / no-show.
+                    const tc = coaches.find((c) => c.id === trial.assigned_coach_id);
+                    const tcName = tc ? (isRTL ? tc.first_name_ar : tc.first_name_en) : '';
+                    return (
+                      <p className="text-xs text-purple-600 flex items-center gap-1" data-testid="lead-trial-badge" data-trial-status={trial.status}>
+                        <Calendar className="h-3 w-3" />
+                        {trial.class_name || t('trial_pt')} · {trial.scheduled_date}
+                        {trial.scheduled_time ? ` · ${trial.scheduled_time.slice(0, 5)}` : ''}
+                        {tcName ? ` · ${tcName}` : ''}
+                        {trial.status !== 'scheduled' ? ` · ${t(`trial_status.${trial.status}` as Parameters<typeof t>[0])}` : ''}
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 {lead.notes && (
@@ -478,6 +486,7 @@ export function LeadsClient({
                   <TrialPanel
                     lead={lead}
                     coaches={coaches}
+                    occurrences={occurrences}
                     trial={trial}
                     locale={locale}
                     isRTL={isRTL}
@@ -537,10 +546,11 @@ export function LeadsClient({
 // Trial scheduling + outcome panel (T3/T4)
 // ─────────────────────────────────────────────────────────────────────────────
 function TrialPanel({
-  lead, coaches, trial, isRTL, onDone,
+  lead, coaches, occurrences, trial, locale, isRTL, onDone,
 }: {
   lead: Lead;
   coaches: GymCoach[];
+  occurrences: ClassOccurrence[];
   trial?: TrialInfo;
   locale: string;
   isRTL: boolean;
@@ -548,26 +558,48 @@ function TrialPanel({
 }) {
   const t = useTranslations('leads');
   const errText = useErrorText();
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState(TIME_SLOTS[0]);
-  const [coachId, setCoachId] = useState(coaches[0]?.id ?? '');
+  // TRIAL-SLOTS: a trial books something REAL — a class OCCURRENCE or a PT slot in the
+  // coach's availability. Free-range date/time is gone.
+  const [mode, setMode] = useState<'class' | 'pt'>(occurrences.length ? 'class' : 'pt');
+  const [occIdx, setOccIdx] = useState(''); // index into occurrences
+  const [ptCoachId, setPtCoachId] = useState(coaches[0]?.id ?? '');
+  const [ptSlots, setPtSlots] = useState<PtTrialSlot[]>([]);
+  const [ptSlotIdx, setPtSlotIdx] = useState('');
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const coachName = (c: GymCoach) =>
-    isRTL ? c.first_name_ar : c.first_name_en;
+  const coachName = (c: GymCoach) => (isRTL ? c.first_name_ar : c.first_name_en);
+  const dateLbl = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString(dateLocale(locale), { weekday: 'short', month: 'short', day: 'numeric' });
+  const selectedOcc = occIdx !== '' ? occurrences[Number(occIdx)] : undefined;
+
+  const loadSlots = useCallback(async (coachId: string) => {
+    if (!coachId) { setPtSlots([]); return; }
+    setLoadingSlots(true);
+    const res = await getCoachTrialSlots(coachId);
+    setLoadingSlots(false);
+    setPtSlotIdx('');
+    setPtSlots(res.ok ? res.slots : []);
+  }, []);
+
+  useEffect(() => {
+    if (mode === 'pt' && ptCoachId && ptSlots.length === 0 && !loadingSlots) void loadSlots(ptCoachId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const handleSchedule = async () => {
-    if (!date) {
-      toast.error(t('toast.trial_date_required'));
-      return;
+    let scheduledDate = '', scheduledTime = '', coachId = '', classId: string | null = null;
+    if (mode === 'class') {
+      if (!selectedOcc) { toast.error(t('toast.trial_date_required')); return; }
+      scheduledDate = selectedOcc.date; scheduledTime = selectedOcc.startTime;
+      coachId = selectedOcc.coachId ?? ''; classId = selectedOcc.classId;
+    } else {
+      const slot = ptSlotIdx !== '' ? ptSlots[Number(ptSlotIdx)] : undefined;
+      if (!ptCoachId || !slot) { toast.error(t('toast.trial_date_required')); return; }
+      scheduledDate = slot.date; scheduledTime = slot.time; coachId = ptCoachId; classId = null;
     }
     setBusy(true);
-    const res = await scheduleTrial({
-      leadId: lead.id,
-      scheduledDate: date,
-      scheduledTime: time,
-      coachId,
-    });
+    const res = await scheduleTrial({ leadId: lead.id, scheduledDate, scheduledTime, coachId, classId });
     setBusy(false);
     if (res.ok) {
       toast.success(t('toast.trial_scheduled'));
@@ -620,36 +652,57 @@ function TrialPanel({
       ) : (
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-700">{t('schedule_trial_session')}</p>
-          <div className="flex gap-2">
-            <input
-              type="date"
-              data-testid="trial-date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="flex-1 px-2 py-1 text-xs border rounded bg-white text-gray-900"
-            />
-            <select
-              data-testid="trial-time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="px-2 py-1 text-xs border rounded"
-            >
-              {TIME_SLOTS.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+          {/* Class vs PT — a class trial books a real occurrence, a PT trial a real slot. */}
+          <div className="inline-flex overflow-hidden rounded-md border text-xs font-medium">
+            <button type="button" data-testid="trial-mode-class" aria-pressed={mode === 'class'}
+              onClick={() => setMode('class')}
+              className={cn('px-3 py-1', mode === 'class' ? 'bg-primary-600 text-primary-foreground' : 'bg-white')}>{t('trial_kind_class')}</button>
+            <button type="button" data-testid="trial-mode-pt" aria-pressed={mode === 'pt'}
+              onClick={() => setMode('pt')}
+              className={cn('px-3 py-1', mode === 'pt' ? 'bg-primary-600 text-primary-foreground' : 'bg-white')}>{t('trial_kind_pt')}</button>
           </div>
-          <select
-            data-testid="trial-coach"
-            value={coachId}
-            onChange={(e) => setCoachId(e.target.value)}
-            className="w-full px-2 py-1 text-xs border rounded"
-          >
-            <option value="">{t('select_coach')}</option>
-            {coaches.map((c) => (
-              <option key={c.id} value={c.id}>{coachName(c)}</option>
-            ))}
-          </select>
+
+          {mode === 'class' ? (
+            occurrences.length === 0 ? (
+              <p className="text-xs text-gray-500" data-testid="trial-no-occurrences">{t('no_occurrences')}</p>
+            ) : (
+              <>
+                <select data-testid="trial-occurrence" value={occIdx} onChange={(e) => setOccIdx(e.target.value)}
+                  className="w-full px-2 py-1 text-xs border rounded bg-white text-gray-900">
+                  <option value="">{t('pick_occurrence')}</option>
+                  {occurrences.map((o, i) => (
+                    <option key={i} value={i}>
+                      {dateLbl(o.date)} · {o.startTime} · {o.className}{o.coachName ? ` · ${o.coachName}` : ''} · {o.full ? t('trial_full') : t('trial_spots', { count: o.spotsLeft ?? 0 })}
+                    </option>
+                  ))}
+                </select>
+                {selectedOcc?.full && (
+                  <p className="text-xs text-amber-600" data-testid="trial-overbook-hint">{t('overbook_hint')}</p>
+                )}
+              </>
+            )
+          ) : (
+            <>
+              <select data-testid="trial-pt-coach" value={ptCoachId}
+                onChange={(e) => { setPtCoachId(e.target.value); void loadSlots(e.target.value); }}
+                className="w-full px-2 py-1 text-xs border rounded">
+                <option value="">{t('select_coach')}</option>
+                {coaches.map((c) => (<option key={c.id} value={c.id}>{coachName(c)}</option>))}
+              </select>
+              {loadingSlots ? (
+                <p className="text-xs text-gray-500">{t('loading')}</p>
+              ) : ptSlots.length === 0 ? (
+                <p className="text-xs text-gray-500" data-testid="trial-no-pt-slots">{t('no_pt_slots')}</p>
+              ) : (
+                <select data-testid="trial-pt-slot" value={ptSlotIdx} onChange={(e) => setPtSlotIdx(e.target.value)}
+                  className="w-full px-2 py-1 text-xs border rounded bg-white text-gray-900">
+                  <option value="">{t('pick_pt_slot')}</option>
+                  {ptSlots.map((s, i) => (<option key={i} value={i}>{dateLbl(s.date)} · {s.time}</option>))}
+                </select>
+              )}
+            </>
+          )}
+
           <button
             data-testid="trial-confirm"
             disabled={busy}

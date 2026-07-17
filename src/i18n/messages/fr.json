@@ -846,7 +846,15 @@
       "weekdays": "Lun – Ven: 6h00 – 22h00",
       "saturday": "Sam: 8h00 – 20h00",
       "sunday": "Dim: 9h00 – 18h00",
-      "days": { "mon": "Lundi", "tue": "Mardi", "wed": "Mercredi", "thu": "Jeudi", "fri": "Vendredi", "sat": "Samedi", "sun": "Dimanche" },
+      "days": {
+        "mon": "Lundi",
+        "tue": "Mardi",
+        "wed": "Mercredi",
+        "thu": "Jeudi",
+        "fri": "Vendredi",
+        "sat": "Samedi",
+        "sun": "Dimanche"
+      },
       "closed": "Fermé",
       "rights": "Tous droits réservés.",
       "fakih": "Par Fakih Brothers."
@@ -1155,7 +1163,18 @@
       "pt": "PT",
       "camp": "Stage"
     },
-    "convert_as_family": "Configurer en famille →"
+    "convert_as_family": "Configurer en famille →",
+    "trial_pt": "Essai PT",
+    "trial_kind_class": "Cours",
+    "trial_kind_pt": "PT",
+    "no_occurrences": "Aucune séance de cours dans les deux prochaines semaines.",
+    "pick_occurrence": "Choisissez une séance…",
+    "trial_full": "Complet — dépassera la capacité",
+    "trial_spots": "{count} place(s)",
+    "overbook_hint": "Complet — l’essai dépassera la capacité de ce cours (autorisé par le propriétaire).",
+    "no_pt_slots": "Aucun créneau libre pour ce coach dans les deux prochaines semaines.",
+    "pick_pt_slot": "Choisissez un créneau…",
+    "loading": "Chargement…"
   },
   "camps": {
     "title": "Camps",
@@ -1483,7 +1502,15 @@
       "hoursEnable": "Afficher les horaires sur la page publique",
       "hoursHint": "Désactivé, le bloc d'horaires par défaut est affiché.",
       "hoursClosed": "Fermé",
-      "days": { "mon": "Lundi", "tue": "Mardi", "wed": "Mercredi", "thu": "Jeudi", "fri": "Vendredi", "sat": "Samedi", "sun": "Dimanche" }
+      "days": {
+        "mon": "Lundi",
+        "tue": "Mardi",
+        "wed": "Mercredi",
+        "thu": "Jeudi",
+        "fri": "Vendredi",
+        "sat": "Samedi",
+        "sun": "Dimanche"
+      }
     },
     "exchange": {
       "currentRate": "Taux de change actuel",
@@ -1966,7 +1993,12 @@
       "late": "En retard",
       "excused": "Excusé",
       "eligible": "Éligible",
-      "notYet": "Pas encore"
+      "notYet": "Pas encore",
+      "trialsTitle": "Essais sur cette séance",
+      "trialBadge": "Essai",
+      "trialAttended": "Présent",
+      "trialNoShow": "Absent",
+      "trialRecorded": "Résultat de l’essai enregistré"
     },
     "students": {
       "title": "Mes Élèves",
