@@ -8,7 +8,7 @@ import { localizedName, one } from '@/lib/names'
 import { balanceUsd, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
 import {
   User, Phone, Award, CreditCard, CalendarDays, Dumbbell, ClipboardList,
-  DollarSign, ChevronRight, Users,
+  DollarSign, ChevronRight, Users, Clock,
 } from 'lucide-react'
 import { GuardianPanel, type GuardianRow } from './guardian-panel'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
@@ -18,7 +18,7 @@ import { MemberPortalAccess } from './member-portal-access'
 import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel-client'
 import { MembershipCard, type MembershipCardData, type PlanOption } from './membership-card'
 import { getEnabledProducts } from '@/lib/gym/products'
-import { registrationState } from '@/lib/lifecycle/status'
+import { registrationState, membershipState } from '@/lib/lifecycle/status'
 import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
@@ -26,7 +26,7 @@ import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: { locale: string; id: string }; searchParams: { pay?: string; sellpt?: string } }
+type Props = { params: { locale: string; id: string }; searchParams: { pay?: string; sellpt?: string; register?: string } }
 
 // FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
 const Panel = ({ isRTL, icon: Icon, title, testid, id: anchorId, children }: { isRTL: boolean; icon: any; title: string; testid: string; id?: string; children: React.ReactNode }) => (
@@ -405,6 +405,13 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     suspended: 'bg-red-50 text-red-600',
   }
 
+  // R3 win-back: a lapsed/inactive member's last-seen + join date give the staff
+  // context for the outreach call (display only). Lapsed = deactivated OR any
+  // membership read-state is 'lapsed'.
+  const memStates = ((memberships ?? []) as any[]).map((m) => membershipState(m, lcPolicy))
+  const isLapsedMember = !student.is_active || memStates.includes('lapsed')
+  const lastSeenDate = ((attendance ?? []) as any[])[0]?.attendance_date ?? null
+
   return (
     <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="member-360">
       {/* ── Header: identity + belt + guardians ── */}
@@ -437,8 +444,22 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                   {(guardianLinks ?? []).map((g: any) => {
                     const guard = one(g.guardians)
                     const rel = (isRTL ? guard?.relationship_ar : locale === 'fr' ? guard?.relationship_fr : guard?.relationship_en) || ''
-                    return <span key={guard?.id}>{localizedName(one(guard?.profiles), locale)}{rel ? ` (${rel})` : ''}</span>
+                    // GUARDIAN-360: the guardian name jumps to their family page.
+                    return (
+                      <Link key={guard?.id} href={`/${locale}/students/guardians/${guard?.id}`}
+                        data-testid="member-guardian-link" className="text-primary-600 hover:underline">
+                        {localizedName(one(guard?.profiles), locale)}{rel ? ` (${rel})` : ''}
+                      </Link>
+                    )
                   })}
+                </p>
+              )}
+              {/* R3 win-back: lapsed member's last-seen + join date for the outreach call. */}
+              {isLapsedMember && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-red-700" data-testid="member-winback">
+                  <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />
+                    {lastSeenDate ? t('lastSeen', { date: fmtDate(lastSeenDate) }) : t('neverSeen')}</span>
+                  <span>· {t('joined', { date: fmtDate(student.join_date) })}</span>
                 </p>
               )}
             </div>
@@ -488,6 +509,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               memberAge={age}
               locale={locale}
               autoPay={searchParams?.pay === '1'}
+              autoRegister={searchParams?.register === '1'}
             />
           </div>
         </div>

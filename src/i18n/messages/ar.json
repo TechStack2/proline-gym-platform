@@ -272,6 +272,7 @@
     },
     "tabs_active": "النشطون",
     "tabs_prospects": "العملاء المحتملون",
+    "tabs_guardians": "أولياء الأمور",
     "chips": {
       "owing": "عليهم مستحقات",
       "expiring": "تنتهي قريباً",
@@ -2379,6 +2380,9 @@
   },
   "member360": {
     "age": "{age} سنة",
+    "lastSeen": "آخر حضور {date}",
+    "neverSeen": "لا زيارات بعد",
+    "joined": "انضمّ {date}",
     "active": "نشط",
     "inactive": "غير نشط",
     "recordPayment": "تسجيل دفعة",
@@ -2545,12 +2549,54 @@
       "toGuardians": "الذهاب إلى الأولياء"
     },
     "membership": "الاشتراك",
+    "family": "العائلة",
+    "overviewTitle": "عائلتك",
+    "overviewSubtitle": "صفوف الجميع ودوراتهم وأرصدتهم في مكان واحد.",
+    "familyBalance": "رصيد العائلة",
+    "cycleEnds": "يتجدّد",
+    "weekSchedule": "هذا الأسبوع",
+    "today": "اليوم",
+    "settled": "مسدّد",
     "msState": {
       "active": "نشط",
       "expiring": "ينتهي قريباً",
       "overdue": "متأخر",
       "lapsed": "منتهٍ",
-      "frozen": "مجمّد"
+      "frozen": "مجمّد",
+      "none": "لا اشتراك"
+    }
+  },
+  "guardians": {
+    "title": "أولياء الأمور",
+    "searchPlaceholder": "ابحث بالاسم أو الهاتف",
+    "empty": "لا يوجد أولياء أمور بعد — اربط وليّ أمر من ملف عضو.",
+    "noMatch": "لا يوجد وليّ أمر يطابق البحث.",
+    "settled": "مسدّد",
+    "dependents": "{count, plural, =0 {لا معالين} one {معال واحد} two {معالان} few {# معالين} many {# معالًا} other {# معال}}",
+    "backToList": "كل أولياء الأمور",
+    "familyOutstanding": "رصيد العائلة",
+    "alsoMember": "عضو أيضًا",
+    "dependentsHeading": "المعالون",
+    "ownHeading": "اشتراك وليّ الأمر الخاص",
+    "noDependents": "لا يوجد معالون مرتبطون بعد.",
+    "noNextClass": "لا صف قادم",
+    "nextClass": "الصف القادم",
+    "cycleEnd": "نهاية الدورة",
+    "registrations": "التسجيلات",
+    "recordPayment": "تسجيل دفعة",
+    "register": "التسجيل في صف",
+    "viewMember": "فتح ملف العضو",
+    "today": "اليوم",
+    "lastSeen": "آخر حضور {date}",
+    "neverSeen": "لا زيارات مسجّلة",
+    "joined": "انضمّ {date}",
+    "state": {
+      "active": "نشط",
+      "expiring": "ينتهي قريبًا",
+      "overdue": "متأخر",
+      "lapsed": "منقضٍ",
+      "frozen": "مجمّد",
+      "none": "لا اشتراك"
     }
   },
   "promote": {
@@ -2909,6 +2955,7 @@
     "sendRequest": "إرسال الطلب",
     "outstandingTitle": "رصيد مستحق",
     "outstandingCount": "{count} غير مدفوعة — عرض الفواتير",
+    "family": "العائلة",
     "upNext": "التالي"
   },
   "portalBilling": {

@@ -63,7 +63,7 @@ function Modal({ title, onClose, testid, children }: {
 }
 
 export function MemberActions({
-  studentId, memberName, classes, openInvoices, camps = [], memberAge = null, locale, autoPay,
+  studentId, memberName, classes, openInvoices, camps = [], memberAge = null, locale, autoPay, autoRegister,
 }: {
   studentId: string
   memberName: string
@@ -73,6 +73,9 @@ export function MemberActions({
   memberAge?: number | null
   locale: string
   autoPay?: boolean
+  // GUARDIAN-360: `/students/[id]?register=1` opens the register modal on mount —
+  // the per-child "Register" deep-link from the guardian page (mirrors autoPay).
+  autoRegister?: boolean
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('member360.actions')
@@ -85,6 +88,7 @@ export function MemberActions({
   const [campOpen, setCampOpen] = useState(false)
   const [campId, setCampId] = useState('')
   useEffect(() => { if (autoPay) setPayOpen(true) }, [autoPay])
+  useEffect(() => { if (autoRegister) setRegOpen(true) }, [autoRegister])
 
   // ── Register-to-class state ──
   const [classId, setClassId] = useState('')

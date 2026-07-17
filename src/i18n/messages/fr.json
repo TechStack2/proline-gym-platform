@@ -272,6 +272,7 @@
     },
     "tabs_active": "Actifs",
     "tabs_prospects": "Prospects",
+    "tabs_guardians": "Tuteurs",
     "chips": {
       "owing": "Avec impayés",
       "expiring": "Expire bientôt",
@@ -2379,6 +2380,9 @@
   },
   "member360": {
     "age": "{age} ans",
+    "lastSeen": "Vu(e) {date}",
+    "neverSeen": "Aucune visite",
+    "joined": "Inscrit(e) {date}",
     "active": "Actif",
     "inactive": "Inactif",
     "recordPayment": "Enregistrer paiement",
@@ -2545,12 +2549,54 @@
       "toGuardians": "Aller aux tuteurs"
     },
     "membership": "Abonnement",
+    "family": "Famille",
+    "overviewTitle": "Votre famille",
+    "overviewSubtitle": "Les cours, cycles et soldes de chacun au même endroit.",
+    "familyBalance": "Solde de la famille",
+    "cycleEnds": "Renouvelle",
+    "weekSchedule": "Cette semaine",
+    "today": "Aujourd'hui",
+    "settled": "Réglé",
     "msState": {
       "active": "Actif",
       "expiring": "Expire bientôt",
       "overdue": "En retard",
       "lapsed": "Terminé",
-      "frozen": "Gelé"
+      "frozen": "Gelé",
+      "none": "Aucun abonnement"
+    }
+  },
+  "guardians": {
+    "title": "Tuteurs",
+    "searchPlaceholder": "Rechercher par nom ou téléphone",
+    "empty": "Aucun tuteur pour l'instant — liez un parent depuis la fiche d'un membre.",
+    "noMatch": "Aucun tuteur ne correspond à cette recherche.",
+    "settled": "Réglé",
+    "dependents": "{count, plural, =0 {Aucun dépendant} one {# dépendant} other {# dépendants}}",
+    "backToList": "Tous les tuteurs",
+    "familyOutstanding": "Solde de la famille",
+    "alsoMember": "Aussi membre",
+    "dependentsHeading": "Dépendants",
+    "ownHeading": "L'abonnement propre du tuteur",
+    "noDependents": "Aucun dépendant lié pour l'instant.",
+    "noNextClass": "Aucun cours à venir",
+    "nextClass": "Prochain cours",
+    "cycleEnd": "Fin du cycle",
+    "registrations": "Inscriptions",
+    "recordPayment": "Enregistrer un paiement",
+    "register": "Inscrire à un cours",
+    "viewMember": "Ouvrir la fiche membre",
+    "today": "Aujourd'hui",
+    "lastSeen": "Vu(e) {date}",
+    "neverSeen": "Aucune visite enregistrée",
+    "joined": "Inscrit(e) {date}",
+    "state": {
+      "active": "Actif",
+      "expiring": "Expire bientôt",
+      "overdue": "En retard",
+      "lapsed": "Expiré",
+      "frozen": "Gelé",
+      "none": "Aucun abonnement"
     }
   },
   "promote": {
@@ -2909,6 +2955,7 @@
     "sendRequest": "Envoyer la demande",
     "outstandingTitle": "Solde impayé",
     "outstandingCount": "{count} impayé(s) — voir la facturation",
+    "family": "Famille",
     "upNext": "À venir"
   },
   "portalBilling": {

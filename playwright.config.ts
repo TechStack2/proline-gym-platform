@@ -203,6 +203,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // GUARDIAN-360 + FAMILY-VIEW (findings 12+13): staff Guardians list/detail +
+      // the portal family overview, on a HERMETIC own gym (Rana extended to 3 kids
+      // incl a lapsed one + dual-hat). Seeds via service role; own contexts per role.
+      name: 'guardian-360',
+      dependencies: ['setup'],
+      testMatch: /guardian-360\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Public landing (Prompt LP): a LOGGED-OUT (anon) visitor sees the run gym's
       // live catalog (disciplines/schedule/pricing) + brand via the 000035 anon
       // public-read policies. Creates its own anon context (no storageState).

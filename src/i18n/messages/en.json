@@ -272,6 +272,7 @@
     },
     "tabs_active": "Active",
     "tabs_prospects": "Prospects",
+    "tabs_guardians": "Guardians",
     "chips": {
       "owing": "Owing",
       "expiring": "Expiring soon",
@@ -2379,6 +2380,9 @@
   },
   "member360": {
     "age": "{age} yrs",
+    "lastSeen": "Last seen {date}",
+    "neverSeen": "No visits yet",
+    "joined": "Joined {date}",
     "active": "Active",
     "inactive": "Inactive",
     "recordPayment": "Record payment",
@@ -2545,12 +2549,54 @@
       "toGuardians": "Go to guardians"
     },
     "membership": "Membership",
+    "family": "Family",
+    "overviewTitle": "Your family",
+    "overviewSubtitle": "Everyone's classes, cycles and balances in one place.",
+    "familyBalance": "Family balance",
+    "cycleEnds": "Renews",
+    "weekSchedule": "This week",
+    "today": "Today",
+    "settled": "Settled",
     "msState": {
       "active": "Active",
       "expiring": "Expiring soon",
       "overdue": "Overdue",
       "lapsed": "Ended",
-      "frozen": "Frozen"
+      "frozen": "Frozen",
+      "none": "No membership"
+    }
+  },
+  "guardians": {
+    "title": "Guardians",
+    "searchPlaceholder": "Search by name or phone",
+    "empty": "No guardians yet — link a parent from a member's file.",
+    "noMatch": "No guardian matches that search.",
+    "settled": "Settled",
+    "dependents": "{count, plural, =0 {No dependents} one {# dependent} other {# dependents}}",
+    "backToList": "All guardians",
+    "familyOutstanding": "Family balance",
+    "alsoMember": "Also a member",
+    "dependentsHeading": "Dependents",
+    "ownHeading": "This guardian's own membership",
+    "noDependents": "No dependents linked yet.",
+    "noNextClass": "No upcoming class",
+    "nextClass": "Next class",
+    "cycleEnd": "Cycle ends",
+    "registrations": "Registrations",
+    "recordPayment": "Record payment",
+    "register": "Register to class",
+    "viewMember": "Open member file",
+    "today": "Today",
+    "lastSeen": "Last seen {date}",
+    "neverSeen": "No visits recorded",
+    "joined": "Joined {date}",
+    "state": {
+      "active": "Active",
+      "expiring": "Expiring",
+      "overdue": "Overdue",
+      "lapsed": "Lapsed",
+      "frozen": "Frozen",
+      "none": "No membership"
     }
   },
   "promote": {
@@ -2909,6 +2955,7 @@
     "sendRequest": "Send request",
     "outstandingTitle": "Outstanding balance",
     "outstandingCount": "{count} unpaid — view billing",
+    "family": "Family",
     "upNext": "Up next"
   },
   "portalBilling": {

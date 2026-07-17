@@ -90,13 +90,15 @@ test.describe.serial('MEMBER360-PORTAL · member drillable 360 hub', () => {
 
   test('guardian kid-switcher (B3) + waivers + camps intact', async ({ browser }) => {
     test.setTimeout(120_000)
-    // Guardian (B3): parent → defaults to a kid → switcher + kid view render.
+    // Guardian (B3): a 2+-kid parent leads with the family overview (GUARDIAN-360);
+    // the kid view + switcher are one tap away (no regression).
     const guardian = await ctxFor(browser, 'parent')
     try {
       await guardian.page.goto('/en/portal')
-      await expect(guardian.page, 'guardian-only → defaults to a kid').toHaveURL(/\/portal\?kid=/, { timeout: 15_000 })
+      await expect(vis(guardian.page, '[data-testid="family-overview"]'), 'family overview leads').toBeVisible({ timeout: 15_000 })
       await expect(vis(guardian.page, '[data-testid="kid-switcher"]').first(), 'kid-switcher renders').toBeVisible()
-      await expect(vis(guardian.page, '[data-testid="kid-dashboard"]').first(), 'the selected kid view renders').toBeVisible()
+      await vis(guardian.page, '[data-testid="kid-chip"]').first().click()
+      await expect(vis(guardian.page, '[data-testid="kid-dashboard"]').first(), 'the selected kid view renders').toBeVisible({ timeout: 15_000 })
       await expect(vis(guardian.page, '[data-testid="kid-name"]').first(), 'kid name renders').toBeVisible()
     } finally {
       await guardian.ctx.close()
