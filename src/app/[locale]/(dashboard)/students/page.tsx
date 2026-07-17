@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { StudentList } from './components/student-list'
@@ -118,15 +118,19 @@ export default async function StudentsPage({
   const today = new Date().toISOString().slice(0, 10)
   const in7d = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10)
   const ago30 = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10)
-  const [{ data: expRows }, { data: owingRows }, { data: guardRows }] = ids.length
+  const [{ data: expRows }, { data: owingRows }, { data: guardRows }, { data: activeMemRows }] = ids.length
     ? await Promise.all([
         supabase.from('student_memberships').select('student_id, end_date')
           .in('student_id', ids).eq('status', 'active').gte('end_date', today).lte('end_date', in7d),
         supabase.from('invoices').select('student_id')
           .eq('gym_id', gymId).in('student_id', ids).in('status', ['pending', 'partial', 'overdue']),
         supabase.from('guardian_students').select('student_id').in('student_id', ids),
+        // IMPORT-MEMBERS R4 (Lapsed win-back): who has an ACTIVE membership NOW
+        // (status='active' and not past end_date) → everyone else is lapsed/none.
+        supabase.from('student_memberships').select('student_id')
+          .in('student_id', ids).eq('status', 'active').or(`end_date.is.null,end_date.gte.${today}`),
       ])
-    : [{ data: [] }, { data: [] }, { data: [] }]
+    : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }]
   const expiringBy = new Map<string, string>()
   for (const r of (expRows ?? []) as any[]) {
     const cur = expiringBy.get(r.student_id)
@@ -134,6 +138,7 @@ export default async function StudentsPage({
   }
   const owingSet = new Set(((owingRows ?? []) as any[]).map((r) => r.student_id))
   const guardianSet = new Set(((guardRows ?? []) as any[]).map((r) => r.student_id))
+  const activeMemberSet = new Set(((activeMemRows ?? []) as any[]).map((r) => r.student_id))
   const isMinor = (s: any) => {
     const dob = (Array.isArray(s.profiles) ? s.profiles[0] : s.profiles)?.date_of_birth
     return dob ? (Date.now() - new Date(dob).getTime()) / (365.25 * 864e5) < 18 : false
@@ -143,6 +148,9 @@ export default async function StudentsPage({
     expiring: (s) => expiringBy.has(s.id),
     noguardian: (s) => isMinor(s) && !guardianSet.has(s.id),
     recent: (s) => s.join_date >= ago30,
+    // IMPORT-MEMBERS R4: no active membership → the win-back list (imported ex-members
+    // land here since they have zero memberships).
+    lapsed: (s) => !activeMemberSet.has(s.id),
   }
   const chip = searchParams.chip && chipPredicates[searchParams.chip] ? searchParams.chip : ''
   const visibleStudents = chip ? (students ?? []).filter(chipPredicates[chip]) : (students ?? [])
@@ -191,6 +199,12 @@ export default async function StudentsPage({
         </h1>
         <div className="flex items-center gap-3">
           {Tabs}
+          <Link href={`/${locale}/students/import`} data-testid="import-members">
+            <Button variant="outline">
+              <Upload className="w-4 h-4 ms-2" />
+              {t('import_members')}
+            </Button>
+          </Link>
           <Link href={`/${locale}/students/add`}>
             <Button>
               <Plus className="w-4 h-4 ms-2" />
@@ -209,8 +223,8 @@ export default async function StudentsPage({
 
       {/* FD-1 filter chips — “who needs attention” without opening files */}
       <div className="flex flex-wrap gap-2" data-testid="member-chips">
-        {(['owing', 'expiring', 'noguardian', 'recent'] as const)
-          .filter((k) => k !== 'expiring' || products.membership)
+        {(['owing', 'expiring', 'noguardian', 'recent', 'lapsed'] as const)
+          .filter((k) => (k !== 'expiring' && k !== 'lapsed') || products.membership)
           .map((k) => (
           <Link
             key={k}

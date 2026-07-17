@@ -205,6 +205,7 @@
   "students": {
     "title": "Students",
     "add_student": "Add Student",
+    "import_members": "Import members",
     "edit_student": "Edit Student",
     "student_info": "Student Information",
     "profile_info": "Profile Information",
@@ -275,7 +276,8 @@
       "owing": "Owing",
       "expiring": "Expiring soon",
       "noguardian": "No guardian (minors)",
-      "recent": "Joined ≤30d"
+      "recent": "Joined ≤30d",
+      "lapsed": "Lapsed (win-back)"
     },
     "badges": {
       "expiring": "expiring ≤7d",
@@ -290,6 +292,91 @@
       "active": "Active",
       "expiring": "Expiring",
       "lapsed": "Lapsed"
+    },
+    "import": {
+      "title": "Import members",
+      "subtitle": "Bulk-load members from a spreadsheet — including lapsed ex-members for win-back. Imported members are profile-only: no membership, no billing.",
+      "back": "Back to members",
+      "step1_title": "1. Download the template",
+      "step1_help": "Fill it in Excel. Arabic and English names are both supported. Keep the column order; the header row and the example row are ignored on import.",
+      "download_template": "Download template (.xlsx)",
+      "step2_title": "2. Upload your filled file",
+      "step2_help": "Parsed in your browser — nothing is sent until you review the preview and press Import.",
+      "choose_file": "Choose file (.xlsx)",
+      "col_name": "Name",
+      "col_phone": "Phone",
+      "col_disposition": "What will happen",
+      "include": "Include this row",
+      "import_n": "Import {n} members",
+      "blocked_by_errors": "Fix or exclude the error rows before importing.",
+      "done_title": "Import complete",
+      "done_summary": "Created {created} · guardians linked {linked} · skipped {skipped} · failed {failed}.",
+      "view_lapsed": "View the win-back list",
+      "columns": {
+        "first_name_en": "First name (EN)",
+        "last_name_en": "Last name (EN)",
+        "first_name_ar": "First name (AR)",
+        "last_name_ar": "Last name (AR)",
+        "phone": "Phone",
+        "birthdate": "Birthdate",
+        "guardian_name": "Guardian name",
+        "guardian_phone": "Guardian phone",
+        "status": "Status",
+        "last_seen": "Last seen",
+        "notes": "Notes"
+      },
+      "colhelp": {
+        "first_name_en": "Latin first name",
+        "last_name_en": "Latin last name",
+        "first_name_ar": "Arabic first name",
+        "last_name_ar": "Arabic last name",
+        "phone": "Required — the duplicate key. Any format (03…, +961…)",
+        "birthdate": "Optional — YYYY-MM-DD",
+        "guardian_name": "Optional — for minors",
+        "guardian_phone": "Optional — links an existing guardian by phone, or creates one",
+        "status": "active or lapsed (default lapsed) — affects the member list only, never billing",
+        "last_seen": "Optional — YYYY-MM-DD",
+        "notes": "Optional"
+      },
+      "summary": {
+        "create": "Create",
+        "linkGuardian": "Link guardian",
+        "skip": "Skip",
+        "error": "Error"
+      },
+      "disposition": {
+        "create": "Will create",
+        "create_link_guardian": "Create + link guardian",
+        "duplicate_skip": "Duplicate — skip",
+        "error": "Error",
+        "example": "Example row — ignored"
+      },
+      "reason": {
+        "missing_phone": "phone is required",
+        "invalid_phone": "phone is not valid",
+        "missing_name": "a name is required",
+        "invalid_birthdate": "birthdate must be YYYY-MM-DD",
+        "invalid_last_seen": "last seen must be YYYY-MM-DD",
+        "invalid_guardian_phone": "guardian phone is not valid",
+        "duplicate_in_file": "same phone appears earlier in the file",
+        "existing_member": "already a member",
+        "will_link_guardian": "guardian will be linked",
+        "example_row": "the template example"
+      },
+      "toast": {
+        "imported": "Imported {n} members"
+      },
+      "errors": {
+        "template_failed": "Couldn't generate the template",
+        "parse_failed": "Couldn't read that file — use the .xlsx template",
+        "empty_file": "No rows found in that file",
+        "nothing_to_import": "No importable rows selected",
+        "import_failed": "The import failed — please retry",
+        "unauthenticated": "You are signed out — sign in again",
+        "no_gym": "Your account has no gym",
+        "not_allowed": "Only an owner or receptionist can import members",
+        "too_many_rows": "Too many rows — split the file (max 1000)"
+      }
     }
   },
   "coaches": {

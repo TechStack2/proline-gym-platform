@@ -205,6 +205,7 @@
   "students": {
     "title": "Élèves",
     "add_student": "Ajouter un élève",
+    "import_members": "Importer des membres",
     "edit_student": "Modifier l'élève",
     "student_info": "Informations de l'élève",
     "profile_info": "Informations du profil",
@@ -275,7 +276,8 @@
       "owing": "Avec impayés",
       "expiring": "Expire bientôt",
       "noguardian": "Sans tuteur (mineurs)",
-      "recent": "Inscrit ≤30 j"
+      "recent": "Inscrit ≤30 j",
+      "lapsed": "Inactifs (à reconquérir)"
     },
     "badges": {
       "expiring": "expire ≤7 j",
@@ -290,6 +292,91 @@
       "active": "Actif",
       "expiring": "Bientôt expiré",
       "lapsed": "Expiré"
+    },
+    "import": {
+      "title": "Importer des membres",
+      "subtitle": "Chargez des membres en masse depuis un tableur — y compris les ex-membres inactifs à reconquérir. Les membres importés sont en profil seul : sans adhésion, sans facturation.",
+      "back": "Retour aux membres",
+      "step1_title": "1. Téléchargez le modèle",
+      "step1_help": "Remplissez-le dans Excel. Les noms en arabe et en anglais sont pris en charge. Conservez l'ordre des colonnes ; la ligne d'en-tête et la ligne d'exemple sont ignorées à l'import.",
+      "download_template": "Télécharger le modèle (.xlsx)",
+      "step2_title": "2. Téléversez votre fichier rempli",
+      "step2_help": "Analysé dans votre navigateur — rien n'est envoyé avant que vous validiez l'aperçu et cliquiez sur Importer.",
+      "choose_file": "Choisir un fichier (.xlsx)",
+      "col_name": "Nom",
+      "col_phone": "Téléphone",
+      "col_disposition": "Ce qui se passera",
+      "include": "Inclure cette ligne",
+      "import_n": "Importer {n} membres",
+      "blocked_by_errors": "Corrigez ou excluez les lignes en erreur avant d'importer.",
+      "done_title": "Import terminé",
+      "done_summary": "Créés {created} · tuteurs liés {linked} · ignorés {skipped} · échoués {failed}.",
+      "view_lapsed": "Voir la liste de reconquête",
+      "columns": {
+        "first_name_en": "Prénom (EN)",
+        "last_name_en": "Nom (EN)",
+        "first_name_ar": "Prénom (AR)",
+        "last_name_ar": "Nom (AR)",
+        "phone": "Téléphone",
+        "birthdate": "Date de naissance",
+        "guardian_name": "Nom du tuteur",
+        "guardian_phone": "Téléphone du tuteur",
+        "status": "Statut",
+        "last_seen": "Dernière visite",
+        "notes": "Notes"
+      },
+      "colhelp": {
+        "first_name_en": "Prénom en latin",
+        "last_name_en": "Nom en latin",
+        "first_name_ar": "Prénom en arabe",
+        "last_name_ar": "Nom en arabe",
+        "phone": "Obligatoire — la clé de doublon. Tout format (03…, +961…)",
+        "birthdate": "Optionnel — AAAA-MM-JJ",
+        "guardian_name": "Optionnel — pour les mineurs",
+        "guardian_phone": "Optionnel — lie un tuteur existant par téléphone, ou en crée un",
+        "status": "active ou lapsed (défaut lapsed) — n'affecte que la liste des membres, jamais la facturation",
+        "last_seen": "Optionnel — AAAA-MM-JJ",
+        "notes": "Optionnel"
+      },
+      "summary": {
+        "create": "Créer",
+        "linkGuardian": "Lier tuteur",
+        "skip": "Ignorer",
+        "error": "Erreur"
+      },
+      "disposition": {
+        "create": "Sera créé",
+        "create_link_guardian": "Créer + lier tuteur",
+        "duplicate_skip": "Doublon — ignoré",
+        "error": "Erreur",
+        "example": "Ligne d'exemple — ignorée"
+      },
+      "reason": {
+        "missing_phone": "téléphone obligatoire",
+        "invalid_phone": "téléphone invalide",
+        "missing_name": "un nom est requis",
+        "invalid_birthdate": "la date de naissance doit être AAAA-MM-JJ",
+        "invalid_last_seen": "la dernière visite doit être AAAA-MM-JJ",
+        "invalid_guardian_phone": "téléphone du tuteur invalide",
+        "duplicate_in_file": "le même téléphone apparaît plus haut dans le fichier",
+        "existing_member": "déjà membre",
+        "will_link_guardian": "le tuteur sera lié",
+        "example_row": "l'exemple du modèle"
+      },
+      "toast": {
+        "imported": "{n} membres importés"
+      },
+      "errors": {
+        "template_failed": "Impossible de générer le modèle",
+        "parse_failed": "Impossible de lire ce fichier — utilisez le modèle .xlsx",
+        "empty_file": "Aucune ligne dans ce fichier",
+        "nothing_to_import": "Aucune ligne importable sélectionnée",
+        "import_failed": "L'import a échoué — réessayez",
+        "unauthenticated": "Vous êtes déconnecté — reconnectez-vous",
+        "no_gym": "Votre compte n'a pas de salle",
+        "not_allowed": "Seul un propriétaire ou réceptionniste peut importer des membres",
+        "too_many_rows": "Trop de lignes — divisez le fichier (max 1000)"
+      }
     }
   },
   "coaches": {
