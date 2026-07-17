@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { User, Phone, CalendarDays, Shield, Award, CreditCard, AlertCircle } from 'lucide-react'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { ProfileSelfServe } from './profile-self-serve'
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 
 type Props = { params: { locale: string } }
 
@@ -101,6 +102,15 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
         <DetailRow icon={CalendarDays} label={t('joined')} value={student?.join_date ? new Date(student.join_date).toLocaleDateString(dateLocale(locale)) : '—'} />
         <DetailRow icon={Shield} label={t('emergency')} value={student?.emergency_contact_name ? `${student.emergency_contact_name} (${student.emergency_contact_phone})` : t('notSet')} />
         {student?.medical_notes && <DetailRow icon={AlertCircle} label={t('medical')} value={student.medical_notes} />}
+      </div>
+
+      {/* PWA-BASICS R1: always-editable INTERFACE-language control for members
+          (the portal shell's device switcher wasn't reliably reachable on mobile). */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
+        </h3>
+        <LanguageSwitcher locale={locale} variant="inline" />
       </div>
 
       {/* MJ-3: member self-serve — direct contact/locale save + safety change request. */}

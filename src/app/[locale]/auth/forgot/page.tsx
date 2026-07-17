@@ -6,9 +6,11 @@
  * `supabase.auth.resetPasswordForEmail` with a `redirectTo` back to /auth/reset
  * (the update-password surface added in the same slice). The confirmation copy is
  * GENERIC regardless of whether the email maps to an account (no enumeration
- * oracle) — GoTrue itself only sends when the account exists. The absolute
- * redirect origin prefers NEXT_PUBLIC_APP_URL (the configured public URL behind a
- * proxy) and falls back to the live request origin.
+ * oracle) — GoTrue itself only sends when the account exists. INVITE-HOST: the
+ * reset link must land back on the SAME host the user is on (a tenant's custom
+ * domain resolves to itself), so the redirect origin prefers the live request
+ * origin; NEXT_PUBLIC_APP_URL is only a build-time fallback (a single env URL would
+ * misroute every custom-domain tenant to one host).
  */
 import { useState } from 'react'
 import Link from 'next/link'
@@ -34,8 +36,8 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
     if (!email.trim() || loading) return
     setLoading(true)
     const origin =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (typeof window !== 'undefined' ? window.location.origin : '')
+      (typeof window !== 'undefined' ? window.location.origin : '') ||
+      process.env.NEXT_PUBLIC_APP_URL || ''
     try {
       await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${origin}/${locale}/auth/reset`,

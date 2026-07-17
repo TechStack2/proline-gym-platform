@@ -1,5 +1,6 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import { CoachProfileEditor } from './CoachProfileEditor'
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { storagePublicUrl } from '@/lib/storage/public-url'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
@@ -213,6 +214,16 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* PWA-BASICS R1: an always-editable INTERFACE-language control. The coach shell
+          previously exposed no language switcher (only the read-only messaging
+          preference above), so a coach stuck on the wrong UI language had no way out. */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
+        <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider', isRTL && 'font-arabic')}>
+          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
+        </h3>
+        <LanguageSwitcher locale={locale} variant="inline" />
       </div>
 
       {/* Hourly Rate */}

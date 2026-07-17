@@ -10,6 +10,7 @@ import { Avatar as KidAvatar } from '@/components/shared/avatar'
 import { PortalCard, PortalCardTitle } from '@/components/portal/portal-kit'
 import { ActionCard } from '@/components/dashboard/action-card'
 import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
+import { InstallAppCard } from '@/components/pwa/install-app-card'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
@@ -254,6 +255,9 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
+    {/* PWA-BASICS R2: the install affordance (iOS-aware, self-hiding) now reaches
+        members — the card was previously mounted only on the staff /today hub. */}
+    <InstallAppCard locale={locale} />
     {/* ML-1 / MJ-3: lifecycle banner + self-serve request affordances. */}
     {enabledProducts.membership && ['expiring', 'overdue', 'lapsed', 'frozen'].includes(msState) && (
       <div data-testid="portal-lifecycle-banner" data-state={msState}

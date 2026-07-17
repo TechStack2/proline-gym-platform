@@ -17,10 +17,14 @@ import { cn } from '@/lib/utils';
 import { setGymActive } from './actions';
 
 export function VendorGymActions({
-  gymId, slug, name, active, locale,
+  gymId, slug, origin, name, active, locale,
 }: {
   gymId: string;
   slug: string;
+  /** INVITE-HOST: THIS gym's canonical origin (primary domain → subdomain → SITE_URL),
+   *  resolved server-side. The vendor console is served from the platform apex, so we
+   *  must NOT use window.location.origin here (that would leak the vendor host). */
+  origin: string;
   name: string;
   active: boolean;
   locale: string;
@@ -33,10 +37,12 @@ export function VendorGymActions({
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState('');
 
-  // The app's login URL, absolute from the real request origin (client-side).
+  // The gym's login URL on ITS OWN canonical host (never the vendor apex).
+  const loginUrl = `${origin || (typeof window !== 'undefined' ? window.location.origin : '')}/${locale}/auth/login`;
+  const landingUrl = `${origin || (typeof window !== 'undefined' ? window.location.origin : '')}/${locale}?gym=${slug}`;
   const copyLogin = async () => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/${locale}/auth/login`);
+      await navigator.clipboard.writeText(loginUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -60,7 +66,7 @@ export function VendorGymActions({
     <div className="flex flex-wrap items-center gap-1.5" data-testid="vendor-gym-actions">
       {slug && (
         <a
-          href={`/${locale}?gym=${slug}`}
+          href={landingUrl}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="vendor-open-landing"

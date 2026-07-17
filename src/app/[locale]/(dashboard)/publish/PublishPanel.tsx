@@ -31,6 +31,7 @@ export function PublishPanel({
   locale,
   isRTL,
   slug,
+  shareOrigin,
   initialClasses,
   initialCoaches,
   initialCamps,
@@ -41,6 +42,8 @@ export function PublishPanel({
   locale: string
   isRTL: boolean
   slug: string | null
+  /** INVITE-HOST: the gym's canonical origin for the shared landing/login links. */
+  shareOrigin?: string
   initialClasses: ClassItem[]
   initialCoaches: CoachItem[]
   initialCamps: CampItem[]
@@ -222,6 +225,7 @@ export function PublishPanel({
           <ShareableLink
             testid="publish-landing"
             path={`/${locale}?gym=${encodeURIComponent(slug)}`}
+            origin={shareOrigin}
             label={t('landingLabel')}
             copyLabel={t('copy')}
             copiedLabel={t('copied')}
@@ -231,6 +235,7 @@ export function PublishPanel({
           <ShareableLink
             testid="publish-login"
             path={`/${locale}/auth/login`}
+            origin={shareOrigin}
             label={t('loginLabel')}
             copyLabel={t('copy')}
             copiedLabel={t('copied')}

@@ -21,15 +21,18 @@ import { cn } from '@/lib/utils'
 import { Send, Copy, Check, MessageCircle, KeyRound, Phone } from 'lucide-react'
 import { inviteToPortal } from '@/lib/provisioning/invite'
 
-export type InviteResult = { tempPassword: string; login: string; waPhone: string; gymName: { ar: string; en: string; fr: string } }
+export type InviteResult = { tempPassword: string; login: string; waPhone: string; gymName: { ar: string; en: string; fr: string }; origin?: string }
 
 /** Localized wa.me deep-link: login URL + phone login + temp password. */
 export function buildWaLink(
   t: ReturnType<typeof useTranslations<'invite'>>, locale: string, result: InviteResult,
 ): string {
-  // INVITE-MSG-URL: include a tappable LOGIN URL. Prefer the configured app origin
-  // (NEXT_PUBLIC_SITE_URL); else the actual runtime origin — never a hardcode.
-  const appOrigin = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+  // INVITE-HOST: the login URL is built on the GYM's canonical origin (primary
+  // custom domain → <slug>.praxella.com → SITE_URL), resolved server-side by
+  // inviteToPortal — so the member's link lands on their gym's own home regardless
+  // of which host the staffer generated it from. Fallback keeps the old behavior
+  // only if a caller ever omits origin.
+  const appOrigin = result.origin || process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
   const loginUrl = `${appOrigin}/${locale}/auth/login`
   // WL-IDENTITY: greet with the caller's gym name (localized), not "PRO LINE".
   const gym = locale === 'ar' ? result.gymName.ar : locale === 'fr' ? result.gymName.fr : result.gymName.en
@@ -102,7 +105,7 @@ export function InviteButton({ kind, id, locale, phone, editHref }: Props) {
           : { profileId: id, role: 'parent' },
     )
     setBusy(false)
-    if (res.ok) setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName })
+    if (res.ok) setResult({ tempPassword: res.tempPassword, login: res.login, waPhone: res.waPhone, gymName: res.gymName, origin: res.origin })
     // MJ-1: the credential invariant carries WHO holds the phone → interpolate the name.
     else if (res.error === 'phone_taken') setError(t('err.phone_taken', { name: res.holder || t('someoneElse') }))
     else setError(INVITE_ERR_KEYS.has(res.error) ? t(`err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error))

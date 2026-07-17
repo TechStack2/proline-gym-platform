@@ -43,6 +43,29 @@ export function canonicalUrl(origin: string, locale: string): string {
 }
 
 /**
+ * PWA-BASICS · INVITE-HOST — the canonical origin for a gym identified by SLUG
+ * (not by the current request host), for building OUTBOUND links (portal/staff
+ * invites, shareable links, WhatsApp messages) that must land on the gym's own
+ * home no matter where they are generated (a vendor console, the front desk, …):
+ *   1. the gym's PRIMARY custom domain (gym_domains.is_primary) — supplied by the
+ *      caller from getGymPrimaryDomain(slug);
+ *   2. else its `<slug>.praxella.com` subdomain;
+ *   3. else NEXT_PUBLIC_SITE_URL (last resort — no slug / unconfigured).
+ * Pure so it unit-tests without a request; the async wrapper gymCanonicalOrigin()
+ * (src/lib/host/primary-domain.ts) resolves the primary domain then calls this.
+ */
+export function gymCanonicalOriginFrom(
+  slug: string | null | undefined,
+  primaryDomain: string | null | undefined,
+): string {
+  const primary = host(primaryDomain);
+  if (primary) return `https://${primary}`;
+  const s = (slug || '').trim().toLowerCase();
+  if (s) return `https://${s}.${platformRootDomain()}`;
+  return SITE_URL;
+}
+
+/**
  * hreflang alternates (absolute) for every locale + x-default (→ the default
  * locale), all on the canonical origin.
  */

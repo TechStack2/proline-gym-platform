@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCampaignStats } from '@/lib/growth/funnel'
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
 import { CampaignsClient, type CampaignRow } from './campaigns-client'
 
 export const dynamic = 'force-dynamic'
@@ -12,8 +13,11 @@ export default async function CampaignsPage({ params: { locale } }: { params: { 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: profile } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('gym_id, gyms:gym_id(slug)').eq('id', user.id).single()
   if (!profile?.gym_id) return null
+  // INVITE-HOST: tracked/shareable campaign links use the gym's canonical host.
+  const gymSlug = ((profile as any).gyms?.slug as string | undefined) ?? undefined
+  const shareOrigin = await gymCanonicalOrigin(gymSlug)
 
   const [{ data: camps }, stats] = await Promise.all([
     supabase.from('campaigns')
@@ -30,7 +34,7 @@ export default async function CampaignsPage({ params: { locale } }: { params: { 
 
   return (
     <div>
-      <CampaignsClient rows={rows} locale={locale} />
+      <CampaignsClient rows={rows} locale={locale} shareOrigin={shareOrigin} />
     </div>
   )
 }

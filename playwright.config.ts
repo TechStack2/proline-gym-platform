@@ -1163,6 +1163,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PWA-BASICS + INVITE-HOST: per-role locale switcher + install affordance,
+      // notification-bell viewport bounds at 360px (LTR+RTL), and invite links on
+      // the gym's canonical (mapped) domain. Opens its own contexts per role;
+      // seeds a fresh member + a temporary gym_domains mapping (cleaned up).
+      name: 'pwa-basics',
+      dependencies: ['setup'],
+      testMatch: /\/pwa-basics\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PERF-1 (perceived speed): route-segment loading.tsx skeletons show instantly
       // on nav, and the mobile content clears the fixed bottom TabBar (#5c). Opens its
       // own owner + student contexts (per-worker storageState). testMatch ANCHORED ($).

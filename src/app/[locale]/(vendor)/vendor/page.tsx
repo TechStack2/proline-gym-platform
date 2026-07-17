@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { Building2, Plus, Users, Inbox } from 'lucide-react';
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain';
 import { VendorGymActions } from './vendor-gym-actions';
 
 // Super-admin surface — always per-request (reads the caller's session + gate).
@@ -40,6 +41,11 @@ export default async function VendorConsolePage({ params: { locale } }: { params
   const { data } = await supabase.rpc('get_all_gyms_for_admin');
   const gyms = (data ?? []) as AdminGym[];
   const activeCount = gyms.filter((g) => g.is_active).length;
+  // INVITE-HOST: each gym's login/landing link must use ITS OWN canonical host, not
+  // the vendor apex the console is served from. Resolve per gym (server-side).
+  const origins = new Map<string, string>(
+    await Promise.all(gyms.map(async (g) => [g.slug ?? '', await gymCanonicalOrigin(g.slug)] as const)),
+  );
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-CA'); // stable YYYY-MM-DD
 
   return (
@@ -114,6 +120,7 @@ export default async function VendorConsolePage({ params: { locale } }: { params
                     <VendorGymActions
                       gymId={g.id}
                       slug={g.slug ?? ''}
+                      origin={origins.get(g.slug ?? '') ?? ''}
                       name={g.name_en || g.slug || '—'}
                       active={g.is_active}
                       locale={locale}

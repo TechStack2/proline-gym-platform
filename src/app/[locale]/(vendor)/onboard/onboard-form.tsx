@@ -55,6 +55,7 @@ export function OnboardForm({ locale }: { locale: string }) {
           <div className="mt-3 space-y-2 border-t border-green-200 pt-3">
             <ShareableLink
               path={`/${locale}?gym=${result.slug}`}
+              origin={result.origin}
               label="Gym landing page"
               copyLabel="Copy"
               copiedLabel="Copied"
@@ -64,6 +65,7 @@ export function OnboardForm({ locale }: { locale: string }) {
             />
             <ShareableLink
               path={`/${locale}/auth/login`}
+              origin={result.origin}
               label="Owner login page"
               copyLabel="Copy"
               copiedLabel="Copied"

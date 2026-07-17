@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 
 export function ShareableLink({
   path,
+  origin: originProp,
   label,
   copyLabel,
   copiedLabel,
@@ -23,8 +24,14 @@ export function ShareableLink({
   shareLabel,
   testid = 'share-link',
 }: {
-  /** Locale-prefixed path (e.g. `/en?gym=slug`); origin is prepended client-side. */
+  /** Locale-prefixed path (e.g. `/en?gym=slug`); origin is prepended. */
   path: string
+  /**
+   * INVITE-HOST: the gym's CANONICAL origin (from gymCanonicalOrigin), resolved
+   * server-side and passed in so the shared link lands on the gym's own host.
+   * When omitted, falls back to the current request origin (window.location).
+   */
+  origin?: string
   label: string
   copyLabel: string
   copiedLabel: string
@@ -33,13 +40,15 @@ export function ShareableLink({
   shareLabel?: string
   testid?: string
 }) {
-  const [origin, setOrigin] = useState('')
+  const [runtimeOrigin, setRuntimeOrigin] = useState('')
   const [copied, setCopied] = useState(false)
   // SSR-safe origin read (campaigns-client pattern) — avoids a hydration mismatch.
+  // Skipped when a canonical origin is supplied (server-resolved, authoritative).
   useEffect(() => {
-    setOrigin(window.location.origin)
-  }, [])
+    if (!originProp) setRuntimeOrigin(window.location.origin)
+  }, [originProp])
 
+  const origin = originProp || runtimeOrigin
   const url = origin ? `${origin}${path}` : path
 
   const copy = async () => {

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain';
 
 /**
  * WL-ONBOARDING-WIZARD — onboardGym server action (SERVER ONLY).
@@ -28,7 +29,7 @@ const OnboardSchema = z.object({
 });
 
 export type OnboardResult =
-  | { ok: true; gymId: string; slug: string; ownerEmail: string; tempPassword: string }
+  | { ok: true; gymId: string; slug: string; ownerEmail: string; tempPassword: string; origin: string }
   | { ok: false; error: string };
 
 export async function onboardGym(input: unknown): Promise<OnboardResult> {
@@ -126,5 +127,8 @@ export async function onboardGym(input: unknown): Promise<OnboardResult> {
   //     the honest truth (discipline/plan/exchange items UNCHECKED) and the owner
   //     configures their own catalog. (Was: 2 default disciplines + 1 staged plan.)
 
-  return { ok: true, gymId, slug: f.slug, ownerEmail: f.ownerEmail, tempPassword };
+  // INVITE-HOST: the new gym's canonical origin for the shared links (a fresh gym
+  // has no primary domain yet → its <slug>.praxella.com subdomain).
+  const origin = await gymCanonicalOrigin(f.slug);
+  return { ok: true, gymId, slug: f.slug, ownerEmail: f.ownerEmail, tempPassword, origin };
 }
