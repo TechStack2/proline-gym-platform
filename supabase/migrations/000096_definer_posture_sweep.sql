@@ -88,6 +88,11 @@ DECLARE
     'get_landing_schedule','get_landing_images','get_public_gym',
     'get_gym_slug_by_domain','get_camp_spots_left','submit_trial_inquiry',
     'submit_public_lead',
+    -- 000102 (BILL-CYCLES): get_gym_primary_domain — the anon primary-domain
+    -- reader (canonical/alias-301). Same later-migration pattern as
+    -- submit_platform_lead below: inert on from-zero replay at 000096-time,
+    -- load-bearing for any future re-invocation of the sweep.
+    'get_gym_primary_domain',
     -- 000101 (LANDING-CUSTOM): submit_platform_lead is created later, in 000100,
     -- and grants itself anon there. Naming it here keeps THIS sweep's canonical
     -- allowlist correct so a future re-invocation of the sweep does not revoke its

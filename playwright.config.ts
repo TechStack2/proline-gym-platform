@@ -168,6 +168,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // BILL-CYCLES: registration start dates + staff billing anchors + session
+      // proration. Seeds its own classes/members (service role) → parallel-safe.
+      name: 'bill-cycles',
+      dependencies: ['setup'],
+      testMatch: /bill-cycles\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Public landing (Prompt LP): a LOGGED-OUT (anon) visitor sees the run gym's
       // live catalog (disciplines/schedule/pricing) + brand via the 000035 anon
       // public-read policies. Creates its own anon context (no storageState).

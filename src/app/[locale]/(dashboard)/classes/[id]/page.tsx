@@ -62,9 +62,11 @@ export default async function ClassDetailPage({
   const memberInfo = await getMemberEnrichment(supabase, (classData as any).gym_id, rosterIds, locale)
 
   // B2: registrations (request→approve→bill→waitlist) + a member picker for walk-ins.
+  // BILL-CYCLES: also read the cycle fields so the panel shows/edit the billing cycle.
   const { data: regsRaw } = await supabase
     .from('class_registrations')
     .select(`id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, invoice_id, requested_at,
+      start_date, billing_anchor, paid_until, end_date, first_cycle_prorated,
       student:students(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr))`)
     .eq('class_id', id)
     .in('status', ['requested', 'active', 'waitlisted'])
@@ -73,8 +75,18 @@ export default async function ClassDetailPage({
   const registrations = (regsRaw ?? []).map((r: any) => ({
     id: r.id, status: r.status, waitlist_position: r.waitlist_position,
     monthly_fee_usd: r.monthly_fee_usd, invoice_id: r.invoice_id,
+    start_date: r.start_date, billing_anchor: r.billing_anchor, paid_until: r.paid_until,
+    end_date: r.end_date, first_cycle_prorated: r.first_cycle_prorated,
     studentName: localizedName(one(r.student)?.profiles, locale),
   }))
+
+  // BILL-CYCLES: the day's FX rate feeds the dual-currency proration preview.
+  const { data: rateRow } = await supabase
+    .from('exchange_rates').select('rate')
+    .eq('gym_id', (classData as any).gym_id)
+    .order('rate_date', { ascending: false }).limit(1).maybeSingle()
+  const rate = (rateRow as any)?.rate ?? null
+  const today = new Date().toISOString().slice(0, 10)
 
   const { data: studentRows } = await supabase
     .from('students')
@@ -108,6 +120,8 @@ export default async function ClassDetailPage({
       coaches={coaches ?? []}
       activeRegCount={activeRegCount ?? 0}
       memberInfo={memberInfo}
+      rate={rate}
+      today={today}
     />
   )
 }

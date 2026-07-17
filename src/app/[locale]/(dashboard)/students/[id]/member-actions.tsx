@@ -89,6 +89,9 @@ export function MemberActions({
   // ── Register-to-class state ──
   const [classId, setClassId] = useState('')
   const [discount, setDiscount] = useState('')
+  // BILL-CYCLES: staff-chosen start date (today/future/past) + prorate-first-cycle.
+  const [regStart, setRegStart] = useState(() => new Date().toISOString().slice(0, 10))
+  const [regProrate, setRegProrate] = useState(false)
   // ── Record-payment state (the member's open invoices, oldest first, pre-selected) ──
   const [invoiceId, setInvoiceId] = useState(openInvoices[0]?.id ?? '')
   const selected = openInvoices.find((i) => i.id === invoiceId) ?? openInvoices[0]
@@ -110,10 +113,11 @@ export function MemberActions({
     startTransition(async () => {
       const res = await registerMemberToClass({
         studentId, classId, discountPct: discount ? Number(discount) : 0,
+        startDate: regStart, prorate: regProrate,
       })
       if (res.ok) {
         toast({ title: t(res.status === 'waitlisted' ? 'registeredWaitlisted' : 'registered'), variant: 'success' })
-        setRegOpen(false); setClassId(''); setDiscount('')
+        setRegOpen(false); setClassId(''); setDiscount(''); setRegProrate(false)
         router.refresh()
       } else {
         toast({ title: t('registerFailed'), description: errText(res.error), variant: 'destructive' })
@@ -213,10 +217,25 @@ export function MemberActions({
               {classId && classes.find((c) => c.id === classId)?.monthly_fee_usd === 0 && (
                 <p data-testid="m360-free-notice" className="rounded-lg bg-green-50 px-3 py-2 text-xs font-medium text-green-700">{t('freeNoInvoice')}</p>
               )}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">{t('discountPct')}</label>
-                <Input type="number" min="0" max="100" data-testid="m360-discount" value={discount}
-                  onChange={(e) => setDiscount(e.target.value)} placeholder="0" className="h-9 w-28" />
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">{t('discountPct')}</label>
+                  <Input type="number" min="0" max="100" data-testid="m360-discount" value={discount}
+                    onChange={(e) => setDiscount(e.target.value)} placeholder="0" className="h-9 w-28" />
+                </div>
+                {/* BILL-CYCLES: staff-chosen start date + prorate-first-cycle. */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    {isRTL ? 'تاريخ البدء' : locale === 'fr' ? 'Date de début' : 'Start date'}
+                  </label>
+                  <Input type="date" data-testid="m360-start-date" value={regStart}
+                    onChange={(e) => setRegStart(e.target.value)} className="h-9 w-40" />
+                </div>
+                <label className="flex items-center gap-1.5 pb-2 text-xs font-medium text-gray-600">
+                  <input type="checkbox" data-testid="m360-prorate" checked={regProrate}
+                    onChange={(e) => setRegProrate(e.target.checked)} />
+                  {isRTL ? 'احتساب بالتناسب' : locale === 'fr' ? 'Proratiser' : 'Prorate 1st cycle'}
+                </label>
               </div>
               <Button data-testid="m360-register-submit" onClick={submitRegister} disabled={pending || !classId}
                 className="w-full bg-primary-700 hover:bg-primary-800">

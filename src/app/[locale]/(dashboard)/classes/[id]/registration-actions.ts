@@ -20,13 +20,21 @@ function revalidate(classId: string) {
 }
 
 export async function approveRegistration(
-  input: { regId: string; classId: string; discountPct?: number; discountAmountUsd?: number },
+  input: {
+    regId: string; classId: string; discountPct?: number; discountAmountUsd?: number
+    // BILL-CYCLES: the staff-chosen cycle. startDate (today/future/past); billingAnchor
+    // (defaults in-SQL to the first session ≥ start when omitted); prorate the first cycle.
+    startDate?: string; billingAnchor?: string; prorate?: boolean
+  },
 ): Promise<Result> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('approve_class_registration', {
     p_reg_id: input.regId,
     p_discount_pct: input.discountPct ?? 0,
     p_discount_amount_usd: input.discountAmountUsd ?? 0,
+    ...(input.startDate ? { p_start_date: input.startDate } : {}),
+    ...(input.billingAnchor ? { p_billing_anchor: input.billingAnchor } : {}),
+    ...(input.prorate ? { p_prorate: true } : {}),
   })
   if (error) return { ok: false, error: actionError(error) }
   revalidate(input.classId)
@@ -68,6 +76,25 @@ export async function cancelRegistration(regId: string, classId: string): Promis
   const { error } = await supabase.rpc('cancel_class_registration', { p_reg_id: regId })
   if (error) return { ok: false, error: actionError(error) }
   revalidate(classId)
+  return { ok: true }
+}
+
+/**
+ * BILL-CYCLES R3 — move a registration's billing anchor FORWARD (owner + reception;
+ * audited in-RPC). Delays the next billing cycle; the RPC rejects a backward move.
+ * revalidates both the class page and the member file (where the cycle is shown).
+ */
+export async function setRegistrationAnchor(
+  input: { regId: string; newAnchor: string; classId?: string; studentId?: string },
+): Promise<Result> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('set_registration_anchor', {
+    p_reg_id: input.regId,
+    p_new_anchor: input.newAnchor,
+  })
+  if (error) return { ok: false, error: actionError(error) }
+  if (input.classId) revalidate(input.classId)
+  if (input.studentId) revalidatePath(`/students/${input.studentId}`)
   return { ok: true }
 }
 

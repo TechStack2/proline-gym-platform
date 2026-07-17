@@ -75,8 +75,42 @@ export default async function AttendancePage({ params: { locale }, searchParams 
       ...s,
       classes: cls,
       class_enrollments: (cls?.class_enrollments ?? []).filter((e: any) => e.is_active !== false),
+      starting_soon: [] as any[],
     }
   })
+
+  // BILL-CYCLES: a member whose registration start_date is in the FUTURE is on the
+  // roster record but has not started yet — keep them off today's markable roster
+  // and out of the counts, and surface them as "starts <date>" instead.
+  const rosterStudentIds = [...new Set((todayClasses ?? []).flatMap((c: any) => (c.class_enrollments ?? []).map((e: any) => e.student_id)))]
+  if (rosterStudentIds.length) {
+    const classIds = [...new Set((todayClasses ?? []).map((c: any) => c.class_id))]
+    const { data: startRegs } = await supabase
+      .from('class_registrations')
+      .select('class_id, student_id, start_date')
+      .in('student_id', rosterStudentIds as string[])
+      .in('class_id', classIds as string[])
+      .eq('status', 'active')
+      .gt('start_date', selectedDate)
+    const startsAfter = new Map<string, string>()
+    for (const r of (startRegs ?? []) as any[]) startsAfter.set(`${r.class_id}:${r.student_id}`, r.start_date)
+    if (startsAfter.size) {
+      for (const c of todayClasses) {
+        const now: any[] = [], future: any[] = []
+        for (const e of (c.class_enrollments ?? [])) {
+          (startsAfter.has(`${c.class_id}:${e.student_id}`) ? future : now).push(e)
+        }
+        c.class_enrollments = now
+        c.starting_soon = future.map((e: any) => {
+          const stu = Array.isArray(e.students) ? e.students[0] : e.students
+          const prof = stu && (Array.isArray(stu.profiles) ? stu.profiles[0] : stu.profiles)
+          const first = (isRTL ? prof?.first_name_ar : prof?.first_name_en) || prof?.first_name_en || '?'
+          const last = (isRTL ? prof?.last_name_ar : prof?.last_name_en) || prof?.last_name_en || ''
+          return { id: e.id, name: `${first} ${last}`.trim(), startDate: startsAfter.get(`${c.class_id}:${e.student_id}`) }
+        })
+      }
+    }
+  }
 
   // Fetch attendance records for today
   const { data: todayAttendance } = await supabase
@@ -228,6 +262,19 @@ export default async function AttendancePage({ params: { locale }, searchParams 
                   warnStudentIds={warnStudentIds}
       />
               </Suspense>
+              {/* BILL-CYCLES: members whose registration starts later — not markable yet. */}
+              {(classSchedule.starting_soon?.length ?? 0) > 0 && (
+                <ul data-testid="starting-soon" className="mt-3 space-y-1 border-t pt-2 text-xs text-blue-700">
+                  {classSchedule.starting_soon.map((s: any) => (
+                    <li key={s.id} data-testid="starts-soon-row">
+                      {s.name} · {isRTL ? 'يبدأ' : locale === 'fr' ? 'Débute' : 'Starts'}{' '}
+                      {new Date(String(s.startDate).slice(0, 10) + 'T00:00:00Z').toLocaleDateString(
+                        locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en',
+                        { month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         ))}
