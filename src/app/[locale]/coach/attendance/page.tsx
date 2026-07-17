@@ -311,7 +311,8 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
       }));
     })();
     return () => { cancelled = true; };
-  }, [selectedClassId, selectedDate, loaded, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClassId, selectedDate, loaded]);
 
   const markTrial = async (trialId: string, status: 'completed' | 'no_show', showUp: boolean) => {
     setTrialBusy(trialId);
@@ -635,9 +636,13 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                   </>
                 )}
               </button>
+            </>
+          )}
 
-              {/* TRIAL-SLOTS R3: trials on this occurrence — marked TRIAL, one-tap check-in. */}
-              {trials.length > 0 && (
+          {/* TRIAL-SLOTS R3: trials on this occurrence — marked TRIAL, one-tap check-in.
+              OUTSIDE the roster ternary so a class with no enrolled students still shows
+              its trials (a trial can be the only attendee on the sheet). */}
+          {trials.length > 0 && (
                 <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/40 p-3" data-testid="attendance-trials">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">{msg('coach.attendance.trialsTitle')}</p>
                   <div className="space-y-2">
@@ -669,8 +674,6 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                   </div>
                 </div>
               )}
-            </>
-          )}
         </>
       )}
     </div>
