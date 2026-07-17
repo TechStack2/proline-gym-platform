@@ -52,6 +52,13 @@ test.beforeAll(async () => {
   })
   if (!res.ok) throw new Error(`seed_e2e_wl_gym(${SLUG}) failed: ${res.status} ${await res.text()}`)
   gymId = (await res.json()) as string
+  // The seed's login-less "Adopt Member" carries a HARDCODED phone (+96176000501) in
+  // EVERY gym. GoTrue enforces phone uniqueness GLOBALLY (the app's phone-owner guard
+  // is only gym-scoped), so inviting our copy would collide with the shared-gym ON-1
+  // member. Give ours a gym-unique phone (derived from the gym uuid's digits) first.
+  const mem = (await (await svc(`profiles?gym_id=eq.${gymId}&first_name_en=eq.Adopt&last_name_en=eq.Member&select=id`)).json()) as Array<{ id: string }>
+  const uniquePhone = '+9617' + (gymId.replace(/[^0-9]/g, '') + '0000000').slice(0, 7)
+  await svc(`profiles?id=eq.${mem[0].id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ phone: uniquePhone }) })
 })
 
 test.afterAll(async () => {
