@@ -18,6 +18,7 @@ const SLUG = `discount-${BASE}-w${process.env.TEST_WORKER_INDEX ?? '0'}`
 const H = { apikey: KEY!, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 let gymId = ''
 let studentId = ''
+let invSeq = 0 // unique, short invoice numbers (the column is varchar(50))
 
 async function svc(path: string, init?: RequestInit) {
   return fetch(`${URL}/rest/v1/${path}`, { ...init, headers: { ...H, ...(init?.headers || {}) } })
@@ -29,7 +30,7 @@ async function newInvoice(amountUsd: number): Promise<string> {
     headers: { Prefer: 'return=representation' },
     body: JSON.stringify({
       gym_id: gymId, student_id: studentId, invoice_type: 'other',
-      invoice_number: `DISC-${SLUG}-${Date.now()}-${Math.floor(performance.now())}`,
+      invoice_number: `DISC-${Date.now().toString(36)}-${++invSeq}`,
       amount_usd: amountUsd, amount_lbp: 0, tax_rate: 0, exchange_rate: 89000,
       status: 'pending', due_date: new Date().toISOString().slice(0, 10),
     }),
