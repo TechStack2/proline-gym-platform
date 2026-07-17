@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect, permanentRedirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
 import { classifyHost, resolveTenantSlug, vendorRedirectUrl, type HostClass } from '@/lib/host/resolver';
@@ -127,13 +127,15 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // resolution as the <head> (generateMetadata) so metadata + JSON-LD match.
   const gymSlug = await resolveTenantSlug(rawHost, searchParams?.gym, cls);
 
-  // OXY-HOST R4: if this request arrived on a NON-primary alias (its subdomain or a
-  // secondary custom domain) of a gym that HAS a primary custom domain, 301 to the
-  // primary (locale preserved). Null primaryDomain (no reader yet / no custom domain)
-  // → no redirect, byte-identical. Runs before any catalog read.
+  // OXY-HOST R4 + CANCEL-FLOW R4: if this request arrived on a NON-primary alias (its
+  // subdomain or a secondary custom domain) of a gym that HAS a primary custom domain,
+  // redirect to the primary (locale preserved) with a 308 PERMANENT (was 307 — a
+  // canonical host move is permanent, so search engines fold the alias into the
+  // primary). Null primaryDomain (no reader yet / no custom domain) → no redirect,
+  // byte-identical. Runs before any catalog read.
   if (!searchParams?.gym) {
     const aliasTarget = aliasRedirectTarget(rawHost, await getGymPrimaryDomain(gymSlug), `/${locale}`);
-    if (aliasTarget) redirect(aliasTarget);
+    if (aliasTarget) permanentRedirect(aliasTarget);
   }
 
   // GRW-1: gym's active disciplines (anon-readable, 000035) → trial-capture

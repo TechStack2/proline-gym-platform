@@ -66,7 +66,14 @@ export function localizedName(p: NameRow, locale: string): string {
   return [first || p.first_name_en, last || p.last_name_en].filter(Boolean).join(' ')
 }
 
-export type InvoiceStatus = 'pending' | 'paid' | 'overdue' | 'cancelled' | 'refunded' | 'partial'
+// CANCEL-FLOW: 'void' is a DISPLAY pseudo-status — a voided invoice is stored as
+// status='cancelled' + voided_at set. Call sites pass `inv.voided_at ? 'void' : inv.status`.
+export type InvoiceStatus = 'pending' | 'paid' | 'overdue' | 'cancelled' | 'refunded' | 'partial' | 'void'
+
+/** Map a raw invoice status + voided_at to the DISPLAY status ('void' when voided). */
+export function displayInvoiceStatus(status: string, voidedAt: string | null | undefined): string {
+  return voidedAt ? 'void' : status
+}
 
 export const STATUS_BADGE: Record<string, string> = {
   paid: 'bg-green-100 text-green-700',
@@ -75,12 +82,13 @@ export const STATUS_BADGE: Record<string, string> = {
   overdue: 'bg-red-100 text-red-700',
   cancelled: 'bg-gray-100 text-gray-500',
   refunded: 'bg-blue-100 text-blue-700',
+  void: 'bg-gray-200 text-gray-600 line-through decoration-2',
 }
 
 export function statusLabel(status: string, locale: string): string {
-  const ar: Record<string, string> = { paid: 'مدفوع', pending: 'معلق', partial: 'جزئي', overdue: 'متأخر', cancelled: 'ملغي', refunded: 'مسترجع' }
-  const en: Record<string, string> = { paid: 'Paid', pending: 'Pending', partial: 'Partial', overdue: 'Overdue', cancelled: 'Cancelled', refunded: 'Refunded' }
-  const fr: Record<string, string> = { paid: 'Payée', pending: 'En attente', partial: 'Partielle', overdue: 'En retard', cancelled: 'Annulée', refunded: 'Remboursée' }
+  const ar: Record<string, string> = { paid: 'مدفوع', pending: 'معلق', partial: 'جزئي', overdue: 'متأخر', cancelled: 'ملغي', refunded: 'مسترجع', void: 'ملغاة' }
+  const en: Record<string, string> = { paid: 'Paid', pending: 'Pending', partial: 'Partial', overdue: 'Overdue', cancelled: 'Cancelled', refunded: 'Refunded', void: 'Void' }
+  const fr: Record<string, string> = { paid: 'Payée', pending: 'En attente', partial: 'Partielle', overdue: 'En retard', cancelled: 'Annulée', refunded: 'Remboursée', void: 'Annulée' }
   return (locale === 'ar' ? ar : locale === 'fr' ? fr : en)[status] || status
 }
 

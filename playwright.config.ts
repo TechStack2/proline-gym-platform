@@ -185,6 +185,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // CANCEL-FLOW: cancel a registration → void the linked invoice (refund fork),
+      // standalone void + VOID stamp, permission (reception/coach), 308 alias.
+      // Seeds its own class/member (service role); own contexts per role.
+      name: 'cancel-flow',
+      dependencies: ['setup'],
+      testMatch: /cancel-flow\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Public landing (Prompt LP): a LOGGED-OUT (anon) visitor sees the run gym's
       // live catalog (disciplines/schedule/pricing) + brand via the 000035 anon
       // public-read policies. Creates its own anon context (no storageState).

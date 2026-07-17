@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { Receipt as ReceiptIcon, ArrowLeft, Printer } from 'lucide-react'
 import { PaymentForm } from '../../payments/components/payment-form'
 import { InvoiceActions } from './invoice-actions'
-import { balanceUsd, paidUsd, localizedName, STATUS_BADGE, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { balanceUsd, paidUsd, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
 import { normalizeCurrencyPref, orderedMoney, fmtUsd } from '@/lib/billing/currency'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +22,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   const { data: inv } = await supabase
     .from('invoices')
     .select(`id, invoice_number, invoice_type, amount_usd, amount_lbp, tax_amount_usd, tax_rate, total_usd, total_lbp,
-      exchange_rate, rate_date, status, due_date, paid_at, created_at, notes_en, notes_ar, notes_fr, student_id, payer_profile_id,
+      exchange_rate, rate_date, status, voided_at, void_reason, due_date, paid_at, created_at, notes_en, notes_ar, notes_fr, student_id, payer_profile_id,
       gyms(tva_registration_number, currency_preference),
       students(id, profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)),
       payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
@@ -84,10 +84,16 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
             <p className="text-xs text-muted-foreground">{t('Due', 'الاستحقاق', 'Échéance')}: {fmtDate(inv.due_date)}</p>
           </div>
           <span data-testid="invoice-status"
-            className={cn('inline-flex rounded-full px-3 py-1 text-sm font-semibold', STATUS_BADGE[inv.status])}>
-            {statusLabel(inv.status, locale)}
+            className={cn('inline-flex rounded-full px-3 py-1 text-sm font-semibold', STATUS_BADGE[displayInvoiceStatus(inv.status, inv.voided_at)])}>
+            {statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)}
           </span>
         </div>
+        {/* CANCEL-FLOW: the VOID reason, recorded when the invoice was nullified. */}
+        {inv.voided_at && inv.void_reason && (
+          <p className="mt-2 text-xs text-muted-foreground" data-testid="invoice-void-reason">
+            {t('Voided', 'ملغاة', 'Annulée')}: {inv.void_reason}
+          </p>
+        )}
 
         <dl className={cn('mt-6 grid gap-3 text-sm', showTax ? 'sm:grid-cols-4' : 'sm:grid-cols-2')}>
           {showTax && (

@@ -71,11 +71,20 @@ export async function rejectRegistration(regId: string, classId: string, reason?
   return { ok: true }
 }
 
-export async function cancelRegistration(regId: string, classId: string): Promise<Result> {
+export async function cancelRegistration(
+  regId: string, classId: string, reason?: string, refund?: boolean, studentId?: string,
+): Promise<Result> {
   const supabase = await createClient()
-  const { error } = await supabase.rpc('cancel_class_registration', { p_reg_id: regId })
+  // CANCEL-FLOW: un-enroll + auto-void the linked UNPAID invoice(s) with a reason;
+  // refund=true records a reversing payment on a paid invoice then voids it.
+  const { error } = await supabase.rpc('cancel_class_registration', {
+    p_reg_id: regId,
+    ...(reason ? { p_reason: reason } : {}),
+    ...(refund ? { p_refund: true } : {}),
+  })
   if (error) return { ok: false, error: actionError(error) }
   revalidate(classId)
+  if (studentId) revalidatePath(`/students/${studentId}`)
   return { ok: true }
 }
 

@@ -145,10 +145,15 @@ test('D1 · a voided invoice cannot be settled (settlement blocked)', async ({ b
   try {
     const { url } = await issueForKarim(owner.page, 10); // total $11.10
     await owner.page.goto(url);
-    // The void flow prompts for a reason — auto-accept.
-    owner.page.on('dialog', (d) => d.accept(`e2e void ${RUN}`));
+    // CANCEL-FLOW: the void flow now collects a reason via the ReasonDialog (chips +
+    // free text), and the invoice reads VOID (voided_at set), not just "Cancelled".
     await vis(owner.page, '[data-testid="void-btn"]').click();
-    await expect(vis(owner.page, '[data-testid="invoice-status"]')).toHaveText(/Cancelled/i, { timeout: 15_000 });
+    const dialog = vis(owner.page, '[data-testid="reason-dialog"]').first();
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await dialog.getByTestId('reason-text').fill(`e2e void ${RUN}`);
+    await dialog.getByTestId('reason-confirm').click();
+    await expect(vis(owner.page, '[data-testid="invoice-status"]')).toHaveText(/Void/i, { timeout: 15_000 });
+    await expect(vis(owner.page, '[data-testid="invoice-void-reason"]')).toContainText(`e2e void ${RUN}`);
     // The settlement form must be blocked (no submit on a cancelled invoice).
     await expect(vis(owner.page, '[data-testid="payment-form"]')).toBeVisible();
     await expect(owner.page.locator('[data-testid="pay-submit"]')).toHaveCount(0);

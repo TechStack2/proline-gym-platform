@@ -10,6 +10,7 @@ import { approveRegistration, rejectRegistration, cancelRegistration, registerWa
 import { useErrorText } from '@/lib/errors/use-error-text'
 import { computeProration, defaultBillingAnchor } from '@/lib/billing/proration'
 import { fmtUsd, fmtLbp } from '@/lib/billing/currency'
+import { ReasonDialog } from '@/components/billing/reason-dialog'
 
 type Reg = {
   id: string; status: string; waitlist_position: number | null
@@ -48,6 +49,8 @@ export function RegistrationsPanel({
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [walkInStudent, setWalkInStudent] = useState('')
+  // CANCEL-FLOW: the registration pending cancellation (opens the reason dialog).
+  const [cancelTarget, setCancelTarget] = useState<Reg | null>(null)
 
   const requested = registrations.filter((r) => r.status === 'requested')
   const active = registrations.filter((r) => r.status === 'active')
@@ -111,7 +114,7 @@ export function RegistrationsPanel({
             <div className="space-y-2" data-testid="active-list">
               {active.map((r) => (
                 <ActiveRegRow key={r.id} r={r} t={t} locale={locale} ref_={ref} pending={pending}
-                  onCancel={() => run(() => cancelRegistration(r.id, classId))}
+                  onCancel={() => setCancelTarget(r)}
                   onSetAnchor={(anchor) => run(() => setRegistrationAnchor({ regId: r.id, newAnchor: anchor, classId }))} />
               ))}
             </div>
@@ -130,13 +133,36 @@ export function RegistrationsPanel({
                   className="flex items-center justify-between gap-2 rounded-lg border p-3">
                   <span className="text-sm font-medium" data-testid="reg-student">#{r.waitlist_position} · {r.studentName}</span>
                   <Button size="sm" variant="outline" data-testid="cancel-reg-btn" disabled={pending}
-                    onClick={() => run(() => cancelRegistration(r.id, classId))}>{t('Cancel', 'إلغاء', 'Annuler')}</Button>
+                    onClick={() => setCancelTarget(r)}>{t('Cancel', 'إلغاء', 'Annuler')}</Button>
                 </div>
               ))}
             </div>
           )}
         </div>
       </CardContent>
+
+      {/* CANCEL-FLOW: one reason dialog for every cancel (active/waitlist). The
+          refund fork shows when the registration carries an invoice (may be paid). */}
+      <ReasonDialog
+        open={!!cancelTarget}
+        locale={locale}
+        busy={pending}
+        testid="cancel-reg-dialog"
+        title={t('Cancel registration', 'إلغاء التسجيل', "Annuler l'inscription")}
+        description={t('Frees the spot and voids the unpaid invoice. The invoice is nullified, never deleted — numbering stays continuous.',
+          'يحرّر المقعد ويلغي الفاتورة غير المدفوعة. تُلغى الفاتورة دون حذفها — يبقى الترقيم متصلاً.',
+          "Libère la place et annule la facture impayée. La facture est annulée, jamais supprimée — la numérotation reste continue.")}
+        chips={[t('Wrong class', 'صف خاطئ', 'Mauvais cours'), t('Wrong service', 'خدمة خاطئة', 'Mauvais service'),
+          t('Member request', 'طلب العضو', 'Demande du membre'), t('Duplicate', 'مكرّر', 'Doublon')]}
+        showRefund={!!cancelTarget?.invoice_id}
+        confirmLabel={t('Cancel registration', 'إلغاء التسجيل', "Annuler l'inscription")}
+        onConfirm={(reason, refund) => {
+          const target = cancelTarget
+          setCancelTarget(null)
+          if (target) run(() => cancelRegistration(target.id, classId, reason, refund))
+        }}
+        onClose={() => setCancelTarget(null)}
+      />
     </Card>
   )
 }

@@ -2,7 +2,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { paidUsd, balanceUsd, localizedName, statusLabel, METHOD_LABEL, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { paidUsd, balanceUsd, localizedName, statusLabel, displayInvoiceStatus, METHOD_LABEL, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 import { getTranslations } from 'next-intl/server'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import { PrintButton } from './print-button'
@@ -34,7 +34,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const { data: inv } = await supabase
     .from('invoices')
     .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, amount_usd, tax_amount_usd, tax_rate, total_usd, total_lbp,
-      exchange_rate, rate_date, status, due_date, paid_at, created_at, payer_profile_id,
+      exchange_rate, rate_date, status, voided_at, void_reason, due_date, paid_at, created_at, payer_profile_id,
       gyms(name_ar, name_en, name_fr, logo_url, updated_at, tva_registration_number, currency_preference),
       students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone)),
       payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
@@ -73,6 +73,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const paid = paidUsd(payments)
   const balance = balanceUsd(inv.total_usd, payments)
   const settled = balance <= 0.005
+  const voided = !!(inv as any).voided_at // CANCEL-FLOW: VOID overrides the Paid/Due stamp
   const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
   // INVOICE-POLISH 6a/6b: the customer-facing "what it's for" label lives in notes_*
   // (composed at creation by the billing RPCs). Rendered on the receipt (receipt-note)
@@ -88,7 +89,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   if ((inv as any).payer_profile_id) {
     meta.push({ k: t('Payer', 'الدافع', 'Payeur'), testid: 'receipt-payer', v: localizedName(Array.isArray((inv as any).payer) ? (inv as any).payer[0] : (inv as any).payer, locale) })
   }
-  meta.push({ k: t('Status', 'الحالة', 'Statut'), v: <span data-testid="receipt-status">{statusLabel(inv.status, locale)}</span> })
+  meta.push({ k: t('Status', 'الحالة', 'Statut'), v: <span data-testid="receipt-status">{statusLabel(displayInvoiceStatus(inv.status, (inv as any).voided_at), locale)}</span> })
   meta.push({ k: t('Type', 'النوع', 'Type'), v: <span data-testid="receipt-invoice-type" data-type={inv.invoice_type || 'other'}>{invoiceTypeLabel(inv.invoice_type, locale)}</span> })
 
   return (
@@ -194,13 +195,18 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
           <span data-testid="receipt-balance">{t('Balance', 'الرصيد', 'Solde')}: ${balance.toFixed(2)}</span>
         </div>
         <div className="mt-2 text-center">
+          {/* CANCEL-FLOW: VOID replaces the Paid/Due stamp when the invoice is voided.
+              Monochrome bordered box (like Paid/Due) so it survives the print rules. */}
           <span
             data-testid="receipt-paid-stamp"
-            data-state={settled ? 'paid' : 'due'}
+            data-state={voided ? 'void' : settled ? 'paid' : 'due'}
             className="inline-block rounded border-2 border-gray-900 px-3 py-0.5 text-sm font-extrabold uppercase tracking-widest"
           >
-            {settled ? t('Paid', 'مدفوع', 'Payé') : t('Due', 'مستحق', 'Dû')}
+            {voided ? t('Void', 'ملغاة', 'Annulée') : settled ? t('Paid', 'مدفوع', 'Payé') : t('Due', 'مستحق', 'Dû')}
           </span>
+          {voided && (inv as any).void_reason && (
+            <p className="mt-1 text-[10px] text-gray-600" data-testid="receipt-void-reason">{(inv as any).void_reason}</p>
+          )}
         </div>
 
         {inv.exchange_rate ? (
