@@ -17,7 +17,12 @@ import { RegistrationsPanel } from './RegistrationsPanel'
 interface ClassDetailProps {
   classData: any
   locale: string
-  registrations?: Array<{ id: string; status: string; waitlist_position: number | null; monthly_fee_usd: number | null; invoice_id: string | null; studentName: string }>
+  registrations?: Array<{
+    id: string; status: string; waitlist_position: number | null; monthly_fee_usd: number | null
+    invoice_id: string | null; studentName: string
+    start_date?: string | null; billing_anchor?: string | null; paid_until?: string | null
+    end_date?: string | null; first_cycle_prorated?: boolean | null
+  }>
   students?: { id: string; name: string }[]
   /** ADM-1 admin bar inputs */
   disciplines?: any[]
@@ -25,11 +30,14 @@ interface ClassDetailProps {
   activeRegCount?: number
   /** MEMBER-ENRICH: student_id → discipline(s)/class(es)/status for the roster. */
   memberInfo?: Record<string, { disciplines: string[]; classes: string[]; membershipStatus: string }>
+  /** BILL-CYCLES: FX rate + reference date for the dual-currency proration preview. */
+  rate?: number | null
+  today?: string
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function ClassDetail({ classData, locale, registrations = [], students = [], disciplines = [], coaches = [], activeRegCount = 0, memberInfo = {} }: ClassDetailProps) {
+export default function ClassDetail({ classData, locale, registrations = [], students = [], disciplines = [], coaches = [], activeRegCount = 0, memberInfo = {}, rate = null, today }: ClassDetailProps) {
   const t = useTranslations('classes')
   const router = useRouter()
   const [showEnrollModal, setShowEnrollModal] = useState(false)
@@ -303,6 +311,12 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
             registrations={registrations}
             students={students}
             locale={locale}
+            monthlyFeeUsd={classData.monthly_fee_usd ?? null}
+            scheduleDays={Array.from(new Set((classData.schedules ?? [])
+              .filter((s: any) => s.is_active !== false)
+              .map((s: any) => Number(s.day_of_week)))) as number[]}
+            rate={rate}
+            today={today ?? new Date().toISOString().slice(0, 10)}
           />
         </div>
 

@@ -88,7 +88,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       .limit(5),
     supabase
       .from('class_registrations')
-      .select('id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, paid_until, requested_at, classes:class_id (name_ar, name_en, name_fr, disciplines:discipline_id (name_ar, name_en, name_fr), class_schedules (day_of_week, start_time, end_time, is_active))')
+      .select('id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, paid_until, billing_anchor, first_cycle_prorated, requested_at, classes:class_id (name_ar, name_en, name_fr, disciplines:discipline_id (name_ar, name_en, name_fr), class_schedules (day_of_week, start_time, end_time, is_active))')
       .eq('student_id', id)
       .order('requested_at', { ascending: false })
       .limit(10),
@@ -540,6 +540,22 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                       {Number(r.discount_amount_usd) > 0 ? ` · −$${Number(r.discount_amount_usd).toFixed(0)}` : ''}
                       {r.status === 'waitlisted' && r.waitlist_position ? ` · #${r.waitlist_position}` : ''}
                     </p>
+                    {/* BILL-CYCLES R3: the current billing cycle (start/renews + prorate tag). */}
+                    {(r.status === 'active' || r.status === 'suspended') && (() => {
+                      const nowIso = new Date().toISOString().slice(0, 10)
+                      const fut = r.start_date && String(r.start_date).slice(0, 10) > nowIso
+                      const renews = r.paid_until ?? r.end_date
+                      const d = (iso: string) => new Date(String(iso).slice(0, 10) + 'T00:00:00Z')
+                        .toLocaleDateString(locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+                      const txt = fut
+                        ? `${isRTL ? 'يبدأ' : locale === 'fr' ? 'Débute' : 'Starts'} ${d(r.start_date)}`
+                        : renews ? `${isRTL ? 'يتجدّد' : locale === 'fr' ? 'Renouvelle' : 'Renews'} ${d(renews)}` : ''
+                      return (txt || r.first_cycle_prorated) ? (
+                        <p className="text-xs text-blue-600" data-testid="member-reg-cycle">
+                          {txt}{r.first_cycle_prorated ? ` · ${isRTL ? 'بالتناسب' : locale === 'fr' ? 'proratisé' : 'prorated'}` : ''}
+                        </p>
+                      ) : null
+                    })()}
                   </div>
                   {r.status === 'requested' ? (
                     <Link href={`/${locale}/inbox`} className={cn('rounded-full px-2 py-0.5 text-xs font-medium underline-offset-2 hover:underline', regBadge[r.status])}>

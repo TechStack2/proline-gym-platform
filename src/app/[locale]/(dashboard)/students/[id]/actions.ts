@@ -17,6 +17,10 @@ export async function registerMemberToClass(input: {
   studentId: string
   classId: string
   discountPct?: number
+  // BILL-CYCLES: the staff-chosen billing cycle (defaults resolve in SQL when omitted).
+  startDate?: string
+  billingAnchor?: string
+  prorate?: boolean
 }): Promise<Result> {
   const supabase = await createClient()
   const { data: reg, error: reqErr } = await supabase.rpc('request_class_registration', {
@@ -29,6 +33,9 @@ export async function registerMemberToClass(input: {
     p_reg_id: (reg as any).id,
     p_discount_pct: input.discountPct ?? 0,
     p_discount_amount_usd: 0,
+    ...(input.startDate ? { p_start_date: input.startDate } : {}),
+    ...(input.billingAnchor ? { p_billing_anchor: input.billingAnchor } : {}),
+    ...(input.prorate ? { p_prorate: true } : {}),
   })
   if (appErr) return { ok: false, error: actionError(appErr) }
 

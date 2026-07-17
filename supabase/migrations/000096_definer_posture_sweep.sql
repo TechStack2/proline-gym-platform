@@ -86,8 +86,8 @@ DECLARE
     'get_landing_disciplines','get_landing_coaches','get_landing_camps',
     'get_landing_class_fees','get_landing_plans','get_landing_pt',
     'get_landing_schedule','get_landing_images','get_public_gym',
-    'get_gym_slug_by_domain','get_camp_spots_left','submit_trial_inquiry',
-    'submit_public_lead'
+    'get_gym_slug_by_domain','get_gym_primary_domain','get_camp_spots_left',
+    'submit_trial_inquiry','submit_public_lead'
   ];
   -- RLS policy predicates (must stay executable by whatever role reaches the policy).
   rls_helper text[] := ARRAY[

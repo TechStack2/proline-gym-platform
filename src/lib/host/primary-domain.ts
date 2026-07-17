@@ -1,23 +1,21 @@
 /**
  * OXY-HOST · R4 — a gym's PRIMARY custom domain (gym_domains.is_primary) or null.
  *
- * gym_domains is RLS-locked (000073) and the only anon-safe RPC,
- * get_gym_slug_by_domain, is one-directional (domain→slug) and does not expose
- * is_primary. So there is NO anon-safe path to a gym's primary domain yet.
+ * gym_domains is RLS-locked (000073); the anon-safe reader is the definer RPC
+ * `get_gym_primary_domain(p_slug)` (migration 000102, folded in from PROXY-HOST
+ * per docs/runbooks/custom-domain.md §5) → returns gym_domains.domain WHERE
+ * is_primary, else null. With it wired, `canonicalOrigin` + `aliasRedirectTarget`
+ * (src/lib/host/canonical.ts) now (a) canonicalize a gym's *.praxella.com
+ * subdomain to its custom domain and (b) 301 any non-primary alias → the primary.
  *
- * Enabling primary-domain canonicalization + the alias→primary 301 needs ONE
- * anon-safe reader — a definer RPC `get_gym_primary_domain(p_slug)` returning
- * gym_domains.domain WHERE is_primary (SQL in docs/runbooks/custom-domain.md).
- * That is a MIGRATION, which is out of scope for this slice (STOP for migration
- * needs). Until the auditor applies it, this returns null →
- *   · every gym self-canonicalizes on its arrival host (custom domain → itself,
- *     subdomain → itself), and
- *   · NO alias 301 fires — gyms without a custom domain are byte-identical.
- *
- * To activate (2-line change, no other code touched): apply the RPC + regenerate
- * types, then return
- *   (await (await createClient()).rpc('get_gym_primary_domain', { p_slug: slug })).data || null
+ * A gym WITHOUT a primary custom domain still returns null → it self-canonicalizes
+ * on its arrival host and no alias 301 fires (byte-identical to pre-OXY-HOST).
  */
-export async function getGymPrimaryDomain(_slug: string | null | undefined): Promise<string | null> {
-  return null;
+import { createClient } from '@/lib/supabase/server';
+
+export async function getGymPrimaryDomain(slug: string | null | undefined): Promise<string | null> {
+  if (!slug) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc('get_gym_primary_domain', { p_slug: slug });
+  return (data as string | null) || null;
 }

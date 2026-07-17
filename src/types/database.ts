@@ -658,12 +658,14 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          billing_anchor: string | null
           cancelled_at: string | null
           class_id: string
           created_at: string
           discount_amount_usd: number | null
           discount_pct: number | null
           end_date: string | null
+          first_cycle_prorated: boolean
           gym_id: string
           id: string
           invoice_id: string | null
@@ -682,12 +684,14 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          billing_anchor?: string | null
           cancelled_at?: string | null
           class_id: string
           created_at?: string
           discount_amount_usd?: number | null
           discount_pct?: number | null
           end_date?: string | null
+          first_cycle_prorated?: boolean
           gym_id: string
           id?: string
           invoice_id?: string | null
@@ -706,12 +710,14 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          billing_anchor?: string | null
           cancelled_at?: string | null
           class_id?: string
           created_at?: string
           discount_amount_usd?: number | null
           discount_pct?: number | null
           end_date?: string | null
+          first_cycle_prorated?: boolean
           gym_id?: string
           id?: string
           invoice_id?: string | null
@@ -3547,9 +3553,12 @@ export type Database = {
       }
       approve_class_registration: {
         Args: {
+          p_billing_anchor?: string
           p_discount_amount_usd?: number
           p_discount_pct?: number
+          p_prorate?: boolean
           p_reg_id: string
+          p_start_date?: string
         }
         Returns: {
           approved_at: string | null
@@ -4061,6 +4070,7 @@ export type Database = {
           id: string
         }[]
       }
+      get_gym_primary_domain: { Args: { p_slug: string }; Returns: string }
       get_gym_slug_by_domain: { Args: { p_domain: string }; Returns: string }
       get_landing_camps: {
         Args: { p_gym_id: string }
@@ -5039,6 +5049,35 @@ export type Database = {
       set_coach_landing: {
         Args: { p_coach_id: string; p_status: string; p_visible: boolean }
         Returns: undefined
+      }
+      set_registration_anchor: {
+        Args: { p_new_anchor: string; p_reg_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          billing_anchor: string | null
+          cancelled_at: string | null
+          class_id: string
+          created_at: string
+          discount_amount_usd: number | null
+          discount_pct: number | null
+          end_date: string | null
+          first_cycle_prorated: boolean
+          gym_id: string
+          id: string
+          invoice_id: string | null
+          monthly_fee_lbp: number | null
+          monthly_fee_usd: number | null
+          paid_until: string | null
+          rejected_reason: string | null
+          requested_at: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["class_registration_status_enum"]
+          student_id: string
+          suspended_at: string | null
+          updated_at: string
+          waitlist_position: number | null
+        }
       }
       set_staff_active: {
         Args: { p_active: boolean; p_user_id: string }
