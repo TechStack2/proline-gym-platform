@@ -128,15 +128,18 @@ test('B3 · guardian: switcher → request-for-kid → payer invoice → househo
     const karimId = owner.page.url().match(/students\/([0-9a-f-]{36})/)![1];
 
     // …is absent from Rana's switcher, and a CRAFTED ?kid= URL for him must not
-    // render his dashboard (the guardian link is the only path in; the page
-    // falls back because is_guardian_of-gated reads return nothing for Karim).
+    // render his dashboard. GUARDIAN-360: a 2+-kid guardian lands on the family
+    // overview, which only ever renders her real dependents — the non-linked
+    // student is never selectable (is_guardian_of-gated reads return nothing).
     await guardian.page.goto('/en/portal');
+    await expect(vis(guardian.page, '[data-testid="family-overview"]')).toBeVisible({ timeout: 15_000 });
     await expect(vis(guardian.page, '[data-testid="kid-switcher"]').first()).not.toContainText('Karim');
     await guardian.page.goto(`/en/portal?kid=${karimId}`);
-    const dash = vis(guardian.page, '[data-testid="kid-dashboard"]').first();
-    await expect(dash).toBeVisible({ timeout: 15_000 });
-    expect(await dash.getAttribute('data-kid-id'), 'crafted kid URL must not land on the non-linked student').not.toBe(karimId);
-    await expect(dash).not.toContainText('Karim');
+    // The crafted URL opens NO kid dashboard for the non-linked student — it falls
+    // back to the family overview, which does not contain Karim.
+    await expect(vis(guardian.page, '[data-testid="family-overview"]')).toBeVisible({ timeout: 15_000 });
+    await expect(vis(guardian.page, '[data-testid="kid-dashboard"]')).toHaveCount(0);
+    await expect(vis(guardian.page, '[data-testid="family-overview"]')).not.toContainText('Karim');
   } finally {
     await owner.ctx.close();
     await guardian.ctx.close();
