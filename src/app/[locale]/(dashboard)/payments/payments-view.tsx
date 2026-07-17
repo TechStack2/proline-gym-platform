@@ -1,7 +1,7 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { Banknote } from 'lucide-react'
+import { Banknote, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { localizedName } from '@/lib/names'
 import { METHOD_LABEL } from '@/lib/billing/reconcile'
@@ -108,7 +108,14 @@ export async function PaymentsView({ locale, searchParams }: Props) {
                     </td>
                     <td className="p-3">
                       {inv ? (
-                        <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-primary-700 hover:underline">{inv.invoice_number}</Link>
+                        <span className="inline-flex items-center gap-2">
+                          <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-primary-700 hover:underline">{inv.invoice_number}</Link>
+                          <Link href={`/${locale}/invoices/${inv.id}/receipt`} data-testid="payment-receipt-link"
+                            title={t('Print receipt', 'طباعة الإيصال', 'Imprimer le reçu')}
+                            className="text-muted-foreground hover:text-foreground">
+                            <Printer className="h-3.5 w-3.5" />
+                          </Link>
+                        </span>
                       ) : '—'}
                     </td>
                     <td className="p-3">{methodLabel(p.payment_method)}</td>

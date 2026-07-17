@@ -406,23 +406,79 @@
   .shell-coach  { --surface: #475569; --shell-accent: var(--surface); } /* coach — graphite */
 }
 
-/* INVOICE-POLISH #6: printable receipt. On the receipt route, PRINT ONLY the receipt
-   card — hide the dashboard shell chrome (sidebar/header/mobile TabBar/nav) and let
-   the receipt fill a white page. Scoped via :has() to the page that carries
-   [data-testid="receipt"], so EVERY other dashboard page still prints normally (an
-   un-scoped "hide everything" would print blank elsewhere). */
+/* PRINT-FIX — thermal 80mm receipt (field finding [8]). The receipt printed wrong
+   after dark mode shipped, for three reasons this block fixes in order:
+
+   (1) DARK BLEED. The neutrals (bg-white, gray-*, border, muted-foreground) are all
+       channel-var-backed (DS-2) and INVERT under html.dark — so from a dark session
+       the "white" receipt card flipped to dark-on-light garbage on paper. Fix: pin
+       the receipt subtree to the LIGHT ramp + color-scheme:light, on SCREEN AND
+       PRINT, so a print from a dark session is byte-identical to a light one. The
+       receipt is a paper document — it should always read as paper, never themed.
+   (2) BROWSER CHROME. No @page rule → the browser stamped the URL/date header+footer.
+       @page { size: 80mm auto; margin: 0 } sets the thermal roll and drops the chrome.
+   (3) NOT RECEIPT-SHAPED. The A4-width card is pinned to 80mm and monochrome on print;
+       the dashboard shell (sidebar/header/TabBar) is hidden so the receipt fills the roll.
+   Scoped via :has() to the page carrying [data-testid="receipt"] so every OTHER page
+   still prints normally. */
+[data-testid="receipt"] {
+  color-scheme: light;
+  /* hsl tokens (muted-foreground / border / foreground / card) → exact light values */
+  --background: 0 0% 100%;
+  --foreground: 222 15% 13%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 8% 46%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 15% 13%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  /* DS-2 neutral channel vars → exact light values (defeat the html.dark inversion) */
+  --c-white: 255 255 255;
+  --c-gray-50: 249 250 251;
+  --c-gray-100: 243 244 246;
+  --c-gray-200: 229 231 235;
+  --c-gray-300: 209 213 219;
+  --c-gray-400: 156 163 175;
+  --c-gray-500: 107 114 128;
+  --c-gray-600: 75 85 99;
+  --c-gray-700: 55 65 81;
+  --c-gray-800: 31 41 55;
+  --c-gray-900: 17 24 39;
+  --c-gray-950: 3 7 18;
+  --c-bg: 255 255 255;
+  --c-fg: 17 24 39;
+  --c-muted: 243 244 246;
+  --c-muted-fg: 107 114 128;
+  --c-card: 255 255 255;
+  --c-border: 229 231 235;
+}
 @media print {
+  /* NB: @page (80mm thermal roll, no margins) is injected by the receipt PAGE itself
+     via a scoped <style>, not here — an app-wide @page would resize every other print. */
   body:has([data-testid="receipt"]) { background: #fff; }
   body:has([data-testid="receipt"]) * { visibility: hidden; }
   body:has([data-testid="receipt"]) [data-testid="receipt"],
-  body:has([data-testid="receipt"]) [data-testid="receipt"] * { visibility: visible; }
+  body:has([data-testid="receipt"]) [data-testid="receipt"] * {
+    visibility: visible;
+    /* monochrome — thermal heads print one colour; force black ink on white paper */
+    color: #000 !important;
+    border-color: #000 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   body:has([data-testid="receipt"]) [data-testid="receipt"] {
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
+    inset-inline-start: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 4mm 3mm;
+    background: #fff !important;
   }
+  /* the gym logo is the one intentional ink block — keep it, but grayscale for thermal */
+  body:has([data-testid="receipt"]) [data-testid="receipt"] img { filter: grayscale(1); }
 }
 
 /* ─── DISPLAY-FONT — landing display headings (Anton EN / Alexandria ExtraBold AR) ───
