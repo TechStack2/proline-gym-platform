@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { attendanceRecordSchema } from '@/lib/validators';
 import { saveAttendance } from './actions';
+import { recordTrialOutcome } from '../../(dashboard)/leads/actions';
 import { computeEligibility } from '@/lib/eligibility';
 import { useOnline, usePendingAttendance } from '@/lib/offline/use-online';
 import { cacheRoster, readRoster, queueMark, flushPending } from '@/lib/offline/attendance';
@@ -67,6 +68,9 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>(initialClassId || '');
   const [students, setStudents] = useState<StudentEntry[]>([]);
+  // TRIAL-SLOTS R3: trials booked onto THIS class occurrence (class + date).
+  const [trials, setTrials] = useState<{ id: string; name: string; status: string; show_up: boolean | null }[]>([]);
+  const [trialBusy, setTrialBusy] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -287,6 +291,39 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
     loadStudents();
   }, [selectedClassId, loaded, locale, selectedDate]);
+
+  // TRIAL-SLOTS R3: pull trials booked onto this class for the selected date — they
+  // ride the roster marked TRIAL (countable, one-tap check-in, never a registration).
+  useEffect(() => {
+    if (!selectedClassId || !loaded) return;
+    let cancelled = false;
+    (async () => {
+      if (!navigator.onLine) { setTrials([]); return; }
+      const { data } = await supabase
+        .from('trial_classes')
+        .select('id, status, show_up, leads(first_name, last_name)')
+        .eq('class_id', selectedClassId)
+        .eq('scheduled_date', selectedDate);
+      if (cancelled) return;
+      setTrials((data || []).map((r: any) => {
+        const l = Array.isArray(r.leads) ? r.leads[0] : r.leads;
+        return { id: r.id, name: `${l?.first_name ?? ''} ${l?.last_name ?? ''}`.trim() || '—', status: r.status, show_up: r.show_up };
+      }));
+    })();
+    return () => { cancelled = true; };
+  }, [selectedClassId, selectedDate, loaded, supabase]);
+
+  const markTrial = async (trialId: string, status: 'completed' | 'no_show', showUp: boolean) => {
+    setTrialBusy(trialId);
+    const res = await recordTrialOutcome({ trialId, status, showUp });
+    setTrialBusy('');
+    if (res.ok) {
+      setTrials((ts) => ts.map((tr) => (tr.id === trialId ? { ...tr, status, show_up: showUp } : tr)));
+      toast.success(msg('coach.attendance.trialRecorded'));
+    } else {
+      toast.error(msg('common.genericError'));
+    }
+  };
 
   // G2: flush the pending queue on page load AND whenever connectivity returns,
   // draining oldest-first through the EXISTING idempotent upsert (saveAttendance).
@@ -598,6 +635,40 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                   </>
                 )}
               </button>
+
+              {/* TRIAL-SLOTS R3: trials on this occurrence — marked TRIAL, one-tap check-in. */}
+              {trials.length > 0 && (
+                <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/40 p-3" data-testid="attendance-trials">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">{msg('coach.attendance.trialsTitle')}</p>
+                  <div className="space-y-2">
+                    {trials.map((tr) => (
+                      <div key={tr.id} data-testid="attendance-trial-row" data-lead-name={tr.name} data-trial-status={tr.status}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
+                        <span className="flex items-center gap-2 text-sm">
+                          <span className="rounded bg-purple-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">{msg('coach.attendance.trialBadge')}</span>
+                          {tr.name}
+                        </span>
+                        {tr.status === 'scheduled' ? (
+                          <span className="flex gap-1">
+                            <button data-testid="trial-checkin" disabled={trialBusy === tr.id}
+                              onClick={() => markTrial(tr.id, 'completed', true)}
+                              className="rounded-lg bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">
+                              <Check className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialAttended')}
+                            </button>
+                            <button data-testid="trial-noshow" disabled={trialBusy === tr.id}
+                              onClick={() => markTrial(tr.id, 'no_show', false)}
+                              className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">
+                              <X className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialNoShow')}
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="text-xs font-medium text-gray-600">{tr.show_up ? msg('coach.attendance.trialAttended') : msg('coach.attendance.trialNoShow')}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </>

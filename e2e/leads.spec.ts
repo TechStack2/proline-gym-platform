@@ -122,11 +122,13 @@ test('Lead→Member slice: origination (web + staff) → trial → convert → m
     await expect(staffCard.getByTestId('lead-source'), 'manual lead must carry source=Phone').toHaveText(/Phone/i);
     await shot(owner.page, testInfo, 'leads-3-staff-added');
 
-    // ── T3 — schedule a trial (date/time/coach) on the staff lead ─────────────
+    // ── T3 — schedule a trial on a REAL class occurrence (TRIAL-SLOTS) ─────────
+    // The e2e gym's Muay Thai class runs every weekday taught by Sami, so today's
+    // occurrence is the first "Muay Thai" option; picking it pins the trial to that
+    // occurrence (and its coach) — no more free-range date/time.
     await staffCard.getByRole('button', { name: /Schedule Trial/i }).click();
-    await staffCard.getByTestId('trial-date').fill(tomorrow());
-    await staffCard.getByTestId('trial-time').selectOption('17:00');
-    await staffCard.getByTestId('trial-coach').selectOption({ label: COACH_EN });
+    const occ = staffCard.getByTestId('trial-occurrence');
+    await occ.selectOption(await occ.locator('option', { hasText: 'Muay Thai' }).first().getAttribute('value') as string);
     await staffCard.getByTestId('trial-confirm').click();
     // Durable proof (toasts are transient): after the action + refresh the card
     // reflects trial_scheduled (trial_classes row written + lead flipped).

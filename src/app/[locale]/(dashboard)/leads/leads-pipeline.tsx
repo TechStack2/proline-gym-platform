@@ -14,6 +14,7 @@ import type {
   InviteInfo,
 } from './leads-types';
 import { COUNTABLE_STATUSES, LEADS_LIMIT, STATUS_COLORS, SOURCE_ICONS } from './leads-types';
+import { upcomingClassOccurrences } from '@/lib/trials/occurrences';
 import { FunnelStrip } from './funnel-strip';
 import { getFunnel, monthStartISO } from '@/lib/growth/funnel';
 import { Megaphone } from 'lucide-react';
@@ -123,15 +124,51 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
     // already gym-isolated.
     supabase
       .from('trial_classes')
-      .select('id, lead_id, scheduled_date, scheduled_time, assigned_coach_id, status, show_up')
+      .select('id, lead_id, class_id, scheduled_date, scheduled_time, assigned_coach_id, status, show_up, classes(name_ar, name_en, name_fr)')
       .order('scheduled_date', { ascending: false }),
     supabase.from('account_invites').select('student_id, status, channel'),
   ]);
 
   const coaches = (coachesRes.data || []) as GymCoach[];
   const plans = (plansRes.data || []) as MembershipPlan[];
-  const trials = (trialsRes.data || []) as TrialInfo[];
+  const locName = (o: { name_ar: string; name_en: string; name_fr: string } | null | undefined) =>
+    o ? (locale === 'ar' ? o.name_ar : locale === 'fr' ? o.name_fr : o.name_en) : null;
+  const trials = ((trialsRes.data || []) as Array<Record<string, unknown>>).map((r) => {
+    const cls = Array.isArray(r.classes) ? r.classes[0] : r.classes;
+    return { ...r, class_name: locName(cls as { name_ar: string; name_en: string; name_fr: string } | null) } as unknown as TrialInfo;
+  });
   const invites = (invitesRes.data || []) as InviteInfo[];
+
+  // ── TRIAL-SLOTS R2: upcoming class occurrences (next 2 weeks) for the trial picker ──
+  const { data: schedRows } = await supabase
+    .from('class_schedules')
+    .select('day_of_week, start_time, end_time, valid_from, valid_until, classes!inner(id, name_ar, name_en, name_fr, coach_id, max_capacity, gym_id, is_active)')
+    .eq('classes.gym_id', gymId)
+    .eq('is_active', true);
+  const schedList = (schedRows || []) as Array<Record<string, unknown>>;
+  const clsOf = (r: Record<string, unknown>) => (Array.isArray(r.classes) ? r.classes[0] : r.classes) as {
+    id: string; name_ar: string; name_en: string; name_fr: string; coach_id: string | null; max_capacity: number | null; is_active: boolean;
+  };
+  const classIds = [...new Set(schedList.map((r) => clsOf(r).id))];
+  const { data: regRows } = classIds.length
+    ? await supabase.from('class_registrations').select('class_id, status').in('class_id', classIds).eq('status', 'active')
+    : { data: [] as { class_id: string }[] };
+  const regCount = new Map<string, number>();
+  for (const r of (regRows || []) as { class_id: string }[]) regCount.set(r.class_id, (regCount.get(r.class_id) ?? 0) + 1);
+  const coachNameById = new Map(coaches.map((c) => [c.id, locale === 'ar' ? c.first_name_ar : locale === 'fr' ? c.first_name_fr : c.first_name_en]));
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const occurrences = upcomingClassOccurrences(
+    schedList.filter((r) => clsOf(r).is_active).map((r) => {
+      const c = clsOf(r);
+      return {
+        classId: c.id, className: locName(c) ?? '', coachId: c.coach_id, coachName: (c.coach_id && coachNameById.get(c.coach_id)) || '',
+        maxCapacity: c.max_capacity, activeRegCount: regCount.get(c.id) ?? 0,
+        dayOfWeek: r.day_of_week as number, startTime: r.start_time as string, endTime: r.end_time as string,
+        validFrom: (r.valid_from as string | null) ?? null, validUntil: (r.valid_until as string | null) ?? null,
+      };
+    }),
+    todayISO, 14,
+  );
 
   // GRW-1: the growth funnel (this month) — conversion rate + by-source/campaign.
   const funnel = await getFunnel(supabase, gymId, monthStartISO());
@@ -186,6 +223,7 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
           coaches={coaches}
           plans={plans}
           trials={trials}
+          occurrences={occurrences}
           invites={invites}
           gymId={gymId}
           gymName={gymName}

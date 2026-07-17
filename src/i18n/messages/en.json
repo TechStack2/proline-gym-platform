@@ -846,7 +846,15 @@
       "weekdays": "Mon – Fri: 6:00 AM – 10:00 PM",
       "saturday": "Sat: 8:00 AM – 8:00 PM",
       "sunday": "Sun: 9:00 AM – 6:00 PM",
-      "days": { "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday", "thu": "Thursday", "fri": "Friday", "sat": "Saturday", "sun": "Sunday" },
+      "days": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      },
       "closed": "Closed",
       "rights": "All rights reserved.",
       "fakih": "By Fakih Brothers."
@@ -1155,7 +1163,18 @@
       "pt": "PT",
       "camp": "Camp"
     },
-    "convert_as_family": "Set up as a family instead →"
+    "convert_as_family": "Set up as a family instead →",
+    "trial_pt": "PT trial",
+    "trial_kind_class": "Class",
+    "trial_kind_pt": "PT",
+    "no_occurrences": "No upcoming class sessions in the next two weeks.",
+    "pick_occurrence": "Pick a class session…",
+    "trial_full": "Full — will overbook",
+    "trial_spots": "{count} left",
+    "overbook_hint": "Full — the trial will overbook this class (owner-allowed).",
+    "no_pt_slots": "No open slots for this coach in the next two weeks.",
+    "pick_pt_slot": "Pick an available slot…",
+    "loading": "Loading…"
   },
   "camps": {
     "title": "Camps",
@@ -1483,7 +1502,15 @@
       "hoursEnable": "Show opening hours on the landing page",
       "hoursHint": "When off, the default hours block is shown.",
       "hoursClosed": "Closed",
-      "days": { "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday", "thu": "Thursday", "fri": "Friday", "sat": "Saturday", "sun": "Sunday" }
+      "days": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
     },
     "exchange": {
       "currentRate": "Current Exchange Rate",
@@ -1966,7 +1993,12 @@
       "late": "Late",
       "excused": "Excused",
       "eligible": "Eligible",
-      "notYet": "Not yet"
+      "notYet": "Not yet",
+      "trialsTitle": "Trials on this session",
+      "trialBadge": "Trial",
+      "trialAttended": "Attended",
+      "trialNoShow": "No-show",
+      "trialRecorded": "Trial outcome recorded"
     },
     "students": {
       "title": "My Students",

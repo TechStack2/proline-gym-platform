@@ -59,12 +59,17 @@ export interface MembershipPlan {
 export interface TrialInfo {
   id: string;
   lead_id: string;
+  class_id: string | null;
+  class_name: string | null;
   scheduled_date: string;
   scheduled_time: string | null;
   assigned_coach_id: string | null;
   status: 'scheduled' | 'completed' | 'no_show' | 'cancelled';
   show_up: boolean | null;
 }
+
+// TRIAL-SLOTS: an upcoming class occurrence for the trial picker (from occurrences.ts).
+export type { ClassOccurrence, PtTrialSlot } from '@/lib/trials/occurrences';
 
 /** Simulated login-invite state for a converted member. */
 export interface InviteInfo {
