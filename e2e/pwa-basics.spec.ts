@@ -127,11 +127,20 @@ test.describe('PWA-BASICS + INVITE-HOST', () => {
         await page.goto(`/${locale}/coach`)
         await page.evaluate(() => localStorage.removeItem('pwa_install_dismissed'))
         await page.reload()
-        await expect(vis(page, '[data-testid="install-app-card"]').first()).toBeVisible({ timeout: 15_000 })
-        await page.screenshot({ path: `screenshots/pwa-basics-install-coach-${locale}.png`, fullPage: true }).catch(() => {})
+        const install = vis(page, '[data-testid="install-app-card"]').first()
+        await expect(install).toBeVisible({ timeout: 15_000 })
+        await page.waitForLoadState('networkidle').catch(() => {})
+        await install.scrollIntoViewIfNeeded()
+        await page.waitForTimeout(700) // let the streamed content + fade-in settle
+        await install.screenshot({ path: `screenshots/pwa-basics-install-coach-${locale}.png` }).catch(() => {})
+
         await page.goto(`/${locale}/coach/profile`)
-        await expect(vis(page, '[data-testid="settings-language"]').first()).toBeVisible({ timeout: 15_000 })
-        await page.screenshot({ path: `screenshots/pwa-basics-language-coach-${locale}.png`, fullPage: true }).catch(() => {})
+        const lang = vis(page, '[data-testid="settings-language"]').first()
+        await expect(lang).toBeVisible({ timeout: 15_000 })
+        await page.waitForLoadState('networkidle').catch(() => {})
+        await lang.scrollIntoViewIfNeeded()
+        await page.waitForTimeout(700)
+        await lang.screenshot({ path: `screenshots/pwa-basics-language-coach-${locale}.png` }).catch(() => {})
       } finally { await ctx.close() }
     })
   }
