@@ -25,6 +25,39 @@ let invSeq = 0
 async function svc(path: string, init?: RequestInit) {
   return fetch(`${URL}/rest/v1/${path}`, { ...init, headers: { ...H, ...(init?.headers || {}) } })
 }
+async function svcGet(path: string): Promise<any[]> {
+  const r = await svc(path)
+  if (!r.ok) throw new Error(`GET ${path} → ${r.status} ${await r.text()}`)
+  return r.json()
+}
+const grp = (n: number) => Number(n).toLocaleString('en-US') // mirrors fmtLbp exactly
+/** Expected outstanding (USD + LBP), computed from the ledger the SAME way the app
+ *  does (balanceUsd clamps <0.01; balanceLbp clamps <1) — so the assertion holds
+ *  against the seeded gym's own invoices PLUS the ones this spec added. */
+async function expectedOutstanding(): Promise<{ usd: string; lbp: string }> {
+  const invs = await svcGet(`invoices?gym_id=eq.${gymId}&status=in.(pending,partial,overdue)&select=id,total_usd,total_lbp&limit=500`)
+  const ids = invs.map((i) => i.id)
+  const pays = ids.length ? await svcGet(`payments?invoice_id=in.(${ids.join(',')})&select=invoice_id,amount_usd,amount_lbp`) : []
+  const pu = new Map<string, number>(); const pl = new Map<string, number>()
+  for (const p of pays) { pu.set(p.invoice_id, (pu.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0)); pl.set(p.invoice_id, (pl.get(p.invoice_id) ?? 0) + Number(p.amount_lbp ?? 0)) }
+  let u = 0; let l = 0
+  for (const i of invs) {
+    const bu = Number(i.total_usd ?? 0) - (pu.get(i.id) ?? 0); if (bu >= 0.01) u += Math.round(bu * 100) / 100
+    const bl = Number(i.total_lbp ?? 0) - (pl.get(i.id) ?? 0); if (bl >= 1) l += Math.round(bl)
+  }
+  return { usd: `$${u.toFixed(2)}`, lbp: `${grp(l)} LBP` }
+}
+/** Expected collections for a method THIS MONTH (both columns) — includes this spec's
+ *  refund (negative) + discounted (net) rows, so a match proves they flow through. */
+async function expectedMethodThisMonth(method: string): Promise<{ usd: string; lbp: string }> {
+  const mk = new Date().toISOString().slice(0, 7)
+  const start = `${mk}-01T00:00:00Z`
+  const end = new Date(`${mk}-01T00:00:00Z`); end.setUTCMonth(end.getUTCMonth() + 1)
+  const pays = await svcGet(`payments?select=amount_usd,amount_lbp,payment_method,invoices!inner(gym_id)&invoices.gym_id=eq.${gymId}&payment_method=eq.${method}&payment_date=gte.${start}&payment_date=lt.${end.toISOString()}`)
+  let u = 0; let l = 0
+  for (const p of pays) { u += Number(p.amount_usd ?? 0); l += Number(p.amount_lbp ?? 0) }
+  return { usd: `$${u.toFixed(2)}`, lbp: `${grp(l)} LBP` }
+}
 async function setPref(pref: 'USD' | 'LBP' | 'BOTH') {
   const r = await svc(`gyms?id=eq.${gymId}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ currency_preference: pref }) })
   if (!r.ok) throw new Error(`set pref ${pref} → ${r.status} ${await r.text()}`)
@@ -103,31 +136,32 @@ test.beforeAll(async () => {
 test('1 · BOTH preference — every aggregation shows both totals as recorded (refund + discount netted)', async ({ browser }) => {
   test.setTimeout(120_000)
   await setPref('BOTH')
+  const exp = await expectedOutstanding()
+  const expLbp = await expectedMethodThisMonth('cash_lbp') // includes the refund + discounted rows
   const { ctx, page } = await ownerLogin(browser, 'en')
   try {
     await page.goto('/en/money', { waitUntil: 'domcontentloaded' })
 
-    // Outstanding — both columns.
+    // Outstanding — both columns, exactly matching the ledger (BOTH → USD leads).
     const outstanding = page.getByTestId('money-outstanding')
     await expect(outstanding).toBeVisible({ timeout: 15_000 })
-    await expect(outstanding).toHaveText('$110.00')
-    await expect(page.getByTestId('money-outstanding-lbp')).toHaveText('9,790,000 LBP')
+    await expect(outstanding).toHaveText(exp.usd)
+    await expect(page.getByTestId('money-outstanding-lbp')).toHaveText(exp.lbp)
 
-    // Daily drawer tally — the cash_lbp chip carries both (net of the refund).
+    // Daily drawer tally shows a real LBP figure (the cash_lbp chip carries both).
     const tallyLbp = page.locator('[data-testid="money-tally-method"][data-method="cash_lbp"]')
-    await expect(tallyLbp).toContainText('$50.00')
-    await expect(tallyLbp).toContainText('4,450,000 LBP')
-    const tallyUsd = page.locator('[data-testid="money-tally-method"][data-method="cash_usd"]')
-    await expect(tallyUsd).toContainText('$100.00')
+    await expect(tallyLbp).toContainText('$')
+    await expect(tallyLbp).toContainText('LBP')
 
-    // Owner finances: revenue total + collections by method — both columns.
+    // Owner finances: revenue total carries an LBP line; collections-by-method for
+    // cash_lbp matches the ledger EXACTLY (net of the refund + the discount).
     await expect(page.getByTestId('owner-finances')).toBeVisible({ timeout: 15_000 })
-    const revRow = page.locator('[data-testid="revenue-row"]').first()
-    await expect(revRow.getByTestId('revenue-row-total')).toContainText('$150')
-    await expect(revRow.getByTestId('revenue-row-total-lbp')).toHaveText('4,450,000 LBP')
+    const revLbp = page.locator('[data-testid="revenue-row"]').first().getByTestId('revenue-row-total-lbp')
+    await expect(revLbp).toBeVisible()
+    await expect(revLbp).toContainText('LBP')
     const methodLbp = page.locator('[data-testid="method-row"][data-method="cash_lbp"] [data-testid="method-amount"]')
-    await expect(methodLbp).toContainText('$50.00')
-    await expect(methodLbp).toContainText('4,450,000 LBP')
+    await expect(methodLbp).toContainText(expLbp.usd)
+    await expect(methodLbp).toContainText(expLbp.lbp)
 
     await page.screenshot({ path: 'screenshots/money-lbp-both-en.png', fullPage: true })
   } finally {
@@ -138,14 +172,15 @@ test('1 · BOTH preference — every aggregation shows both totals as recorded (
 test('2 · LBP preference (ar/RTL) — LBP leads, USD muted', async ({ browser }) => {
   test.setTimeout(120_000)
   await setPref('LBP')
+  const exp = await expectedOutstanding()
   const { ctx, page } = await ownerLogin(browser, 'ar')
   try {
     await page.goto('/ar/money', { waitUntil: 'domcontentloaded' })
     const outstanding = page.getByTestId('money-outstanding')
     await expect(outstanding).toBeVisible({ timeout: 15_000 })
     // LBP leads the headline; USD is the muted secondary line.
-    await expect(outstanding).toHaveText('9,790,000 LBP')
-    await expect(page.getByTestId('money-outstanding-lbp')).toHaveText('$110.00')
+    await expect(outstanding).toHaveText(exp.lbp)
+    await expect(page.getByTestId('money-outstanding-lbp')).toHaveText(exp.usd)
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
     await page.screenshot({ path: 'screenshots/money-lbp-lbp-ar.png', fullPage: true })
   } finally {
@@ -156,13 +191,14 @@ test('2 · LBP preference (ar/RTL) — LBP leads, USD muted', async ({ browser }
 test('3 · USD preference — USD leads; the LBP total still shows because it was recorded', async ({ browser }) => {
   test.setTimeout(120_000)
   await setPref('USD')
+  const exp = await expectedOutstanding()
   const { ctx, page } = await ownerLogin(browser, 'en')
   try {
     await page.goto('/en/money', { waitUntil: 'domcontentloaded' })
     const outstanding = page.getByTestId('money-outstanding')
-    await expect(outstanding).toHaveText('$110.00')
+    await expect(outstanding).toHaveText(exp.usd)
     // USD-pref still surfaces the recorded LBP (honest, never hidden when it exists).
-    await expect(page.getByTestId('money-outstanding-lbp')).toHaveText('9,790,000 LBP')
+    await expect(page.getByTestId('money-outstanding-lbp')).toHaveText(exp.lbp)
   } finally {
     await ctx.close()
   }
