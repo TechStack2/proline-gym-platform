@@ -62,9 +62,15 @@ export function ImportClient({ locale }: Props) {
     setBusy('parse'); setSummary(null); setPlan(null); setExcluded(new Set())
     try {
       const readXlsxFile = (await import('read-excel-file/browser')).default
-      const sheet = await readXlsxFile(file)
+      // v9 returns the sheets wrapped as [{ sheet, data }] — take the first sheet's rows.
+      const parsed = (await readXlsxFile(file)) as unknown
+      const first = Array.isArray(parsed) ? parsed[0] : undefined
+      const sheetRows: unknown[][] =
+        first && typeof first === 'object' && !Array.isArray(first) && 'data' in first
+          ? (first as { data: unknown[][] }).data
+          : (parsed as unknown[][])
       // Row 0 is the (localized) header — mapping is BY POSITION, so header text is ignored.
-      const rawRows: RawRow[] = sheet.slice(1).map((cells) => rowFromCells(cells as unknown as unknown[]))
+      const rawRows: RawRow[] = (sheetRows ?? []).slice(1).map((cells) => rowFromCells(cells as unknown[]))
       const ctx = await getImportContext()
       const existing = new Set(ctx.ok ? ctx.existingPhones : [])
       const built = buildImportPlan(rawRows, existing)
