@@ -79,3 +79,31 @@ $$;
 REVOKE ALL ON FUNCTION schedule_trial(UUID, DATE, TIME, UUID, UUID, NUMERIC) FROM PUBLIC;
 REVOKE ALL ON FUNCTION schedule_trial(UUID, DATE, TIME, UUID, UUID, NUMERIC) FROM anon;
 GRANT EXECUTE ON FUNCTION schedule_trial(UUID, DATE, TIME, UUID, UUID, NUMERIC) TO authenticated, service_role;
+
+-- 3. Roster surfacing (R3): a class occurrence's trials, with lead names, for the
+--    attendance sheet. SECURITY DEFINER because a COACH cannot read `leads` directly
+--    (the trial_classes RLS EXISTS(leads …) fails for them) — the same reason
+--    get_coach_trials exists. Staff-only, gym-scoped via the class.
+CREATE OR REPLACE FUNCTION get_class_trials(p_class_id UUID, p_date DATE)
+RETURNS TABLE (id UUID, lead_name TEXT, status trial_status_enum, show_up BOOLEAN)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT is_staff() THEN RETURN; END IF;
+  RETURN QUERY
+  SELECT t.id,
+         TRIM(COALESCE(l.first_name, '') || ' ' || COALESCE(l.last_name, '')),
+         t.status, t.show_up
+  FROM trial_classes t
+  JOIN leads l   ON l.id = t.lead_id
+  JOIN classes c ON c.id = t.class_id
+  WHERE t.class_id = p_class_id
+    AND t.scheduled_date = p_date
+    AND c.gym_id = get_user_gym_id()
+  ORDER BY t.created_at;
+END;
+$$;
+REVOKE ALL ON FUNCTION get_class_trials(UUID, DATE) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_class_trials(UUID, DATE) FROM anon;
+GRANT EXECUTE ON FUNCTION get_class_trials(UUID, DATE) TO authenticated, service_role;

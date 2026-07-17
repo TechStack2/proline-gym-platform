@@ -4059,6 +4059,15 @@ export type Database = {
           student_name: string
         }[]
       }
+      get_class_trials: {
+        Args: { p_class_id: string; p_date: string }
+        Returns: {
+          id: string
+          lead_name: string
+          show_up: boolean
+          status: Database["public"]["Enums"]["trial_status_enum"]
+        }[]
+      }
       get_coach_trials: {
         Args: never
         Returns: {

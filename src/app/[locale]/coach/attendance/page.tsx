@@ -299,16 +299,10 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
     let cancelled = false;
     (async () => {
       if (!navigator.onLine) { setTrials([]); return; }
-      const { data } = await supabase
-        .from('trial_classes')
-        .select('id, status, show_up, leads(first_name, last_name)')
-        .eq('class_id', selectedClassId)
-        .eq('scheduled_date', selectedDate);
+      // A coach cannot read leads directly (RLS), so go through the definer RPC.
+      const { data } = await supabase.rpc('get_class_trials', { p_class_id: selectedClassId, p_date: selectedDate });
       if (cancelled) return;
-      setTrials((data || []).map((r: any) => {
-        const l = Array.isArray(r.leads) ? r.leads[0] : r.leads;
-        return { id: r.id, name: `${l?.first_name ?? ''} ${l?.last_name ?? ''}`.trim() || '—', status: r.status, show_up: r.show_up };
-      }));
+      setTrials((data || []).map((r: any) => ({ id: r.id, name: (r.lead_name || '').trim() || '—', status: r.status, show_up: r.show_up })));
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
