@@ -19,6 +19,15 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
+  // DISCOUNT (finding 16): a payment-time discount is an owner/receptionist power only
+  // (the DB re-checks — this just gates the affordance). Coach/head-coach can record a
+  // payment but not discount it.
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: roleRow } = user
+    ? await supabase.from('user_roles').select('role').eq('user_id', user.id).limit(1).maybeSingle()
+    : { data: null }
+  const canDiscount = ['owner', 'receptionist'].includes((roleRow as { role?: string } | null)?.role ?? '')
+
   const { data: inv } = await supabase
     .from('invoices')
     .select(`id, invoice_number, invoice_type, amount_usd, amount_lbp, tax_amount_usd, tax_rate, total_usd, total_lbp,
@@ -115,6 +124,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
         <h2 className="mb-2 text-sm font-semibold">{t('Record a payment', 'تسجيل دفعة', 'Enregistrer un paiement')}</h2>
         <PaymentForm
           locale={locale}
+          canDiscount={canDiscount}
           invoice={{
             id: inv.id,
             invoice_number: inv.invoice_number,

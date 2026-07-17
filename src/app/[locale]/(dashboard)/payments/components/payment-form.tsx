@@ -14,10 +14,12 @@
  */
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { recordPayment, referenceExists } from '../../invoices/actions'
+import { computeDiscount, type DiscountMode } from '@/lib/billing/discount'
 import { useErrorText } from '@/lib/errors/use-error-text';
 
 type Method = 'cash_usd' | 'cash_lbp' | 'omt' | 'whish' | 'bank_transfer' | 'bob_finance'
@@ -40,7 +42,7 @@ const METHODS: { value: Method; en: string; ar: string; fr: string }[] = [
   { value: 'bob_finance', en: 'BOB Finance', ar: 'BOB Finance', fr: 'BOB Finance' },
 ]
 
-export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; locale: string }) {
+export function PaymentForm({ invoice, locale, canDiscount = false }: { invoice: PayableInvoice; locale: string; canDiscount?: boolean }) {
   const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const router = useRouter()
@@ -55,11 +57,29 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10))
   const [error, setError] = useState<string>('')
 
+  // DISCOUNT (finding 16): owner/reception only. Enter in % OR $ against the balance;
+  // the other value + the new amount due compute live. Entering a discount defaults
+  // the collected amount to the new due (the common "give X off, collect the rest").
+  const [discountMode, setDiscountMode] = useState<DiscountMode>('pct')
+  const [discountRaw, setDiscountRaw] = useState<string>('')
+  const disc = computeDiscount(discountMode, discountRaw, invoice.balance_usd)
+  const discountBlocks = canDiscount && discountRaw.trim() !== '' && !disc.valid
+  const applyDiscount = (mode: DiscountMode, raw: string) => {
+    const d = computeDiscount(mode, raw, invoice.balance_usd)
+    if (d.valid) setAmountUsd(d.dueAfter.toFixed(2))
+  }
+  const onDiscountRaw = (raw: string) => { setDiscountRaw(raw); applyDiscount(discountMode, raw) }
+  const onDiscountMode = (mode: DiscountMode) => { setDiscountMode(mode); applyDiscount(mode, discountRaw) }
+
   async function submit() {
     setError('')
     const usd = parseFloat(amountUsd)
     if (!Number.isFinite(usd) || usd <= 0) {
       setError(t('Enter a positive amount.', 'أدخل مبلغاً موجباً.', 'Saisissez un montant positif.'))
+      return
+    }
+    if (discountBlocks) {
+      setError(t('The discount is larger than the balance due.', 'الخصم أكبر من الرصيد المستحق.', 'La remise dépasse le solde dû.'))
       return
     }
     // E10: duplicate-reference soft warn (non-blocking).
@@ -78,6 +98,7 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
         reference: reference.trim() || null,
         exchangeRate: invoice.exchange_rate,
         paymentDate: date,
+        discountUsd: canDiscount ? disc.discountUsd : 0,
       })
       if (!res.ok) {
         setError(errText(res.error))
@@ -102,6 +123,38 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
 
   return (
     <div data-testid="payment-form" className={`space-y-4 rounded-xl border p-4 ${isRTL ? 'text-right' : ''}`}>
+      {/* DISCOUNT (owner/reception only) — %|value toggle; the other value + the new
+          amount due compute live and the collected amount defaults to the new due. */}
+      {canDiscount && (
+        <div data-testid="discount-section" className="space-y-2 rounded-lg border border-dashed border-primary-300 bg-primary-50/40 p-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="discount-input">{t('Discount', 'خصم', 'Remise')}</Label>
+            <div className="inline-flex overflow-hidden rounded-md border text-xs font-medium">
+              <button type="button" data-testid="discount-mode-pct" aria-pressed={discountMode === 'pct'}
+                onClick={() => onDiscountMode('pct')}
+                className={cn('px-3 py-1', discountMode === 'pct' ? 'bg-primary-700 text-primary-foreground' : 'bg-background')}>%</button>
+              <button type="button" data-testid="discount-mode-value" aria-pressed={discountMode === 'value'}
+                onClick={() => onDiscountMode('value')}
+                className={cn('px-3 py-1', discountMode === 'value' ? 'bg-primary-700 text-primary-foreground' : 'bg-background')}>$</button>
+            </div>
+          </div>
+          <Input id="discount-input" data-testid="discount-input" type="number" step={discountMode === 'pct' ? '1' : '0.01'} min="0"
+            value={discountRaw} onChange={(e) => onDiscountRaw(e.target.value)}
+            placeholder={discountMode === 'pct' ? t('e.g. 10 (%)', 'مثال 10 (٪)', 'ex. 10 (%)') : t('e.g. 5.00 ($)', 'مثال 5.00 ($)', 'ex. 5.00 ($)')} />
+          {discountRaw.trim() !== '' && (
+            disc.valid ? (
+              <p className="text-xs text-gray-700" data-testid="discount-summary">
+                {t('Discount', 'الخصم', 'Remise')}: <span data-testid="discount-usd">${disc.discountUsd.toFixed(2)}</span> (<span data-testid="discount-pct">{disc.pct}</span>%) · {t('New due', 'المستحق الجديد', 'Nouveau dû')}: <span data-testid="discount-due-after">${disc.dueAfter.toFixed(2)}</span>
+              </p>
+            ) : (
+              <p className="text-xs text-red-600" data-testid="discount-invalid">
+                {t('The discount is larger than the balance due.', 'الخصم أكبر من الرصيد المستحق.', 'La remise dépasse le solde dû.')}
+              </p>
+            )
+          )}
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="pay-amount-usd">{t('Amount (USD)', 'المبلغ (دولار)', 'Montant (USD)')}</Label>
@@ -141,7 +194,7 @@ export function PaymentForm({ invoice, locale }: { invoice: PayableInvoice; loca
         <div data-testid="pay-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
 
-      <Button data-testid="pay-submit" onClick={submit} disabled={pending}
+      <Button data-testid="pay-submit" onClick={submit} disabled={pending || discountBlocks}
         className="bg-primary-700 hover:bg-primary-800">
         {pending ? t('Recording…', 'جارٍ التسجيل…', 'Enregistrement…') : t('Record payment', 'تسجيل الدفعة', 'Enregistrer le paiement')}
       </Button>

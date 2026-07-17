@@ -148,6 +148,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DISCOUNT: payment-time %|value discount (owner/reception). Hermetic own gym —
+      // %↔value math, over-due client+DB guards, receipt discount line, net tally,
+      // permission matrix (coach RPC refused). Needs SUPABASE_SERVICE_ROLE_KEY.
+      name: 'payment-discount',
+      dependencies: ['setup'],
+      testMatch: /payment-discount\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PRINT-FIX: the thermal 80mm receipt renders as white paper (no dark bleed),
       // ships a scoped @page (no browser chrome), and emits a PDF from a dark session.
       // Reads the shared gym's seeded invoice; owner context via ROLES.owner.storage.

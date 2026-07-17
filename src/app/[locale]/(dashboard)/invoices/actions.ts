@@ -76,6 +76,9 @@ export async function recordPayment(input: {
   // present, a re-push of the same key no-ops (record_payment returns the invoice
   // unchanged) → exactly one canonical payment. Online single-fire passes null.
   clientUuid?: string | null;
+  // DISCOUNT (finding 16): an optional payment-time discount in USD. The DB reduces
+  // the invoice total by this (owner/reception only, ≤ remaining due — DB-guarded).
+  discountUsd?: number;
 }): Promise<Result<InvoiceRow>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -90,6 +93,7 @@ export async function recordPayment(input: {
     p_exchange_rate: input.exchangeRate ?? null,
     p_payment_date: input.paymentDate ?? null,
     p_client_uuid: input.clientUuid ?? null,
+    p_discount_usd: input.discountUsd ?? 0,
   });
   if (error) return { ok: false, error: actionError(error) };
   revalidatePath('/invoices');
