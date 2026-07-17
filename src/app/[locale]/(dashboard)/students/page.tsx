@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { StudentList } from './components/student-list'
 import { StudentFilters } from './components/student-filters'
+import { MembersTabs } from './components/members-tabs'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
 import { getMemberEnrichment } from '@/lib/members/enrichment'
 import { getEnabledProducts } from '@/lib/gym/products'
@@ -24,21 +25,8 @@ export default async function StudentsPage({
   const activeTab = searchParams.tab === 'prospects' ? 'prospects' : 'active'
 
   // ── IA-2: Members workspace tabs — Active (roster) | Prospects (lead pipeline,
-  //    re-homed from /leads; conversion moves a person across, same flow) ──
-  const Tabs = (
-    <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="members-tabs">
-      <Link href={`/${locale}/students`} data-testid="tab-active"
-        className={cn('rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
-          activeTab === 'active' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
-        {t('tabs_active')}
-      </Link>
-      <Link href={`/${locale}/students?tab=prospects`} data-testid="tab-prospects"
-        className={cn('rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
-          activeTab === 'prospects' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
-        {t('tabs_prospects')}
-      </Link>
-    </div>
-  )
+  //    re-homed from /leads) | Guardians (GUARDIAN-360 family view). Shared strip. ──
+  const Tabs = <MembersTabs active={activeTab} locale={locale} />
 
   if (activeTab === 'prospects') {
     return (

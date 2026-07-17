@@ -135,8 +135,10 @@ test('F3 · guardian signs a minor’s waiver → signed_by = guardian, student 
   const guardian = await ctxFor(browser, 'parent') // Rana → kids Omar + Lina
   try {
     // Guardian portal → select Omar → the kid waiver card (unsigned) → sign.
+    // GUARDIAN-360: a 2+-kid guardian lands on the family overview; pick Omar from
+    // the retained switcher.
     await guardian.page.goto('/en/portal')
-    await expect(guardian.page).toHaveURL(/\/portal\?kid=/, { timeout: 15_000 })
+    await expect(vis(guardian.page, '[data-testid="family-overview"]')).toBeVisible({ timeout: 15_000 })
     await vis(guardian.page, '[data-testid="kid-chip"]').filter({ hasText: 'Omar' }).first().click()
     await expect(vis(guardian.page, '[data-testid="kid-name"]').first()).toContainText('Omar', { timeout: 15_000 })
     const kidCard = vis(guardian.page, '[data-testid="kid-waiver"]').first()

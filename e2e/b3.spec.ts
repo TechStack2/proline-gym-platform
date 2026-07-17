@@ -36,7 +36,9 @@ test('B3 · guardian: switcher → request-for-kid → payer invoice → househo
 
     // ── 1. Guardian portal: switcher shows both kids ──
     await guardian.page.goto('/en/portal');
-    await expect(guardian.page).toHaveURL(/\/portal\?kid=/, { timeout: 15_000 }); // guardian-only → defaults to a kid
+    // GUARDIAN-360 (finding 13): a 2+-dependent guardian now LEADS with the family
+    // overview (was a redirect to the first kid). The kid-switcher is retained on it.
+    await expect(vis(guardian.page, '[data-testid="family-overview"]')).toBeVisible({ timeout: 15_000 });
     const switcher = vis(guardian.page, '[data-testid="kid-switcher"]').first();
     await expect(switcher).toBeVisible({ timeout: 15_000 });
     await expect(vis(guardian.page, '[data-testid="kid-chip"]')).toHaveCount(2);

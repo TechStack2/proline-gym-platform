@@ -151,8 +151,16 @@ export async function KidDashboard({
       )}
       {/* Switcher */}
       <div className="flex flex-wrap gap-2" data-testid="kid-switcher">
+        {/* GUARDIAN-360: a family overview exists when there are 2+ kids or the
+            guardian is also a member — offer a way back to it. */}
+        {(kids.length >= 2 || hasOwn) && (
+          <Link href={`/${locale}/portal`} data-testid="family-chip"
+            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
+            {t('family')}
+          </Link>
+        )}
         {hasOwn && (
-          <Link href={`/${locale}/portal`} data-testid="kid-chip-me"
+          <Link href={`/${locale}/portal?me=1`} data-testid="kid-chip-me"
             className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
             {t('me')}
           </Link>

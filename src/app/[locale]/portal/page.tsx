@@ -17,7 +17,7 @@ import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
 import { getEnabledProducts } from '@/lib/gym/products'
 import { outstandingUsd, paidByInvoice, balanceUsd, OPEN_INVOICE_STATUSES } from '@/lib/billing/reconcile'
 
-type Props = { params: { locale: string }; searchParams?: { kid?: string } }
+type Props = { params: { locale: string }; searchParams?: { kid?: string; me?: string } }
 
 export default async function PortalHomePage({ params: { locale }, searchParams }: Props) {
   // AX-1: copy through next-intl (the isRTL?ar:en bypasses dropped fr and
@@ -80,6 +80,27 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       : { data: [] as any[] }
     householdOutstanding = outstandingUsd(hhInvoices, hhPays)
     householdOpenCount = hhInvoices.length
+  }
+
+  // ── GUARDIAN-360 R2: family home ──────────────────────────────────────────
+  // 2+ dependents (or dependents + the guardian's own membership) → the portal
+  // LEADS with the combined family overview (finding 13). `?me=1` is the escape
+  // to the guardian's own member dashboard. A single-child pure guardian keeps
+  // today's redirect-to-the-kid behaviour (no regression).
+  const hasOwn = !!student
+  const wantMe = searchParams?.me === '1'
+  const showFamilyOverview = kids.length >= 2 || (kids.length >= 1 && hasOwn)
+  if (!selectedKid && showFamilyOverview && !wantMe) {
+    const { FamilyHome } = await import('./_components/FamilyHome')
+    return (
+      <FamilyHome
+        locale={locale}
+        kids={kids as { id: string; name: string; avatarUrl?: string | null }[]}
+        ownStudentId={student?.id ?? null}
+        householdOutstanding={householdOutstanding}
+        householdOpenCount={householdOpenCount}
+      />
+    )
   }
 
   // Guardian with no own membership and no kid selected → default to the first kid.
@@ -325,6 +346,13 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
       {kids.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="kid-switcher">
+          {/* GUARDIAN-360: back to the family overview (only when one exists). */}
+          {showFamilyOverview && (
+            <Link href={`/${locale}/portal`} data-testid="family-chip"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-300">
+              <Users className="h-3.5 w-3.5" />{t('family')}
+            </Link>
+          )}
           <span data-testid="kid-chip-me"
             className="rounded-full bg-primary-700 px-4 py-1.5 text-sm font-semibold text-primary-foreground">
             {t('me')}
