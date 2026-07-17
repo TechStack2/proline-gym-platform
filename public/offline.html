@@ -189,14 +189,35 @@
     document.getElementById('hint').textContent = t.hint;
     document.title = t.title;
 
-    // OFF-4: if the desk shell is already cached (warmed after login), forward the
-    // user straight to the working front desk instead of parking them here. Only
-    // redirects when the desk document is genuinely cached — a miss leaves the page
-    // put (no redirect loop). Guarded so we never bounce a user who IS on /desk.
-    if (path !== deskUrl && 'caches' in window) {
-      caches.match(deskUrl, { ignoreSearch: true }).then(function (hit) {
-        if (hit) window.location.replace(deskUrl);
-      }).catch(function () {});
+    // OFF-4 + OFF-PERF (finding 9): forward to the WARMED front desk when it is
+    // cached, instead of dead-ending here. The desk is warmed in the OWNER's locale,
+    // but this page is served under the REQUESTED path's locale — which often differs.
+    // The field failure: a discarded installed-PWA relaunch reloads the manifest
+    // start_url "/" (no locale → this script defaults to 'en'), so probing ONLY
+    // /en/desk missed an Arabic-first owner's warmed /ar/desk and stranded them on
+    // "You're offline". Fix: probe the path-locale desk FIRST, then any other warmed
+    // locale, and forward to whichever is genuinely cached. A miss on all leaves the
+    // page put (no redirect loop); never bounce a user already on that desk.
+    if ('caches' in window) {
+      var deskCandidates = [deskUrl];
+      ['ar', 'en', 'fr'].forEach(function (l) {
+        var u = '/' + l + '/desk';
+        if (deskCandidates.indexOf(u) === -1) deskCandidates.push(u);
+      });
+      (function probe(i) {
+        if (i >= deskCandidates.length) return;
+        var u = deskCandidates[i];
+        if (u === path) { probe(i + 1); return; } // already on this desk — don't bounce
+        caches.match(u, { ignoreSearch: true }).then(function (hit) {
+          if (hit) {
+            deskUrl = u; // reconnect handler + CTA now target the warmed desk
+            document.getElementById('desk-link').setAttribute('href', u);
+            window.location.replace(u);
+          } else {
+            probe(i + 1);
+          }
+        }).catch(function () { probe(i + 1); });
+      })(0);
     }
 
     // If the connection returns, go back to the app.

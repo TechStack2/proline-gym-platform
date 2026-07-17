@@ -223,6 +223,47 @@ test.describe('OFF-4 · offline door (reachable, primed, honest)', () => {
     }
   })
 
+  test('OFF-PERF (finding 9) · offline recovery reaches the WARMED desk even when the served locale differs — a discarded-PWA relaunch does NOT dead-end on "offline"', async ({ browser }) => {
+    test.setTimeout(180_000)
+    // Field finding 9: an Arabic-first owner, offline, whose installed PWA the OS
+    // discarded and relaunched at manifest start_url "/" (no locale). The offline door
+    // derives locale 'en' from the requested path and, pre-fix, probed ONLY /en/desk —
+    // MISSING the warmed /ar/desk → stranded on "You're offline". This proves the door
+    // now forwards to the warmed desk regardless of the served locale.
+    const { ctx, page } = await ownerPage(browser, 'ar')
+    try {
+      await takeControl(page, '/ar/today')
+      await waitDeskShellWarmed(page, '/ar/desk')
+
+      await ctx.setOffline(true)
+
+      // The mismatch is real: the owner-locale desk is warmed; the en desk is NOT — so
+      // the pre-fix, path-locale-only probe under an 'en' path would have missed.
+      const cached = await page.evaluate(async () => ({
+        ar: !!(await caches.match('/ar/desk', { ignoreSearch: true })),
+        en: !!(await caches.match('/en/desk', { ignoreSearch: true })),
+      }))
+      expect(cached.ar, 'the owner-locale desk is warmed').toBe(true)
+      expect(cached.en, 'the other-locale desk is NOT warmed (the pre-fix probe would miss)').toBe(false)
+
+      // Navigate to an uncached route under a DIFFERENT locale — the faithful stand-in
+      // for the start_url "/" relaunch whose offline-door locale ≠ the warmed desk.
+      const t0 = Date.now()
+      await untilConsistent(async () => {
+        await page.goto('/en/__offline_probe__')
+        await expect(page, 'recovered to the warmed desk instead of dead-ending on the offline page')
+          .toHaveURL(/\/ar\/desk(\/|$|\?)/, { timeout: 10_000 })
+      }, { timeout: 60_000 })
+      await expect(vis(page, '[data-testid="offline-desk"]').first(),
+        'the warmed front desk hydrated offline').toBeVisible({ timeout: 20_000 })
+      // Timing evidence (R3): recovery latency to the working desk.
+      console.log('[OFF-PERF] offline cross-locale recovery to warmed desk: ' + (Date.now() - t0) + 'ms')
+    } finally {
+      await ctx.setOffline(false)
+      await ctx.close()
+    }
+  })
+
   test('cold offline launch of /desk (never visited) → hydrated shell + primed roster', async ({ browser }) => {
     test.setTimeout(240_000)
     const { ctx, page } = await ownerPage(browser)
