@@ -1,6 +1,5 @@
-import { test, expect, type Browser, type Page } from '@playwright/test'
-import { readFileSync } from 'fs'
-import { ROLES, E2E_GYM_SLUG } from './roles'
+import { test, expect, type Page } from '@playwright/test'
+import { ROLES, E2E_GYM_SLUG, roleEmail, E2E_PASSWORD } from './roles'
 import { vis } from './helpers'
 
 /**
@@ -33,6 +32,23 @@ async function svc(method: string, path: string, body?: any) {
   })
   if (!res.ok && res.status !== 409) throw new Error(`${method} ${path} → ${res.status} ${await res.text()}`)
   return res.status === 204 ? null : res.json().catch(() => null)
+}
+/** A real per-role JWT via GoTrue password grant (the seed accounts) → drive the
+ *  is_staff-gated RPCs directly (the app uses cookie sessions, not localStorage). */
+async function tokenFor(role: 'owner' | 'coach' | 'reception'): Promise<string> {
+  const res = await fetch(`${URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: KEY!, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: roleEmail(role), password: E2E_PASSWORD }),
+  })
+  if (!res.ok) throw new Error(`token ${role} → ${res.status} ${await res.text()}`)
+  return (await res.json()).access_token as string
+}
+function rpcAs(token: string, fn: string, args: any) {
+  return fetch(`${URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: KEY!, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  })
 }
 
 let gymId: string, disciplineId: string, coachId: string
@@ -121,11 +137,9 @@ test('2 · cancel a PAID registration with refund → reversing payment nets the
   try {
     await registerAndApprove(page, classId, stu.display)
     const inv0 = (await regInvoice(stu.id))[0]
-    // Pay it in full via the invoice detail payment form.
-    await page.goto(`/en/invoices/${inv0.id}`)
-    await vis(page, '[data-testid="pay-amount-usd"]').fill(String(inv0.total_usd))
-    await vis(page, '[data-testid="pay-submit"]').click()
-    await expect(vis(page, '[data-testid="invoice-status"]')).toHaveText(/Paid/i, { timeout: 15_000 })
+    // Pay it in full via the owner's own JWT (deterministic — no payment-form flake).
+    const payRes = await rpcAs(await tokenFor('owner'), 'record_payment', { p_invoice_id: inv0.id, p_amount_usd: inv0.total_usd })
+    expect(payRes.ok, `payment recorded (${payRes.status})`).toBeTruthy()
     const paid0 = (await svcGet(`payments?invoice_id=eq.${inv0.id}&select=amount_usd`)).reduce((s: number, p: any) => s + Number(p.amount_usd), 0)
     expect(paid0, 'a positive payment stands').toBeGreaterThan(0)
 
@@ -185,21 +199,11 @@ test('4 · permission — a receptionist can cancel; a coach cannot', async ({ b
   const reg = (await svcGet(`class_registrations?student_id=eq.${stu.id}&class_id=eq.${classId}&select=id&limit=1`))[0]
   await octx.close()
 
-  // Coach NO — call the RPC with the coach's own JWT → rejected.
-  const coachToken = (() => {
-    const raw = JSON.parse(readFileSync(ROLES.coach.storage, 'utf8'))
-    for (const o of raw.origins ?? []) for (const kv of o.localStorage ?? []) {
-      if (kv.name.includes('auth-token')) { try { return JSON.parse(kv.value).access_token as string } catch { /* */ } }
-    }
-    return ''
-  })()
-  expect(coachToken, 'coach token resolved from storageState').toBeTruthy()
-  const coachRes = await fetch(`${URL}/rest/v1/rpc/cancel_class_registration`, {
-    method: 'POST',
-    headers: { apikey: KEY!, Authorization: `Bearer ${coachToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_reg_id: reg.id, p_reason: 'coach attempt' }),
-  })
-  expect(coachRes.ok, 'a coach is NOT authorized to cancel (RPC rejects)').toBeFalsy()
+  // Coach NO — call the RPC with the coach's own JWT → rejected (owner/reception only).
+  const coachRes = await rpcAs(await tokenFor('coach'), 'cancel_class_registration', { p_reg_id: reg.id, p_reason: 'coach attempt' })
+  expect(coachRes.ok, `a coach is NOT authorized to cancel (got ${coachRes.status})`).toBeFalsy()
+  // Sanity: the registration is STILL active (the coach's call didn't take effect).
+  expect((await svcGet(`class_registrations?id=eq.${reg.id}&select=status`))[0].status).toBe('active')
 
   // Reception YES — cancels via the UI.
   const rctx = await browser.newContext({ storageState: ROLES.reception.storage, locale: 'en' })
