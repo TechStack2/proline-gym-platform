@@ -117,6 +117,8 @@ test('A · prorated first invoice (both currencies) + one invoice (no retro) + f
     await row.getByTestId('reg-prorate').check()
     // The live preview flags a real proration.
     await expect(row.getByTestId('reg-proration-preview')).toContainText(/sessions/i)
+    // Report evidence: the en proration preview (→ the e2e-screenshots artifact).
+    await page.screenshot({ path: 'screenshots/bill-cycles-proration-en.png', fullPage: true }).catch(() => {})
     await row.getByTestId('approve-btn').click()
 
     await expect(vis(page, '[data-testid="reg-row"][data-status="active"]').filter({ hasText: stu.display }).first())
@@ -212,5 +214,29 @@ test('C · a receptionist can register a member and set the billing cycle', asyn
     const active = vis(page, '[data-testid="reg-row"][data-status="active"]').filter({ hasText: stu.display }).first()
     await expect(active, 'reception can control the registration cycle').toBeVisible({ timeout: 15_000 })
     await expect(active).toContainText('Invoiced')
+  } finally { await ctx.close() }
+})
+
+test('D · ar — the proration preview renders RTL (report evidence)', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const CLASS = `BCarShot ${Date.now()}`
+  const classId = await seedClass(CLASS, 60, [1, 3, 5])
+  const stu = await seedStudent(`BCar${Date.now().toString().slice(-5)}`)
+  const anchorISO = offsetDays(today(), -7)
+
+  const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale: 'ar' })
+  const page = await ctx.newPage()
+  try {
+    await page.goto(`/ar/classes/${classId}`)
+    const opt = await page.locator('[data-testid="walkin-student"] option', { hasText: stu.display }).first().getAttribute('value')
+    await vis(page, '[data-testid="walkin-student"]').selectOption(opt!)
+    await vis(page, '[data-testid="walkin-register-btn"]').click()
+    const row = vis(page, '[data-testid="reg-row"][data-status="requested"]').filter({ hasText: stu.display }).first()
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    await row.getByTestId('reg-start-date').fill(offsetDays(today(), -40))
+    await row.getByTestId('reg-anchor').fill(anchorISO)
+    await row.getByTestId('reg-prorate').check()
+    await expect(row.getByTestId('reg-proration-preview')).toBeVisible()
+    await page.screenshot({ path: 'screenshots/bill-cycles-proration-ar.png', fullPage: true }).catch(() => {})
   } finally { await ctx.close() }
 })

@@ -104,8 +104,9 @@ export default async function AttendancePage({ params: { locale }, searchParams 
         c.starting_soon = future.map((e: any) => {
           const stu = Array.isArray(e.students) ? e.students[0] : e.students
           const prof = stu && (Array.isArray(stu.profiles) ? stu.profiles[0] : stu.profiles)
-          const nm = (isRTL ? prof?.first_name_ar : prof?.first_name_en) || prof?.first_name_en || '?'
-          return { id: e.id, name: nm, startDate: startsAfter.get(`${c.class_id}:${e.student_id}`) }
+          const first = (isRTL ? prof?.first_name_ar : prof?.first_name_en) || prof?.first_name_en || '?'
+          const last = (isRTL ? prof?.last_name_ar : prof?.last_name_en) || prof?.last_name_en || ''
+          return { id: e.id, name: `${first} ${last}`.trim(), startDate: startsAfter.get(`${c.class_id}:${e.student_id}`) }
         })
       }
     }
