@@ -163,10 +163,20 @@ export function NotificationDropdown({ locale, open, onClose }: NotificationDrop
   return (
     <div
       ref={dropdownRef}
+      data-testid="notification-dropdown"
       className={cn(
-        'absolute top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-gray-100',
+        'bg-white rounded-2xl shadow-xl border border-gray-100',
         'z-50 overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-200',
-        isRTL ? 'left-0' : 'right-0'
+        // PWA-BASICS R3: at narrow widths the bell is inset from the edge by the
+        // trailing header actions, so a fixed-width panel anchored to the bell
+        // spilled off-screen (LTR left, RTL right). On mobile pin the panel to the
+        // VIEWPORT edge (never the inset bell) and clamp the width to the viewport;
+        // from sm up, anchor under the bell as before. RTL flips the pinned side.
+        'w-[calc(100vw-1rem)] max-w-sm sm:w-96 sm:max-w-none',
+        'fixed top-[calc(env(safe-area-inset-top,0px)+3.5rem)] sm:absolute sm:top-full sm:mt-2',
+        isRTL
+          ? 'left-2 sm:left-0 sm:right-auto'
+          : 'right-2 sm:right-0 sm:left-auto'
       )}
     >
       {/* Header */}

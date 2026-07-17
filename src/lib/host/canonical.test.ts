@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canonicalOrigin, canonicalUrl, hreflangAlternates, aliasRedirectTarget } from './canonical';
+import { canonicalOrigin, canonicalUrl, hreflangAlternates, aliasRedirectTarget, gymCanonicalOriginFrom } from './canonical';
 import { classifyHost } from './resolver';
 import { SITE_URL } from '@/lib/seo';
 
@@ -73,5 +73,23 @@ describe('OXY-HOST · aliasRedirectTarget', () => {
   it('no primary domain known (reader absent / gym without custom domain) → no redirect', () => {
     expect(aliasRedirectTarget('proline.praxella.com', null, '/en')).toBeNull();
     expect(aliasRedirectTarget('proline.praxella.com', undefined, '/en')).toBeNull();
+  });
+});
+
+describe('INVITE-HOST · gymCanonicalOriginFrom (outbound-link origin by slug)', () => {
+  it('primary custom domain wins', () => {
+    expect(gymCanonicalOriginFrom('prolinegym', 'proline-gym.com')).toBe('https://proline-gym.com');
+    // normalized (lowercased, port/scheme stripped)
+    expect(gymCanonicalOriginFrom('prolinegym', 'Proline-Gym.com:443')).toBe('https://proline-gym.com');
+  });
+  it('no primary domain → the <slug>.praxella.com subdomain', () => {
+    expect(gymCanonicalOriginFrom('prolinegym', null)).toBe('https://prolinegym.praxella.com');
+    expect(gymCanonicalOriginFrom('Prolinegym', undefined)).toBe('https://prolinegym.praxella.com'); // slug lowercased
+  });
+  it('no slug → SITE_URL last resort', () => {
+    expect(gymCanonicalOriginFrom(null, null)).toBe(SITE_URL);
+    expect(gymCanonicalOriginFrom('', null)).toBe(SITE_URL);
+    // even with no slug, a known primary domain still wins
+    expect(gymCanonicalOriginFrom(null, 'proline-gym.com')).toBe('https://proline-gym.com');
   });
 });

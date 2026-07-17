@@ -29,7 +29,7 @@ export type CampaignRow = {
   converted: number
 }
 
-export function CampaignsClient({ rows, locale }: { rows: CampaignRow[]; locale: string }) {
+export function CampaignsClient({ rows, locale, shareOrigin }: { rows: CampaignRow[]; locale: string; shareOrigin?: string }) {
   const t = useTranslations('campaigns')
   const isRTL = locale === 'ar'
   const router = useRouter()
@@ -38,9 +38,12 @@ export function CampaignsClient({ rows, locale }: { rows: CampaignRow[]; locale:
   const [name, setName] = useState('')
   const [source, setSource] = useState<string>('instagram')
   const [busy, setBusy] = useState(false)
-  const [origin, setOrigin] = useState('')
+  // INVITE-HOST: prefer the gym's canonical origin (server-resolved); fall back to
+  // the current request host only if it wasn't supplied.
+  const [runtimeOrigin, setRuntimeOrigin] = useState('')
 
-  useEffect(() => { setOrigin(window.location.origin) }, [])
+  useEffect(() => { if (!shareOrigin) setRuntimeOrigin(window.location.origin) }, [shareOrigin])
+  const origin = shareOrigin || runtimeOrigin
 
   const submit = async () => {
     setBusy(true)

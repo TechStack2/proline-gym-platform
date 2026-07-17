@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { getSetupMilestones, type MilestoneKey, type SetupMilestone } from '@/lib/gym/setup-checklist'
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
 import { roleHomePath } from '../../onboarding/role-home'
 import { ShareableLink } from '@/components/shared/shareable-link'
 import type { LucideIcon } from 'lucide-react'
@@ -53,6 +54,8 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
   if (!role || !STAFF_ROLES.includes(role)) redirect(`/${locale}${roleHomePath(role)}`)
 
   const { milestones, doneCount, total, allDone, slug } = await getSetupMilestones(supabase, gymId)
+  // INVITE-HOST: shared landing/login links land on the gym's canonical host.
+  const shareOrigin = slug ? await gymCanonicalOrigin(slug) : undefined
   const t = await getTranslations('setupHub')
   const isRTL = locale === 'ar'
   const byKey = Object.fromEntries(milestones.map((m) => [m.key, m])) as Record<MilestoneKey, SetupMilestone>
@@ -269,6 +272,7 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <ShareableLink
                     path={`/${locale}?gym=${encodeURIComponent(slug)}`}
+                    origin={shareOrigin}
                     label={t('milestones.golive.landingLabel')}
                     copyLabel={t('milestones.golive.copy')}
                     copiedLabel={t('milestones.golive.copied')}
@@ -278,6 +282,7 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
                   />
                   <ShareableLink
                     path={`/${locale}/auth/login`}
+                    origin={shareOrigin}
                     label={t('milestones.golive.loginLabel')}
                     copyLabel={t('milestones.golive.copy')}
                     copiedLabel={t('milestones.golive.copied')}

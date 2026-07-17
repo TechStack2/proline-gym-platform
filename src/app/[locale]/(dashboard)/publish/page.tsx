@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName } from '@/lib/names'
 import { roleHomePath } from '../../onboarding/role-home'
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
 import { PublishPanel } from './PublishPanel'
 import { Megaphone, ArrowLeft } from 'lucide-react'
 
@@ -96,6 +97,8 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
   type CampRow = { id: string; name_ar: string | null; name_en: string | null; name_fr: string | null; show_on_landing: boolean | null }
 
   const slug = gym?.slug ?? null
+  // INVITE-HOST: shared landing/login links land on the gym's canonical host.
+  const shareOrigin = slug ? await gymCanonicalOrigin(slug) : undefined
   const classes = ((classRows ?? []) as unknown as ClassRow[]).map((c) => ({
     id: c.id,
     name: (locale === 'ar' ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en || '',
@@ -148,6 +151,7 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
         locale={locale}
         isRTL={isRTL}
         slug={slug}
+        shareOrigin={shareOrigin}
         initialClasses={classes}
         initialCoaches={coaches}
         initialCamps={camps}

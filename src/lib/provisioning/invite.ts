@@ -14,6 +14,7 @@ import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { gymDisplayName } from '@/lib/whatsapp/identity'
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
 import { recordAudit } from '@/lib/audit/log'
 import { actionError } from '@/lib/errors/action-error';
 
@@ -26,7 +27,10 @@ type InviteInput =
 // (localized), not a hardcoded "PRO LINE". The invite is staff-side so the gym is
 // known; the surface (buildWaLink) picks by the staff's locale.
 type GymName = { ar: string; en: string; fr: string }
-type InviteOk = { ok: true; tempPassword: string; login: string; waPhone: string; role: string; gymName: GymName }
+// INVITE-HOST: `origin` is the gym's CANONICAL origin (primary custom domain →
+// <slug>.praxella.com → SITE_URL) so the shared login link lands on the gym's own
+// home, not whatever host the staffer generated it from.
+type InviteOk = { ok: true; tempPassword: string; login: string; waPhone: string; role: string; gymName: GymName; origin: string }
 // MJ-1: `holder` carries the name of the existing credentialed owner for the
 // `phone_taken` invariant, so the surface can say WHO already holds the phone.
 type InviteErr = { ok: false; error: string; holder?: string }
@@ -88,10 +92,12 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
   if (gymId !== callerGym) return { ok: false, error: 'cross_gym' } // belt + suspenders over RLS
 
   // WL-IDENTITY: the caller's gym name (localized) for the invite greeting.
-  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle()
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr, slug').eq('id', gymId).maybeSingle()
   const gymName: GymName = {
     ar: gymDisplayName(gymRow, 'ar'), en: gymDisplayName(gymRow, 'en'), fr: gymDisplayName(gymRow, 'fr'),
   }
+  // INVITE-HOST: resolve the gym's canonical origin (primary domain → subdomain → SITE_URL).
+  const origin = await gymCanonicalOrigin(gymRow?.slug)
 
   const { data: prof } = await supabase.from('profiles').select('phone').eq('id', profileId).maybeSingle()
   const phone = (prof?.phone ?? '').trim()
@@ -170,5 +176,5 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
     newData: { role, channel: 'whatsapp', reinvite: !!existing?.user },
   })
 
-  return { ok: true, tempPassword: temp, login, waPhone: phone, role, gymName }
+  return { ok: true, tempPassword: temp, login, waPhone: phone, role, gymName, origin }
 }
