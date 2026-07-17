@@ -44,6 +44,9 @@ function PasswordStep({
   const t = useTranslations('onboarding')
   return (
     <div className="space-y-3">
+      {/* AUTH-EASE R2: name the current (temporary) credential so first-login isn't
+          disorienting — the member knows WHY they're here and what they're replacing. */}
+      <p className="rounded-lg bg-primary-50 px-3 py-2 text-xs text-primary-800" data-testid="ob-password-context">{t('passwordContext')}</p>
       <p className="text-sm text-gray-500">{t('passwordHint')}</p>
       <Field label={t('newPassword')}>
         <Input type="password" data-testid="ob-password" value={pw} onChange={(e) => setPw(e.target.value)} dir="ltr" autoComplete="new-password" />

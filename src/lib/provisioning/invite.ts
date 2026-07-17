@@ -11,6 +11,7 @@
  * after the gate passes. The temp password is returned ONCE and never persisted.
  */
 import crypto from 'crypto'
+import { generateTempPassword } from '@/lib/auth/temp-password'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { gymDisplayName } from '@/lib/whatsapp/identity'
@@ -32,12 +33,6 @@ type InviteOk = { ok: true; tempPassword: string; login: string; waPhone: string
 type InviteErr = { ok: false; error: string; holder?: string }
 
 const STAFF_ROLES = ['owner', 'head_coach', 'receptionist']
-
-/** Strong, human-shareable temp password meeting GoTrue complexity. */
-function tempPassword(): string {
-  const a = crypto.randomBytes(6).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 6)
-  return `PL-${a}${crypto.randomInt(10, 99)}!`
-}
 
 export async function inviteToPortal(input: InviteInput): Promise<InviteOk | InviteErr> {
   const supabase = await createClient() // caller session (cookie JWT)
@@ -116,7 +111,7 @@ export async function inviteToPortal(input: InviteInput): Promise<InviteOk | Inv
 
   // ── Privileged ops (service role) — only now ──
   const admin = createAdminClient()
-  const temp = tempPassword()
+  const temp = generateTempPassword()
 
   const { data: existing } = await admin.auth.admin.getUserById(profileId)
   if (existing?.user) {

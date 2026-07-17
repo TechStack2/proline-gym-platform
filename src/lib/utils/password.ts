@@ -1,13 +1,18 @@
 /**
- * AUTH-DEPTH (REQ4) — the ONE set-password policy, shared by every surface that lets
- * a human choose a password (first-login onboarding + /auth/reset). Before this, each
- * surface carried its own inline `pw.length >= 10` check; the threshold now lives here
- * once so the two can never drift. App-side enforcement of the J6 minimum — the cloud
- * GoTrue "minimum password length" is an owner-dashboard setting listed in the report.
+ * AUTH-DEPTH (REQ4) / AUTH-EASE (R3) — the ONE set-password policy, shared by every
+ * surface that lets a human choose a password (first-login onboarding + /auth/reset).
+ * Before this, each surface carried its own inline length check; the threshold now
+ * lives here once so surfaces can never drift. App-side enforcement of the minimum —
+ * the cloud GoTrue "minimum password length" + leaked-password protection are owner-
+ * dashboard settings listed in the report.
+ *
+ * AUTH-EASE: the floor is 8, not 10 — owner-decreed as the friendly-but-safe minimum
+ * (these accounts touch money paths, so 6 is too low; 8 + leaked-password protection
+ * is the balance). Every mint (see ../auth/temp-password) produces ≥8.
  */
 
-/** The J6 rule: a set password must be at least this many characters. */
-export const PASSWORD_MIN_LENGTH = 10
+/** The rule: a set password must be at least this many characters. */
+export const PASSWORD_MIN_LENGTH = 8
 
 /** True when `pw` satisfies the policy (currently: at least PASSWORD_MIN_LENGTH chars). */
 export function isPasswordValid(pw: string): boolean {

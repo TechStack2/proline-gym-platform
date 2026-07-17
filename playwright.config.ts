@@ -833,6 +833,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // AUTH-EASE: friendly temp password + first-login forced-change lifecycle.
+      // Hermetic OWN gym (seed_e2e_wl_gym's login-less member) so it never perturbs
+      // the shared-gym ON-1 fixtures. Needs SUPABASE_SERVICE_ROLE_KEY (GoTrue admin).
+      name: 'auth-ease',
+      dependencies: ['setup'],
+      testMatch: /auth-ease\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // DEMO-GUARDIAN: the 5th demo login (guardian@prolinegym.lb). Login-page
       // entry (5 accounts, EN+AR) + a fresh sign-in proving the kid-switcher
       // shows the linked hero (Karim). Read-only against the SHARED proline demo
