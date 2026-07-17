@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { getDailyTally } from '@/lib/billing/daily-tally'
+import { dualMoney } from '@/lib/billing/currency'
+import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import { METHOD_LABEL, balanceUsd } from '@/lib/billing/reconcile'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { getRenewalsDue } from '@/lib/pt/refill'
@@ -189,6 +191,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const enrolledBy = new Map<string, number>()
   for (const e of enrollments ?? []) enrolledBy.set(e.class_id, (enrolledBy.get(e.class_id) ?? 0) + 1)
 
+  const pref = await gymCurrencyPref(supabase, gymId) // MONEY-LBP: the drawer's dual-total layout
   const paidBy = new Map<string, number>()
   for (const p of pays ?? []) paidBy.set(p.invoice_id!, (paidBy.get(p.invoice_id!) ?? 0) + Number(p.amount_usd ?? 0))
   const bal = (inv: any) => balanceUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }])
@@ -472,12 +475,15 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
               {tally.size === 0 ? (
                 <span className="text-gray-400">{t('noPayments')}</span>
               ) : (
-                [...tally.entries()].map(([method, v]) => (
-                  <span key={method} className="rounded-full bg-muted px-3 py-1">
-                    {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}
-                    {v.lbp ? ` · ${v.lbp.toLocaleString()} LBP` : ''}
+                [...tally.entries()].map(([method, v]) => {
+                  const m = dualMoney(v.usd, v.lbp, pref)
+                  return (
+                  <span key={method} className="rounded-full bg-muted px-3 py-1" data-testid="today-tally-method" data-method={method}>
+                    {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: {m.primary}
+                    {m.secondary ? ` · ${m.secondary}` : ''}
                   </span>
-                ))
+                  )
+                })
               )}
             </div>
           </div>

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { METHOD_LABEL } from '@/lib/billing/reconcile'
+import { dualMoney, type CurrencyPref } from '@/lib/billing/currency'
 import { getRevenueByMonth, getCollectionsByMethod, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
 import { getChurnByMonth } from '@/lib/finances/winback'
 import { getEnabledProducts } from '@/lib/gym/products'
@@ -14,7 +15,7 @@ import { getEnabledProducts } from '@/lib/gym/products'
  * method (this month), outstanding aging with drill-down, churn by month. All
  * reads over D1's ledger + ML-1 state + the FIN-1 churn timestamps.
  */
-export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: string }) {
+export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: string; gymId: string; pref?: CurrencyPref }) {
   const isRTL = locale === 'ar'
   const t = await getTranslations('ownerFinances')
   const supabase = await createClient()
@@ -33,7 +34,15 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
   const monthLabel = (mk: string) =>
     new Date(`${mk}-01T12:00:00Z`).toLocaleDateString(dateLocale(locale), { month: 'short', year: '2-digit' })
   const productLabel = (p: Product) => t(`product.${p}` as Parameters<typeof t>[0])
-  const usd = (n: number) => `$${n.toFixed(0)}`
+  // MONEY-LBP — compact, whole-figure, preference-aware pair for the dense revenue
+  // table (keeps the terse look; adds the LBP line only where it belongs per pref).
+  const compact = (u: number, l: number): { primary: string; secondary: string | null } => {
+    const usdC = `$${Math.round(u).toLocaleString()}`
+    const lbpC = `${Math.round(l).toLocaleString()} LBP`
+    if (pref === 'LBP') return { primary: lbpC, secondary: usdC }
+    if (pref === 'BOTH') return { primary: usdC, secondary: lbpC }
+    return { primary: usdC, secondary: l !== 0 ? lbpC : null }
+  }
 
   const agingTone: Record<string, string> = {
     current: 'text-gray-700', d1_30: 'text-amber-600', d31_60: 'text-orange-600', d60_plus: 'text-red-600',
@@ -54,17 +63,25 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
               </tr>
             </thead>
             <tbody>
-              {revenue.map((row) => (
+              {revenue.map((row) => {
+                const totalMoney = compact(row.total, row.totalLbp)
+                return (
                 <tr key={row.month} className="border-b last:border-0" data-testid="revenue-row" data-month={row.month}>
                   <td className="p-2 font-medium text-gray-700">{monthLabel(row.month)}</td>
                   {revProducts.map((p) => (
                     <td key={p} className="p-2 text-end text-gray-600" data-product={p}>
-                      {row.byProduct[p] > 0 ? usd(row.byProduct[p]) : <span className="text-gray-300">—</span>}
+                      {(row.byProduct[p] > 0 || row.byProductLbp[p] > 0)
+                        ? compact(row.byProduct[p], row.byProductLbp[p]).primary
+                        : <span className="text-gray-300">—</span>}
                     </td>
                   ))}
-                  <td className="p-2 text-end font-bold text-gray-900" data-testid="revenue-row-total">{usd(row.total)}</td>
+                  <td className="p-2 text-end font-bold text-gray-900" data-testid="revenue-row-total">
+                    {totalMoney.primary}
+                    {totalMoney.secondary && <span className="block text-2xs font-semibold text-gray-500" data-testid="revenue-row-total-lbp">{totalMoney.secondary}</span>}
+                  </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -78,14 +95,17 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
             <p className="py-4 text-center text-sm text-gray-400">{t('noCollections')}</p>
           ) : (
             <ul className="space-y-1.5" data-testid="method-table">
-              {methods.map((m) => (
+              {methods.map((m) => {
+                const dm = dualMoney(m.usd, m.lbp, pref)
+                return (
                 <li key={m.method} className="flex items-center justify-between text-sm" data-testid="method-row" data-method={m.method}>
                   <span className="text-gray-600">{(locale === 'ar' ? METHOD_LABEL[m.method]?.ar : locale === 'fr' ? METHOD_LABEL[m.method]?.fr : METHOD_LABEL[m.method]?.en) || m.method}</span>
-                  <span className="font-semibold text-gray-900" dir="ltr">
-                    ${m.usd.toFixed(2)}{m.lbp ? ` · ${m.lbp.toLocaleString()} LBP` : ''}
+                  <span className="font-semibold text-gray-900" dir="ltr" data-testid="method-amount">
+                    {dm.primary}{dm.secondary ? ` · ${dm.secondary}` : ''}
                   </span>
                 </li>
-              ))}
+                )
+              })}
             </ul>
           )}
         </section>
@@ -94,15 +114,19 @@ export async function OwnerFinances({ locale, gymId }: { locale: string; gymId: 
         <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <h2 className={cn('mb-3 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('agingTitle')}</h2>
           <div className="grid grid-cols-2 gap-2" data-testid="aging-grid">
-            {aging.map((b) => (
+            {aging.map((b) => {
+              const dm = dualMoney(b.usd, b.lbp, pref)
+              return (
               <Link key={b.key} href={`/${locale}/money?tab=invoices&aging=${b.key}`}
                 data-testid="aging-bucket" data-bucket={b.key}
                 className="rounded-xl bg-gray-50 p-3 transition-colors hover:bg-gray-100">
                 <p className="text-2xs font-medium uppercase tracking-wider text-gray-500">{t(`aging.${b.key}` as Parameters<typeof t>[0])}</p>
-                <p className={cn('mt-0.5 text-lg font-bold', agingTone[b.key])} data-testid="aging-usd">${b.usd.toFixed(2)}</p>
+                <p className={cn('mt-0.5 text-lg font-bold', agingTone[b.key])} data-testid="aging-usd">{dm.primary}</p>
+                {dm.secondary && <p className="text-2xs font-semibold text-gray-500" data-testid="aging-lbp">{dm.secondary}</p>}
                 <p className="text-2xs text-gray-400">{t('invoiceCount', { count: b.count })}</p>
               </Link>
-            ))}
+              )
+            })}
           </div>
         </section>
       </div>

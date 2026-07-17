@@ -3,7 +3,9 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { getDailyTally } from '@/lib/billing/daily-tally'
-import { balanceUsd, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { balanceUsd, balanceLbp, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { dualMoney } from '@/lib/billing/currency'
+import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import { InvoicesView } from '../invoices/invoices-view'
 import { PaymentsView } from '../payments/payments-view'
 import { DollarSign, FileText, Banknote, RefreshCw, Heart } from 'lucide-react'
@@ -113,35 +115,48 @@ async function MoneyOverview({ locale }: { locale: string }) {
   // wave; only the payments reconciliation (below) depends on the open-invoice ids.
   //   products — NO-MEMBERSHIP-GAPS: the renewals card + ProcessRenewals are
   //   membership-cycle furniture, hidden for a classes+PT gym.
-  const [products, tally, { data: openInvoices }, { data: renewalRows }] = await Promise.all([
+  const [products, tally, pref, { data: openInvoices }, { data: renewalRows }] = await Promise.all([
     getEnabledProducts(supabase, gymId),
     getDailyTally(supabase), // the cash drawer: today's per-method tally (shared D1 logic)
+    gymCurrencyPref(supabase, gymId), // MONEY-LBP: order/emphasis of the dual totals
     supabase
       .from('invoices')
-      .select('id, total_usd, status')
+      .select('id, total_usd, total_lbp, status')
       .in('status', ['pending', 'partial', 'overdue'])
       .limit(500),
     // ML-1: open renewal invoices (the system-issued ones), reconciled below.
     supabase
       .from('renewal_invoices')
-      .select('invoice_id, invoices:invoice_id!inner (id, total_usd, status, gym_id)'),
+      .select('invoice_id, invoices:invoice_id!inner (id, total_usd, total_lbp, status, gym_id)'),
   ])
 
-  // Outstanding obligations: reconcile the open invoices against their payments
-  // (D1 canon — balance from Σ amount_usd).
+  // Outstanding obligations: reconcile the open invoices against their payments. USD
+  // is the D1 canon (balance from Σ amount_usd); LBP rides along as recorded
+  // (total_lbp − Σ amount_lbp), never converted (MONEY-LBP).
   const ids = (openInvoices ?? []).map((i) => i.id)
   const { data: pays } = ids.length
-    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', ids)
-    : { data: [] as { invoice_id: string; amount_usd: number | null }[] }
+    ? await supabase.from('payments').select('invoice_id, amount_usd, amount_lbp').in('invoice_id', ids)
+    : { data: [] as { invoice_id: string; amount_usd: number | null; amount_lbp: number | null }[] }
   const paidBy = new Map<string, number>()
-  for (const p of pays ?? []) paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+  const paidLbpBy = new Map<string, number>()
+  for (const p of pays ?? []) {
+    paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+    paidLbpBy.set(p.invoice_id, (paidLbpBy.get(p.invoice_id) ?? 0) + Number((p as any).amount_lbp ?? 0))
+  }
   const outstanding = (openInvoices ?? []).reduce(
     (s, inv) => s + balanceUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }]), 0)
+  const outstandingLbp = (openInvoices ?? []).reduce(
+    (s, inv) => s + balanceLbp((inv as any).total_lbp, [{ amount_usd: 0, amount_lbp: paidLbpBy.get(inv.id) ?? 0 }]), 0)
   const openRenewalInvs = ((renewalRows ?? []) as any[])
     .map((r) => (Array.isArray(r.invoices) ? r.invoices[0] : r.invoices))
     .filter((i: any) => i && ['pending', 'partial', 'overdue'].includes(i.status))
   const renewalOutstanding = openRenewalInvs.reduce(
     (s2: number, i: any) => s2 + balanceUsd(i.total_usd, [{ amount_usd: paidBy.get(i.id) ?? 0 }]), 0)
+  const renewalOutstandingLbp = openRenewalInvs.reduce(
+    (s2: number, i: any) => s2 + balanceLbp(i.total_lbp, [{ amount_usd: 0, amount_lbp: paidLbpBy.get(i.id) ?? 0 }]), 0)
+
+  const outMoney = dualMoney(outstanding, outstandingLbp, pref)
+  const renewalMoney = dualMoney(renewalOutstanding, renewalOutstandingLbp, pref)
 
   return (
     <>
@@ -149,14 +164,20 @@ async function MoneyOverview({ locale }: { locale: string }) {
       {products.membership && (
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1" data-testid="money-renewals">
         <p className="flex items-center gap-1 text-xs text-gray-500"><RefreshCw className="h-3 w-3" /> {t('renewalsOutstanding')}</p>
-        <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd">${renewalOutstanding.toFixed(2)}</p>
+        <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd">{renewalMoney.primary}</p>
+        {renewalMoney.secondary && (
+          <p className="text-sm font-semibold text-amber-500/90" data-testid="money-renewals-lbp">{renewalMoney.secondary}</p>
+        )}
         <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: openRenewalInvs.length })}</p>
         <div className="mt-2"><ProcessRenewalsButton /></div>
       </div>
       )}
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1">
         <p className="text-xs text-gray-500">{t('outstanding')}</p>
-        <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding">${outstanding.toFixed(2)}</p>
+        <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding">{outMoney.primary}</p>
+        {outMoney.secondary && (
+          <p className="text-sm font-semibold text-red-500/90" data-testid="money-outstanding-lbp">{outMoney.secondary}</p>
+        )}
         <p className="mt-0.5 text-xs text-gray-400">{t('openInvoices', { count: (openInvoices ?? []).length })}</p>
         <Link href={`/${locale}/money?tab=invoices`} className="mt-2 inline-block text-xs font-medium text-primary-600 hover:underline">
           {t('viewInvoices')}
@@ -168,12 +189,15 @@ async function MoneyOverview({ locale }: { locale: string }) {
           {tally.size === 0 ? (
             <span className="text-gray-400">{t('noPaymentsToday')}</span>
           ) : (
-            [...tally.entries()].map(([method, v]) => (
-              <span key={method} className="rounded-full bg-muted px-3 py-1">
-                {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}
-                {v.lbp ? ` · ${v.lbp.toLocaleString()} LBP` : ''}
+            [...tally.entries()].map(([method, v]) => {
+              const m = dualMoney(v.usd, v.lbp, pref)
+              return (
+              <span key={method} className="rounded-full bg-muted px-3 py-1" data-testid="money-tally-method" data-method={method}>
+                {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: {m.primary}
+                {m.secondary ? ` · ${m.secondary}` : ''}
               </span>
-            ))
+              )
+            })
           )}
         </div>
         <Link href={`/${locale}/money?tab=payments`} className="mt-3 inline-block text-xs font-medium text-primary-600 hover:underline">
@@ -181,7 +205,7 @@ async function MoneyOverview({ locale }: { locale: string }) {
         </Link>
       </div>
     </div>
-    {gymId && <OwnerFinances locale={locale} gymId={gymId} />}
+    {gymId && <OwnerFinances locale={locale} gymId={gymId} pref={pref} />}
     </>
   )
 }

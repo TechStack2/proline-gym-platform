@@ -872,6 +872,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MONEY-LBP: the money dashboard shows Σ amount_usd AND Σ amount_lbp as recorded
+      // (never cross-converted) per currency_preference (BOTH/USD/LBP). Hermetic own
+      // gym seeded with mixed-currency payments + a refund + a discount. Needs
+      // SUPABASE_SERVICE_ROLE_KEY.
+      name: 'money-lbp',
+      dependencies: ['setup'],
+      testMatch: /money-lbp\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ON-1 portal invites: adopts login-less profiles into auth users.
       name: 'on1',
       dependencies: ['setup'],

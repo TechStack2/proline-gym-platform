@@ -20,9 +20,14 @@ export function productOf(invoiceType: string): Product {
   }
 }
 
-export type RevenueMonth = { month: string; byProduct: Record<Product, number>; total: number }
+// MONEY-LBP — revenue carries BOTH recorded columns per product (never converted).
+export type RevenueMonth = {
+  month: string
+  byProduct: Record<Product, number>; total: number
+  byProductLbp: Record<Product, number>; totalLbp: number
+}
 
-/** Collected USD by month × product for the last `months` (newest first). */
+/** Collected USD + LBP by month × product for the last `months` (newest first). */
 export async function getRevenueByMonth(
   supabase: SupabaseClient, gymId: string, months = 6,
 ): Promise<RevenueMonth[]> {
@@ -32,22 +37,27 @@ export async function getRevenueByMonth(
 
   const { data: pays } = await supabase
     .from('payments')
-    .select('amount_usd, payment_date, invoices:invoice_id!inner (gym_id, invoice_type)')
+    .select('amount_usd, amount_lbp, payment_date, invoices:invoice_id!inner (gym_id, invoice_type)')
     .eq('invoices.gym_id', gymId)
     .gte('payment_date', since.toISOString())
     .limit(5000)
 
   const buckets = new Map<string, RevenueMonth>()
   const blank = (): Record<Product, number> => ({ membership: 0, class: 0, pt: 0, camp: 0, other: 0 })
+  const blankRow = (mk: string): RevenueMonth => ({ month: mk, byProduct: blank(), total: 0, byProductLbp: blank(), totalLbp: 0 })
   for (const p of (pays ?? []) as any[]) {
     const inv = Array.isArray(p.invoices) ? p.invoices[0] : p.invoices
     if (!inv) continue
     const mk = String(p.payment_date).slice(0, 7)
-    if (!buckets.has(mk)) buckets.set(mk, { month: mk, byProduct: blank(), total: 0 })
+    if (!buckets.has(mk)) buckets.set(mk, blankRow(mk))
     const row = buckets.get(mk)!
     const usd = Number(p.amount_usd ?? 0)
-    row.byProduct[productOf(inv.invoice_type)] += usd
+    const lbp = Number(p.amount_lbp ?? 0)
+    const prod = productOf(inv.invoice_type)
+    row.byProduct[prod] += usd
     row.total += usd
+    row.byProductLbp[prod] += lbp
+    row.totalLbp += lbp
   }
 
   const out: RevenueMonth[] = []
@@ -55,7 +65,7 @@ export async function getRevenueByMonth(
     const d = new Date()
     d.setUTCMonth(d.getUTCMonth() - i, 1)
     const mk = d.toISOString().slice(0, 7)
-    out.push(buckets.get(mk) ?? { month: mk, byProduct: blank(), total: 0 })
+    out.push(buckets.get(mk) ?? blankRow(mk))
   }
   return out
 }
@@ -90,39 +100,45 @@ export async function getCollectionsByMethod(
   return [...by.values()].sort((a, b) => b.usd - a.usd)
 }
 
-export type AgingBucket = { key: 'current' | 'd1_30' | 'd31_60' | 'd60_plus'; count: number; usd: number }
+export type AgingBucket = { key: 'current' | 'd1_30' | 'd31_60' | 'd60_plus'; count: number; usd: number; lbp: number }
 
 /**
- * Outstanding aging: open-invoice balances bucketed by days past due_date.
- * Balance is reconciled per the D1 canon (total − Σ payments.amount_usd).
+ * Outstanding aging: open-invoice balances bucketed by days past due_date. The USD
+ * balance drives bucketing + count (the D1 canon: total − Σ payments.amount_usd); the
+ * LBP balance rides alongside as recorded (total_lbp − Σ amount_lbp), never converted.
  */
 export async function getOutstandingAging(
   supabase: SupabaseClient, gymId: string, now = new Date(),
 ): Promise<AgingBucket[]> {
   const { data: openInvoices } = await supabase
     .from('invoices')
-    .select('id, total_usd, due_date, status')
+    .select('id, total_usd, total_lbp, due_date, status')
     .eq('gym_id', gymId)
     .in('status', ['pending', 'partial', 'overdue'])
     .limit(2000)
 
   const ids = (openInvoices ?? []).map((i: any) => i.id)
   const { data: pays } = ids.length
-    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', ids)
+    ? await supabase.from('payments').select('invoice_id, amount_usd, amount_lbp').in('invoice_id', ids)
     : { data: [] as any[] }
   const paidBy = new Map<string, number>()
-  for (const p of (pays ?? []) as any[]) paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+  const paidLbpBy = new Map<string, number>()
+  for (const p of (pays ?? []) as any[]) {
+    paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+    paidLbpBy.set(p.invoice_id, (paidLbpBy.get(p.invoice_id) ?? 0) + Number(p.amount_lbp ?? 0))
+  }
 
   const today = now.toISOString().slice(0, 10)
   const buckets: Record<AgingBucket['key'], AgingBucket> = {
-    current: { key: 'current', count: 0, usd: 0 },
-    d1_30: { key: 'd1_30', count: 0, usd: 0 },
-    d31_60: { key: 'd31_60', count: 0, usd: 0 },
-    d60_plus: { key: 'd60_plus', count: 0, usd: 0 },
+    current: { key: 'current', count: 0, usd: 0, lbp: 0 },
+    d1_30: { key: 'd1_30', count: 0, usd: 0, lbp: 0 },
+    d31_60: { key: 'd31_60', count: 0, usd: 0, lbp: 0 },
+    d60_plus: { key: 'd60_plus', count: 0, usd: 0, lbp: 0 },
   }
   for (const inv of (openInvoices ?? []) as any[]) {
     const bal = Number(inv.total_usd ?? 0) - (paidBy.get(inv.id) ?? 0)
     if (bal <= 0.005) continue
+    const balLbp = Math.max(0, Number(inv.total_lbp ?? 0) - (paidLbpBy.get(inv.id) ?? 0))
     const due = String(inv.due_date)
     let k: AgingBucket['key']
     if (due >= today) k = 'current'
@@ -132,6 +148,7 @@ export async function getOutstandingAging(
     }
     buckets[k].count++
     buckets[k].usd += bal
+    buckets[k].lbp += balLbp
   }
   return [buckets.current, buckets.d1_30, buckets.d31_60, buckets.d60_plus]
 }
