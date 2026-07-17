@@ -155,8 +155,10 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
         {/* Line items + totals. */}
         <table className="mb-3 w-full">
           <tbody>
-            {showTax && (
-              <tr><td className="py-0.5 text-gray-500">{t('Subtotal', 'المجموع الفرعي', 'Sous-total')}</td><td className="py-0.5 text-end tabular-nums">{fmtUsd(inv.amount_usd)}</td></tr>
+            {/* Show the pre-discount price whenever a discount OR tax applies, so the
+                receipt reads honestly: full price − discount (+ tax) = total. */}
+            {(showTax || showDiscount) && (
+              <tr data-testid="receipt-price"><td className="py-0.5 text-gray-500">{showTax ? t('Subtotal', 'المجموع الفرعي', 'Sous-total') : t('Price', 'السعر', 'Prix')}</td><td className="py-0.5 text-end tabular-nums">{fmtUsd(inv.amount_usd)}</td></tr>
             )}
             {showDiscount && (
               <tr data-testid="receipt-discount"><td className="py-0.5 text-gray-500">{t('Discount', 'الخصم', 'Remise')}</td><td className="py-0.5 text-end tabular-nums">−{fmtUsd(discountUsd)}</td></tr>

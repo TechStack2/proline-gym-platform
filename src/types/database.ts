@@ -4434,6 +4434,7 @@ export type Database = {
           p_amount_lbp?: number
           p_amount_usd: number
           p_client_uuid?: string
+          p_discount_usd?: number
           p_exchange_rate?: number
           p_invoice_id: string
           p_method?: Database["public"]["Enums"]["payment_method_enum"]

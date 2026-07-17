@@ -17,6 +17,13 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
+  // DISCOUNT (finding 16): payment-time discount = owner/receptionist only (DB re-checks).
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: roleRow } = user
+    ? await supabase.from('user_roles').select('role').eq('user_id', user.id).limit(1).maybeSingle()
+    : { data: null }
+  const canDiscount = ['owner', 'receptionist'].includes((roleRow as { role?: string } | null)?.role ?? '')
+
   if (searchParams.invoice) {
     const { data: inv } = await supabase
       .from('invoices')
@@ -30,6 +37,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
           <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة', 'Enregistrer le paiement')} · {inv.invoice_number}</h1>
           <PaymentForm
             locale={locale}
+            canDiscount={canDiscount}
             invoice={{
               id: inv.id, invoice_number: inv.invoice_number, total_usd: Number(inv.total_usd),
               balance_usd: balanceUsd(inv.total_usd, pays as any), status: inv.status,
