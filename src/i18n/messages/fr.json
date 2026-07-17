@@ -803,7 +803,16 @@
     "loading": "Chargement des factures...",
     "description": "Gérer et voir toutes les factures",
     "tvaLine": "TVA ({rate}%)",
-    "tvaRegistered": "N° TVA {number}"
+    "tvaRegistered": "N° TVA {number}",
+    "waTitle": "Envoyer via WhatsApp",
+    "waSendInvoice": "Envoyer la facture",
+    "waSendReminder": "Envoyer un rappel",
+    "waDisclaimer": "Ouvre WhatsApp avec un message prérempli dans la langue du membre — vous appuyez sur envoyer. Nous enregistrons le transfert, pas la livraison.",
+    "waNoPhoneMember": "Aucun numéro de téléphone enregistré pour ce membre — ajoutez-en un pour envoyer via WhatsApp.",
+    "waNoPhonePayer": "Aucun numéro de téléphone enregistré pour le payeur — ajoutez-en un pour envoyer via WhatsApp.",
+    "waTraceInvoice": "Facture : envoyée {count}× · dernière fois {date}",
+    "waTraceReminder": "Rappel : envoyé {count}× · dernière fois {date}",
+    "waTraceNone": "Pas encore envoyé"
   },
   "status": {
     "active": "Actif",
@@ -3169,6 +3178,8 @@
       "renewal": "Bonjour {name}, ici {gym} — un petit rappel que votre abonnement est à renouveler. Répondez ici pour l'organiser. Merci ! 💪",
       "winback": "Bonjour {name}, vous nous manquez chez {gym} ! Revenez pour une séance — répondez ici et on s'occupe de tout.",
       "receipt": "Bonjour {name}, votre reçu de {gym} — facture {number} · {label} : {usd}${lbp}. Payé le {date}. Solde : {balance}$. Merci !",
+      "invoiceDue": "Bonjour {name}, ici {gym}. Facture {number} · {label} — montant dû : {usd}${lbp}. Vous pouvez la consulter et la régler ici : {link}. Merci !",
+      "invoiceReminder": "Bonjour {name}, un petit rappel de {gym} : la facture {number} · {label} présente encore {usd}${lbp} à régler. Consultez-la ici quand cela vous convient : {link}. Merci ! 🙏",
       "leadReply": "Bonjour {name}, ici {gym} au sujet de votre intérêt. Envie d'un cours d'essai gratuit ? Répondez ici ! 🥊",
       "regApproved": "Bonjour {name}, votre inscription à {class} chez {gym} est confirmée ! À bientôt 💪"
     },

@@ -853,6 +853,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // WA-INVOICE: send invoice / payment reminders over the wa.me bridge (owner+
+      // reception). Hermetic own gym mapped to a primary custom domain — canonical
+      // portal link, guardian-payer phone, handoff log, no-phone guidance, coach
+      // hidden. Needs SUPABASE_SERVICE_ROLE_KEY.
+      name: 'wa-invoice',
+      dependencies: ['setup'],
+      testMatch: /wa-invoice\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ON-1 portal invites: adopts login-less profiles into auth users.
       name: 'on1',
       dependencies: ['setup'],
