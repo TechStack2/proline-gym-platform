@@ -803,7 +803,16 @@
     "loading": "Loading invoices...",
     "description": "Manage and view all invoices",
     "tvaLine": "TVA ({rate}%)",
-    "tvaRegistered": "TVA Reg. {number}"
+    "tvaRegistered": "TVA Reg. {number}",
+    "waTitle": "Send via WhatsApp",
+    "waSendInvoice": "Send invoice",
+    "waSendReminder": "Send reminder",
+    "waDisclaimer": "Opens WhatsApp with a prefilled message in the member's language — you tap send. We log the handoff, not delivery.",
+    "waNoPhoneMember": "No phone number on file for this member — add one to send via WhatsApp.",
+    "waNoPhonePayer": "No phone number on file for the payer — add one to send via WhatsApp.",
+    "waTraceInvoice": "Invoice: sent {count}× · last {date}",
+    "waTraceReminder": "Reminder: sent {count}× · last {date}",
+    "waTraceNone": "Not sent yet"
   },
   "status": {
     "active": "Active",
@@ -3169,6 +3178,8 @@
       "renewal": "Hi {name}, this is {gym} — a friendly reminder that your membership is due for renewal. Reply here to arrange it. Thank you! 💪",
       "winback": "Hi {name}, we miss you at {gym}! Come back for a session — reply here and we will sort you out.",
       "receipt": "Hi {name}, your receipt from {gym} — invoice {number} · {label}: ${usd}{lbp}. Paid {date}. Balance: ${balance}. Thank you!",
+      "invoiceDue": "Hi {name}, this is {gym}. Invoice {number} · {label} — amount due: ${usd}{lbp}. You can view and pay it here: {link}. Thank you!",
+      "invoiceReminder": "Hi {name}, a gentle reminder from {gym}: invoice {number} · {label} still has ${usd}{lbp} outstanding. View it here whenever suits you: {link}. Thank you! 🙏",
       "leadReply": "Hi {name}, this is {gym} replying about your interest. Want to book a free trial? Just reply here! 🥊",
       "regApproved": "Hi {name}, your registration for {class} at {gym} is confirmed! See you in class 💪"
     },

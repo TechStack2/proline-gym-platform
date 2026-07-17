@@ -1,9 +1,13 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Plus, FileText } from 'lucide-react'
 import { balanceUsd, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
+import { composeInvoiceWa, one, asLoc } from './[id]/wa-message'
+import { InvoiceRowWa } from './invoice-row-wa'
 
 type Props = { locale: string; searchParams: { search?: string; status?: string; aging?: string } }
 
@@ -30,9 +34,10 @@ export async function InvoicesView({ locale, searchParams }: Props) {
 
   const { data: invoices } = await supabase
     .from('invoices')
-    .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, total_usd, status, voided_at, due_date, created_at, student_id, payer_profile_id,
-      students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
-      payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
+    .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, total_usd, total_lbp, exchange_rate, status, voided_at, due_date, created_at, student_id, payer_profile_id, gym_id,
+      gyms(slug, name_ar, name_en, name_fr),
+      students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone, locale)),
+      payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone, locale)`)
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -54,6 +59,47 @@ export async function InvoicesView({ locale, searchParams }: Props) {
   const outstanding = invList
     .filter((i) => ['pending', 'partial', 'overdue'].includes(i.status))
     .reduce((s, i) => s + balOf(i), 0)
+
+  // WA-INVOICE: per-row "Send invoice" / "Send reminder" for collectible rows, owner+
+  // reception only. Compose the member-locale bodies from the already-fetched rows —
+  // one canonical-origin resolve for the whole list, translators memoized per locale
+  // (no per-row invoice re-fetch). The chip labels below are the staff-locale `ti`.
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: roleRow } = user
+    ? await supabase.from('user_roles').select('role').eq('user_id', user.id).limit(1).maybeSingle()
+    : { data: null }
+  const canSendWa = ['owner', 'receptionist'].includes((roleRow as { role?: string } | null)?.role ?? '')
+  const ti = await getTranslations({ locale, namespace: 'invoices' })
+
+  const waByInvoice = new Map<string, { phone: string | null; due: string; reminder: string }>()
+  if (canSendWa) {
+    const gymSlug = one<{ slug?: string | null }>((invList.find((i: any) => i.gyms) as any)?.gyms)?.slug ?? null
+    const origin = await gymCanonicalOrigin(gymSlug)
+    const twCache = new Map<string, (k: string, v: Record<string, string>) => string>()
+    const twFor = async (loc: string | null | undefined) => {
+      const key = asLoc(loc)
+      if (!twCache.has(key)) {
+        twCache.set(key, (await getTranslations({ locale: key, namespace: 'whatsapp' })) as unknown as (k: string, v: Record<string, string>) => string)
+      }
+      return twCache.get(key)!
+    }
+    const collectible = invList.filter((i: any) => ['pending', 'partial', 'overdue'].includes(i.status) && balOf(i) > 0.005)
+    await Promise.all(collectible.map(async (inv: any) => {
+      const target = inv.payer_profile_id ? one<any>(inv.payer) : one<any>(one<any>(inv.students)?.profiles)
+      const tw = await twFor(target?.locale)
+      waByInvoice.set(inv.id, composeInvoiceWa(tw, {
+        gym: one<any>(inv.gyms),
+        target,
+        locale: asLoc(target?.locale),
+        origin,
+        invoiceNumber: inv.invoice_number,
+        invoiceType: inv.invoice_type,
+        notes: inv,
+        balanceUsd: balOf(inv),
+        exchangeRate: inv.exchange_rate,
+      }))
+    }))
+  }
 
   // Per-method daily tally (today's drawer).
   const today = new Date().toISOString().slice(0, 10)
@@ -172,6 +218,16 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                         <span className="block text-[10px] text-gray-400" data-testid="invoice-payer">
                           {t('Payer', 'الدافع', 'Payeur')}: {localizedName(Array.isArray(inv.payer) ? inv.payer[0] : inv.payer, locale)}
                         </span>
+                      )}
+                      {canSendWa && waByInvoice.has(inv.id) && (
+                        <InvoiceRowWa
+                          invoiceId={inv.id}
+                          phone={waByInvoice.get(inv.id)!.phone}
+                          dueMessage={waByInvoice.get(inv.id)!.due}
+                          reminderMessage={waByInvoice.get(inv.id)!.reminder}
+                          sendLabel={ti('waSendInvoice')}
+                          remindLabel={ti('waSendReminder')}
+                        />
                       )}
                     </td>
                     <td className="p-3 font-medium">${Number(inv.total_usd).toFixed(2)}</td>

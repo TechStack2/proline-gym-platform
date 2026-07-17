@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 import { Receipt as ReceiptIcon, ArrowLeft, Printer } from 'lucide-react'
 import { PaymentForm } from '../../payments/components/payment-form'
 import { InvoiceActions } from './invoice-actions'
+import { InvoiceWhatsApp } from './invoice-whatsapp'
+import { buildInvoiceWaPayload } from './wa-message'
 import { balanceUsd, paidUsd, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
 import { normalizeCurrencyPref, orderedMoney, fmtUsd } from '@/lib/billing/currency'
 
@@ -67,6 +69,34 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   const balance = balanceUsd(inv.total_usd, payments)
   const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
 
+  // WA-INVOICE (finding 4): prefilled WhatsApp "Send invoice" / "Send reminder"
+  // actions for a still-collectible invoice — owner+reception only (same gate as
+  // discount). The payload picks the payer's phone for a guardian-billed invoice,
+  // writes the body in the MEMBER's locale, and links to the portal on the gym's
+  // canonical host. The trace is the R3 honesty log: how many times each was handed
+  // off, and when (not a delivery claim).
+  const showWa = canDiscount && balance > 0.005 && !inv.voided_at
+  const waPayload = showWa ? await buildInvoiceWaPayload(supabase, id) : null
+  let waTrace = { invoice: '', reminder: '' }
+  if (showWa) {
+    const { data: waLogs } = await supabase
+      .from('message_logs')
+      .select('template_name, created_at')
+      .eq('provider_message_id', id)
+      .in('template_name', ['invoice_due', 'invoice_reminder'])
+      .order('created_at', { ascending: false })
+    const stat = (k: string) => {
+      const rows = (waLogs ?? []).filter((r: any) => r.template_name === k)
+      return { count: rows.length, last: rows[0]?.created_at as string | undefined }
+    }
+    const di = stat('invoice_due')
+    const rm = stat('invoice_reminder')
+    waTrace = {
+      invoice: di.count ? ti('waTraceInvoice', { count: di.count, date: fmtDate(di.last ?? null) }) : '',
+      reminder: rm.count ? ti('waTraceReminder', { count: rm.count, date: fmtDate(rm.last ?? null) }) : '',
+    }
+  }
+
   return (
     <div className={cn('space-y-6 p-6', isRTL && 'rtl text-right')}>
       <div className="flex items-center justify-between">
@@ -124,6 +154,24 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
           <p className="mt-1 text-xs text-muted-foreground" data-testid="invoice-tva-number">{ti('tvaRegistered', { number: tvaNumber })}</p>
         )}
       </div>
+
+      {/* WA-INVOICE: WhatsApp send/remind + handoff trace (owner+reception, collectible). */}
+      {showWa && waPayload && (
+        <InvoiceWhatsApp
+          invoiceId={inv.id}
+          phone={waPayload.phone}
+          dueMessage={waPayload.dueBody}
+          reminderMessage={waPayload.reminderBody}
+          title={ti('waTitle')}
+          sendInvoiceLabel={ti('waSendInvoice')}
+          sendReminderLabel={ti('waSendReminder')}
+          disclaimer={ti('waDisclaimer')}
+          noPhone={ti(waPayload.targetKind === 'payer' ? 'waNoPhonePayer' : 'waNoPhoneMember')}
+          traceInvoice={waTrace.invoice}
+          traceReminder={waTrace.reminder}
+          traceNone={ti('waTraceNone')}
+        />
+      )}
 
       {/* Settlement */}
       <div>
