@@ -1669,6 +1669,7 @@ export type Database = {
           name_ar: string
           name_en: string
           name_fr: string
+          office_hours: Json | null
           phone: string | null
           pt_booking_horizon_days: number
           pt_buffer_minutes: number
@@ -1684,10 +1685,12 @@ export type Database = {
           tagline_en: string | null
           tagline_fr: string | null
           tax_rate: number
+          tiktok_handle: string | null
           timezone: string | null
           tva_registration_number: string | null
           updated_at: string
           website: string | null
+          youtube_handle: string | null
         }
         Insert: {
           address_ar?: string | null
@@ -1720,6 +1723,7 @@ export type Database = {
           name_ar: string
           name_en: string
           name_fr: string
+          office_hours?: Json | null
           phone?: string | null
           pt_booking_horizon_days?: number
           pt_buffer_minutes?: number
@@ -1735,10 +1739,12 @@ export type Database = {
           tagline_en?: string | null
           tagline_fr?: string | null
           tax_rate?: number
+          tiktok_handle?: string | null
           timezone?: string | null
           tva_registration_number?: string | null
           updated_at?: string
           website?: string | null
+          youtube_handle?: string | null
         }
         Update: {
           address_ar?: string | null
@@ -1771,6 +1777,7 @@ export type Database = {
           name_ar?: string
           name_en?: string
           name_fr?: string
+          office_hours?: Json | null
           phone?: string | null
           pt_booking_horizon_days?: number
           pt_buffer_minutes?: number
@@ -1786,10 +1793,12 @@ export type Database = {
           tagline_en?: string | null
           tagline_fr?: string | null
           tax_rate?: number
+          tiktok_handle?: string | null
           timezone?: string | null
           tva_registration_number?: string | null
           updated_at?: string
           website?: string | null
+          youtube_handle?: string | null
         }
         Relationships: []
       }
@@ -4189,10 +4198,13 @@ export type Database = {
           name_ar: string
           name_en: string
           name_fr: string
+          office_hours: Json
           slug: string
           tagline_ar: string
           tagline_en: string
           tagline_fr: string
+          tiktok_handle: string
+          youtube_handle: string
         }[]
       }
       get_setup_status: {

@@ -229,6 +229,23 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // LANDING-CUSTOM: hermetic own gym — the Settings Public-page + Opening-hours
+      // editors save (contact/socials/map-link parse) and the tenant landing footer
+      // renders the full contact set + data-driven office hours (en + ar). Own gym so
+      // the gym-wide office_hours/contact never perturb the shared run gym.
+      name: 'landing-custom',
+      dependencies: ['setup'],
+      testMatch: /\/landing-custom\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // LANDING-CUSTOM R4: anon hero-seam screenshots at 1440/1920/390 en+ar (default
+      // gym). No auth/seed → no setup dependency. Evidence-only (writes to screenshots/).
+      name: 'hero-shots',
+      testMatch: /\/landing-hero-shots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // J6 GO-LIVE-PANEL: the /publish page (owner/head_coach). Toggles a seeded
       // class's landing visibility and proves the anon ?gym= landing reflects it
       // (get_landing_schedule's show_on_landing gate) both via the definer RPC and

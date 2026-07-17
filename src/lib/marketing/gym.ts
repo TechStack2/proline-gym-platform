@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import type { OfficeHours } from './office-hours';
 
 /**
  * The public landing always targets Proline's gym. CI can override via ?gym=<slug>
@@ -33,6 +34,10 @@ export type LandingGym = {
   facebook_handle: string | null;
   map_lat: number | null;
   map_lng: number | null;
+  // LANDING-CUSTOM (000101): structured office hours (JSONB) + extra socials.
+  office_hours: OfficeHours | null;
+  tiktok_handle: string | null;
+  youtube_handle: string | null;
 };
 
 // PROLINE-LANDING-DATA: the contact primitives live in the CLIENT-SAFE
