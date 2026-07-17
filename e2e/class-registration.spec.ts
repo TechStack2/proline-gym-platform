@@ -93,6 +93,11 @@ test('B2 · request → approve(free)→active+invoice+roster → full→waitlis
     await owner.page.goto(detailUrl);
     await vis(owner.page, '[data-testid="reg-row"][data-status="active"]').filter({ hasText: 'Omar' }).first()
       .getByTestId('cancel-reg-btn').click();
+    // CANCEL-FLOW: cancel now collects a reason (chips + free text) before freeing the spot.
+    const cancelDialog = vis(owner.page, '[data-testid="cancel-reg-dialog"]').first();
+    await expect(cancelDialog).toBeVisible({ timeout: 10_000 });
+    await cancelDialog.getByTestId('reason-chip').filter({ hasText: 'Wrong class' }).first().click();
+    await cancelDialog.getByTestId('reason-confirm').click();
     const karimActive = vis(owner.page, '[data-testid="reg-row"][data-status="active"]').filter({ hasText: 'Karim' }).first();
     await expect(karimActive).toBeVisible({ timeout: 15_000 });
     await expect(karimActive).toContainText('Invoiced'); // promotion billed

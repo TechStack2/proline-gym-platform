@@ -1835,6 +1835,9 @@ export type Database = {
           total_lbp: number | null
           total_usd: number
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount_lbp?: number
@@ -1862,6 +1865,9 @@ export type Database = {
           total_lbp?: number | null
           total_usd: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount_lbp?: number
@@ -1889,6 +1895,9 @@ export type Database = {
           total_lbp?: number | null
           total_usd?: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -3682,7 +3691,7 @@ export type Database = {
         }
       }
       cancel_class_registration: {
-        Args: { p_reg_id: string }
+        Args: { p_reg_id: string; p_reason?: string; p_refund?: boolean }
         Returns: {
           approved_at: string | null
           approved_by: string | null

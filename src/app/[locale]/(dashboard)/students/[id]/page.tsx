@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
-import { balanceUsd, STATUS_BADGE, statusLabel, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { balanceUsd, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
 import {
   User, Phone, Award, CreditCard, CalendarDays, Dumbbell, ClipboardList,
   DollarSign, ChevronRight, Users,
@@ -108,7 +108,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       .limit(40),
     supabase
       .from('invoices')
-      .select(`id, invoice_number, invoice_type, total_usd, status, due_date, created_at, payer_profile_id,
+      .select(`id, invoice_number, invoice_type, total_usd, status, voided_at, due_date, created_at, payer_profile_id,
         payer:profiles!invoices_payer_profile_id_fkey (first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
       .eq('student_id', id)
       .order('created_at', { ascending: false })
@@ -602,7 +602,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               {(invoices ?? []).map((inv: any) => {
                 const bal = balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
                 return (
-                  <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status} data-type={inv.invoice_type}>
+                  <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status} data-voided={inv.voided_at ? 'true' : undefined} data-type={inv.invoice_type}>
                     <span className="flex flex-col">
                       <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-primary-700 hover:underline">
                         {inv.invoice_number}
@@ -614,7 +614,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                       )}
                     </span>
                     <span className="text-xs text-gray-500">${Number(inv.total_usd).toFixed(2)}{bal > 0 ? ` · ${t('due')} $${bal.toFixed(2)}` : ''}</span>
-                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[inv.status])}>{statusLabel(inv.status, locale)}</span>
+                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[displayInvoiceStatus(inv.status, inv.voided_at)])}>{statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)}</span>
                   </li>
                 )
               })}

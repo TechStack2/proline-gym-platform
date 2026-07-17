@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Plus, FileText } from 'lucide-react'
-import { balanceUsd, localizedName, STATUS_BADGE, statusLabel, METHOD_LABEL, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { balanceUsd, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 
 type Props = { locale: string; searchParams: { search?: string; status?: string; aging?: string } }
 
@@ -30,7 +30,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
 
   const { data: invoices } = await supabase
     .from('invoices')
-    .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, total_usd, status, due_date, created_at, student_id, payer_profile_id,
+    .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, total_usd, status, voided_at, due_date, created_at, student_id, payer_profile_id,
       students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)),
       payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr)`)
     .order('created_at', { ascending: false })
@@ -177,7 +177,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                     <td className="p-3 font-medium">${Number(inv.total_usd).toFixed(2)}</td>
                     <td className={cn('p-3 font-medium', bal > 0 ? 'text-red-600' : 'text-green-600')}>${bal.toFixed(2)}</td>
                     <td className="p-3 text-muted-foreground">{fmtDate(inv.due_date)}</td>
-                    <td className="p-3"><span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[inv.status])}>{statusLabel(inv.status, locale)}</span></td>
+                    <td className="p-3"><span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[displayInvoiceStatus(inv.status, inv.voided_at)])}>{statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)}</span></td>
                   </tr>
                 )
               })}
