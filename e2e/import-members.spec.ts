@@ -22,12 +22,14 @@ let gymId = ''
 const FIXTURE = join(tmpdir(), `member-import-${SLUG}.xlsx`)
 
 // Two real members (one with a guardian), one in-file duplicate, one error row.
-const AR_NAME = 'ليلى' // Layla — the Arabic-fidelity probe
+// The Arabic-fidelity probe — an ARABIC-ONLY member (no EN name) so the roster/preview
+// must display the Arabic that came through the .xlsx round-trip (they prefer EN otherwise).
+const AR_NAME = 'عمر'
 const cell = (v: string) => (v ? { value: v, type: String } : null)
 const HEADER = ['First (EN)', 'Last (EN)', 'First (AR)', 'Last (AR)', 'Phone', 'Birthdate', 'Guardian', 'Guardian phone', 'Status', 'Last seen', 'Notes'].map((v) => ({ value: v, fontWeight: 'bold' as const }))
 const DATA_ROWS = [
-  ['Layla', 'Haddad', AR_NAME, 'حداد', '03 100 100', '1996-05-05', '', '', 'lapsed', '2024-10-01', 'ex member'],
-  ['Omar', 'Saad', 'عمر', 'سعد', '03 200 200', '2012-03-03', 'Nabil Saad', '03 900 900', 'active', '', ''],
+  ['Layla', 'Haddad', 'ليلى', 'حداد', '03 100 100', '1996-05-05', '', '', 'lapsed', '2024-10-01', 'ex member'],
+  ['', '', AR_NAME, 'سعد', '03 200 200', '2012-03-03', 'Nabil Saad', '03 900 900', 'active', '', ''], // Arabic-only + guardian
   ['Layla', 'Copy', '', '', '+961 3 100 100', '', '', '', 'lapsed', '', ''], // in-file dup of row 1
   ['NoPhone', 'Person', '', '', '', '', '', '', 'lapsed', '', ''], // error: missing phone
 ]
@@ -94,6 +96,14 @@ test('IMPORT-MEMBERS · template → upload (Arabic) → preview → import → 
     // SHOT (en): the preview with dispositions + the block.
     await owner.page.screenshot({ path: 'screenshots/import-members-preview-en.png' }).catch(() => {})
 
+    // ZERO-BILLING baseline: the e2e seed pre-creates some invoices/memberships for
+    // its seeded students, so assert the IMPORT adds NONE (delta 0), not an absolute 0.
+    const gymInvoices = async () => ((await (await svc(`invoices?gym_id=eq.${gymId}&select=id`)).json()) as unknown[]).length
+    const gymMemberships = async () =>
+      ((await (await svc(`student_memberships?select=id,students!inner(gym_id)&students.gym_id=eq.${gymId}`)).json()) as unknown[]).length
+    const invBefore = await gymInvoices()
+    const memBefore = await gymMemberships()
+
     // Exclude the error row (row 4) → import unblocks.
     await owner.page.getByTestId('import-exclude-4').click()
     await expect(owner.page.getByTestId('import-run')).toBeEnabled()
@@ -113,12 +123,10 @@ test('IMPORT-MEMBERS · template → upload (Arabic) → preview → import → 
     await expect(owner.page.getByText(AR_NAME).first(), 'imported member is in the win-back list').toBeVisible()
     await owner.page.screenshot({ path: 'screenshots/import-members-lapsed-en.png' }).catch(() => {})
 
-    // R3 — ZERO billing side-effects: no invoices, no memberships for this gym.
-    const invoices = (await (await svc(`invoices?gym_id=eq.${gymId}&select=id`)).json()) as unknown[]
-    expect(invoices.length, 'imported members created NO invoices').toBe(0)
-    const studentIds = ((await (await svc(`students?gym_id=eq.${gymId}&select=id`)).json()) as { id: string }[]).map((s) => s.id)
-    const mems = (await (await svc(`student_memberships?student_id=in.(${studentIds.join(',')})&select=id`)).json()) as unknown[]
-    expect(mems.length, 'imported members have NO membership').toBe(0)
+    // R3 — ZERO billing side-effects: the import created NO invoices and NO
+    // memberships (delta vs the pre-import baseline).
+    expect(await gymInvoices(), 'the import created NO invoices').toBe(invBefore)
+    expect(await gymMemberships(), 'the import created NO memberships').toBe(memBefore)
 
     // R3 — idempotent re-upload: every row is now a skip (0 creatable).
     await owner.page.goto('/en/students/import')
