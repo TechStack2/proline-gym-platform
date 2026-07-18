@@ -145,7 +145,9 @@ const withPWA = withPWAInit({
           maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24, // 1 day
         },
-        networkTimeoutSeconds: 8,
+        // PORTAL-BRAND rider: 8 → 5s (owner-approved) — a snappier offline fallback on
+        // weak connections, at the cost of slightly staler pages when the network is slow.
+        networkTimeoutSeconds: 5,
       },
     },
   ],
