@@ -212,6 +212,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PUSH-1 (finding 10): web push for all roles. Subscription lifecycle UI (the
+      // browser Push API is MOCKED in-page), the /api/cron/push drain targeting via
+      // the test-sink transport (no real delivery), and the no-keys no-op. Hermetic
+      // own gym; needs SUPABASE_SERVICE_ROLE_KEY + CRON_SECRET + PUSH_TEST_SINK.
+      name: 'push',
+      dependencies: ['setup'],
+      testMatch: /push\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Public landing (Prompt LP): a LOGGED-OUT (anon) visitor sees the run gym's
       // live catalog (disciplines/schedule/pricing) + brand via the 000035 anon
       // public-read policies. Creates its own anon context (no storageState).

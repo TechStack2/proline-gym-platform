@@ -141,6 +141,12 @@ jobs:
       E2E_WORKERS: '2'
       NEXT_PUBLIC_DEFAULT_LOCALE: en
       NEXT_PUBLIC_SUPPORTED_LOCALES: ar,en,fr
+      # PUSH-1: the server sender records targets instead of delivering (proves
+      # targeting without a real push service). The client's public VAPID key is
+      # NOT set globally on purpose — push.spec injects it per-context via
+      # window.__PUSH_VAPID_PUBLIC_KEY__, so the push UI (toggle/prompt) renders ONLY
+      # in push.spec and never appears in the rest of the suite.
+      PUSH_TEST_SINK: '1'
     steps:
       - uses: actions/checkout@v4
 

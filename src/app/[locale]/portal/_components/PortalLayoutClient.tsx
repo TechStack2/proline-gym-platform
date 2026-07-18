@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { PushPrompt } from '@/components/push/push-prompt';
 import { HeaderAvatar } from '@/components/shared/header-avatar';
 import { PortalContent } from '@/components/portal/portal-kit';
 
@@ -63,6 +64,7 @@ export function PortalLayoutClient({ children, locale }: Props) {
         }
       />
       <main className={`flex-1 overflow-y-auto ${locale === 'ar' ? 'md:me-20' : 'md:ms-20'}`}>
+        <PushPrompt />
         <PageTransition
           direction="forward"
           isActive={true}

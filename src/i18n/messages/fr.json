@@ -3342,6 +3342,28 @@
       "noPt": "Aucun coaching réservé"
     }
   },
+  "push": {
+    "title": "Notifications push",
+    "subtitle": "Soyez alerté sur cet appareil — même quand l'app est fermée.",
+    "unsupported": "Ce navigateur ne prend pas en charge les notifications.",
+    "iosInstallHint": "Sur iPhone/iPad, ajoutez d'abord l'app à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis activez les notifications.",
+    "denied": "Les notifications sont bloquées dans les réglages du navigateur. Autorisez-les pour activer.",
+    "cat": {
+      "operational": "Activité",
+      "schedule": "Rappels",
+      "informational": "Facturation"
+    },
+    "catDesc": {
+      "operational": "Demandes, approbations, paiements et présences.",
+      "schedule": "Rappels de renouvellement et d'expiration.",
+      "informational": "Factures et rappels de paiement."
+    },
+    "promptTitle": "Activer les notifications ?",
+    "promptBody": "Soyez alerté de l'activité, des rappels et de la facturation sur cet appareil.",
+    "promptEnable": "Activer",
+    "promptLater": "Plus tard",
+    "promptGotIt": "Compris"
+  },
   "pwa": {
     "installTitle": "Installer PRO LINE",
     "installDescription": "Ajoutez l'app à votre appareil pour un accès hors ligne à l'accueil.",

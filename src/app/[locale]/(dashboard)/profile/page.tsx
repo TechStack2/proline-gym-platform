@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { User, Phone, Mail, Shield, CalendarDays, Clock, Globe, Save, Check } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
+import { PushToggle } from '@/components/push/push-toggle'
 
 type Props = { params: { locale: string } }
 
@@ -66,6 +67,7 @@ export default async function StaffProfilePage({ params }: Props) {
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+      <PushToggle />
       {/* Avatar + Name Card */}
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
         <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-primary-700 text-primary-foreground text-3xl font-bold mb-3">

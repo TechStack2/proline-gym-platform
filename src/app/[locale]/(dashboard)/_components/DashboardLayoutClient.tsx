@@ -11,6 +11,7 @@ import { MoreMenuSheet } from './MoreMenuSheet';
 import type { DashboardRole } from './DashboardTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { PushPrompt } from '@/components/push/push-prompt';
 import { useInboxCount } from '@/hooks/use-inbox-count';
 import { LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
@@ -133,6 +134,7 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
         </div>
 
         <main className="flex-1 overflow-y-auto scrollbar-thin lg:p-8">
+          <PushPrompt />
           <PageTransition
             direction="forward"
             isActive={true}

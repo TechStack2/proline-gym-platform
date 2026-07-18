@@ -98,6 +98,15 @@ export async function recordPayment(input: {
   if (error) return { ok: false, error: actionError(error) };
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${input.invoiceId}`);
+  // PUSH-1: record_payment emits payment_received to the member via a SQL-definer
+  // (not createNotification), so deliver it immediately here — the desk records a
+  // payment, the member gets an instant receipt push. Scoped to the invoice's
+  // student so a payment in one gym never touches another recipient's pending row.
+  // Best-effort; never blocks.
+  try {
+    const studentId = (data as { student_id?: string })?.student_id;
+    if (studentId) await (await import('@/lib/push/dispatch')).dispatchPendingPush({ recipientId: studentId });
+  } catch { /* best-effort */ }
   return { ok: true, data: data as InvoiceRow };
 }
 
