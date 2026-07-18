@@ -124,3 +124,21 @@ test('PORTAL-BRAND · visual evidence — branded member portal en/ar, light/dar
     }
   }
 })
+
+test('PORTAL-BRAND · visual evidence — the NULL-brand portal is byte-identical Proline (crimson)', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const MOBILE = { width: 390, height: 844 }
+  // The other half of the R1 diff: the SAME shell (bronze chrome) with the DEFAULT crimson
+  // accents — no brand override — for a side-by-side against the teal captures above.
+  for (const locale of ['en', 'ar'] as const) {
+    const { ctx, page } = await memberOnPortal(browser, SLUG_RED, { locale, viewport: MOBILE })
+    try {
+      await expect(page.locator('[data-testid="brand-theme"]'), 'no brand override on the null gym').toHaveCount(0)
+      expect(await rootBrand(page), `default crimson channel on ${locale}`).toBe('205 20 25')
+      await page.waitForTimeout(400)
+      await page.screenshot({ path: `screenshots/portal-brand-null-${locale}-light-390.png`, fullPage: true }).catch(() => {})
+    } finally {
+      await ctx.close()
+    }
+  }
+})
