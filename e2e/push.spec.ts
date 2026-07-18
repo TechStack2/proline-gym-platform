@@ -136,6 +136,10 @@ test('1 · subscription lifecycle — toggle on creates a row, category prefs wr
 test('2 · sender targets — the drain pushes a pending notification to the subscription (sink) + stamps once', async () => {
   test.setTimeout(60_000)
   test.skip(!CRON, 'needs CRON_SECRET')
+  // Reset the owner's category prefs to ON — test 1 toggles push_operational OFF,
+  // and this test's payment_received is an OPERATIONAL notification (it would be
+  // filtered by a disabled pref). Independent of test order.
+  await svc('PATCH', `profiles?id=eq.${ownerId}`, { push_operational: true, push_schedule: true, push_informational: true })
   // Seed a subscription + a pending notification for the owner.
   const endpoint = `https://mock.push.example/target-${Date.now()}`
   await svc('POST', 'push_subscriptions', { user_id: ownerId, endpoint, p256dh: 'k', auth: 'a', user_agent: 'e2e' })
