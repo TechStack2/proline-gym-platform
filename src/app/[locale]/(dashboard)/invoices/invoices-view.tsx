@@ -4,7 +4,8 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Plus, FileText } from 'lucide-react'
-import { balanceUsd, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { balanceUsd, balanceLbp, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { dualMoney, normalizeCurrencyPref } from '@/lib/billing/currency'
 import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
 import { composeInvoiceWa, one, asLoc } from './[id]/wa-message'
 import { InvoiceRowWa } from './invoice-row-wa'
@@ -35,7 +36,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
   const { data: invoices } = await supabase
     .from('invoices')
     .select(`id, invoice_number, invoice_type, notes_en, notes_ar, notes_fr, total_usd, total_lbp, exchange_rate, status, voided_at, due_date, created_at, student_id, payer_profile_id, gym_id,
-      gyms(slug, name_ar, name_en, name_fr),
+      gyms(slug, name_ar, name_en, name_fr, currency_preference),
       students(profiles(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone, locale)),
       payer:profiles!invoices_payer_profile_id_fkey(first_name_ar, first_name_en, first_name_fr, last_name_ar, last_name_en, last_name_fr, phone, locale)`)
     .order('created_at', { ascending: false })
@@ -45,20 +46,28 @@ export async function InvoicesView({ locale, searchParams }: Props) {
   const ids = invList.map((i) => i.id)
 
   const { data: pays } = ids.length
-    ? await supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', ids)
-    : { data: [] as { invoice_id: string; amount_usd: number | null }[] }
+    ? await supabase.from('payments').select('invoice_id, amount_usd, amount_lbp').in('invoice_id', ids)
+    : { data: [] as { invoice_id: string; amount_usd: number | null; amount_lbp: number | null }[] }
 
   const paidByInvoice = new Map<string, number>()
+  const paidLbpByInvoice = new Map<string, number>()
   for (const p of pays ?? []) {
     paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+    paidLbpByInvoice.set(p.invoice_id, (paidLbpByInvoice.get(p.invoice_id) ?? 0) + Number((p as any).amount_lbp ?? 0))
   }
   const balOf = (inv: { id: string; total_usd: number | null }) =>
     balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
+  const balLbpOf = (inv: { id: string; total_lbp?: number | null }) =>
+    balanceLbp(inv.total_lbp ?? 0, [{ amount_usd: 0, amount_lbp: paidLbpByInvoice.get(inv.id) ?? 0 }])
 
-  // Outstanding = Σ balance over still-collectible invoices.
-  const outstanding = invList
-    .filter((i) => ['pending', 'partial', 'overdue'].includes(i.status))
-    .reduce((s, i) => s + balOf(i), 0)
+  // MONEY-LBP: the gym's display preference orders/emphasizes the dual totals.
+  const pref = normalizeCurrencyPref(one<{ currency_preference?: string | null }>((invList.find((i: any) => i.gyms) as any)?.gyms)?.currency_preference)
+
+  // Outstanding = Σ balance over still-collectible invoices (both columns, as recorded).
+  const collectibleInvs = invList.filter((i) => ['pending', 'partial', 'overdue'].includes(i.status))
+  const outstanding = collectibleInvs.reduce((s, i) => s + balOf(i), 0)
+  const outstandingLbp = collectibleInvs.reduce((s, i: any) => s + balLbpOf(i), 0)
+  const outMoney = dualMoney(outstanding, outstandingLbp, pref)
 
   // WA-INVOICE: per-row "Send invoice" / "Send reminder" for collectible rows, owner+
   // reception only. Compose the member-locale bodies from the already-fetched rows —
@@ -152,7 +161,10 @@ export async function InvoicesView({ locale, searchParams }: Props) {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border bg-white p-4 shadow-sm">
           <p className="text-xs text-muted-foreground">{t('Outstanding balance', 'الرصيد المستحق', 'Solde impayé')}</p>
-          <p className="mt-1 text-2xl font-bold text-red-600" data-testid="outstanding-total">${outstanding.toFixed(2)}</p>
+          <p className="mt-1 text-2xl font-bold text-red-600" data-testid="outstanding-total">{outMoney.primary}</p>
+          {outMoney.secondary && (
+            <p className="text-sm font-semibold text-red-500/90" data-testid="outstanding-total-lbp">{outMoney.secondary}</p>
+          )}
         </div>
         <div className="rounded-2xl border bg-white p-4 shadow-sm sm:col-span-2">
           <p className="mb-2 text-xs text-muted-foreground">{t("Today's collections (by method)", 'تحصيلات اليوم (حسب الطريقة)', 'Encaissements du jour (par méthode)')}</p>
@@ -160,11 +172,14 @@ export async function InvoicesView({ locale, searchParams }: Props) {
             {tally.size === 0 ? (
               <span className="text-muted-foreground">{t('No payments today.', 'لا مدفوعات اليوم.', "Aucun paiement aujourd'hui.")}</span>
             ) : (
-              [...tally.entries()].map(([method, v]) => (
-                <span key={method} className="rounded-full bg-muted px-3 py-1">
-                  {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: ${v.usd.toFixed(2)}{v.lbp ? ` · ${v.lbp.toLocaleString()} LBP` : ''}
+              [...tally.entries()].map(([method, v]) => {
+                const m = dualMoney(v.usd, v.lbp, pref)
+                return (
+                <span key={method} className="rounded-full bg-muted px-3 py-1" data-testid="daily-tally-method" data-method={method}>
+                  {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: {m.primary}{m.secondary ? ` · ${m.secondary}` : ''}
                 </span>
-              ))
+                )
+              })
             )}
           </div>
         </div>

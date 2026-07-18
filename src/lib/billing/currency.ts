@@ -32,3 +32,30 @@ export function orderedMoney(
   // USD and BOTH both lead with USD; LBP-pref without a LBP amount also falls back here.
   return { primary: fmtUsd(usd), secondary: hasLbp ? fmtLbp(lbp) : null };
 }
+
+/**
+ * MONEY-LBP — the honest dual-currency display for AGGREGATIONS (drawer tallies,
+ * collections by method, revenue, outstanding). Both figures are shown AS RECORDED,
+ * never cross-converted; the layout follows the gym's preference:
+ *   · BOTH → both lines always (dual-line): USD primary, LBP secondary — so a mixed
+ *            cash drawer honestly shows what it holds in each note, even at 0.
+ *   · LBP  → LBP primary (large), USD secondary (muted) — always both.
+ *   · USD  → USD primary; LBP secondary only when a LBP amount was actually recorded
+ *            (a pure-USD gym is not cluttered with "0 LBP").
+ * Distinct from orderedMoney (invoice/receipt), where BOTH collapses to USD-primary
+ * and hides a zero LBP. Refunds (negative amount_usd + amount_lbp) and discounts
+ * (net recorded amounts) flow through the callers' Σ untouched — nothing here signs
+ * or converts.
+ */
+export function dualMoney(
+  usd: number | null | undefined,
+  lbp: number | null | undefined,
+  pref: CurrencyPref,
+): { primary: string; secondary: string | null } {
+  const l = Number(lbp ?? 0);
+  const usdStr = fmtUsd(usd);
+  const lbpStr = fmtLbp(l);
+  if (pref === 'LBP') return { primary: lbpStr, secondary: usdStr };
+  if (pref === 'BOTH') return { primary: usdStr, secondary: lbpStr };
+  return { primary: usdStr, secondary: l !== 0 ? lbpStr : null }; // USD
+}

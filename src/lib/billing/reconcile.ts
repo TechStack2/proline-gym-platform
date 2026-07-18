@@ -7,8 +7,10 @@
  * the same rule atomically in record_payment — these mirror it for display.
  */
 export const EPSILON = 0.01
+// LBP is a whole-piastre currency with huge magnitudes — sub-1 LBP is noise.
+export const EPSILON_LBP = 1
 
-type PaymentLike = { amount_usd: number | null }
+type PaymentLike = { amount_usd: number | null; amount_lbp?: number | null }
 
 export function paidUsd(payments: PaymentLike[] | null | undefined): number {
   return (payments ?? []).reduce((s, p) => s + Number(p.amount_usd ?? 0), 0)
@@ -19,6 +21,19 @@ export function balanceUsd(totalUsd: number | null, payments: PaymentLike[] | nu
   return bal < EPSILON ? 0 : Math.round(bal * 100) / 100
 }
 
+// MONEY-LBP — the LBP twin of paidUsd/balanceUsd. Both figures ride the SAME payment
+// rows (amount_usd + amount_lbp are recorded together), so a refund's negative LBP and
+// a discount's net LBP net here for free — nothing signs or converts. An invoice with
+// no LBP total (USD-priced) yields a 0 LBP balance.
+export function paidLbp(payments: PaymentLike[] | null | undefined): number {
+  return (payments ?? []).reduce((s, p) => s + Number(p.amount_lbp ?? 0), 0)
+}
+
+export function balanceLbp(totalLbp: number | null, payments: PaymentLike[] | null | undefined): number {
+  const bal = Number(totalLbp ?? 0) - paidLbp(payments)
+  return bal < EPSILON_LBP ? 0 : Math.round(bal)
+}
+
 // PORTAL-BALANCE — the ONE source of truth for "what does this member owe".
 // The portal HOME tile used to sum raw total_usd over ['pending','overdue'] —
 // omitting 'partial' AND ignoring payments — while portal/billing netted
@@ -26,8 +41,8 @@ export function balanceUsd(totalUsd: number | null, payments: PaymentLike[] | nu
 // on the billing tab. Both surfaces now compute through here.
 export const OPEN_INVOICE_STATUSES = ['pending', 'partial', 'overdue'] as const
 
-type OutstandingInvoice = { id: string; status: string; total_usd: number | null }
-type LinkedPayment = { invoice_id: string | null; amount_usd: number | null }
+type OutstandingInvoice = { id: string; status: string; total_usd: number | null; total_lbp?: number | null }
+type LinkedPayment = { invoice_id: string | null; amount_usd: number | null; amount_lbp?: number | null }
 
 /** Σ amount_usd per invoice_id (unlinked payments are ignored). */
 export function paidByInvoice(payments: LinkedPayment[] | null | undefined): Map<string, number> {
@@ -35,6 +50,16 @@ export function paidByInvoice(payments: LinkedPayment[] | null | undefined): Map
   for (const p of payments ?? []) {
     if (!p.invoice_id) continue
     map.set(p.invoice_id, (map.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
+  }
+  return map
+}
+
+/** Σ amount_lbp per invoice_id (the LBP twin of paidByInvoice). */
+export function paidLbpByInvoice(payments: LinkedPayment[] | null | undefined): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const p of payments ?? []) {
+    if (!p.invoice_id) continue
+    map.set(p.invoice_id, (map.get(p.invoice_id) ?? 0) + Number(p.amount_lbp ?? 0))
   }
   return map
 }
@@ -51,6 +76,22 @@ export function outstandingUsd(
     sum += balanceUsd(inv.total_usd, [{ amount_usd: paid.get(inv.id) ?? 0 }])
   }
   return Math.round(sum * 100) / 100
+}
+
+/** MONEY-LBP — net LBP outstanding = Σ over OPEN invoices of (total_lbp − its LBP
+ *  payments). Only LBP-denominated invoices contribute; a USD-priced invoice
+ *  (total_lbp 0/null) adds nothing. Honest, never cross-converted. */
+export function outstandingLbp(
+  invoices: OutstandingInvoice[] | null | undefined,
+  payments: LinkedPayment[] | null | undefined,
+): number {
+  const paid = paidLbpByInvoice(payments)
+  let sum = 0
+  for (const inv of invoices ?? []) {
+    if (!(OPEN_INVOICE_STATUSES as readonly string[]).includes(inv.status)) continue
+    sum += balanceLbp(inv.total_lbp ?? 0, [{ amount_usd: 0, amount_lbp: paid.get(inv.id) ?? 0 }])
+  }
+  return Math.round(sum)
 }
 
 type NameRow = {

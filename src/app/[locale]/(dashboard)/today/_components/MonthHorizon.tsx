@@ -8,6 +8,7 @@ import { DrillDetails } from '@/components/dashboard/drill-details'
 import { horizonEndDate } from '@/lib/finances/horizon'
 import { getRevenueByMonth, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
 import { getEnabledProducts } from '@/lib/gym/products'
+import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import {
   getMemberMovement, getMonthExtras, getRenewalsInWindow, getRevenueRowsThisMonth, getConvertedLeadsThisMonth,
 } from '@/lib/finances/horizon-cards'
@@ -44,15 +45,26 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
   ])
   // NO-MEMBERSHIP: drop the membership revenue line when the gym doesn't sell it.
   const products = await getEnabledProducts(supabase, gymId)
+  const pref = await gymCurrencyPref(supabase, gymId) // MONEY-LBP: dual headline badges
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
   const pct = (n: number) => Math.round(n)
-  const blank = { byProduct: { membership: 0, class: 0, pt: 0, camp: 0, other: 0 }, total: 0, month: '' }
+  const zero = () => ({ membership: 0, class: 0, pt: 0, camp: 0, other: 0 })
+  const blank = { byProduct: zero(), total: 0, byProductLbp: zero(), totalLbp: 0, month: '' }
   const cur = revenue[0] ?? blank
   const last = revenue[1] ?? blank
   const revProducts = PRODUCTS.filter((p) => (cur.byProduct[p] ?? 0) > 0 && (products.membership || p !== 'membership'))
   const revDelta = cur.total - last.total
   const agingTotal = aging.reduce((s, b) => s + b.usd, 0)
+  const agingTotalLbp = aging.reduce((s, b) => s + b.lbp, 0)
+  // MONEY-LBP — a dual headline badge that is BYTE-IDENTICAL for a USD gym (keeps the
+  // drill360/ml1 USD reconcile untouched) and appends/leads LBP per preference otherwise.
+  const dualBadge = (u: number, l: number, usdExact: string): string => {
+    if (pref === 'USD') return usdExact
+    const usd = `$${Math.round(u).toLocaleString()}`
+    const lbp = `${Math.round(l).toLocaleString()} LBP`
+    return pref === 'LBP' ? `${lbp} · ${usd}` : `${usd} · ${lbp}`
+  }
   const agingOpen = aging.filter((b) => b.count > 0)
   const Trend = movement.net > 0 ? TrendingUp : movement.net < 0 ? TrendingDown : Activity
   const stu = (id: string) => `/${locale}/students/${id}`
@@ -63,7 +75,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
       {/* ── Revenue MTD by product vs last month — each product expands to the
           payments that sum to it (RECONCILES) ── */}
       <ActionCard icon={BarChart3} title={t('month.revenue')} count={revProducts.length}
-        badge={`$${cur.total.toFixed(0)}`} emptyText={t('month.noneRevenue')} emptyHref={`/${locale}/money`} testid="revenue-product" isRTL={isRTL}
+        badge={dualBadge(cur.total, cur.totalLbp, `$${cur.total.toFixed(0)}`)} emptyText={t('month.noneRevenue')} emptyHref={`/${locale}/money`} testid="revenue-product" isRTL={isRTL}
         footer={
           <div className="mt-3 flex items-center justify-between border-t pt-2" data-testid="revenue-product-total">
             <span className="text-xs font-medium text-gray-500">{t('month.vsLastMonth')}</span>
@@ -149,7 +161,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
 
       {/* ── Outstanding / aging — each bucket drills to its overdue invoices ── */}
       <ActionCard icon={AlertTriangle} title={t('month.aging')} count={agingOpen.reduce((s, b) => s + b.count, 0)}
-        badge={`$${agingTotal.toFixed(0)}`} emptyText={t('month.noneAging')} testid="aging-month" isRTL={isRTL}
+        badge={dualBadge(agingTotal, agingTotalLbp, `$${agingTotal.toFixed(0)}`)} emptyText={t('month.noneAging')} testid="aging-month" isRTL={isRTL}
         footer={
           <div className="mt-3 flex items-center justify-between border-t pt-2" data-testid="aging-month-total">
             <span className="text-xs font-medium text-gray-500">{t('month.agingTotal')}</span>

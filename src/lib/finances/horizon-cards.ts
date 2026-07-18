@@ -240,17 +240,17 @@ export async function getMemberMovement(
 }
 
 // ── Month · revenue rows this month (per-product payment detail → drill) ──
-export type RevenueRow = { product: Product; studentId: string; name: string; amount: number; date: string; invoiceId: string }
+export type RevenueRow = { product: Product; studentId: string; name: string; amount: number; amountLbp: number; date: string; invoiceId: string }
 
 /** Every payment collected this month, tagged by its invoice's product — the
- *  rows behind the revenue-by-product headline (Σ amount per product). */
+ *  rows behind the revenue-by-product headline (Σ amount per product, both columns). */
 export async function getRevenueRowsThisMonth(
   supabase: SupabaseClient, gymId: string, locale: string, now = new Date(),
 ): Promise<RevenueRow[]> {
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
   const { data: pays } = await supabase
     .from('payments')
-    .select(`amount_usd, payment_date, invoice_id,
+    .select(`amount_usd, amount_lbp, payment_date, invoice_id,
       students:student_id (id, ${PROFILE_SEL}),
       invoices:invoice_id!inner (gym_id, invoice_type)`)
     .eq('invoices.gym_id', gymId).gte('payment_date', monthStart)
@@ -261,7 +261,8 @@ export async function getRevenueRowsThisMonth(
     return {
       product: productOf(inv?.invoice_type ?? 'other'),
       studentId: st?.id ?? '', name: localizedName(one(st?.profiles), locale),
-      amount: Number(p.amount_usd ?? 0), date: String(p.payment_date).slice(0, 10), invoiceId: p.invoice_id,
+      amount: Number(p.amount_usd ?? 0), amountLbp: Number(p.amount_lbp ?? 0),
+      date: String(p.payment_date).slice(0, 10), invoiceId: p.invoice_id,
     }
   })
 }
