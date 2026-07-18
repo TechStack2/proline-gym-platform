@@ -144,14 +144,17 @@ test('2 · sender targets — the drain pushes a pending notification to the sub
     body_key: 'messages.payment_received.body', action_url: '/invoices',
   })
 
-  const dispatch = await postCron({})
+  // Scope the drain to the owner — deterministic regardless of the suite's global
+  // pending backlog (no cron runs during the suite, so unrelated SQL-path rows
+  // accumulate; the oldest-first limit could otherwise skip the newest row).
+  const dispatch = await postCron({ recipientId: ownerId })
   expect(dispatch.transport, 'test-sink transport in CI').toBe('sink')
   expect(dispatch.dispatched.some((d: any) => d.endpoint === endpoint && d.category === 'operational'),
     'the pending notification targeted the owner subscription').toBeTruthy()
   // Exactly-once: push_sent_at is now stamped, and a re-run finds nothing.
   await expect.poll(async () => (await svcGet(`notifications?id=eq.${notif.id}&select=push_sent_at`))[0]?.push_sent_at,
     { timeout: 10_000 }).not.toBeNull()
-  const again = await postCron({})
+  const again = await postCron({ recipientId: ownerId })
   expect(again.dispatched.some((d: any) => d.endpoint === endpoint), 're-run does not re-send (idempotent)').toBeFalsy()
   await svc('DELETE', `push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`)
 })
