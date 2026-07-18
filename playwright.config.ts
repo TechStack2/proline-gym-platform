@@ -779,6 +779,14 @@ export default defineConfig({
       testMatch: /wl-theme\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // PORTAL-BRAND: the MEMBER portal follows the gym brand (member-RLS read gap
+      // closed) — HERMETIC own teal + unbranded gyms, logged in as the seeded member.
+      name: 'portal-brand',
+      dependencies: ['setup'],
+      testMatch: /portal-brand\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
 
     {
       // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries
