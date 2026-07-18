@@ -27,7 +27,12 @@ const withPWA = withPWAInit({
   // byte-different (browsers install it over the stale, unversioned skipWaiting:true
   // worker) and gives it a FRESH precache; cleanupOutdatedCaches purges the old
   // caches when the new worker activates. Bump this string on any future SW change.
-  cacheId: 'proline-gym-v2',
+  // PUSH-1: bumped v2→v3 because the SW now importScripts the push handlers below.
+  cacheId: 'proline-gym-v3',
+  // PUSH-1: pull the hand-written, byte-stable web-push handlers into the generated
+  // worker. Workbox prepends this importScripts to sw.js; the push/notificationclick
+  // listeners live in public/push-sw.js (not the regenerated sw.js).
+  importScripts: ['/push-sw.js'],
   disable: process.env.NODE_ENV === 'development',
   // OFF-4 (OFFLINE-DOOR): register the OFFLINE FRONT DOOR. next-pwa wires a
   // `handlerDidError → self.fallback(request)` into every runtime-cache route and

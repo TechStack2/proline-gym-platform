@@ -6,6 +6,7 @@ import { User, Phone, CalendarDays, Shield, Award, CreditCard, AlertCircle } fro
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { ProfileSelfServe } from './profile-self-serve'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
+import { PushToggle } from '@/components/push/push-toggle'
 
 type Props = { params: { locale: string } }
 
@@ -55,6 +56,7 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+      <PushToggle />
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
         <div className="mb-3 flex justify-center">
           <AvatarUpload

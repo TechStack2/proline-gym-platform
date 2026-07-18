@@ -1,0 +1,45 @@
+# ============================================================================
+# PUSH-1 — scheduled web-push DRAIN (DISABLED BY DEFAULT).
+#
+# POSTs to /api/cron/push, which delivers web-push for every notifications row not
+# yet pushed (the universal mirror — covers app + SQL-definer inserts). It is the
+# safety-net + the schedule-category driver; the app also pushes app-produced
+# notifications synchronously at creation time.
+#
+# Does NOTHING until an owner enables it. To go live:
+#   1) Set repo secret CRON_SECRET (Settings → Secrets and variables → Actions),
+#      and the SAME value in the app env (Railway) so the route stops being inert.
+#      Set the VAPID keys in Railway too (npx web-push generate-vapid-keys):
+#        NEXT_PUBLIC_VAPID_PUBLIC_KEY (build) + VAPID_PRIVATE_KEY (server) + VAPID_SUBJECT.
+#   2) Uncomment the `schedule:` trigger below and commit. 5-minute cadence keeps
+#      the SCHEDULE category (renewal/expiry reminders) + any missed op push timely.
+#
+# Safety: even enabled, the route is INERT unless the app env has a matching
+# CRON_SECRET, and push no-ops entirely without VAPID keys.
+# ============================================================================
+name: Push cron (disabled by default)
+
+on:
+  # STEP 2 — uncomment to enable the drain (every 5 minutes — the min GH interval):
+  # schedule:
+  #   - cron: '*/5 * * * *'
+  workflow_dispatch: {} # manual "Run workflow" (safe to keep; inert without the secret)
+
+jobs:
+  push-drain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the push drain
+        env:
+          APP_URL: ${{ secrets.APP_URL || 'https://proline.up.railway.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "CRON_SECRET is not set — the route is inert. Set the repo secret (step 1) to enable."
+            exit 0
+          fi
+          echo "POST ${APP_URL}/api/cron/push"
+          curl -fsS -X POST "${APP_URL}/api/cron/push" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d '{}'

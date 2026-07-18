@@ -3342,6 +3342,28 @@
       "noPt": "No PT booked"
     }
   },
+  "push": {
+    "title": "Push notifications",
+    "subtitle": "Get alerted on this device — even when the app is closed.",
+    "unsupported": "This browser doesn't support notifications.",
+    "iosInstallHint": "On iPhone/iPad, add this app to your Home Screen first (Share → Add to Home Screen), then turn on notifications.",
+    "denied": "Notifications are blocked in your browser settings. Allow them there to turn this on.",
+    "cat": {
+      "operational": "Activity",
+      "schedule": "Reminders",
+      "informational": "Billing"
+    },
+    "catDesc": {
+      "operational": "Requests, approvals, payments and check-ins.",
+      "schedule": "Renewals and expiry reminders.",
+      "informational": "Invoices and payment reminders."
+    },
+    "promptTitle": "Turn on notifications?",
+    "promptBody": "Get alerted about activity, reminders and billing on this device.",
+    "promptEnable": "Enable",
+    "promptLater": "Not now",
+    "promptGotIt": "Got it"
+  },
   "pwa": {
     "installTitle": "Install PRO LINE",
     "installDescription": "Add to your device for offline access at the front desk.",

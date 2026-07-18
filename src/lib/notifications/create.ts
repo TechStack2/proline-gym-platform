@@ -16,6 +16,21 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 import type { NotificationType } from './types';
+import { dispatchPendingPush } from '@/lib/push/dispatch';
+
+/**
+ * PUSH-1 — mirror the in-app notification to web-push at creation time. NEVER
+ * throws: a push failure must not break the notification write (or the action
+ * that produced it). No-ops with no VAPID keys. Idempotent via push_sent_at, so
+ * this and the cron drain can both fire without double-delivery.
+ */
+async function firePush(recipient?: { recipientId?: string; recipientIds?: string[] }): Promise<void> {
+  try {
+    await dispatchPendingPush(recipient ?? {});
+  } catch {
+    /* push is best-effort; the notification row already persisted */
+  }
+}
 
 type UserRole = Database['public']['Enums']['user_role_enum'];
 
@@ -85,6 +100,7 @@ export async function createNotification(
   if (error) {
     throw new Error(`createNotification failed: ${error.message}`);
   }
+  await firePush({ recipientId: input.recipientProfileId });
   return { id };
 }
 
@@ -119,6 +135,9 @@ export async function createNotificationForRole(
   if (insertError) {
     throw new Error(`createNotificationForRole failed: ${insertError.message}`);
   }
+
+  // PUSH-1: drain scoped to the just-notified recipients (not the whole table).
+  await firePush({ recipientIds });
 
   return { count: recipientIds.length, recipientIds };
 }
