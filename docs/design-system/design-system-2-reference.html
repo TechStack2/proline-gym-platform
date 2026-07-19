@@ -188,6 +188,18 @@ code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(-
 .deskmain{flex:1; display:flex; justify-content:center; padding:18px}
 .appframe{width:min(420px,100%); background:var(--p-card); border:1px solid var(--p-line); border-radius:18px; box-shadow:0 8px 26px rgba(0,0,0,.08); overflow:hidden; align-self:stretch}
 
+/* first-class desktop vignettes (v3 — §4.1 shared structure) */
+.fc{display:flex; min-width:960px; background:var(--p-bg); min-height:360px}
+.fcrail{width:196px; flex:none; background:var(--p-card); border-inline-end:1px solid var(--p-line); padding:16px 10px; display:flex; flex-direction:column; gap:2px}
+.fcrail .brandline{display:flex; align-items:center; gap:9px; padding:0 8px 14px}
+.fcitem{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px; font-weight:600}
+.fcitem.on{background:var(--p-brand-soft); color:var(--p-brand); font-weight:700}
+.fcmain{flex:1; display:flex; flex-direction:column; min-width:0}
+.fcbar{height:56px; flex:none; display:flex; align-items:center; gap:12px; padding:0 22px; background:color-mix(in srgb, var(--p-card) 92%, transparent); border-bottom:1px solid var(--p-line)}
+.fcsearch{flex:1; max-width:340px; display:flex; align-items:center; gap:8px; background:var(--p-bg); border:1px solid var(--p-line); border-radius:10px; padding:7px 12px; font-size:12.5px; color:var(--p-mut)}
+.fcgrid{padding:20px 24px; display:grid; grid-template-columns:1.6fr 1fr; gap:14px; align-content:start}
+.fcgrid .span2{grid-column:1 / -1}
+.fccol{display:flex; flex-direction:column; gap:14px; min-width:0}
 table.map{width:100%; border-collapse:collapse; font-size:12.5px}
 table.map th{text-align:start; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--mut); padding:8px 10px; border-bottom:1px solid var(--line)}
 table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top}
@@ -201,7 +213,7 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
     <a href="#approve">How to approve</a><a href="#tokens">Tokens</a><a href="#primitives">Primitives</a>
     <a href="#tabbars">Tab bars ⚠</a><a href="#screens">Screens</a><a href="#desktop">Desktop ⚠</a>
   </nav>
-  <span class="vtag">Phase 2 · approval reference · July 2026</span>
+  <span class="vtag">Phase 2 · v3 — post-ruling · July 2026</span>
 </div></div>
 
 <div class="wrap">
@@ -209,7 +221,7 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
 <section id="approve">
   <p class="eyebrow">Design System 2.0 — Phase 2 approval artifact</p>
   <h1>One product family, on every screen, in both languages, in both themes.</h1>
-  <p class="sub">This sheet is what you approve. It shows the new token roles, the primitive kit, and four re-imagined screens wearing them — including the two decisions only you can make (marked ⚠). The binding text lives in <code>docs/design-system/design-system-2.md</code>; execution Waves 1–4 cite it section by section. Everything here <b>builds on</b> the shipped foundation (channel-var tokens, role-hue shells, brand-follow, Arabic type ramp) — nothing re-brands.</p>
+  <p class="sub">Decisions №1 and №2 are ✅ RULED (2026-07-20): the 5-tab IA per shell, pronounced icons (Option B), hide-on-scroll, and FIRST-CLASS DESKTOP for all three shells with full mobile/desktop parity. This v3 adds the staff shell (never visualized before) and the three first-class desktop vignettes. The binding text lives in <code>docs/design-system/design-system-2.md</code>; execution Waves 1–4 cite it section by section. Everything here <b>builds on</b> the shipped foundation (channel-var tokens, role-hue shells, brand-follow, Arabic type ramp) — nothing re-brands.</p>
   <div class="note"><b>Type note:</b> the product ships Geist (Latin) + IBM Plex Sans Arabic, self-hosted. This reference renders in system stand-ins; letterforms differ slightly, metrics and hierarchy are the spec. Screens wear <b>PRO LINE crimson</b> (per owner request). Brand is still per-gym: a teal-branded tenant gets these exact layouts in teal.</div>
   <div class="note"><b>How to say yes:</b> ✅ the whole sheet · Decision №1: per-shell IA + icon Option A/B + hide-on-scroll yes/no · Decision №2: App Frame / First-class / Hybrid. Any "adjust" = one line back to the lane; the primitives absorb it.</div>
 </section>
@@ -297,14 +309,14 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
 <!-- ═══════════════════ TAB BARS — OWNER DECISION 1 ═══════════════════ -->
 <section id="tabbars">
   <div class="sechead"><div><p class="eyebrow">Spec §3</p><h2>Tab-bar IA — the footer menu, fixed</h2></div></div>
-  <div class="decision"><p class="eyebrow">⚠ Owner decision №1 — approve per shell</p>
+  <div class="decision"><p class="eyebrow">✅ RULED 2026-07-20 — Decision №1 approved in full</p>
     <p>One shared bar: <b>max 5 slots including More</b>, 44pt targets, labels that never truncate (short Arabic label variants), active = color + top indicator, opaque surface, safe-area aware. Staff keeps its 4+More. Proposed folds below — each is a one-line config if you want a different five.</p>
     <div class="choices"><span class="choice rec">Portal: Home · Classes · Progress · Billing · More (PT + Profile fold in; PT clients get a Home card — closer than today)</span></div>
     <div class="choices"><span class="choice rec">Coach: Today · Attendance · Students · PT · More (Trials fold in; a “trial today” card surfaces on Today)</span></div>
     <p style="margin-top:14px"><b>Icon treatment</b> — per your note, Option B makes the icons the visual anchor. Both shown below; every screen on this sheet wears Option B.</p>
-    <div class="choices"><span class="choice">Option A — compact (17px icons, 48pt bar)</span><span class="choice rec">Option B — pronounced (24px icons, 56pt bar, bolder active) · recommended</span></div>
+    <div class="choices"><span class="choice">Option A — compact (not chosen)</span><span class="choice rec">✅ Option B — pronounced (24px icons, 56pt bar) · RULED</span></div>
     <p style="margin-top:14px"><b>Hide on scroll</b> — current best practice on both platforms: the bar slides away as you scroll <i>down</i> (content gets the full screen) and returns the instant you scroll <i>up</i> or reach the top. Material 3 ships this as standard scroll behavior, and iOS 26's own tab bars now minimize on scroll the same way. Our rules: reveal on any upward scroll, at the top, and whenever a sheet/keyboard opens; disabled for reduced-motion users; the More sheet always brings it back. <b>Try it in the live frame below.</b></p>
-    <div class="choices"><span class="choice rec">Adopt hide-on-scroll (recommended)</span><span class="choice">Keep the bar always visible</span></div>
+    <div class="choices"><span class="choice rec">✅ Hide-on-scroll · RULED yes</span></div>
   </div>
 
   <div class="framerow">
@@ -453,7 +465,7 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
         <div class="btnrow" style="gap:8px"><span class="pbtn sec sm">＋ New lead</span><span class="pbtn sec sm">＋ New member</span><span class="pbtn pri sm">Record payment</span></div>
       </div>
       <div class="tabs"><span class="tab on"><span class="ic">☀︎</span>Today</span><span class="tab"><span class="ic">▣</span>Inbox<span class="bdg">1</span></span><span class="tab"><span class="ic">◉</span>Members</span><span class="tab"><span class="ic">▦</span>Schedule</span><span class="tab"><span class="ic">⋯</span>More</span></div>
-    </div></div><p class="framecap">Staff Today · en — "Needs you" agrees with the badge; category colors replace alarm-red; header slimmed</p></div>
+    </div></div><p class="framecap">Staff Today mobile · en (NEW-scope approval item) — ruled style: Option B bar, slim header, category colors</p></div>
 
     <!-- COACH TODAY · EN · LIGHT -->
     <div class="framecol"><div class="phone ph" style="--p-brand:#475569; --p-brand-soft:rgba(71,85,105,.12); --p-brand-fg:#fff"><div class="scr">
@@ -479,43 +491,23 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
 
 <!-- ═══════════════════ DESKTOP — OWNER DECISION 2 ═══════════════════ -->
 <section id="desktop">
-  <div class="sechead"><div><p class="eyebrow">Spec §4</p><h2>Portal & coach on desktop — the App Frame</h2></div></div>
-  <div class="decision"><p class="eyebrow">⚠ Owner decision №2 — both options now visualized below</p>
-    <p><b>Option 1 — App Frame (recommended):</b> a deliberately designed, centered app canvas (max 480px) on a muted ground — the rail sits beside it, the header lives <b>inside</b> it (nothing can render under the rail again), all positioning logical-side so Arabic mirrors perfectly. Rationale: members and coaches are phone-first; staff — where desktop hours live — already has first-class desktop. <b>Option 2 — first-class desktop:</b> real multi-column layouts per surface (second vignette below) — richer on big screens, roughly a wave of layout work per shell. A hybrid is also legitimate: App Frame now, then graduate high-value surfaces (billing, schedule) to first-class layouts surface by surface.</p>
-    <div class="choices"><span class="choice rec">Option 1 · App Frame (recommended)</span><span class="choice">Option 2 · First-class desktop</span><span class="choice">Hybrid · Frame now, graduate surfaces later</span></div>
+  <div class="sechead"><div><p class="eyebrow">Spec §4 — ✅ RULED: first-class desktop, all three shells</p><h2>First-class desktop — portal · coach · staff, one structure</h2>
+  <p class="sub">Your ruling: real desktop layouts (App Frame rejected), and the staff shell joins the same style with full mobile/desktop parity. Every shell composes the same three regions: labeled rail (icon-only 768–1023, expanded ≥1024) · identity bar (tenant name + role; search on staff) · a 1200px content grid. One nav source per shell — the rail shows exactly what the mobile bar + More show.</p></div></div>
+  <div class="decision"><p class="eyebrow">⚠ OPEN on v3 — approve these vignettes</p>
+    <p>The three first-class desktop vignettes below (portal · coach · staff, with staff also in Arabic) + the staff mobile frame in the screens section are the only items awaiting your yes/no. Approval releases the Wave-2 desktop build-out (W2a portal+coach → W2b staff → W2c PWA identity).</p>
+    <div class="choices"><span class="choice rec">✅ Approve staff + desktop vignettes</span><span class="choice">Adjust (say what)</span></div>
   </div>
-  <div class="deskvig ph"><div class="desk">
-    <div class="rail"><span class="ric on">⌂<span>Home</span></span><span class="ric">▦<span>Classes</span></span><span class="ric">◎<span>Progress</span></span><span class="ric">▤<span>Billing</span></span><span class="ric">⋯<span>More</span></span></div>
-    <div class="deskmain"><div class="appframe">
-      <div class="hdr"><div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span><span class="bell">🔔</span></div>
-        <div class="bigtitle" style="font-size:22px">Home</div><span class="idchip"><span class="dot"></span>Member · Karim</span></div>
-      <div class="body" style="padding-bottom:16px">
-        <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
-          <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div></div>
-        <div class="pcard"><h4>Next class</h4><div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
-          <div style="flex:1"><b style="font-size:15px">BJJ Kids</b><div class="meta">Today · 16:00–17:00</div></div><span class="spill c-bjj">BJJ</span></div></div>
-      </div>
-    </div></div>
-  </div></div>
-  <p class="spec" style="margin-top:8px"><b>Option 1 · App Frame</b> @ ≥768px: rail (nav) + centered frame carrying tenant identity in its own header. One <code>--rail-width</code> token; <code>inset-inline-*</code> only — the header-under-rail and wrong-side-margin class of bugs becomes structurally impossible.</p>
 
-  <div class="deskvig ph" style="margin-top:22px"><div class="desk" style="min-width:940px; flex-direction:column">
-    <div style="display:flex; align-items:center; gap:12px; padding:12px 22px; background:var(--p-card); border-bottom:1px solid var(--p-line)">
-      <span class="mono">P</span><span class="gymname">PRO LINE Gym</span>
-      <span class="idchip" style="margin-inline-start:4px"><span class="dot"></span>Member · Karim</span>
-      <span class="bell" style="margin-inline-start:auto; color:var(--p-mut)">🔔</span>
+  <p class="spec" style="margin:14px 0 6px"><b>Portal · Home @ desktop (en)</b> — main column (belt path · next class · balance) + glanceable aside (week · stats); bronze role chip; brand CTAs.</p>
+  <div class="deskvig ph"><div class="fc">
+    <div class="fcrail">
+      <div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span></div>
+      <span class="fcitem on">⌂ Home</span><span class="fcitem">▦ Classes</span><span class="fcitem">◎ Progress</span><span class="fcitem">▤ Billing</span><span class="fcitem">ϟ PT</span><span class="fcitem">◉ Profile</span>
     </div>
-    <div style="display:flex; flex:1">
-      <div style="width:196px; flex:none; background:var(--p-card); border-inline-end:1px solid var(--p-line); padding:14px 10px; display:flex; flex-direction:column; gap:2px">
-        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; background:var(--p-brand-soft); color:var(--p-brand); font-weight:700; font-size:13.5px">⌂ Home</span>
-        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">▦ Classes</span>
-        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">◎ Progress</span>
-        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">▤ Billing</span>
-        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">◉ Profile</span>
-      </div>
-      <div style="flex:1; padding:20px 24px; display:grid; grid-template-columns:1.5fr 1fr; gap:14px; align-content:start">
-        <div style="grid-column:1 / -1"><b style="font-size:21px">Good afternoon, Karim</b><div class="meta">Orange belt · 12 classes this month · 3-week streak</div></div>
-        <div style="display:flex; flex-direction:column; gap:14px">
+    <div class="fcmain">
+      <div class="fcbar"><b style="font-size:15px">Home</b><span class="idchip"><span class="dot"></span>Member · Karim</span><span style="margin-inline-start:auto; color:var(--p-mut)">🔔</span></div>
+      <div class="fcgrid">
+        <div class="fccol">
           <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
             <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div>
             <p class="meta" style="margin:8px 0 0">Orange · 5 of 8 classes toward Green eligibility</p></div>
@@ -525,29 +517,111 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
           <div class="pcard"><h4>Balance <span class="spill s-warn spill">Partially paid</span></h4>
             <div class="rowline"><div style="flex:1"><b style="font-size:18px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div><span class="pbtn ghost sm">View billing</span></div></div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:14px">
+        <div class="fccol">
           <div class="pcard"><h4>This week</h4>
-            <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span><div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Tue · 16:00</div></div></div>
-            <div class="rowline"><span class="catbar" style="background:var(--cat-mt)"></span><div style="flex:1"><b style="font-size:13.5px">Muay Thai</b><div class="meta">Thu · 18:00</div></div></div>
-            <div class="rowline"><span class="catbar" style="background:var(--cat-fit)"></span><div style="flex:1"><b style="font-size:13.5px">Open Mat</b><div class="meta">Sat · 12:00</div></div></div></div>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span><div style="flex:1"><b style="font-size:14.5px">BJJ Kids</b><div class="meta">Tue · 16:00</div></div></div>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-mt)"></span><div style="flex:1"><b style="font-size:14.5px">Muay Thai</b><div class="meta">Thu · 18:00</div></div></div>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-fit)"></span><div style="flex:1"><b style="font-size:14.5px">Open Mat</b><div class="meta">Sat · 12:00</div></div></div></div>
           <div class="statgrid"><div class="mini"><b>12</b><span>classes</span></div><div class="mini"><b>3w</b><span>streak</span></div></div>
         </div>
       </div>
     </div>
   </div></div>
-  <p class="spec" style="margin-top:8px"><b>Option 2 · First-class desktop</b> @ ≥1024px: expanded labeled rail + top identity bar + two-column content (main column + week/stats aside). Every surface needs its own desktop composition like this — that scope is the trade-off against Option 1.</p>
+
+  <p class="spec" style="margin:20px 0 6px"><b>Coach · Today @ desktop (en)</b> — graphite role hue; the day's action first; no search (coach doesn't need it); Trials lives in the rail (parity with mobile More).</p>
+  <div class="deskvig ph"><div class="fc" style="--p-brand:#475569; --p-brand-soft:rgba(71,85,105,.12); --p-brand-fg:#fff">
+    <div class="fcrail">
+      <div class="brandline"><span class="mono" style="background:#cd1419">P</span><span class="gymname">PRO LINE Gym</span></div>
+      <span class="fcitem on">☀︎ Today</span><span class="fcitem">✓︎ Attendance</span><span class="fcitem">◉ Students</span><span class="fcitem">ϟ PT</span><span class="fcitem">▣ Trials</span><span class="fcitem">◎ Profile</span>
+    </div>
+    <div class="fcmain">
+      <div class="fcbar"><b style="font-size:15px">Today</b><span class="idchip coach"><span class="dot"></span>Coach · Sami</span><span style="margin-inline-start:auto; color:var(--p-mut)">🔔</span></div>
+      <div class="fcgrid">
+        <div class="fccol">
+          <div class="pcard"><h4>Up next</h4>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+              <div style="flex:1"><b style="font-size:15px">BJJ Kids</b><div class="meta">16:00–17:00 · 12 on roster</div></div>
+              <span class="pbtn pri sm">Start attendance</span></div></div>
+          <div class="pcard"><h4>Trial today <span class="spill s-info spill">1</span></h4>
+            <div class="rowline"><div style="flex:1"><b style="font-size:14.5px">Nadine K.</b><div class="meta">Muay Thai Beginner · 18:00</div></div><span class="pbtn sec sm">Details</span></div></div>
+        </div>
+        <div class="fccol">
+          <div class="statgrid"><div class="mini"><b>1</b><span>class today</span></div><div class="mini"><b>13</b><span>my students</span></div>
+            <div class="mini"><b>6</b><span>PT sessions left</span></div><div class="mini"><b>5</b><span>sessions / week</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <p class="spec" style="margin:20px 0 6px"><b>Staff · Today @ desktop (en)</b> — the admin shell in the same structure (NEW — never visualized before): brand-follow rail, identity bar WITH global search, needs-you first, category-colored classes, money glanceable. Staff's existing desktop is the closest to this already — W2b is an alignment pass, not a rebuild.</p>
+  <div class="deskvig ph"><div class="fc">
+    <div class="fcrail">
+      <div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span></div>
+      <span class="fcitem on">☀︎ Today</span><span class="fcitem">▣ Inbox</span><span class="fcitem">◉ Members</span><span class="fcitem">▦ Schedule</span><span class="fcitem">$ Money</span><span class="fcitem">⚙ Team</span><span class="fcitem">⚙ Settings</span><span class="fcitem">◎ Profile</span>
+    </div>
+    <div class="fcmain">
+      <div class="fcbar"><b style="font-size:15px">Today</b><span class="idchip"><span class="dot"></span>Staff · Owner</span>
+        <span class="fcsearch">⌕ Search members, invoices…</span>
+        <span style="margin-inline-start:auto; color:var(--p-mut)">🔔</span></div>
+      <div class="fcgrid">
+        <div class="fccol">
+          <div class="pcard"><h4>Needs you <span class="spill s-warn spill">1</span></h4>
+            <div class="rowline"><div style="flex:1"><b style="font-size:14.5px">Camp request · Dana Rizk</b><div class="meta">Summer Fight Camp · Jul 18</div></div><span class="pbtn pri sm">Review</span></div></div>
+          <div class="pcard"><h4>Today's classes <span class="spill s-neu spill">2</span></h4>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+              <div style="flex:1"><b style="font-size:14.5px">BJJ Kids</b><div class="meta">16:00–17:00 · 12/12</div></div><span class="pbtn sec sm">Attendance</span></div>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-mt)"></span>
+              <div style="flex:1"><b style="font-size:14.5px">Muay Thai Pro</b><div class="meta">20:00–21:30 · 4/12</div></div><span class="pbtn sec sm">Attendance</span></div></div>
+        </div>
+        <div class="fccol">
+          <div class="pcard"><h4>Collected today</h4>
+            <div class="rowline"><div style="flex:1"><b style="font-size:18px">$150.00</b><div class="meta">+ <span dir="ltr">4,450,000 LBP</span> · 3 payments</div></div><span class="pbtn ghost sm">Money</span></div></div>
+          <div class="pcard"><h4>Quick actions</h4>
+            <div class="btnrow" style="gap:8px"><span class="pbtn sec sm">＋ New lead</span><span class="pbtn sec sm">＋ New member</span><span class="pbtn pri sm">Record payment</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <p class="spec" style="margin:20px 0 6px"><b>Staff · Today @ desktop (ar)</b> — the same structure fully mirrored: rail on the right, logical-side layout, bidi-isolated times and money.</p>
+  <div class="deskvig ph"><div class="fc" dir="rtl" style="font-family:'IBM Plex Sans Arabic','Geeza Pro','Noto Sans Arabic',-apple-system,sans-serif">
+    <div class="fcrail">
+      <div class="brandline"><span class="mono">P</span><span class="gymname">نادي برولاين</span></div>
+      <span class="fcitem on">☀︎ اليوم</span><span class="fcitem">▣ الوارد</span><span class="fcitem">◉ الأعضاء</span><span class="fcitem">▦ الجدول</span><span class="fcitem">$ المال</span><span class="fcitem">⚙ الفريق</span><span class="fcitem">⚙ الإعدادات</span>
+    </div>
+    <div class="fcmain">
+      <div class="fcbar"><b style="font-size:16px">اليوم</b><span class="idchip"><span class="dot"></span>إدارة · المالك</span>
+        <span class="fcsearch">⌕ ابحث عن الأعضاء والفواتير…</span>
+        <span style="margin-inline-start:auto; color:var(--p-mut)">🔔</span></div>
+      <div class="fcgrid">
+        <div class="fccol">
+          <div class="pcard"><h4>بانتظارك <span class="spill s-warn spill">1</span></h4>
+            <div class="rowline"><div style="flex:1"><b style="font-size:15px">طلب مخيم · دانا رزق</b><div class="meta">مخيم القتال الصيفي · <span dir="ltr">7/18</span></div></div><span class="pbtn pri sm">مراجعة</span></div></div>
+          <div class="pcard"><h4>حصص اليوم <span class="spill s-neu spill">2</span></h4>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+              <div style="flex:1"><b style="font-size:15px">جوجيتسو أطفال</b><div class="meta"><span dir="ltr">16:00–17:00</span> · <span dir="ltr">12/12</span></div></div><span class="pbtn sec sm">الحضور</span></div></div>
+        </div>
+        <div class="fccol">
+          <div class="pcard"><h4>تحصيل اليوم</h4>
+            <div class="rowline"><div style="flex:1"><b style="font-size:18px" dir="ltr">$150.00</b><div class="meta">+ <span dir="ltr">4,450,000 LBP</span> · 3 دفعات</div></div><span class="pbtn ghost sm">المال</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
 
   <div style="margin-top:34px">
-    <p class="eyebrow">Appendix</p><h2>What approval unlocks</h2>
+    <p class="eyebrow">Appendix</p><h2>What the vignette approval unlocks (Wave 1 already building)</h2>
     <div class="mapwrap"><table class="map">
       <tr><th>Wave</th><th>Slices</th><th>Authority (spec §)</th></tr>
       <tr><td><b>W1</b></td><td>DS2-TOKENS · DS2-FMT · DS2-PRIMITIVES · per-shell adoption (light-mode byte-identical, harness-proven)</td><td>§1, §2, §6.2</td></tr>
-      <tr><td><b>W2</b></td><td>NAV-IA (the bars above) · APP-FRAME · PWA-IDENTITY (per-tenant/locale manifest, Apple install layer, theme-color follows the app, role-aware install card, tenant-neutral offline)</td><td>§3, §4, §5</td></tr>
+      <tr><td><b>W2a</b></td><td>Ruled 5-tab bars (Option B + hide-on-scroll) + portal & coach first-class desktop (rail · identity bar · content grid)</td><td>§3+§4 (RULED)</td></tr>
+      <tr><td><b>W2b</b></td><td>Staff parity pass — one nav config (rail = tabs = More), PageHeader title map, grid conformance (schedule fit, 1200px max)</td><td>§4.4</td></tr>
+      <tr><td><b>W2c</b></td><td>PWA-IDENTITY: per-tenant/locale manifest, Apple install layer, theme-color follows the app, role-aware install card, tenant-neutral offline</td><td>§5</td></tr>
       <tr><td><b>W3</b></td><td>Shell polish: schedule fit, money zero-states, member-360 back+actions, portal home/belt (this sheet), coach inputs→chips, auth frame, landing brand adoption</td><td>§1.3, §2.4, §2.6, screens</td></tr>
       <tr><td><b>W4</b></td><td>Color-literal lint gate ON · dark/RTL certification · capture harness as the standing regression rig</td><td>§1.1, §6.4</td></tr>
     </table></div>
   </div>
-  <p class="spec" style="margin-top:26px">PRAXELLA · Design System 2.0 · Phase-2 approval reference v2 (owner-feedback round: Proline colors · pronounced icons · hide-on-scroll · status-bar treatment · first-class desktop option · larger type) · spec: docs/design-system/design-system-2.md · evidence: docs/design-audit/2026-07-audit.md</p>
+  <p class="spec" style="margin-top:26px">PRAXELLA · Design System 2.0 · Phase-2 approval reference v3 (post-ruling: №1+№2 RULED · staff shell added · first-class desktop vignettes ×3 shells, staff also ar) · spec: docs/design-system/design-system-2.md · evidence: docs/design-audit/2026-07-audit.md</p>
 </section>
 </div>
 <script>
