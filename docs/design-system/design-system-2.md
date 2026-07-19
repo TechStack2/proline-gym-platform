@@ -1,6 +1,6 @@
 # DESIGN SYSTEM 2.0 — the binding spec (Phase 2)
 
-**Status:** DRAFT pending owner approval of the pixel reference ([`design-system-2-reference.html`](design-system-2-reference.html) — the approval artifact). Owner approval of that artifact **gates Wave 1**.
+**Status:** ✅ **RULED (2026-07-20).** Decision №1 approved in full (portal + coach IA, icon Option B pronounced, hide-on-scroll yes); Decision №2 ruled **FIRST-CLASS DESKTOP** for all three shells with full mobile/desktop parity (App Frame rejected — see §4 record). Wave 1 is unblocked. The v3 pixel reference ([`design-system-2-reference.html`](design-system-2-reference.html) / artifact 🎨 f5b3ed80) adds the staff vignettes + the three first-class desktop vignettes — the only OPEN item is the owner's yes/no on those vignettes, which gates the Wave-2 desktop build-out (not Wave 1).
 **Authority chain:** [Phase-1 audit](../design-audit/2026-07-audit.md) §Synthesis defines the problem (8 root causes); this spec defines the solution; every Wave 1–4 execution slice cites the section that authorizes it (Appendix A maps them).
 **Relationship to DS-1/2/3:** this spec **evolves** the existing foundation — channel-var neutrals + `html.dark` inversion (DS-2), per-role shell hues (DS-1/WL-CHROME), Geist + IBM Plex Arabic with the ×1.13 RTL ramp (DS-1/AR-TYPE), fixed-vs-flipping surfaces (DS-3). Nothing here replaces those; every section states what it adds on top.
 **Out of scope:** Wave 0 (Lane B, in flight) is mechanical correctness on the *current* design (DA-1/2/5/6/9/10/15-name/20/21/35). This spec assumes those fixes land and does not re-specify them.
@@ -137,7 +137,9 @@ The J3 select→chip migration completes (DA-33): **interactive filters and pick
 
 ---
 
-## §3 Tab-bar IA per shell — ⚠ OWNER DECISION №1
+## §3 Tab-bar IA per shell — ✅ RULED 2026-07-20 (Decision №1, approved in full)
+
+**Ruling record:** portal `Home · Classes · Progress · Billing · More` and coach `Today · Attendance · Students · PT · More` as proposed; icon density **Option B (pronounced — 24px icons, 56pt bar)**; **hide-on-scroll: yes** (per §2.2's behavior contract). These are now binding for the Wave-2 `NAV-IA` slice; the text below stands as the rationale record.
 
 Staff proved the pattern: **4 primary + More**. Portal (7 flat) and coach (6 flat) exceed capacity and truncate Arabic at 390 (DA-3). Proposed IA (visualized in the reference artifact — approve/adjust per shell):
 
@@ -161,22 +163,47 @@ Approval granularity: the owner can accept portal and coach independently; a dif
 
 ---
 
-## §4 Desktop strategy for portal/coach — ⚠ OWNER DECISION №2
+## §4 First-class desktop, all three shells — ✅ RULED 2026-07-20 (Decision №2)
 
-**Recommendation: the App Frame — an explicitly designed, centered mobile-format frame — not first-class desktop layouts.**
+**Ruling record:** the owner ruled **FIRST-CLASS DESKTOP** — real multi-column layouts for portal AND coach — and extended the scope: **the staff/admin shell must follow the same style and reach full mobile/desktop parity** (staff was never visualized in v1/v2; it is in v3). The App Frame (centered ≤480px canvas) moves to the rejected-alternatives record: rejected 2026-07-20 in favor of first-class; its one structural idea that survives is the layering law below. This section is the binding contract; the v3 vignettes are its pixel reference.
 
-Why (argued once, here): portal and coach are companion apps for phone-first users (members in Lebanon; coaches on the mat). The audit's desktop findings (DA-4 header-under-rail, DA-44 column-in-a-void) are symptoms of a *half* state — mobile shell + desktop rail glued together. First-class desktop for these shells is a Wave-worth of layout work per shell with the lowest usage-per-effort in the program; the staff shell — where desktop hours actually accrue — already has real desktop. The honest, excellent, affordable answer is a deliberate frame:
+### 4.1 One desktop structure for three shells (kills audit root cause #6)
 
-**App Frame contract (≥ md):**
-- Content renders in a centered column, `max-width: 480px`, full-height, on a `--c-muted` page ground with an elevation-1 edge — it reads as a designed app canvas, not a stretched phone (the reference shows it).
-- **The rail is the frame's nav**, not the page's: fixed inline-start of the *frame region*, `inset-inline-start` positioning ONLY (logical properties; the `isRTL ? 'md:me-20' : 'md:ms-20'` ternaries and every physical side die — DA-4's class).
-- **Layering law:** chrome stacks, never overlaps — the header lives *inside* the frame (it can never render under the rail); rail `z-40`, header sticky `z-30` within the frame; one shared `--rail-width` token consumed by both rail and frame margin.
-- The frame header carries tenant identity (gym name + logo — DA-40) alongside the shell badge.
-- Escape hatch: a specific surface may graduate to a wide layout (e.g. billing tables) by explicit spec amendment; the default is the frame.
+The three shells stop being three strategies. At every desktop viewport, **every shell** is composed of exactly three regions:
 
-Alternative (now **visualized in the reference sheet** per owner request): first-class desktop for portal/coach — expanded labeled rail + top identity bar + true multi-column compositions per surface; richer on large screens at roughly a wave of layout work per shell. A **hybrid** is also on the table: App Frame now, then graduate high-value surfaces (billing, schedule) to first-class layouts one by one. Decision №2 offers all three.
+1. **The rail** — the shell's navigation, expanded and labeled at ≥1024px (`--rail-w-expanded: 232px`), icon-only at 768–1023px (`--rail-w: 72px`). Entries come from the shell's **single nav config** (§4.4) — the same source as the mobile tab bar. Active entry = brand-soft background + brand text (role hue for coach per WL-CHROME). The rail is `position:fixed`, full height, `inset-inline-start: 0`, `z-40`.
+2. **The identity bar** — a 64px sticky top bar spanning the content region (`z-30`): tenant identity at the start (logo monogram + gym name — DA-40's fix), then shell-specific tools (global search on **staff only**), then bell · theme · profile/role chip at the end. The mobile status-zone/safe-area contract (§2.1) is the <768 counterpart; this is its desktop sibling.
+3. **The content grid** — max-width **1200px**, centered in the space beside the rail, 24px gutters. Pages compose within it per §4.2.
 
-**WL-CHROME boundary: unchanged, no owner decision needed.** Role hues (portal bronze, coach graphite, staff brand-follow) remain the shell identity; the brand ramp remains the action color everywhere (PORTAL-BRAND already fixed the member-side brand read). Nothing in this spec re-tints chrome.
+**Layering law (binding; DA-4's class dies structurally):** chrome *stacks*, never overlaps. The identity bar and content region begin at `margin-inline-start: var(--rail-w*)` — one token consumed by rail width AND content offset, so they cannot disagree. Nothing except Dialog/toast layers may exceed `z-30` inside content. **Logical-side positioning only** (`inset-inline-*`, `ms-*/me-*`, `border-s/e`): physical `left/right/ml-/mr-` and `isRTL ? … : …` side ternaries are banned in shell chrome — Arabic gets the mirror for free and wrong-side-margin bugs become unwritable.
+
+**Breakpoints:** `<768` = mobile (tab bar per §2.2/§3); `≥768` = desktop mode — the tab bar is not rendered, the rail is (one nav visible at a time, never both). 768–1023 icon rail; ≥1024 expanded rail. Hide-on-scroll applies to the mobile tab bar only; the rail and identity bar are persistent.
+
+### 4.2 The content-grid rules (how a mobile card list becomes desktop columns)
+
+Generalized from the approved portal-Home vignette; these rules are how a Wave-2/3 slice converts any surface without inventing a new layout language:
+
+- **Rule 1 — main + aside:** a mobile card stack becomes a two-column grid at ≥1024px: **main column (~2/3)** carries the primary flow (the cards in their mobile order); **aside (~1/3)** carries glanceables (week strip, stats, quick actions). At 768–1023 the grid stays single-column (wider cards), gaining only the rail.
+- **Rule 2 — dashboards go three-up:** overview surfaces with independent card groups (staff Today, Money) may use a 3-column zone grid at ≥1280px; each zone is a mobile card group, never a re-invention.
+- **Rule 3 — lists may graduate to tables:** at ≥1024px a card list may render as a table/row layout (members, invoices, roster) **keeping every `data-testid` and action**; below 1024 it is always the card list. Same data, same handlers — presentation only.
+- **Rule 4 — one title:** the mobile large-title and the desktop `h1` are the same PageHeader primitive and the same title-map entry (§2.1) — the DA-29 drift ("Students"/"My Students"/none) is structurally gone.
+- **Rule 5 — nothing full-bleed:** content never exceeds the 1200px grid (staff's 1920 balloon-cards, DA-44/S53, die here); wide artifacts (week timetable, tables) scroll *inside* their container with a visible affordance, never the page.
+
+### 4.3 The parity rule (binding, all shells, both directions)
+
+**Every capability reachable on mobile is reachable on desktop, and vice versa.** Concretely: no surface may render a mobile-styled phone column on a desktop viewport (the audit's portal/coach state); no action, filter, or destination may exist in only one form factor; empty states, dialogs and chips are the same primitives at both sizes. A Wave-2 slice proves parity per shell with the capture harness: same route × {390, 1280} × {en, ar} — every interactive `data-testid` present at 390 must be present at 1280 (scriptable assertion, part of the slice's gate).
+
+### 4.4 One nav source of truth per shell (staff parity specifics)
+
+Each shell declares ONE nav config (a single ordered array; entries flagged `mobilePrimary` — the first ≤4 + More on mobile, ALL entries in the desktop rail). The mobile More-sheet lists exactly the non-primary entries plus the utility row (language/theme/install/sign-out). This makes the audit's staff drift structurally impossible:
+
+- **Staff today:** desktop sidebar (7 workspaces + profile), mobile 4+More, and the More-sheet are three hand-maintained lists; TITLE_KEYS is a fourth. All four collapse into the one config + the PageHeader title map.
+- **Staff parity gaps the contract closes (from the audit):** DA-29 (two h1 conventions + mobile/desktop title drift) → Rule 4; DA-22 (week grid unusable at 390, clipped at 1280) → the schedule surface must satisfy Rule 5 (fits or scrolls-with-affordance at every width) with the Day view as the mobile default; More-menu vs sidebar entry mismatch → the single config; staff desktop keeps its search-first identity bar (already designed) — it is the template the other two shells adopt, not a rebuild.
+- Staff changes ride **W2b** (below): it is an alignment pass (nav config, PageHeader adoption, grid-rule conformance), not a redesign — staff desktop already substantially conforms.
+
+**WL-CHROME boundary: unchanged.** Role hues (portal bronze, coach graphite, staff brand-follow) remain the shell identity across both form factors; the brand ramp remains the action color. Nothing in this section re-tints chrome.
+
+**Rejected alternatives (record):** App Frame (centered mobile-format canvas; rejected 2026-07-20 — owner chose full desktop layouts); Hybrid (frame-then-graduate; superseded by the same ruling).
 
 ---
 
@@ -200,7 +227,7 @@ Alternative (now **visualized in the reference sheet** per owner request): first
 
 1. **Mechanism (binds always):** dark = the `html.dark` channel-var inversion. Components never implement dark; they use tokens. New `dark:` variants remain banned (§1.1); designed-fixed surfaces use §1.2 utilities; native controls get `color-scheme` (already global).
 2. **Light byte-identity (binds Wave 1):** W1 primitive-adoption slices must leave light-mode rendering byte-identical except where a cited DA finding *is* the change (e.g. removing a duplicate status pill cites DA-32). The proof is the Phase-1 capture harness re-run: light-mode shots diff clean, finding-cited diffs enumerated in the slice report.
-3. **Deliberate supersession (Waves 2–3):** redesigned surfaces (new tab bars, App Frame, portal home hierarchy) intentionally change light pixels. There, the *approval artifact + fresh screenshot matrix* replace byte-identity as the acceptance evidence — each W2/W3 slice ships the before/after matrix ({en,ar}×{light,dark}×{390,1280}) in its report.
+3. **Deliberate supersession (Waves 2–3):** redesigned surfaces (new tab bars, first-class desktop, portal home hierarchy) intentionally change light pixels. There, the *approval artifact + fresh screenshot matrix* replace byte-identity as the acceptance evidence — each W2/W3 slice ships the before/after matrix ({en,ar}×{light,dark}×{390,1280}) in its report.
 4. **Dark parity gate (Wave 4):** the certification pass re-runs the full audit matrix; a finding-class regression (light-pinned tint, ghost text, inverted active state) blocks merge. The harness is the standing rig; its metrics (`darkApplied`, contrast spot-checks) are the evidence.
 
 ---
@@ -214,17 +241,19 @@ Alternative (now **visualized in the reference sheet** per owner request): first
 | **W1** | `DS2-FMT`: fmt module + bidi isolates + missing-key CI gate + enumLabel adoption | §2.7 |
 | **W1** | `DS2-PRIMITIVES`: PageHeader, TabBar, StatusChip+vocabulary, EmptyState, Dialog | §2.1–2.5 (contracts), §2 adoption+testid doctrine |
 | **W1** | `DS2-ADOPT-STAFF` / `-PORTAL` / `-COACH`: mechanical adoption per shell | §2 adoption rule; §6.2 byte-identity + harness proof |
-| **W2** | `NAV-IA`: portal 5-tab + coach 5-tab on shared TabBar; header slim | §3 (as owner-approved), §2.1, §2.2 |
-| **W2** | `APP-FRAME`: portal/coach desktop frame + rail layering + logical sides | §4 (as owner-approved) |
-| **W2** | `PWA-IDENTITY`: manifest per-tenant+locale, Apple layer, theme-color, install card, offline.html | §5 |
-| **W2** | first-run audit (welcome/onboarding from a fresh gym) | Phase-1 coverage-gap note + §2 primitives |
+| **W2a** | `NAV-IA` + `DESKTOP-PC`: the ruled 5-tab bars (Option B + hide-on-scroll) on the shared TabBar, AND portal + coach first-class desktop (rail, identity bar, content grid per §4.1–4.3) — one slice per shell or one combined, auditor's call | §3 (RULED), §4 (RULED), §2.1, §2.2 |
+| **W2b** | `DESKTOP-STAFF`: staff parity pass — single nav config (rail = tabs = More), PageHeader/title-map adoption, grid-rule conformance (schedule Rule-5 fit, 1200px max-width), identity-bar alignment | §4.4, §4.2 |
+| **W2c** | `PWA-IDENTITY`: manifest per-tenant+locale, Apple layer, theme-color, install card, offline.html | §5 |
+| **W2** | first-run audit (welcome/onboarding from a fresh gym) — rides W2b or W2c | Phase-1 coverage-gap note + §2 primitives |
 | **W3** | shell polish slices (schedule fit, money zero-states, member-360 back+actions, portal home hierarchy + belt visual, coach inputs→chips, auth frame, landing brand adoption + content) | §1.3 (category colors, red audit), §2.4 (zero doctrine), §2.6, §4 escape hatch, reference-sheet screens |
 | **W4** | `DS2-CERT`: color-literal lint gate ON, dark/RTL certification, harness as regression rig | §1.1, §6.4 |
 
 **Slice-prompt rule:** every W1–W4 execution prompt cites its Authority cell; a change with no authority is scope creep and stops for a decree.
 
+**Wave-2 blast-radius honesty (first-class ruling vs the App-Frame path):** the App Frame was ~one M slice (portal+coach shared frame, no per-surface layout work). The ruled path is **roughly 2.5–3× that**: W2a is **L** (two shells × every routed surface must satisfy the §4.2 grid rules — portal ~8 surfaces, coach ~6 — plus the IA switch with its e2e ripple: every spec that taps a tab bar or More-sheet), W2b is **M** (staff is an alignment pass, not a rebuild — desktop already conforms structurally; the cost is the nav-config unification + PageHeader adoption + schedule fit), W2c is **M** (unchanged from the original plan). Proposed order: **W2a portal+coach → W2b staff → W2c PWA identity** — W2a first because it retires the audit's worst desktop findings (DA-4/DA-44) and the IA ruling together; W2b second so staff aligns onto the primitives W2a proves; W2c last (independent, no layout risk). Each W2 slice ships the before/after capture matrix per §6.3 and the §4.3 parity assertion as its gate.
+
 ---
 
-## Appendix B — what the owner is approving (R2 artifact contents)
+## Appendix B — the artifact (v3 contents + what remains open)
 
-The pixel reference shows, en + ar: the token sheet (color roles incl. category palette, neutrals in both themes, type ramp), the primitive sheet (buttons incl. the destructive convention, StatusChip vocabulary incl. "Partially paid", EmptyState, Dialog, all three TabBars), and four re-imagined screens @390 — **portal Home (light AND dark), staff Today, coach Today** — wearing: the slimmed one-badge header, the 5-tab bars with indicator + More, calm zero states, category-colored class rows, the belt-path card, demoted install card, and the App Frame vignette. Approval of the artifact = approval of §3 + §4 decisions and the visual direction; the spec text governs everything the pixels can't show.
+The v3 pixel reference (🎨 f5b3ed80, same URL across versions) shows, en + ar: the token sheet, the primitive sheet, the **ruled** tab bars (Option B, hide-on-scroll live demo), the ruled mobile screens @390 (portal Home light/dark/ar · staff Today · coach Today), and — new in v3 — the **first-class desktop vignettes: portal Home, coach Today, and staff Today (en + ar)** wearing §4.1's shared structure (expanded labeled rail · identity bar · content grid). §3 and §4 decisions are marked ✅ RULED on the sheet. **The only OPEN item on v3 is the owner's yes/no on the staff + desktop vignettes themselves** — that approval gates the Wave-2 desktop build-out (W2a/W2b); Wave 1 is already unblocked.
