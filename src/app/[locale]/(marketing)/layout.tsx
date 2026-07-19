@@ -8,6 +8,9 @@ type Props = {
 };
 
 export const viewport: Viewport = {
+  // DA-2: opt into the notch/home-indicator area so env(safe-area-inset-*) padding
+  // actually resolves on standalone iOS (0 without viewport-fit=cover).
+  viewportFit: 'cover',
   themeColor: THEME_COLOR,
 };
 

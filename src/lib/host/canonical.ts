@@ -82,9 +82,12 @@ export function hreflangAlternates(
 }
 
 /**
- * The 301 target when the request arrives on a NON-primary alias (its subdomain
- * or a secondary custom domain) of a gym that HAS a primary custom domain — the
- * primary host, with the path (locale + query) preserved. Returns null when no
+ * The 308-permanent target when the request arrives on a NON-primary alias (its
+ * subdomain or a secondary custom domain) of a gym that HAS a primary custom domain
+ * — a canonical host move is permanent, and 308 preserves the method (vs a legacy
+ * 301) — the returned target is the primary host with the path (locale + query)
+ * preserved; the consuming page redirects with next/navigation `permanentRedirect`.
+ * Returns null when no
  * primary domain is known (→ no redirect: gyms without a custom domain, and the
  * whole app until a primary-domain reader exists, are byte-identical).
  */

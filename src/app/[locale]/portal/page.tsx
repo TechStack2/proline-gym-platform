@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server'
+import { beltRankLabel } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { PortalCampsSection } from './_components/portal-camps'
@@ -246,7 +247,8 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
   const mplans: any = (membership as any)?.membership_plans
   const mplan = Array.isArray(mplans) ? mplans[0] : mplans
   const membershipNameVal = mplan ? (isRTL ? mplan.name_ar : (locale === 'fr' ? mplan.name_fr : mplan.name_en)) : null
-  const beltLabelVal = belt?.to_rank ? (belt.to_rank as string).replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) : null
+  const tb = await getTranslations({ locale, namespace: 'beltRanks' })
+  const beltLabelVal = belt?.to_rank ? beltRankLabel(belt.to_rank as string, tb) : null
   const disc: any = (belt as any)?.disciplines
   const discObj = Array.isArray(disc) ? disc[0] : disc
   const disciplineNameVal = discObj ? (isRTL ? discObj.name_ar : (locale === 'fr' ? discObj.name_fr : discObj.name_en)) : ''

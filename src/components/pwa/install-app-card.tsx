@@ -26,6 +26,9 @@ export function InstallAppCard({ locale, gymName }: { locale: string; gymName?: 
   // initial, not the hardcoded "Proline"/"PL". Falls back only if no gym resolved.
   const gym = (gymName || '').trim()
   const initial = gym ? gym.charAt(0).toUpperCase() : 'PL'
+  // DA-15: never interpolate an empty name into the copy ('choose "Install ".') — fall
+  // back to a neutral label when no gym resolved. (Tenant/role/placement fixes = Wave 2.)
+  const gymLabel = gym || t('appFallback')
 
   const onInstall = async () => {
     const outcome = await promptInstall()
@@ -40,7 +43,7 @@ export function InstallAppCard({ locale, gymName }: { locale: string; gymName?: 
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-700 text-sm font-extrabold text-primary-foreground">{initial}</div>
           <div>
             <p className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('cardTitle')}</p>
-            <p className="mt-0.5 text-xs text-gray-500">{t('cardDescription', { gym })}</p>
+            <p className="mt-0.5 text-xs text-gray-500">{t('cardDescription', { gym: gymLabel })}</p>
           </div>
         </div>
         <button type="button" data-testid="install-app-dismiss" onClick={dismiss} aria-label={t('dismissButton')}
@@ -59,10 +62,10 @@ export function InstallAppCard({ locale, gymName }: { locale: string; gymName?: 
         // No native prompt (macOS Safari, or eligible browser that didn't fire it) →
         // platform-aware manual steps.
         <div data-testid="install-app-instructions" className="mt-3 rounded-xl bg-gray-50 p-3">
-          <p className="text-xs font-semibold text-gray-800">{t(`steps.${instructions}.title`, { gym })}</p>
+          <p className="text-xs font-semibold text-gray-800">{t(`steps.${instructions}.title`, { gym: gymLabel })}</p>
           <ol className={cn('mt-1.5 list-decimal space-y-1 text-xs text-gray-600', isRTL ? 'pr-4' : 'pl-4')}>
-            <li>{t(`steps.${instructions}.s1`, { gym })}</li>
-            <li>{t(`steps.${instructions}.s2`, { gym })}</li>
+            <li>{t(`steps.${instructions}.s1`, { gym: gymLabel })}</li>
+            <li>{t(`steps.${instructions}.s2`, { gym: gymLabel })}</li>
           </ol>
           <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-gray-400">
             <CheckCircle2 className="h-3 w-3" /> {t('alreadyInstalledHint')}

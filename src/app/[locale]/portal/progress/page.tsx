@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { getTranslations } from 'next-intl/server';
+import { beltRankLabel } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { pctWidthClass } from '@/lib/utils/bar-width';
@@ -20,12 +21,12 @@ function pick(n: Named, locale: string): string {
 function one<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 }
-const rankLabel = (r: string | null) =>
-  r ? r.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—';
 
 export default async function PortalProgressPage({ params: { locale } }: Props) {
   const isRTL = locale === 'ar';
   const t = await getTranslations('progress');
+  const tb = await getTranslations('beltRanks');
+  const rankLabel = (r: string | null) => beltRankLabel(r, tb, '—');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;

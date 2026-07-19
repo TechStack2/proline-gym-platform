@@ -184,7 +184,7 @@ export function ReportsClient({ locale, dateFrom, dateTo, byClass, byDiscipline,
             <CardHeader>
               <CardTitle className={cn('text-lg', isRTL && 'font-arabic')}>{t('students.leaders')}</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="overflow-x-auto p-0">
               <table className="w-full text-sm" data-testid="report-leaders">
                 <thead className="bg-gray-50 border-b">
                   <tr>
@@ -212,7 +212,7 @@ export function ReportsClient({ locale, dateFrom, dateTo, byClass, byDiscipline,
             <CardHeader>
               <CardTitle className={cn('text-lg', isRTL && 'font-arabic')}>{t('students.atRisk')}</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="overflow-x-auto p-0">
               <table className="w-full text-sm" data-testid="report-at-risk">
                 <thead className="bg-gray-50 border-b">
                   <tr>

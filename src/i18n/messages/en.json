@@ -86,7 +86,9 @@
     "team": "Team",
     "desk": "Front Desk",
     "notifications": "Notifications",
-    "campaigns": "Campaigns"
+    "campaigns": "Campaigns",
+    "setup": "Manage",
+    "publish": "Publish"
   },
   "common": {
     "free": "Free",
@@ -1400,7 +1402,8 @@
     "coach_required": "Pick a coach to approve — the package can't be booked without one.",
     "coach_label": "Coach: {coach}",
     "assign_coach_to_book": "Assign a coach so the member can book",
-    "no_coaches_to_assign": "Add a coach first, then approve."
+    "no_coaches_to_assign": "Add a coach first, then approve.",
+    "unlinked_sessions": "Unlinked sessions"
   },
   "rentals": {
     "title": "Coach Rentals",
@@ -3398,7 +3401,8 @@
         "s1": "Open your browser menu.",
         "s2": "Choose “Install” or “Add to Home Screen”."
       }
-    }
+    },
+    "appFallback": "the app"
   },
   "coachEdit": {
     "title": "Edit my public profile",
@@ -3924,5 +3928,27 @@
     "campsHint": "Choose which camps appear on your public page.",
     "noCamps": "No upcoming camps yet.",
     "statCamps": "Camps"
+  },
+  "beltRanks": {
+    "white": "White",
+    "white_yellow": "White Yellow",
+    "yellow": "Yellow",
+    "yellow_orange": "Yellow Orange",
+    "orange": "Orange",
+    "orange_green": "Orange Green",
+    "green": "Green",
+    "green_blue": "Green Blue",
+    "blue": "Blue",
+    "blue_purple": "Blue Purple",
+    "purple": "Purple",
+    "purple_brown": "Purple Brown",
+    "brown": "Brown",
+    "brown_black": "Brown Black",
+    "red": "Red",
+    "black_1": "Black Belt I",
+    "black_2": "Black Belt II",
+    "black_3": "Black Belt III",
+    "black_4": "Black Belt IV",
+    "black_5": "Black Belt V"
   }
 }

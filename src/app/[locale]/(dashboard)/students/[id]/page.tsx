@@ -2,6 +2,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { beltRankLabel } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
@@ -336,7 +337,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
   const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
-  const beltLabel = (r: string | null) => (r ? r.replace(/_/g, ' ') : '—')
+  const tb = await getTranslations('beltRanks')
+  const beltLabel = (r: string | null) => beltRankLabel(r, tb, '—')
   // MEMBER-ENRICH: format an enrolled class's weekly schedule (day(s) · time).
   const DOW: Record<string, string[]> = {
     en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],

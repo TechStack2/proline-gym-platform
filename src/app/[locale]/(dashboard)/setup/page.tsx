@@ -119,7 +119,9 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
       )}
 
       {/* ── The six milestone cards ── */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* DA-10: explicit grid-cols-1 (minmax(0,1fr)) at 390 — a bare `grid` gives an
+          implicit min-content column, so a card's text overflowed off the right edge. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {/* M1 — Your gym */}
         <MilestoneCard
           mKey="gym"
@@ -374,7 +376,7 @@ function MilestoneCard({
       data-testid={`milestone-${mKey}`}
       data-done={done}
       className={cn(
-        'rounded-2xl border p-4 shadow-sm transition-colors',
+        'min-w-0 rounded-2xl border p-4 shadow-sm transition-colors',
         done ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-white',
       )}
     >
@@ -392,7 +394,7 @@ function MilestoneCard({
             <p className={cn('font-semibold text-gray-900', isRTL && 'font-arabic')}>{title}</p>
             {done && <DoneChip label={doneLabel} />}
           </div>
-          <p className={cn('mt-0.5 text-sm text-gray-500', isRTL && 'font-arabic')}>{desc}</p>
+          <p className={cn('mt-0.5 break-words text-sm text-gray-500', isRTL && 'font-arabic')}>{desc}</p>
           {children && <div className="mt-3">{children}</div>}
         </div>
       </div>

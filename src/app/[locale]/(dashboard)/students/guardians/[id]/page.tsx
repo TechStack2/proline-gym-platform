@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
+import { beltRankLabel } from '@/lib/belts/label'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -34,13 +35,13 @@ const STATE_CHIP: Record<string, string> = {
 }
 
 // Hoisted (stable identity) — a per-dependent card with the reused action flows.
-function ChildCard({ s, self, locale, t, isRTL }: {
-  s: FamilySummary; self?: boolean; locale: string; t: Tr; isRTL: boolean
+function ChildCard({ s, self, locale, t, tb, isRTL }: {
+  s: FamilySummary; self?: boolean; locale: string; t: Tr; tb: Tr; isRTL: boolean
 }) {
   const fmtDate = (d: string | null) => (d ? new Date(String(d).slice(0, 10) + 'T00:00:00Z').toLocaleDateString(dateLocale(locale), { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '—')
   const weekday = (diff: number) => diff === 0 ? t('today') : new Date(Date.now() + diff * 864e5).toLocaleDateString(dateLocale(locale), { weekday: 'long' })
   const nextClassLabel = s.nextClass ? `${weekday(s.nextClass.dayDiff)} ${s.nextClass.start} · ${s.nextClass.className}` : t('noNextClass')
-  const beltLabel = s.beltRank ? s.beltRank.replace(/_/g, ' ') : null
+  const beltLabel = s.beltRank ? beltRankLabel(s.beltRank, tb) : null
   return (
     <div data-testid={self ? 'guardian-self-card' : 'guardian-child-card'} data-student-id={s.studentId} data-lapsed={s.lapsed ? 'true' : undefined}
       className="rounded-2xl border bg-white p-4 shadow-sm">
@@ -122,6 +123,7 @@ export default async function GuardianDetailPage({
 }) {
   const supabase = await createClient()
   const t = (await getTranslations('guardians')) as unknown as Tr
+  const tb = (await getTranslations('beltRanks')) as unknown as Tr
   const isRTL = locale === 'ar'
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -203,7 +205,7 @@ export default async function GuardianDetailPage({
           <p className="rounded-2xl border bg-white p-6 text-center text-sm text-gray-400" data-testid="guardian-no-dependents">{t('noDependents')}</p>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
-            {kidSummaries.map((s) => <ChildCard key={s.studentId} s={s} locale={locale} t={t} isRTL={isRTL} />)}
+            {kidSummaries.map((s) => <ChildCard key={s.studentId} s={s} locale={locale} t={t} tb={tb} isRTL={isRTL} />)}
           </div>
         )}
       </section>
@@ -215,7 +217,7 @@ export default async function GuardianDetailPage({
             <Wallet className="h-4 w-4 text-primary-600" />{t('ownHeading')}
           </h2>
           <div className="grid gap-3 lg:grid-cols-2">
-            <ChildCard s={ownSummary} self locale={locale} t={t} isRTL={isRTL} />
+            <ChildCard s={ownSummary} self locale={locale} t={t} tb={tb} isRTL={isRTL} />
           </div>
         </section>
       )}

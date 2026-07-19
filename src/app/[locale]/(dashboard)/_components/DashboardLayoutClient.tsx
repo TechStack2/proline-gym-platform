@@ -31,11 +31,20 @@ type Props = {
 // EVERY (dashboard) route — not just the 4 mobile-primary tabs (the old lookup
 // fell back to "Today" on money/team/settings/profile + every out-of-nav page).
 const TITLE_KEYS = new Set([
-  'today', 'inbox', 'students', 'schedule', 'money', 'coaches', 'settings',
+  'today', 'inbox', 'members', 'schedule', 'money', 'team', 'settings',
   'profile', 'belts', 'pt', 'camps', 'reports', 'attendance',
   'classes', 'leads', 'payments', 'invoices', 'disciplines', 'notifications',
   'campaigns', 'desk',
+  // DA-35: /setup (Manage) + /publish were missing → the mobile title fell back to
+  // "Today". They render the shell header, so they need their own resolvable title.
+  'setup', 'publish',
 ]);
+
+// DA-35: a few routes' user-facing label differs from their URL segment because the
+// nav/tab uses a workspace KEY, not the path — /students shows "Members", /coaches
+// shows "Team". Resolve the mobile title from that same key so it never disagrees
+// with the tab/sidebar (the terminology pick = the nav-config labels: Members/Team).
+const SEGMENT_TITLE_KEY: Record<string, string> = { students: 'members', coaches: 'team' };
 
 export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl }: Props) {
   const pathname = usePathname();
@@ -84,7 +93,8 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
 
   // The page's own name as the mobile large title (single title per breakpoint).
   const seg = pathname.split('/')[2] || 'today'; // [1] = locale, [2] = route segment
-  const headerTitle = t((TITLE_KEYS.has(seg) ? seg : 'today') as any);
+  const titleKey = SEGMENT_TITLE_KEY[seg] ?? seg;
+  const headerTitle = t((TITLE_KEYS.has(titleKey) ? titleKey : 'today') as any);
 
   // DOUBLE-SHELL: ONE responsive shell, {children} mounted ONCE (the PortalLayoutClient
   // pattern). Before, layout.tsx rendered the whole subtree twice (block md:hidden mobile

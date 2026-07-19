@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { beltRankLabel } from '@/lib/belts/label'
 import { getOfflineDB } from '@/lib/db/schema'
 import type { PendingPaymentIntent, PendingLeadIntent } from '@/lib/db/schema'
 import { getSyncEngine } from '@/lib/db/sync-engine'
@@ -74,7 +75,6 @@ const phoneMatches = (stored: string | null | undefined, query: string): boolean
   return rawS.includes(rawQ) || phoneDigits(stored).includes(phoneDigits(query))
 }
 
-const beltLabel = (r?: string | null) => (r ? r.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—')
 
 // OFF-5: membership-state badge colours (matches the lifecycle.state labels).
 const STATUS_BADGE_CLS: Record<MembershipState, string> = {
@@ -94,6 +94,8 @@ const STATUS_BADGE_CLS: Record<MembershipState, string> = {
 export function OfflineDesk({ locale, showMembership = true }: { locale: string; showMembership?: boolean }) {
   const t = useTranslations('desk')
   const tState = useTranslations('lifecycle.state')
+  const tb = useTranslations('beltRanks')
+  const beltLabel = (r?: string | null) => beltRankLabel(r, tb, '—')
   const isRTL = locale === 'ar'
   const online = useOnline()
   const [data, setData] = useState<DeskData | null>(null)

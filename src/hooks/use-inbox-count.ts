@@ -18,7 +18,7 @@ export function useInboxCount(): number {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [regs, pts, members] = await Promise.all([
+    const [regs, pts, members, camps] = await Promise.all([
       supabase
         .from('class_registrations')
         .select('id', { count: 'exact', head: true })
@@ -32,8 +32,14 @@ export function useInboxCount(): number {
         .from('member_requests')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending'),
+      // DA-6: pending camp requests are actionable in /inbox — count them in the badge
+      // too (the summary counts them), so the badge never under-reports pending work.
+      supabase
+        .from('camp_registrations')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
     ]);
-    setCount((regs.count ?? 0) + (pts.count ?? 0) + (members.count ?? 0));
+    setCount((regs.count ?? 0) + (pts.count ?? 0) + (members.count ?? 0) + (camps.count ?? 0));
   }, []);
 
   useEffect(() => {

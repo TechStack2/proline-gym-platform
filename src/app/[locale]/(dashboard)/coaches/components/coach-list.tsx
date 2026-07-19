@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
+import { beltRankLabel } from '@/lib/belts/label'
 
 // Real schema: coaches has NO name/email/status columns. Names + phone come from
 // the embedded `profiles` row; specialization is `specialization_{ar,en,fr}`;
@@ -30,6 +31,7 @@ interface CoachListProps {
 
 export function CoachList({ coaches, locale, isRTL }: CoachListProps) {
   const t = useTranslations('coaches')
+  const tb = useTranslations('beltRanks')
 
   if (coaches.length === 0) {
     return <div className="text-center py-12 text-gray-500">{t('no_coaches')}</div>
@@ -70,7 +72,7 @@ export function CoachList({ coaches, locale, isRTL }: CoachListProps) {
                   {coach.belt_rank && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Award className="w-4 h-4" />
-                      <span>{coach.belt_rank}</span>
+                      <span>{beltRankLabel(coach.belt_rank, tb)}</span>
                     </div>
                   )}
                 </div>

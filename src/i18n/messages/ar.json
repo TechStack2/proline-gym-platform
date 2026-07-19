@@ -86,7 +86,9 @@
     "team": "الفريق",
     "desk": "الاستقبال",
     "notifications": "الإشعارات",
-    "campaigns": "الحملات"
+    "campaigns": "الحملات",
+    "setup": "الإدارة",
+    "publish": "النشر"
   },
   "common": {
     "free": "مجاني",
@@ -1400,7 +1402,8 @@
     "coach_required": "اختر مدربًا للموافقة — لا يمكن حجز الباقة بدون مدرب.",
     "coach_label": "المدرب: {coach}",
     "assign_coach_to_book": "عيّن مدربًا حتى يتمكن العضو من الحجز",
-    "no_coaches_to_assign": "أضف مدربًا أولًا ثم وافق."
+    "no_coaches_to_assign": "أضف مدربًا أولًا ثم وافق.",
+    "unlinked_sessions": "جلسات غير مرتبطة"
   },
   "rentals": {
     "title": "تأجير المساحات",
@@ -3398,7 +3401,8 @@
         "s1": "افتح قائمة المتصفح.",
         "s2": "اختر «Install» أو «Add to Home Screen»."
       }
-    }
+    },
+    "appFallback": "التطبيق"
   },
   "coachEdit": {
     "title": "تعديل ملفي العام",
@@ -3924,5 +3928,27 @@
     "campsHint": "اختر المخيّمات التي تظهر على صفحتك العامة.",
     "noCamps": "لا توجد مخيّمات قادمة بعد.",
     "statCamps": "المخيّمات"
+  },
+  "beltRanks": {
+    "white": "أبيض",
+    "white_yellow": "أبيض أصفر",
+    "yellow": "أصفر",
+    "yellow_orange": "أصفر برتقالي",
+    "orange": "برتقالي",
+    "orange_green": "برتقالي أخضر",
+    "green": "أخضر",
+    "green_blue": "أخضر أزرق",
+    "blue": "أزرق",
+    "blue_purple": "أزرق بنفسجي",
+    "purple": "بنفسجي",
+    "purple_brown": "بنفسجي بني",
+    "brown": "بني",
+    "brown_black": "بني أسود",
+    "red": "أحمر",
+    "black_1": "حزام أسود — دان 1",
+    "black_2": "حزام أسود — دان 2",
+    "black_3": "حزام أسود — دان 3",
+    "black_4": "حزام أسود — دان 4",
+    "black_5": "حزام أسود — دان 5"
   }
 }

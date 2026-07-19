@@ -151,7 +151,7 @@ export function NativeHeader({
           {variant === 'large' && isCollapsed && (
             <h1
               className={cn(
-                'text-lg font-semibold text-[#252525] truncate',
+                'text-lg font-semibold text-foreground truncate',
                 'transition-opacity duration-200',
                 isCollapsed ? 'opacity-100' : 'opacity-0',
                 titleMobileOnly && 'md:hidden'
@@ -202,7 +202,7 @@ export function NativeHeader({
         <h1
           data-testid="native-large-title"
           className={cn(
-            'text-3xl font-bold text-[#252525] leading-tight',
+            'text-3xl font-bold text-foreground leading-tight',
             'transition-all duration-200',
             isCollapsed ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-20'
           )}
@@ -214,7 +214,7 @@ export function NativeHeader({
       {/* Compact title — always visible */}
       {variant === 'compact' && (
         <div className="px-4 pb-3">
-          <h1 className="text-xl font-bold text-[#252525] leading-tight">
+          <h1 className="text-xl font-bold text-foreground leading-tight">
             {title}
           </h1>
         </div>

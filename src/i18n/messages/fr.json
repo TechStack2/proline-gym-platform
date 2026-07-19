@@ -86,7 +86,9 @@
     "team": "Équipe",
     "desk": "Réception",
     "notifications": "Notifications",
-    "campaigns": "Campagnes"
+    "campaigns": "Campagnes",
+    "setup": "Gérer",
+    "publish": "Publier"
   },
   "common": {
     "free": "Gratuit",
@@ -1400,7 +1402,8 @@
     "coach_required": "Choisissez un coach pour approuver — la formule ne peut pas être réservée sans coach.",
     "coach_label": "Coach : {coach}",
     "assign_coach_to_book": "Assignez un coach pour que le membre puisse réserver",
-    "no_coaches_to_assign": "Ajoutez d'abord un coach, puis approuvez."
+    "no_coaches_to_assign": "Ajoutez d'abord un coach, puis approuvez.",
+    "unlinked_sessions": "Séances non liées"
   },
   "rentals": {
     "title": "Location Espaces",
@@ -3398,7 +3401,8 @@
         "s1": "Ouvrez le menu du navigateur.",
         "s2": "Choisissez « Installer » ou « Ajouter à l'écran d'accueil »."
       }
-    }
+    },
+    "appFallback": "l'application"
   },
   "coachEdit": {
     "title": "Modifier mon profil public",
@@ -3924,5 +3928,27 @@
     "campsHint": "Choisissez les stages affichés sur votre page publique.",
     "noCamps": "Aucun stage à venir pour le moment.",
     "statCamps": "Stages"
+  },
+  "beltRanks": {
+    "white": "Blanche",
+    "white_yellow": "Blanche Jaune",
+    "yellow": "Jaune",
+    "yellow_orange": "Jaune Orange",
+    "orange": "Orange",
+    "orange_green": "Orange Verte",
+    "green": "Verte",
+    "green_blue": "Verte Bleue",
+    "blue": "Bleue",
+    "blue_purple": "Bleue Violette",
+    "purple": "Violette",
+    "purple_brown": "Violette Marron",
+    "brown": "Marron",
+    "brown_black": "Marron Noire",
+    "red": "Rouge",
+    "black_1": "Ceinture noire — 1er dan",
+    "black_2": "Ceinture noire — 2e dan",
+    "black_3": "Ceinture noire — 3e dan",
+    "black_4": "Ceinture noire — 4e dan",
+    "black_5": "Ceinture noire — 5e dan"
   }
 }

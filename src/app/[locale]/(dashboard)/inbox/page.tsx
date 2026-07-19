@@ -178,7 +178,9 @@ export default async function InboxPage({ params: { locale } }: Props) {
   const { data: me } = await supabase.from('profiles').select('gym_id').eq('id', user.id).single()
   const renewals = me?.gym_id ? await getRenewalsDue(supabase, me.gym_id, locale) : []
 
-  const actionable = regRequests.length + ptRequests.length + memberRequests.length
+  // DA-6: camp requests are actionable (approve/decline) — the summary must count them
+  // too, or "Inbox zero" sits above a pending camp request.
+  const actionable = regRequests.length + ptRequests.length + memberRequests.length + campRequests.length
 
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>

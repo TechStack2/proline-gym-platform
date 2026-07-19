@@ -263,7 +263,7 @@ export function SwipeableSheet({
         {/* Title */}
         {title && (
           <div className="flex-shrink-0 px-5 pb-2">
-            <h2 className="text-lg font-semibold text-[#252525]">{title}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           </div>
         )}
 
