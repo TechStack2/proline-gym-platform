@@ -64,3 +64,7 @@ migrate_out/
 
 # session scratch (never commit — may contain CI logs w/ secrets)
 scratchpad/
+
+# DESIGN-AUDIT capture artifacts (full raw packs — curated evidence lives in docs/design-audit/shots)
+design-audit-artifacts/
+design-audit-rerun/
