@@ -11,6 +11,7 @@ import { matchingProfileIds } from '@/lib/admin/profile-search'
 import { getMemberEnrichment } from '@/lib/members/enrichment'
 import { getEnabledProducts } from '@/lib/gym/products'
 import { LeadsPipeline } from '../leads/leads-pipeline'
+import { PageHeader } from '@/components/ui/page-header';
 
 export default async function StudentsPage({
   params: { locale },
@@ -33,7 +34,7 @@ export default async function StudentsPage({
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           {/* SHELL-IA: mobile shows the large title; the Active/Prospects tabs lead. */}
-          <h1 className={cn('hidden md:block text-3xl font-bold', isRTL && 'text-right')}>{t('title')}</h1>
+          <PageHeader segment="students" />
           {Tabs}
         </div>
         <LeadsPipeline locale={locale} searchParams={searchParams} />
@@ -182,9 +183,7 @@ export default async function StudentsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* SHELL-IA: mobile shows the large title; the Active/Prospects tabs lead. */}
-        <h1 className={cn("hidden md:block text-3xl font-bold", isRTL && "text-right")}>
-          {t('title')}
-        </h1>
+        <PageHeader segment="students" />
         {/* DA-21: wrap so the Import/Add buttons drop to a second line at 390 instead of
             clipping off the right edge ("Im… me…") with no affordance. */}
         <div className="flex flex-wrap items-center gap-3">

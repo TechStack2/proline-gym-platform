@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { cn } from '@/lib/utils'
 import { CampsBoard } from './camps-board'
+import { PageHeader } from '@/components/ui/page-header';
 
 type Props = { params: { locale: string } }
 
@@ -45,7 +46,7 @@ export default async function CampsPage({ params: { locale } }: Props) {
   return (
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div>
-        <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+        <PageHeader segment="camps" />
         <p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
       </div>
       <CampsBoard

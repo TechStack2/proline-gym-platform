@@ -3950,5 +3950,32 @@
     "black_3": "Black Belt III",
     "black_4": "Black Belt IV",
     "black_5": "Black Belt V"
+  },
+  "statuses": {
+    "paid": "Paid",
+    "partial": "Partially paid",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "cancelled": "Cancelled",
+    "refunded": "Refunded",
+    "void": "Void",
+    "active": "Active",
+    "expiring": "Expiring",
+    "memberOverdue": "Payment overdue",
+    "owing": "Owing",
+    "lapsed": "Lapsed",
+    "frozen": "Frozen",
+    "noMembership": "No membership",
+    "inactive": "Inactive",
+    "requested": "Requested",
+    "waitlisted": "Waitlisted",
+    "rejected": "Rejected",
+    "expired": "Expired",
+    "suspended": "Suspended",
+    "present": "Present",
+    "absent": "Absent",
+    "late": "Late",
+    "excused": "Excused",
+    "noShow": "No-show"
   }
 }

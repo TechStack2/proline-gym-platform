@@ -7,6 +7,7 @@ import { PtProposals } from '@/components/shared/pt-proposals'
 import { RefreshCw } from 'lucide-react'
 import { localizedName, one } from '@/lib/names'
 import { InboxQueues, type RegRequestRow, type PtRequestRow, type PromotionRow, type InboxCoach, type MemberRequestRow } from './inbox-queues'
+import { PageHeader } from '@/components/ui/page-header';
 
 export const dynamic = 'force-dynamic'
 
@@ -187,7 +188,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
       <div>
         {/* SHELL-IA: mobile shows the NativeHeader large title; the status line
             below leads on mobile. Desktop keeps this H1 (its only title). */}
-        <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+        <PageHeader segment="inbox" />
         <p className="mt-0.5 text-sm text-gray-500" data-testid="inbox-actionable-count">
           {actionable > 0 ? t('pendingCount', { count: actionable }) : t('inboxZero')}
         </p>

@@ -10,6 +10,7 @@ import { renderNotification } from '@/lib/notifications/render';
 import { NotificationItem } from '@/components/notifications/notification-item';
 import { Button } from '@/components/ui/button';
 import { Bell, CheckCheck } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 type Notification = {
   id: string;
@@ -98,9 +99,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
       {/* Header */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <div>
-          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
-            {t('title')}
-          </h1>
+          <PageHeader segment="notifications" />
           <p className="mt-1 text-sm text-gray-500">
             {t('subtitle')}
           </p>

@@ -8,6 +8,8 @@ import { localizedName, one } from '@/lib/names'
 import { STATUS_BADGE, statusLabel } from '@/lib/billing/reconcile'
 import { Tent, Users, Phone, ClipboardList, FileText } from 'lucide-react'
 import { CampAttendance } from './camp-attendance'
+import { fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 type Props = { params: { locale: string; id: string }; searchParams: { tab?: string; date?: string } }
 
@@ -122,9 +124,9 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
                           <span className="inline-flex items-center gap-1">
                             · {localizedName(guardProf, locale)}
                             {guardProf.phone && (
-                              <a href={`tel:${guardProf.phone}`} data-testid="camp-guardian-call" dir="ltr"
+                              <a href={`tel:${guardProf.phone}`} data-testid="camp-guardian-call"
                                 className="inline-flex items-center gap-0.5 text-primary-600 hover:underline">
-                                <Phone className="h-3 w-3" />{guardProf.phone}
+                                <Phone className="h-3 w-3" /><Ltr>{fmtPhone(guardProf.phone)}</Ltr>
                               </a>
                             )}
                           </span>

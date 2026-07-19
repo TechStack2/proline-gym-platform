@@ -3,13 +3,13 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { CoachList } from './components/coach-list'
 import { CoachFilters } from './components/coach-filters'
 import { StaffAccessList, type StaffMember } from './components/staff-access-list'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
 import { InviteStaffButton } from '@/components/shared/invite-staff-button'
 import { localizedName } from '@/lib/names'
+import { PageHeader } from '@/components/ui/page-header';
 
 export default async function CoachesPage({
   params: { locale },
@@ -102,9 +102,7 @@ export default async function CoachesPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={cn("hidden md:block text-3xl font-bold", isRTL && "text-right")}>
-          {t('title')}
-        </h1>
+        <PageHeader segment="coaches" />
         <div className="flex items-start gap-2">
           {/* STAFF-INVITE: create + invite a staff login (receptionist/head-coach/coach). */}
           {canInviteStaff && <InviteStaffButton locale={locale} gymId={gymId} />}

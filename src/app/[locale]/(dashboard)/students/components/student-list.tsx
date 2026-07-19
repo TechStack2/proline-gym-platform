@@ -9,13 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { beltRankLabel } from '@/lib/belts/label'
 import type { MemberInfo, MembershipStatus } from '@/lib/members/enrichment'
-
-const membershipTone: Record<MembershipStatus, string> = {
-  active: 'bg-green-100 text-green-800',
-  expiring: 'bg-amber-100 text-amber-800',
-  lapsed: 'bg-red-100 text-red-700',
-  none: 'bg-gray-100 text-gray-600',
-}
+import { fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 
 // Matches the server query in students/page.tsx:
 //   select('*, profiles!inner(first_name_*, last_name_*, phone, avatar_url)')
@@ -120,19 +116,23 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                   <h3 className={cn('font-semibold text-lg', isRTL && 'text-right')}>
                     {name || '—'}
                   </h3>
+                  {/* DA-32: the corner pill said "Active" directly above a body pill
+                      that also said "Active" — the account flag and the membership
+                      state rendered as two chips with one word. §2.3 allows ONE chip
+                      per status per card, so the corner now speaks only when the
+                      account is genuinely INACTIVE (the exception worth flagging);
+                      the membership chip below is the status of record. */}
                   <div className="flex flex-wrap justify-end gap-1">
-                    <Badge className={status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                      {t(`status.${status}`)}
-                    </Badge>
+                    {status === 'inactive' && (
+                      <StatusChip domain="member" status="inactive" label={t('status.inactive')} />
+                    )}
                     {expiringBy[student.id] && (
-                      <Badge data-testid="badge-expiring" className="bg-amber-100 text-amber-800">
-                        {t('badges.expiring')}
-                      </Badge>
+                      <StatusChip domain="member" status="expiring" label={t('badges.expiring')}
+                        data-testid="badge-expiring" />
                     )}
                     {owingSet.has(student.id) && (
-                      <Badge data-testid="badge-owing" className="bg-red-100 text-red-700">
-                        {t('badges.owing')}
-                      </Badge>
+                      <StatusChip domain="member" status="owing" label={t('badges.owing')}
+                        data-testid="badge-owing" />
                     )}
                   </div>
                 </div>
@@ -152,7 +152,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                   {p.phone && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone className="w-4 h-4" />
-                      <span dir="ltr">{p.phone}</span>
+                      <Ltr>{fmtPhone(p.phone)}</Ltr>
                     </div>
                   )}
 
@@ -179,10 +179,9 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                       </span>
                     ))}
                     {info.membershipStatus !== 'none' && (
-                      <span data-testid="member-membership" data-status={info.membershipStatus}
-                        className={cn('rounded-full px-2 py-0.5 text-xs font-medium', membershipTone[info.membershipStatus])}>
-                        {t(`membership.${info.membershipStatus}`)}
-                      </span>
+                      <StatusChip domain="member" status={info.membershipStatus}
+                        label={t(`membership.${info.membershipStatus}`)}
+                        data-testid="member-membership" />
                     )}
                   </div>
                 )}

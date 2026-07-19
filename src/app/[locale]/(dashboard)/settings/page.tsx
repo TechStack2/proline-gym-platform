@@ -7,6 +7,7 @@ import { getWhatsAppStatus } from './_components/whatsapp-actions';
 import { getWaiverTemplate } from './_components/waiver-actions';
 import { parseEnabledProducts } from '@/lib/gym/products';
 import { isClassComplete } from '@/lib/products/completeness';
+import { PageHeader } from '@/components/ui/page-header';
 
 type Props = { params: { locale: string }; searchParams?: { tab?: string } };
 
@@ -81,9 +82,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
-            {t('title')}
-          </h1>
+          <PageHeader segment="settings" />
           <p className="mt-1 text-sm text-gray-500">
             {t('subtitle')}
           </p>

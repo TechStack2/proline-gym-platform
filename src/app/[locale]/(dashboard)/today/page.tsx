@@ -10,6 +10,7 @@ import { MonthHorizon } from './_components/MonthHorizon'
 import { SetupChecklist } from './_components/SetupChecklist'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
 import { UserPlus, Users, DollarSign } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header';
 
 export const dynamic = 'force-dynamic'
 
@@ -67,7 +68,7 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
         <div>
           {/* SHELL-IA: mobile shows the NativeHeader large title; the date subtitle
               below leads on mobile. Desktop keeps this H1 (its only title). */}
-          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          <PageHeader segment="today" />
           <p className="mt-0.5 text-sm text-gray-500" data-testid="horizon-subtitle">{subtitle}</p>
         </div>
         <Link href={`/${locale}/schedule?view=day`} data-testid="open-diary-link"

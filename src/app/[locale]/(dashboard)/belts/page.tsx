@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { BeltEngineClient } from './belt-engine-client';
+import { PageHeader } from '@/components/ui/page-header';
 
 type Props = { params: { locale: string } };
 
@@ -88,9 +89,7 @@ export default async function BeltsPage({ params }: Props) {
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
-            {t('title')}
-          </h1>
+          <PageHeader segment="belts" />
           <p className="mt-1 text-sm text-gray-500">
             {t('subtitle')}
           </p>

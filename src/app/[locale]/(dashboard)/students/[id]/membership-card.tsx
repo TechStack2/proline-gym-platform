@@ -7,7 +7,8 @@
  *   Renew now · Freeze (bounds shown) / Unfreeze · Change plan · Reinstate.
  * All writes are guarded RPCs; states recompute on every render.
  */
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, ltrIsolate } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -64,7 +65,9 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
   if (!data) return <p className="py-3 text-center text-sm text-gray-400">{t('noMembership')}</p>
 
   const state = membershipState(data, policy)
-  const fmtD = (d: string | null) => (d ? new Date(d + 'T12:00:00Z').toLocaleDateString(dateLocale(locale)) : '—')
+  // DS2-FMT §2.7 — one date layer. `fmtDate` applies the same noon-UTC anchoring
+  // this line hand-rolled, so the rendered text is unchanged.
+  const fmtD = (d: string | null) => fmtDate(d, locale)
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, okKey: string) =>
     startTransition(async () => {
@@ -78,8 +81,12 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-gray-900">{data.planName}</p>
+          {/* DA-7: the member-360 range rendered "72026/8/6 → /2026/7" in Arabic —
+              `dir="ltr"` sets a base direction but does NOT isolate, so the two
+              dates still reordered against each other. Isolating each side is the
+              fix; `textContent` is byte-identical (see components/ui/bdi). */}
           <p className="text-xs text-gray-500" dir="ltr" data-testid="membership-period">
-            {fmtD(data.start_date)} → {fmtD(data.end_date)}
+            <Ltr>{fmtD(data.start_date)}</Ltr> → <Ltr>{fmtD(data.end_date)}</Ltr>
           </p>
           {data.pendingPlanName && (
             <p className="text-[11px] text-amber-600" data-testid="membership-pending-plan">
@@ -88,7 +95,9 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
           )}
           {state === 'frozen' && data.pause_end_date && (
             <p className="text-[11px] text-blue-600" data-testid="membership-frozen-until">
-              {t('frozenUntil', { date: fmtD(data.pause_end_date) })}
+              {/* A formatted date fed into an ICU message has no element boundary to
+                  isolate on — that is exactly what the character helper is for. */}
+              {t('frozenUntil', { date: ltrIsolate(fmtD(data.pause_end_date)) })}
             </p>
           )}
         </div>

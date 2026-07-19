@@ -22,10 +22,10 @@ test('PWA-MOBILE-UX #2 · bottom tab-bar icons scale up (legible) on Pro-Max-cla
   const { ctx, page } = await ownerMobile(browser)
   try {
     await page.goto('/en/today')
-    const tabBar = page.locator('nav[role="tablist"]:visible').first()
+    const tabBar = page.locator('[data-testid="tab-bar"]:visible').first()
     await expect(tabBar, 'the mobile tab bar renders (md:hidden is off at 430px)').toBeVisible({ timeout: 15_000 })
     // The mobile tab icons scale to ~27px at ≥420px (base 22px on small phones).
-    const icon = page.locator('nav[role="tablist"]:visible [role="tab"] svg').first()
+    const icon = page.locator('[data-testid="tab-bar"]:visible a svg, [data-testid="tab-bar"]:visible button svg').first()
     const box = await icon.boundingBox()
     expect(box, 'a tab icon has a rendered box').not.toBeNull()
     expect(box!.height, 'tab icon is scaled up (legible) on Pro-Max width').toBeGreaterThanOrEqual(26)
@@ -47,7 +47,7 @@ test('PWA-MOBILE-UX #3 · language switcher in Settings + the mobile More menu (
     // ── #3b: the mobile More menu exposes the language switcher at its BOTTOM and
     //    it's reachable (a clipped/hidden row could not be scrolled-to + clicked) ──
     await page.goto('/en/today')
-    await page.locator('nav[role="tablist"]:visible [role="tab"]').last().click() // the "More" tab is always last
+    await page.locator('[data-testid="tab-more"]:visible').first().click()
     const moreLang = vis(page, '[data-testid="more-language"]').first()
     await expect(moreLang, 'the More menu exposes the language switcher').toBeVisible({ timeout: 10_000 })
     await moreLang.scrollIntoViewIfNeeded()

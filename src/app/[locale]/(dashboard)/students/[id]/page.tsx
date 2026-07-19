@@ -1,4 +1,3 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
@@ -24,6 +23,8 @@ import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
+import { fmtDate as fmtIntlDate, fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 export const dynamic = 'force-dynamic'
 
@@ -336,7 +337,13 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const name = localizedName(prof, locale)
   const age = prof?.date_of_birth ? Math.floor((Date.now() - new Date(prof.date_of_birth).getTime()) / (365.25 * 864e5)) : null
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
+  // DS2-FMT §2.7 — the page's local date helper now delegates to the one layer, so
+  // every date on this file goes through it without churning the call sites. Two
+  // real fixes ride along: a bare DATE column ('2026-01-15') is noon-anchored
+  // instead of parsed as midnight UTC (which rendered the PREVIOUS day on any
+  // server behind UTC), and timestamps render in the gym's timezone rather than
+  // the server's.
+  const fmtDate = (d: string | null) => fmtIntlDate(d, locale)
   const tb = await getTranslations('beltRanks')
   const beltLabel = (r: string | null) => beltRankLabel(r, tb, '—')
   // MEMBER-ENRICH: format an enrolled class's weekly schedule (day(s) · time).
@@ -431,7 +438,9 @@ export default async function Member360Page({ params: { locale, id }, searchPara
             <div>
               <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="member-name">{name}</h1>
               <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                {prof?.phone && <span dir="ltr" className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{prof.phone}</span>}
+                {/* DA-7: the raw stored E.164 flipped its "+" to the far end in Arabic
+                    ("96170000012+"). fmtPhone groups it and <Ltr> isolates it. */}
+                {prof?.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /><Ltr>{fmtPhone(prof.phone)}</Ltr></span>}
                 {age != null && <span>{t('age', { age })}</span>}
                 <span className="inline-flex items-center gap-1 capitalize"><Award className="h-3 w-3" />{beltLabel(student.current_belt_rank)}</span>
                 <span className={cn('rounded-full px-2 py-0.5 font-medium', student.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
@@ -569,8 +578,11 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                       const nowIso = new Date().toISOString().slice(0, 10)
                       const fut = r.start_date && String(r.start_date).slice(0, 10) > nowIso
                       const renews = r.paid_until ?? r.end_date
-                      const d = (iso: string) => new Date(String(iso).slice(0, 10) + 'T00:00:00Z')
-                        .toLocaleDateString(locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+                      // DA-7: this line passed a bare 'ar' locale, so it rendered
+                      // Arabic-Indic digits ("٦ تموز") beside every neighbouring date
+                      // on the same page, which renders Latin ones. fmtDate is the
+                      // single layer and always uses the ar-LB-u-nu-latn ramp.
+                      const d = (iso: string) => fmtIntlDate(String(iso).slice(0, 10), locale, 'dayMonth')
                       const txt = fut
                         ? `${isRTL ? 'يبدأ' : locale === 'fr' ? 'Débute' : 'Starts'} ${d(r.start_date)}`
                         : renews ? `${isRTL ? 'يتجدّد' : locale === 'fr' ? 'Renouvelle' : 'Renews'} ${d(renews)}` : ''

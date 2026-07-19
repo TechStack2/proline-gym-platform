@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { getTranslations } from 'next-intl/server';
 import { PTPackagesClient } from './pt-client';
 import { PtRestorePanel, type PtRestoreAssignment } from './pt-restore-panel';
+import { PageHeader } from '@/components/ui/page-header';
 
 type Props = { params: { locale: string } };
 
@@ -82,9 +83,7 @@ export default async function PTPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', locale === 'ar' && 'font-arabic')}>
-          {t('title')}
-        </h1>
+        <PageHeader segment="pt" />
         <p className="mt-1 text-sm text-gray-500">
           {t('subtitle')}
         </p>

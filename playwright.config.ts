@@ -323,6 +323,23 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // W1-FOUNDATION: behavioural guards for the §2 primitive layer as adopted on
+      // the staff shell — TabBar nav ARIA + capacity + hide-on-scroll, PageHeader's
+      // one-h1-per-breakpoint + DA-29 terminology, and the DA-7 bidi anchors.
+      name: 'w1-foundation',
+      dependencies: ['setup'],
+      testMatch: /\/w1-foundation\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // W1-FOUNDATION §6.3 evidence matrix for the deliberately changed staff
+      // chrome: {en,ar} × {light,dark} × {390,1280}. Screenshots only.
+      name: 'w1-shots',
+      dependencies: ['setup'],
+      testMatch: /\/w1-shots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // PWA-MOBILE-UX: installed-mobile-PWA shell polish — NativeTabBar items scale
       // up on Pro-Max widths (#2); language switcher in Settings + the mobile More
       // menu, tail not clipped (#3). Opens its own Pro-Max-viewport owner context.

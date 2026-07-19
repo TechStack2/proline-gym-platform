@@ -1,4 +1,4 @@
-import { NextIntlClientProvider } from 'next-intl';
+import { StrictIntlProvider } from '@/i18n/StrictIntlProvider';
 import { getMessages } from 'next-intl/server';
 
 type Props = {
@@ -29,8 +29,8 @@ export default async function AuthLayout({ children }: Props) {
   const messages = await getMessages();
 
   return (
-    <NextIntlClientProvider messages={messages}>
+    <StrictIntlProvider messages={messages}>
       {children}
-    </NextIntlClientProvider>
+    </StrictIntlProvider>
   );
 }

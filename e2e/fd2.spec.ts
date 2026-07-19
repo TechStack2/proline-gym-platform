@@ -125,12 +125,17 @@ test('FD-2 · PWA footer: the last Today card clears the fixed mobile tab bar', 
     // pt-refill is always the last card in the Today stack (populated or collapsed).
     const lastCard = page.locator('[data-testid="card-pt-refill"]:visible, [data-testid="card-empty-pt-refill"]:visible').first()
     await expect(lastCard).toBeVisible({ timeout: 15_000 })
-    const bar = page.locator('nav[role="tablist"]:visible').first()
+    const bar = page.locator('[data-testid="tab-bar"]:visible').first()
     await expect(bar).toBeVisible({ timeout: 15_000 })
 
-    // Scroll the dashboard content container to the very bottom.
+    // Scroll the dashboard content container to the very bottom, then nudge back
+    // up: W1-FOUNDATION §2.2 hides the bar on scroll-DOWN, and this assertion is
+    // about the content's bottom PADDING, so it must measure against a bar that is
+    // actually parked at the bottom edge.
     await page.evaluate(() => { const m = document.querySelector('main'); if (m) m.scrollTop = m.scrollHeight })
     await page.waitForTimeout(400)
+    await page.evaluate(() => { const m = document.querySelector('main'); if (m) m.scrollTop = Math.max(0, m.scrollTop - 120) })
+    await page.waitForTimeout(500)
 
     const barBox = await bar.boundingBox()
     const cardBox = await lastCard.boundingBox()

@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { NativeHeader, NativeTabBar, PageTransition } from '@/components/native';
+import { NativeHeader, PageTransition } from '@/components/native';
+import { TabBar } from '@/components/native/TabBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { getDashboardTabs, DASHBOARD_BASE_PATH } from './DashboardTabConfig';
@@ -16,6 +17,7 @@ import { useInboxCount } from '@/hooks/use-inbox-count';
 import { LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { cn } from '@/lib/utils';
+import { pageTitleKey } from '@/lib/nav/page-titles';
 
 type Props = {
   children: React.ReactNode;
@@ -26,30 +28,17 @@ type Props = {
   logoUrl?: string | null;
 };
 
-// SHELL-IA: nav i18n keys for the mobile large title, by first path segment.
-// The large title is the SINGLE page title on mobile, so it must resolve on
-// EVERY (dashboard) route — not just the 4 mobile-primary tabs (the old lookup
-// fell back to "Today" on money/team/settings/profile + every out-of-nav page).
-const TITLE_KEYS = new Set([
-  'today', 'inbox', 'members', 'schedule', 'money', 'team', 'settings',
-  'profile', 'belts', 'pt', 'camps', 'reports', 'attendance',
-  'classes', 'leads', 'payments', 'invoices', 'disciplines', 'notifications',
-  'campaigns', 'desk',
-  // DA-35: /setup (Manage) + /publish were missing → the mobile title fell back to
-  // "Today". They render the shell header, so they need their own resolvable title.
-  'setup', 'publish',
-]);
-
-// DA-35: a few routes' user-facing label differs from their URL segment because the
-// nav/tab uses a workspace KEY, not the path — /students shows "Members", /coaches
-// shows "Team". Resolve the mobile title from that same key so it never disagrees
-// with the tab/sidebar (the terminology pick = the nav-config labels: Members/Team).
-const SEGMENT_TITLE_KEY: Record<string, string> = { students: 'members', coaches: 'team' };
+// SHELL-IA / DS 2.0 §2.1: the mobile large title now resolves through the ONE
+// page-title map (src/lib/nav/page-titles.ts) that PageHeader also uses, so the
+// mobile chrome title and the desktop h1 cannot drift (DA-29). The local
+// TITLE_KEYS Set + SEGMENT_TITLE_KEY map this replaces said the same thing in a
+// second place — which is exactly how "Students" vs "Members" happened.
 
 export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const t = useTranslations('nav');
+  // Root-scoped: the title map holds FULL dotted paths (§2.1).
+  const t = useTranslations();
   const supabase = createClient();
   const [moreOpen, setMoreOpen] = useState(false);
   const isRTL = locale === 'ar';
@@ -93,8 +82,7 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
 
   // The page's own name as the mobile large title (single title per breakpoint).
   const seg = pathname.split('/')[2] || 'today'; // [1] = locale, [2] = route segment
-  const titleKey = SEGMENT_TITLE_KEY[seg] ?? seg;
-  const headerTitle = t((TITLE_KEYS.has(titleKey) ? titleKey : 'today') as any);
+  const headerTitle = t(pageTitleKey(seg) as any);
 
   // DOUBLE-SHELL: ONE responsive shell, {children} mounted ONCE (the PortalLayoutClient
   // pattern). Before, layout.tsx rendered the whole subtree twice (block md:hidden mobile
@@ -164,10 +152,18 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
 
         {/* Mobile bottom tab bar (<lg; the staff desktop uses the Sidebar) */}
         <div className="lg:hidden">
-          <NativeTabBar
+          {/* DS 2.0 §2.2 — the shared TabBar primitive. Same 4+More IA; new is the
+              ruled Option-B density, the indicator bar, nav ARIA (was role=tablist)
+              and hide-on-scroll. The scroller is the shell's own <main>, not the
+              window, and the bar is pinned down while the More sheet owns the
+              screen. */}
+          <TabBar
             tabs={primaryTabs}
             locale={locale}
+            shell="staff"
             basePath={DASHBOARD_BASE_PATH}
+            scrollSelector="main"
+            forceVisible={moreOpen}
             onTabClick={(key) => {
               if (key === 'more') setMoreOpen(true);
             }}
