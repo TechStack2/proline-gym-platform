@@ -78,6 +78,8 @@ One header primitive for every routed page, replacing the 31 hand-rolled h1s and
 />
 ```
 
+**Status-zone contract (owner-feedback round):** with `viewport-fit=cover`, the header's surface (background + blur) extends up behind the system status bar via `pt-[env(safe-area-inset-top)]` — the app owns the full screen, the clock/battery sit on the app's surface, and no content or title ever renders under the camera island. This is the standard installed-app treatment on iOS and Android and applies to all three shells.
+
 Contract: renders exactly **one `<h1>` in the DOM per breakpoint** (fixes DA-60's double-h1 — the non-active breakpoint's title is not merely CSS-hidden, it is not rendered; the collapsed sticky title is a `<p aria-hidden>` echo). Desktop = `text-h2`-scale title + subtitle + actions row; mobile = the native large-title pattern (collapse-on-scroll stays). Back button: chevron auto-flips in RTL, 44pt target, `aria-label` from `common.back`. Title keys live in ONE map (kills TITLE_KEYS drift and the "Students"/"Members"/"My Students" split — one term per surface decided at adoption: **"Members"** wins everywhere, per the nav).
 The slimmed mobile chrome (single badge row — see reference sheet) is part of this primitive: shell badge OR role badge, not both (DA-17: COACH + "● Coach" die; one `ShellBadge` shows "Coach · Sami" style identity), and the persistent logout icon leaves the header (§1.3).
 
@@ -89,9 +91,11 @@ Contract:
 - **Capacity: ≤5 items including More.** Configs with >5 fail a build-time assert. (§3 sets each shell's five.)
 - **More = a sheet** (staff's existing pattern promoted): overflow destinations + language switcher + theme toggle + sign-out (destructive-styled, confirm).
 - **ARIA: it is navigation, not tabs** — `<nav aria-label>` + links with `aria-current="page"`; the `role="tablist"/"tab"` + dangling `aria-controls` pattern is removed (DA-60).
-- **Ergonomics:** min 44pt targets; labels `text-[11px]`+ (up from 10px), `truncate` **forbidden on labels** — if a locale's label doesn't fit, the label is wrong (i18n keys get short variants: `nav.short.*`); active state = color + a 4px top indicator bar (not color-only — DA-45); badge slot (inbox count etc.).
+- **Ergonomics:** min 44pt targets; labels `text-[11px]`+ (up from 10px), `truncate` **forbidden on labels** — if a locale's label doesn't fit, the label is wrong (i18n keys get short variants: `nav.short.*`); active state = color + weight + a 4px top indicator bar (not color-only — DA-45); badge slot (inbox count etc.).
+- **Icon treatment (owner-feedback round):** two sanctioned densities — **Option A "compact"** (17px icons, 48pt bar) and **Option B "pronounced"** (24px icons, 56pt bar, bolder active label) — one is chosen product-wide in Decision №1; the reference sheet wears Option B (recommended).
+- **Hide-on-scroll (owner-feedback round):** the mobile bar auto-hides on scroll **down** and reveals on any scroll **up**, at the top of the scroll container, and whenever a sheet/dialog opens or input focus raises the keyboard; the transition is a ~220ms transform (no layout shift — content padding stays constant) and is disabled entirely under `prefers-reduced-motion`. This mirrors Material 3's standard bottom-bar scroll behavior and iOS 26's minimize-on-scroll tab bars. Ships with Decision №1 (owner may keep the bar persistent instead).
 - **Surface:** opaque token background (`bg-white` at ≥0.92 with blur, token-backed → flips correctly) — ends content bleed-through (DA-23).
-- **Safe-area:** `pb-[env(safe-area-inset-bottom)]` retained — and *live*, because Wave 0 ships `viewportFit: 'cover'` (DA-2).
+- **Safe-area:** `pb-[env(safe-area-inset-bottom)]` retained — and *live*, because Wave 0 ships `viewportFit: 'cover'` (DA-2). The home-indicator zone belongs to the bar, never to content.
 - Desktop: the md+ rail remains part of this primitive (see §4 for its layering fix).
 
 ### 2.3 StatusChip — one pill vocabulary
@@ -153,7 +157,7 @@ Staff proved the pattern: **4 primary + More**. Portal (7 flat) and coach (6 fla
 
 ### Staff: unchanged (4 + More) — already correct; it just migrates onto the shared TabBar primitive.
 
-Approval granularity: the owner can accept portal and coach independently; a different fold (e.g. keep PT primary, fold Billing) is a one-line config change on the same primitive — the *primitive contract* (≤5, More-sheet, short-label keys) is the binding part.
+Approval granularity: the owner can accept portal and coach independently; a different fold (e.g. keep PT primary, fold Billing) is a one-line config change on the same primitive — the *primitive contract* (≤5, More-sheet, short-label keys) is the binding part. Decision №1 also carries the **icon-density choice (Option A compact / Option B pronounced — recommended)** and the **hide-on-scroll yes/no** from §2.2; the reference sheet demos both live.
 
 ---
 
@@ -170,7 +174,7 @@ Why (argued once, here): portal and coach are companion apps for phone-first use
 - The frame header carries tenant identity (gym name + logo — DA-40) alongside the shell badge.
 - Escape hatch: a specific surface may graduate to a wide layout (e.g. billing tables) by explicit spec amendment; the default is the frame.
 
-Rejected alternative (recorded for the decision): first-class desktop for portal/coach — revisit post-V1 if analytics show meaningful desktop portal usage.
+Alternative (now **visualized in the reference sheet** per owner request): first-class desktop for portal/coach — expanded labeled rail + top identity bar + true multi-column compositions per surface; richer on large screens at roughly a wave of layout work per shell. A **hybrid** is also on the table: App Frame now, then graduate high-value surfaces (billing, schedule) to first-class layouts one by one. Decision №2 offers all three.
 
 **WL-CHROME boundary: unchanged, no owner decision needed.** Role hues (portal bronze, coach graphite, staff brand-follow) remain the shell identity; the brand ramp remains the action color everywhere (PORTAL-BRAND already fixed the member-side brand read). Nothing in this spec re-tints chrome.
 

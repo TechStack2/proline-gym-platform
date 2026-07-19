@@ -69,9 +69,9 @@ code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(-
 .typerow .spec{width:150px; flex:none}
 
 /* ════════════════════════ PRODUCT FRAMES (fixed palettes) ════════════════════════ */
-.ph{ /* light product palette — FIXED, does not follow viewer theme */
+.ph{ /* light product palette — FIXED, does not follow viewer theme. Brand = PROLINE crimson */
   --p-bg:#f9fafb; --p-card:#ffffff; --p-ink:#111827; --p-mut:#6b7280; --p-line:#e5e7eb;
-  --p-brand:#0e7490; --p-brand-soft:rgba(14,116,144,.10); --p-brand-fg:#ffffff;
+  --p-brand:#cd1419; --p-brand-soft:rgba(205,20,25,.09); --p-brand-fg:#ffffff;
   --p-ok:#15803d; --p-ok-soft:#dcfce7; --p-warn:#b45309; --p-warn-soft:#fef3c7;
   --p-dan:#dc2626; --p-dan-soft:#fee2e2; --p-info:#2563eb; --p-info-soft:#dbeafe;
   --p-neu:#4b5563; --p-neu-soft:#f3f4f6;
@@ -82,7 +82,7 @@ code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(-
 }
 .ph.dark{ /* dark product palette — FIXED */
   --p-bg:#131317; --p-card:#22222a; --p-ink:#f5f5f8; --p-mut:#9292a1; --p-line:#2f2f3a;
-  --p-brand:#22a3bf; --p-brand-soft:rgba(34,163,191,.16); --p-brand-fg:#08222a;
+  --p-brand:#e5484d; --p-brand-soft:rgba(229,72,77,.16); --p-brand-fg:#ffffff;
   --p-ok:#4ade80; --p-ok-soft:rgba(74,222,128,.14); --p-warn:#fbbf24; --p-warn-soft:rgba(251,191,36,.14);
   --p-dan:#f87171; --p-dan-soft:rgba(248,113,113,.15); --p-info:#60a5fa; --p-info-soft:rgba(96,165,250,.14);
   --p-neu:#c6c6d0; --p-neu-soft:rgba(146,146,161,.16);
@@ -97,42 +97,45 @@ code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(-
 .framecap{font-size:12px; color:var(--mut); margin:8px 2px 0; text-align:center}
 .phone{width:390px; flex:none; border-radius:34px; border:1px solid var(--line); box-shadow:0 12px 34px rgba(0,0,0,.14); overflow:hidden; background:var(--p-bg); color:var(--p-ink)}
 .phone [dir]{unicode-bidi:isolate}
-.scr{background:var(--p-bg); font-size:14.5px; line-height:1.5}
-.phone[dir="rtl"] .scr{font-size:16px; line-height:1.7; font-family:"IBM Plex Sans Arabic","Geeza Pro","Noto Sans Arabic",-apple-system,sans-serif}
+.scr{background:var(--p-bg); font-size:15.5px; line-height:1.55}
+.phone[dir="rtl"] .scr{font-size:17px; line-height:1.7; font-family:"IBM Plex Sans Arabic","Geeza Pro","Noto Sans Arabic",-apple-system,sans-serif}
 
-/* product chrome inside frames */
-.stat{height:26px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:11.5px; font-weight:600; color:var(--p-mut)}
-.hdr{padding:8px 16px 10px; background:color-mix(in srgb, var(--p-card) 92%, transparent); border-bottom:1px solid var(--p-line)}
+/* product chrome inside frames — STATUS ZONE: the header surface extends behind the
+   system status bar (viewport-fit=cover + env(safe-area-inset-top)); content never
+   renders under the camera island. The island is drawn to make the clearance visible. */
+.stat{position:relative; height:46px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 26px 4px; font-size:12px; font-weight:600; color:var(--p-ink); background:color-mix(in srgb, var(--p-card) 92%, transparent)}
+.stat::after{content:""; position:absolute; left:50%; top:9px; transform:translateX(-50%); width:100px; height:26px; border-radius:99px; background:#000; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.hdr{padding:6px 16px 10px; background:color-mix(in srgb, var(--p-card) 92%, transparent); border-bottom:1px solid var(--p-line)}
 .hdr .brandline{display:flex; align-items:center; gap:9px}
-.mono{width:26px; height:26px; border-radius:8px; background:var(--p-brand); color:var(--p-brand-fg); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none}
-.gymname{font-size:12.5px; font-weight:700}
+.mono{width:30px; height:30px; border-radius:8px; background:var(--p-brand); color:var(--p-brand-fg); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none}
+.gymname{font-size:14px; font-weight:800; letter-spacing:.01em}
 .hdr .bell{margin-inline-start:auto; color:var(--p-mut); font-size:15px}
-.bigtitle{font-size:27px; font-weight:800; letter-spacing:-.01em; margin:7px 0 2px}
-.phone[dir="rtl"] .bigtitle{font-size:30px}
-.idchip{display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; border-radius:99px; padding:3px 10px; background:var(--p-brand-soft); color:var(--p-brand)}
+.bigtitle{font-size:30px; font-weight:800; letter-spacing:-.01em; margin:7px 0 2px}
+.phone[dir="rtl"] .bigtitle{font-size:33px}
+.idchip{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; border-radius:99px; padding:3px 10px; background:var(--p-brand-soft); color:var(--p-brand)}
 .idchip.coach{background:var(--p-neu-soft); color:var(--p-neu)}
 .idchip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
 
 .body{padding:14px 16px 84px; display:flex; flex-direction:column; gap:12px}
 .pcard{background:var(--p-card); border:1px solid var(--p-line); border-radius:16px; padding:14px 15px}
-.pcard h4{margin:0 0 8px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px}
+.pcard h4{margin:0 0 8px; font-size:14.5px; font-weight:700; display:flex; align-items:center; gap:8px}
 .pcard h4 .spill{margin-inline-start:auto}
 .rowline{display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--p-line)}
 .rowline:first-of-type{border-top:none}
-.meta{font-size:12px; color:var(--p-mut)}
-.spill{font-size:10.5px; font-weight:700; border-radius:99px; padding:3px 9px}
+.meta{font-size:13px; color:var(--p-mut)}
+.spill{font-size:11.5px; font-weight:700; border-radius:99px; padding:3px 9px}
 .s-ok{background:var(--p-ok-soft); color:var(--p-ok)} .s-warn{background:var(--p-warn-soft); color:var(--p-warn)}
 .s-dan{background:var(--p-dan-soft); color:var(--p-dan)} .s-neu{background:var(--p-neu-soft); color:var(--p-neu)}
 .s-info{background:var(--p-info-soft); color:var(--p-info)}
 .c-bjj{background:var(--cat-bjj-soft); color:var(--cat-bjj)} .c-mt{background:var(--cat-mt-soft); color:var(--cat-mt)}
 .c-box{background:var(--cat-box-soft); color:var(--cat-box)} .c-fit{background:var(--cat-fit-soft); color:var(--cat-fit)}
 .catbar{width:4px; align-self:stretch; border-radius:99px; flex:none}
-.pbtn{display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; border-radius:10px; padding:9px 14px; min-height:38px}
+.pbtn{display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:13.5px; font-weight:700; border-radius:10px; padding:9px 14px; min-height:38px}
 .pbtn.pri{background:var(--p-brand); color:var(--p-brand-fg)}
 .pbtn.sec{border:1px solid var(--p-line); color:var(--p-ink); background:var(--p-card)}
 .pbtn.ghost{color:var(--p-brand)}
 .pbtn.dang{border:1px solid var(--p-dan); color:var(--p-dan); background:transparent}
-.pbtn.sm{padding:6px 11px; min-height:32px; font-size:12px; border-radius:9px}
+.pbtn.sm{padding:7px 12px; min-height:34px; font-size:12.5px; border-radius:9px}
 
 /* belt path */
 .beltrow{display:flex; align-items:center; gap:10px}
@@ -145,16 +148,20 @@ code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(-
 /* stats mini */
 .statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .mini{background:var(--p-card); border:1px solid var(--p-line); border-radius:14px; padding:11px 13px}
-.mini b{font-size:19px; display:block}
-.mini span{font-size:11px; color:var(--p-mut)}
+.mini b{font-size:22px; display:block}
+.mini span{font-size:12px; color:var(--p-mut)}
 
-/* tab bar */
-.tabs{position:relative; display:flex; border-top:1px solid var(--p-line); background:color-mix(in srgb, var(--p-card) 94%, transparent); padding-bottom:10px /* safe-area stand-in */}
-.tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 2px 4px; font-size:11px; font-weight:600; color:var(--p-mut); position:relative; min-height:48px}
-.tab.on{color:var(--p-brand)}
-.tab.on::before{content:""; position:absolute; top:0; width:26px; height:3px; border-radius:0 0 3px 3px; background:var(--p-brand)}
-.tab .ic{font-size:17px; line-height:1}
-.tab .bdg{position:absolute; top:5px; inset-inline-end:calc(50% - 20px); background:var(--p-brand); color:var(--p-brand-fg); font-size:8.5px; font-weight:800; border-radius:99px; min-width:14px; height:14px; display:flex; align-items:center; justify-content:center; padding:0 3px}
+/* tab bar — screens wear OPTION B (pronounced): 24px icons, 56pt bar, semibold labels.
+   Option A (compact, 17px) is shown for comparison in the tab-bar section only. */
+.tabs{position:relative; display:flex; border-top:1px solid var(--p-line); background:color-mix(in srgb, var(--p-card) 94%, transparent); padding-bottom:12px /* safe-area stand-in */; transition:transform .22s ease}
+.tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 2px 4px; font-size:12px; font-weight:600; color:var(--p-mut); position:relative; min-height:56px}
+.tab.on{color:var(--p-brand); font-weight:700}
+.tab.on::before{content:""; position:absolute; top:0; width:30px; height:3.5px; border-radius:0 0 4px 4px; background:var(--p-brand)}
+.tab .ic{font-size:24px; line-height:1}
+.tabs.compact .tab{min-height:48px; gap:3px; padding:9px 2px 4px}
+.tabs.compact .tab .ic{font-size:17px}
+.tabs.hidden-demo{transform:translateY(110%)}
+.tab .bdg{position:absolute; top:5px; inset-inline-end:calc(50% - 24px); background:var(--p-brand); color:var(--p-brand-fg); font-size:9px; font-weight:800; border-radius:99px; min-width:15px; height:15px; display:flex; align-items:center; justify-content:center; padding:0 4px}
 .coachbar .tab.on{color:#64748b}
 .coachbar .tab.on::before{background:#64748b}
 
@@ -203,8 +210,8 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
   <p class="eyebrow">Design System 2.0 — Phase 2 approval artifact</p>
   <h1>One product family, on every screen, in both languages, in both themes.</h1>
   <p class="sub">This sheet is what you approve. It shows the new token roles, the primitive kit, and four re-imagined screens wearing them — including the two decisions only you can make (marked ⚠). The binding text lives in <code>docs/design-system/design-system-2.md</code>; execution Waves 1–4 cite it section by section. Everything here <b>builds on</b> the shipped foundation (channel-var tokens, role-hue shells, brand-follow, Arabic type ramp) — nothing re-brands.</p>
-  <div class="note"><b>Type note:</b> the product ships Geist (Latin) + IBM Plex Sans Arabic, self-hosted. This reference renders in system stand-ins; letterforms differ slightly, metrics and hierarchy are the spec. Screens show the <b>teal demo gym</b> so brand-follow is visible — a crimson gym gets identical layouts in crimson.</div>
-  <div class="note"><b>How to say yes:</b> ✅ the whole sheet · ✅ per-shell on Decision №1 · ✅/adjust Decision №2. Any "adjust" = one line back to the lane; the primitives absorb it.</div>
+  <div class="note"><b>Type note:</b> the product ships Geist (Latin) + IBM Plex Sans Arabic, self-hosted. This reference renders in system stand-ins; letterforms differ slightly, metrics and hierarchy are the spec. Screens wear <b>PRO LINE crimson</b> (per owner request). Brand is still per-gym: a teal-branded tenant gets these exact layouts in teal.</div>
+  <div class="note"><b>How to say yes:</b> ✅ the whole sheet · Decision №1: per-shell IA + icon Option A/B + hide-on-scroll yes/no · Decision №2: App Frame / First-class / Hybrid. Any "adjust" = one line back to the lane; the primitives absorb it.</div>
 </section>
 
 <!-- ═══════════════════ TOKENS ═══════════════════ -->
@@ -291,29 +298,63 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
 <section id="tabbars">
   <div class="sechead"><div><p class="eyebrow">Spec §3</p><h2>Tab-bar IA — the footer menu, fixed</h2></div></div>
   <div class="decision"><p class="eyebrow">⚠ Owner decision №1 — approve per shell</p>
-    <p>One shared bar: <b>max 5 slots including More</b>, 44pt targets, 11px+ labels that never truncate (short Arabic label variants), active = color + top indicator, opaque surface, safe-area aware. Staff keeps its 4+More. Proposed folds below — each is a one-line config if you want a different five.</p>
+    <p>One shared bar: <b>max 5 slots including More</b>, 44pt targets, labels that never truncate (short Arabic label variants), active = color + top indicator, opaque surface, safe-area aware. Staff keeps its 4+More. Proposed folds below — each is a one-line config if you want a different five.</p>
     <div class="choices"><span class="choice rec">Portal: Home · Classes · Progress · Billing · More (PT + Profile fold in; PT clients get a Home card — closer than today)</span></div>
     <div class="choices"><span class="choice rec">Coach: Today · Attendance · Students · PT · More (Trials fold in; a “trial today” card surfaces on Today)</span></div>
+    <p style="margin-top:14px"><b>Icon treatment</b> — per your note, Option B makes the icons the visual anchor. Both shown below; every screen on this sheet wears Option B.</p>
+    <div class="choices"><span class="choice">Option A — compact (17px icons, 48pt bar)</span><span class="choice rec">Option B — pronounced (24px icons, 56pt bar, bolder active) · recommended</span></div>
+    <p style="margin-top:14px"><b>Hide on scroll</b> — current best practice on both platforms: the bar slides away as you scroll <i>down</i> (content gets the full screen) and returns the instant you scroll <i>up</i> or reach the top. Material 3 ships this as standard scroll behavior, and iOS 26's own tab bars now minimize on scroll the same way. Our rules: reveal on any upward scroll, at the top, and whenever a sheet/keyboard opens; disabled for reduced-motion users; the More sheet always brings it back. <b>Try it in the live frame below.</b></p>
+    <div class="choices"><span class="choice rec">Adopt hide-on-scroll (recommended)</span><span class="choice">Keep the bar always visible</span></div>
+  </div>
+
+  <div class="framerow">
+    <div class="framecol"><div class="phone ph"><div class="tabs compact">
+      <span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">▦</span>Classes</span>
+      <span class="tab"><span class="ic">◎</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span>
+      <span class="tab"><span class="ic">⋯</span>More</span></div></div>
+      <p class="framecap">Option A · compact — today's density, cleaned up</p></div>
+    <div class="framecol"><div class="phone ph"><div class="tabs">
+      <span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">▦</span>Classes</span>
+      <span class="tab"><span class="ic">◎</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span>
+      <span class="tab"><span class="ic">⋯</span>More</span></div></div>
+      <p class="framecap">Option B · pronounced — larger icons carry the bar (recommended)</p></div>
+    <div class="framecol"><div class="phone ph"><div class="scr" style="position:relative; height:330px; overflow:hidden">
+      <div class="scrolldemo" style="position:absolute; inset:0; overflow-y:auto; padding:12px 14px 90px">
+        <p class="meta" style="text-align:center; margin:2px 0 10px">▼ scroll this list — the bar hides, scroll up to bring it back</p>
+        <div class="pcard" style="margin-bottom:10px"><h4>Muay Thai Beginner</h4><p class="meta" style="margin:0">Mon · 18:00–19:00 · Main Floor</p></div>
+        <div class="pcard" style="margin-bottom:10px"><h4>BJJ Kids</h4><p class="meta" style="margin:0">Tue · 16:00–17:00 · Mat A</p></div>
+        <div class="pcard" style="margin-bottom:10px"><h4>Boxing Pro</h4><p class="meta" style="margin:0">Tue · 20:00–21:30 · Ring</p></div>
+        <div class="pcard" style="margin-bottom:10px"><h4>Ladies Training</h4><p class="meta" style="margin:0">Wed · 10:00–11:00 · Studio B</p></div>
+        <div class="pcard" style="margin-bottom:10px"><h4>Fitness Circuit</h4><p class="meta" style="margin:0">Wed · 18:00–19:00 · Main Floor</p></div>
+        <div class="pcard" style="margin-bottom:10px"><h4>Zumba</h4><p class="meta" style="margin:0">Thu · 17:00–18:00 · Studio B</p></div>
+        <div class="pcard" style="margin-bottom:10px"><h4>Open Mat</h4><p class="meta" style="margin:0">Sat · 12:00–14:00 · Mat A+B</p></div>
+        <div class="pcard" style="margin-bottom:10px"><h4>Kids Grappling</h4><p class="meta" style="margin:0">Sat · 15:00–16:00 · Mat A</p></div>
+      </div>
+      <div class="tabs demo-bar" style="position:absolute; bottom:0; inset-inline:0">
+        <span class="tab on"><span class="ic">▦</span>Classes</span><span class="tab"><span class="ic">⌂</span>Home</span>
+        <span class="tab"><span class="ic">◎</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span>
+        <span class="tab"><span class="ic">⋯</span>More</span></div>
+    </div></div><p class="framecap">Live demo · hide-on-scroll (down = hide · up = reveal)</p></div>
   </div>
   <div class="framerow">
     <div class="framecol"><div class="phone ph"><div class="tabs">
-      <span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">🗓</span>Classes</span>
-      <span class="tab"><span class="ic">🥋</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span>
+      <span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">▦</span>Classes</span>
+      <span class="tab"><span class="ic">◎</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span>
       <span class="tab"><span class="ic">⋯</span>More</span></div></div>
       <p class="framecap">Portal · en · 5 slots</p></div>
     <div class="framecol"><div class="phone ph" dir="rtl"><div class="tabs">
-      <span class="tab on"><span class="ic">⌂</span>الرئيسية</span><span class="tab"><span class="ic">🗓</span>الحصص</span>
-      <span class="tab"><span class="ic">🥋</span>تقدّمي</span><span class="tab"><span class="ic">▤</span>الفواتير</span>
+      <span class="tab on"><span class="ic">⌂</span>الرئيسية</span><span class="tab"><span class="ic">▦</span>الحصص</span>
+      <span class="tab"><span class="ic">◎</span>تقدّمي</span><span class="tab"><span class="ic">▤</span>الفواتير</span>
       <span class="tab"><span class="ic">⋯</span>المزيد</span></div></div>
       <p class="framecap">Portal · ar · fits without truncation (short-label keys)</p></div>
     <div class="framecol"><div class="phone ph"><div class="tabs coachbar">
-      <span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">✓</span>Attendance</span>
-      <span class="tab"><span class="ic">👥</span>Students</span><span class="tab"><span class="ic">⚡</span>PT</span>
+      <span class="tab on"><span class="ic">☀︎</span>Today</span><span class="tab"><span class="ic">✓︎</span>Attendance</span>
+      <span class="tab"><span class="ic">◉</span>Students</span><span class="tab"><span class="ic">ϟ</span>PT</span>
       <span class="tab"><span class="ic">⋯</span>More<span class="bdg">1</span></span></div></div>
       <p class="framecap">Coach · en · Trials fold to More (badged when one is today)</p></div>
     <div class="framecol"><div class="phone ph"><div class="tabs">
-      <span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">📥</span>Inbox<span class="bdg">1</span></span>
-      <span class="tab"><span class="ic">👥</span>Members</span><span class="tab"><span class="ic">🗓</span>Schedule</span>
+      <span class="tab on"><span class="ic">☀︎</span>Today</span><span class="tab"><span class="ic">▣</span>Inbox<span class="bdg">1</span></span>
+      <span class="tab"><span class="ic">◉</span>Members</span><span class="tab"><span class="ic">▦</span>Schedule</span>
       <span class="tab"><span class="ic">⋯</span>More</span></div></div>
       <p class="framecap">Staff · unchanged IA on the new primitive (badge now counts everything actionable)</p></div>
   </div>
@@ -323,13 +364,14 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
 <!-- ═══════════════════ SCREENS ═══════════════════ -->
 <section id="screens">
   <div class="sechead"><div><p class="eyebrow">Spec §2–§3 applied</p><h2>Re-imagined screens @390</h2>
-  <p class="sub">Slim one-badge header with tenant identity · member content above promo · belt path as the emotional core · calm zeros · category colors · new bars. Portal Home shown light + dark and en + ar; staff and coach Today follow.</p></div></div>
+  <p class="sub">Slim one-badge header with tenant identity · member content above promo · belt path as the emotional core · calm zeros · category colors · pronounced tab bars. Portal Home shown light + dark and en + ar; staff and coach Today follow.</p></div></div>
+  <div class="note"><b>Camera &amp; status bar (best practice, shown in every frame):</b> the app declares <code>viewport-fit=cover</code> and pads with <code>env(safe-area-inset-top)</code> — the header's surface extends up <i>behind</i> the system clock/battery and around the camera island, so the app owns the full screen while no content or title ever sits under the island. Bottom: the tab bar pads with <code>env(safe-area-inset-bottom)</code> so the home-indicator area belongs to the bar, not the content. This is the standard iOS/Android installed-app treatment and rides Wave 0's <code>viewportFit</code> fix.</div>
 
   <div class="framerow">
     <!-- PORTAL HOME · EN · LIGHT -->
     <div class="framecol"><div class="phone ph"><div class="scr">
       <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
-      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span><span class="bell">🔔</span></div>
         <div class="bigtitle">Home</div><span class="idchip"><span class="dot"></span>Member · Karim</span></div>
       <div class="body">
         <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
@@ -337,22 +379,22 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
           <p class="meta" style="margin:8px 0 0">Orange · 5 of 8 classes toward Green eligibility</p></div>
         <div class="pcard"><h4>Next class</h4>
           <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
-            <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Today · 16:00–17:00 · Main Floor</div></div>
+            <div style="flex:1"><b style="font-size:15px">BJJ Kids</b><div class="meta">Today · 16:00–17:00 · Main Floor</div></div>
             <span class="spill c-bjj">BJJ</span></div></div>
         <div class="pcard"><h4>Balance <span class="spill s-warn spill">Partially paid</span></h4>
-          <div class="rowline"><div style="flex:1"><b style="font-size:16px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div>
+          <div class="rowline"><div style="flex:1"><b style="font-size:18px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div>
             <span class="pbtn ghost sm">View billing</span></div></div>
         <div class="statgrid"><div class="mini"><b>12</b><span>classes this month</span></div><div class="mini"><b>3w</b><span>attendance streak</span></div></div>
-        <div class="pcard" style="border-style:dashed"><h4><span class="mono" style="width:20px;height:20px;font-size:10px">D</span>Add Demo Gym to your home screen</h4>
+        <div class="pcard" style="border-style:dashed"><h4><span class="mono" style="width:20px;height:20px;font-size:10px">P</span>Add PRO LINE Gym to your home screen</h4>
           <p class="meta" style="margin:0">Your schedule, progress and billing — one tap away. <b style="color:var(--p-brand)">Show me how</b></p></div>
       </div>
-      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">🗓</span>Classes</span><span class="tab"><span class="ic">🥋</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span><span class="tab"><span class="ic">⋯</span>More</span></div>
+      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">▦</span>Classes</span><span class="tab"><span class="ic">◎</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span><span class="tab"><span class="ic">⋯</span>More</span></div>
     </div></div><p class="framecap">Portal Home · en · light — member's status first, install demoted, correct tenant</p></div>
 
     <!-- PORTAL HOME · EN · DARK -->
     <div class="framecol"><div class="phone ph dark"><div class="scr">
       <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
-      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span><span class="bell">🔔</span></div>
         <div class="bigtitle">Home</div><span class="idchip"><span class="dot"></span>Member · Karim</span></div>
       <div class="body">
         <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
@@ -360,20 +402,20 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
           <p class="meta" style="margin:8px 0 0">Orange · 5 of 8 classes toward Green eligibility</p></div>
         <div class="pcard"><h4>Next class</h4>
           <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
-            <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Today · 16:00–17:00 · Main Floor</div></div>
+            <div style="flex:1"><b style="font-size:15px">BJJ Kids</b><div class="meta">Today · 16:00–17:00 · Main Floor</div></div>
             <span class="spill c-bjj">BJJ</span></div></div>
         <div class="pcard"><h4>Balance <span class="spill s-warn spill">Partially paid</span></h4>
-          <div class="rowline"><div style="flex:1"><b style="font-size:16px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div>
+          <div class="rowline"><div style="flex:1"><b style="font-size:18px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div>
             <span class="pbtn ghost sm">View billing</span></div></div>
         <div class="statgrid"><div class="mini"><b>12</b><span>classes this month</span></div><div class="mini"><b>3w</b><span>attendance streak</span></div></div>
       </div>
-      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">🗓</span>Classes</span><span class="tab"><span class="ic">🥋</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span><span class="tab"><span class="ic">⋯</span>More</span></div>
+      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">▦</span>Classes</span><span class="tab"><span class="ic">◎</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span><span class="tab"><span class="ic">⋯</span>More</span></div>
     </div></div><p class="framecap">Portal Home · en · dark — token-only flip: titles, tints and chips all survive</p></div>
 
     <!-- PORTAL HOME · AR · LIGHT -->
     <div class="framecol"><div class="phone ph" dir="rtl"><div class="scr">
       <div class="stat"><span dir="ltr">9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
-      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">نادي ديمو</span><span class="bell">🔔</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">نادي برولاين</span><span class="bell">🔔</span></div>
         <div class="bigtitle">الرئيسية</div><span class="idchip"><span class="dot"></span>عضو · كريم</span></div>
       <div class="body">
         <div class="pcard"><h4>مسار الحزام <span class="spill s-ok spill">على المسار</span></h4>
@@ -381,56 +423,56 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
           <p class="meta" style="margin:8px 0 0">برتقالي · ٥ من ٨ حصص نحو أهلية الأخضر</p></div>
         <div class="pcard"><h4>الحصة القادمة</h4>
           <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
-            <div style="flex:1"><b style="font-size:15px">جوجيتسو أطفال</b><div class="meta">اليوم · <span dir="ltr">16:00–17:00</span> · الصالة الرئيسية</div></div>
+            <div style="flex:1"><b style="font-size:16.5px">جوجيتسو أطفال</b><div class="meta">اليوم · <span dir="ltr">16:00–17:00</span> · الصالة الرئيسية</div></div>
             <span class="spill c-bjj">جوجيتسو</span></div></div>
         <div class="pcard"><h4>الرصيد <span class="spill s-warn spill">مدفوع جزئيًا</span></h4>
-          <div class="rowline"><div style="flex:1"><b style="font-size:17px" dir="ltr">$33.00</b><div class="meta">فاتورة واحدة · تستحق <span dir="ltr">6/8</span></div></div>
+          <div class="rowline"><div style="flex:1"><b style="font-size:19px" dir="ltr">$33.00</b><div class="meta">فاتورة واحدة · تستحق <span dir="ltr">6/8</span></div></div>
             <span class="pbtn ghost sm">عرض الفواتير</span></div></div>
         <div class="statgrid"><div class="mini"><b>12</b><span>حصة هذا الشهر</span></div><div class="mini"><b>3 أسابيع</b><span>مواظبة متواصلة</span></div></div>
       </div>
-      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>الرئيسية</span><span class="tab"><span class="ic">🗓</span>الحصص</span><span class="tab"><span class="ic">🥋</span>تقدّمي</span><span class="tab"><span class="ic">▤</span>الفواتير</span><span class="tab"><span class="ic">⋯</span>المزيد</span></div>
+      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>الرئيسية</span><span class="tab"><span class="ic">▦</span>الحصص</span><span class="tab"><span class="ic">◎</span>تقدّمي</span><span class="tab"><span class="ic">▤</span>الفواتير</span><span class="tab"><span class="ic">⋯</span>المزيد</span></div>
     </div></div><p class="framecap">Portal Home · ar · light — full mirror, ×1.13 ramp, times/money bidi-isolated (never «21:30 - 20:00»)</p></div>
 
     <!-- STAFF TODAY · EN · LIGHT -->
-    <div class="framecol"><div class="phone ph" style="--p-brand:#0e7490"><div class="scr">
+    <div class="framecol"><div class="phone ph"><div class="scr">
       <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
-      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span><span class="bell">🔔</span></div>
         <div class="bigtitle">Today</div><span class="idchip"><span class="dot"></span>Staff · Owner</span></div>
       <div class="body">
         <div class="pcard"><h4>Needs you <span class="spill s-warn spill">1</span></h4>
-          <div class="rowline"><div style="flex:1"><b style="font-size:13px">Camp request · Dana Rizk</b><div class="meta">Summer Fight Camp · Jul 18</div></div>
+          <div class="rowline"><div style="flex:1"><b style="font-size:14.5px">Camp request · Dana Rizk</b><div class="meta">Summer Fight Camp · Jul 18</div></div>
             <span class="pbtn pri sm">Review</span></div></div>
         <div class="pcard"><h4>Today's classes <span class="spill s-neu spill">2</span></h4>
           <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
-            <div style="flex:1"><b style="font-size:13px">BJJ Kids</b><div class="meta">16:00–17:00 · 12/12</div></div><span class="pbtn sec sm">Attendance</span></div>
+            <div style="flex:1"><b style="font-size:14.5px">BJJ Kids</b><div class="meta">16:00–17:00 · 12/12</div></div><span class="pbtn sec sm">Attendance</span></div>
           <div class="rowline"><span class="catbar" style="background:var(--cat-mt)"></span>
-            <div style="flex:1"><b style="font-size:13px">Muay Thai Pro</b><div class="meta">20:00–21:30 · 4/12</div></div><span class="pbtn sec sm">Attendance</span></div></div>
+            <div style="flex:1"><b style="font-size:14.5px">Muay Thai Pro</b><div class="meta">20:00–21:30 · 4/12</div></div><span class="pbtn sec sm">Attendance</span></div></div>
         <div class="pcard"><h4>Collected today</h4>
-          <div class="rowline"><div style="flex:1"><b style="font-size:16px">$150.00</b><div class="meta">+ <span dir="ltr">4,450,000 LBP</span> · 3 payments</div></div>
+          <div class="rowline"><div style="flex:1"><b style="font-size:18px">$150.00</b><div class="meta">+ <span dir="ltr">4,450,000 LBP</span> · 3 payments</div></div>
             <span class="pbtn ghost sm">Money</span></div></div>
         <div class="btnrow" style="gap:8px"><span class="pbtn sec sm">＋ New lead</span><span class="pbtn sec sm">＋ New member</span><span class="pbtn pri sm">Record payment</span></div>
       </div>
-      <div class="tabs"><span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">📥</span>Inbox<span class="bdg">1</span></span><span class="tab"><span class="ic">👥</span>Members</span><span class="tab"><span class="ic">🗓</span>Schedule</span><span class="tab"><span class="ic">⋯</span>More</span></div>
+      <div class="tabs"><span class="tab on"><span class="ic">☀︎</span>Today</span><span class="tab"><span class="ic">▣</span>Inbox<span class="bdg">1</span></span><span class="tab"><span class="ic">◉</span>Members</span><span class="tab"><span class="ic">▦</span>Schedule</span><span class="tab"><span class="ic">⋯</span>More</span></div>
     </div></div><p class="framecap">Staff Today · en — "Needs you" agrees with the badge; category colors replace alarm-red; header slimmed</p></div>
 
     <!-- COACH TODAY · EN · LIGHT -->
     <div class="framecol"><div class="phone ph" style="--p-brand:#475569; --p-brand-soft:rgba(71,85,105,.12); --p-brand-fg:#fff"><div class="scr">
       <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
-      <div class="hdr"><div class="brandline"><span class="mono" style="background:#0e7490">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span><span class="bell">🔔</span></div>
         <div class="bigtitle">Today</div><span class="idchip coach"><span class="dot"></span>Coach · Sami</span></div>
       <div class="body">
         <div class="pcard"><h4>Up next</h4>
           <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
-            <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">16:00–17:00 · 12 on roster</div></div></div>
+            <div style="flex:1"><b style="font-size:15px">BJJ Kids</b><div class="meta">16:00–17:00 · 12 on roster</div></div></div>
           <span class="pbtn pri" style="width:100%; margin-top:8px">Start attendance</span></div>
         <div class="pcard"><h4>Trial today <span class="spill s-info spill">1</span></h4>
-          <div class="rowline"><div style="flex:1"><b style="font-size:13px">Nadine K.</b><div class="meta">Muay Thai Beginner · 18:00</div></div>
+          <div class="rowline"><div style="flex:1"><b style="font-size:14.5px">Nadine K.</b><div class="meta">Muay Thai Beginner · 18:00</div></div>
             <span class="pbtn sec sm">Details</span></div></div>
         <div class="statgrid">
           <div class="mini"><b>1</b><span>class today</span></div><div class="mini"><b>13</b><span>my students</span></div>
           <div class="mini"><b>6</b><span>PT sessions left</span></div><div class="mini"><b>5</b><span>sessions / week</span></div></div>
       </div>
-      <div class="tabs coachbar"><span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">✓</span>Attendance</span><span class="tab"><span class="ic">👥</span>Students</span><span class="tab"><span class="ic">⚡</span>PT</span><span class="tab"><span class="ic">⋯</span>More<span class="bdg" style="background:#475569">1</span></span></div>
+      <div class="tabs coachbar"><span class="tab on"><span class="ic">☀︎</span>Today</span><span class="tab"><span class="ic">✓︎</span>Attendance</span><span class="tab"><span class="ic">◉</span>Students</span><span class="tab"><span class="ic">ϟ</span>PT</span><span class="tab"><span class="ic">⋯</span>More<span class="bdg" style="background:#475569">1</span></span></div>
     </div></div><p class="framecap">Coach Today · en — the day's action above the fold; graphite role hue kept; trial surfaces the day it matters</p></div>
   </div>
 </section>
@@ -438,24 +480,62 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
 <!-- ═══════════════════ DESKTOP — OWNER DECISION 2 ═══════════════════ -->
 <section id="desktop">
   <div class="sechead"><div><p class="eyebrow">Spec §4</p><h2>Portal & coach on desktop — the App Frame</h2></div></div>
-  <div class="decision"><p class="eyebrow">⚠ Owner decision №2 — recommended: App Frame</p>
-    <p><b>Recommendation:</b> a deliberately designed, centered app canvas (max 480px) on a muted ground — the rail sits beside it, the header lives <b>inside</b> it (nothing can render under the rail again), all positioning logical-side so Arabic mirrors perfectly. Rationale: members and coaches are phone-first; staff — where desktop hours live — already has first-class desktop. Full desktop layouts for portal/coach remain possible later, surface by surface (billing tables first), by spec amendment. <b>Alternative</b> (not recommended now): first-class desktop for both shells — roughly a wave of layout work per shell for the lowest usage in the product.</p>
-    <div class="choices"><span class="choice rec">App Frame (recommended)</span><span class="choice">First-class desktop layouts</span></div>
+  <div class="decision"><p class="eyebrow">⚠ Owner decision №2 — both options now visualized below</p>
+    <p><b>Option 1 — App Frame (recommended):</b> a deliberately designed, centered app canvas (max 480px) on a muted ground — the rail sits beside it, the header lives <b>inside</b> it (nothing can render under the rail again), all positioning logical-side so Arabic mirrors perfectly. Rationale: members and coaches are phone-first; staff — where desktop hours live — already has first-class desktop. <b>Option 2 — first-class desktop:</b> real multi-column layouts per surface (second vignette below) — richer on big screens, roughly a wave of layout work per shell. A hybrid is also legitimate: App Frame now, then graduate high-value surfaces (billing, schedule) to first-class layouts surface by surface.</p>
+    <div class="choices"><span class="choice rec">Option 1 · App Frame (recommended)</span><span class="choice">Option 2 · First-class desktop</span><span class="choice">Hybrid · Frame now, graduate surfaces later</span></div>
   </div>
   <div class="deskvig ph"><div class="desk">
-    <div class="rail"><span class="ric on">⌂<span>Home</span></span><span class="ric">🗓<span>Classes</span></span><span class="ric">🥋<span>Progress</span></span><span class="ric">▤<span>Billing</span></span><span class="ric">⋯<span>More</span></span></div>
+    <div class="rail"><span class="ric on">⌂<span>Home</span></span><span class="ric">▦<span>Classes</span></span><span class="ric">◎<span>Progress</span></span><span class="ric">▤<span>Billing</span></span><span class="ric">⋯<span>More</span></span></div>
     <div class="deskmain"><div class="appframe">
-      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">P</span><span class="gymname">PRO LINE Gym</span><span class="bell">🔔</span></div>
         <div class="bigtitle" style="font-size:22px">Home</div><span class="idchip"><span class="dot"></span>Member · Karim</span></div>
       <div class="body" style="padding-bottom:16px">
         <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
           <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div></div>
         <div class="pcard"><h4>Next class</h4><div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
-          <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Today · 16:00–17:00</div></div><span class="spill c-bjj">BJJ</span></div></div>
+          <div style="flex:1"><b style="font-size:15px">BJJ Kids</b><div class="meta">Today · 16:00–17:00</div></div><span class="spill c-bjj">BJJ</span></div></div>
       </div>
     </div></div>
   </div></div>
-  <p class="spec" style="margin-top:8px">≥768px vignette: rail (nav) + centered frame carrying tenant identity in its own header. One <code>--rail-width</code> token; <code>inset-inline-*</code> only — the header-under-rail and wrong-side-margin class of bugs becomes structurally impossible.</p>
+  <p class="spec" style="margin-top:8px"><b>Option 1 · App Frame</b> @ ≥768px: rail (nav) + centered frame carrying tenant identity in its own header. One <code>--rail-width</code> token; <code>inset-inline-*</code> only — the header-under-rail and wrong-side-margin class of bugs becomes structurally impossible.</p>
+
+  <div class="deskvig ph" style="margin-top:22px"><div class="desk" style="min-width:940px; flex-direction:column">
+    <div style="display:flex; align-items:center; gap:12px; padding:12px 22px; background:var(--p-card); border-bottom:1px solid var(--p-line)">
+      <span class="mono">P</span><span class="gymname">PRO LINE Gym</span>
+      <span class="idchip" style="margin-inline-start:4px"><span class="dot"></span>Member · Karim</span>
+      <span class="bell" style="margin-inline-start:auto; color:var(--p-mut)">🔔</span>
+    </div>
+    <div style="display:flex; flex:1">
+      <div style="width:196px; flex:none; background:var(--p-card); border-inline-end:1px solid var(--p-line); padding:14px 10px; display:flex; flex-direction:column; gap:2px">
+        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; background:var(--p-brand-soft); color:var(--p-brand); font-weight:700; font-size:13.5px">⌂ Home</span>
+        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">▦ Classes</span>
+        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">◎ Progress</span>
+        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">▤ Billing</span>
+        <span style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; color:var(--p-mut); font-size:13.5px">◉ Profile</span>
+      </div>
+      <div style="flex:1; padding:20px 24px; display:grid; grid-template-columns:1.5fr 1fr; gap:14px; align-content:start">
+        <div style="grid-column:1 / -1"><b style="font-size:21px">Good afternoon, Karim</b><div class="meta">Orange belt · 12 classes this month · 3-week streak</div></div>
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
+            <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div>
+            <p class="meta" style="margin:8px 0 0">Orange · 5 of 8 classes toward Green eligibility</p></div>
+          <div class="pcard"><h4>Next class</h4>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+              <div style="flex:1"><b style="font-size:15px">BJJ Kids</b><div class="meta">Today · 16:00–17:00 · Main Floor</div></div><span class="spill c-bjj">BJJ</span></div></div>
+          <div class="pcard"><h4>Balance <span class="spill s-warn spill">Partially paid</span></h4>
+            <div class="rowline"><div style="flex:1"><b style="font-size:18px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div><span class="pbtn ghost sm">View billing</span></div></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div class="pcard"><h4>This week</h4>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span><div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Tue · 16:00</div></div></div>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-mt)"></span><div style="flex:1"><b style="font-size:13.5px">Muay Thai</b><div class="meta">Thu · 18:00</div></div></div>
+            <div class="rowline"><span class="catbar" style="background:var(--cat-fit)"></span><div style="flex:1"><b style="font-size:13.5px">Open Mat</b><div class="meta">Sat · 12:00</div></div></div></div>
+          <div class="statgrid"><div class="mini"><b>12</b><span>classes</span></div><div class="mini"><b>3w</b><span>streak</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <p class="spec" style="margin-top:8px"><b>Option 2 · First-class desktop</b> @ ≥1024px: expanded labeled rail + top identity bar + two-column content (main column + week/stats aside). Every surface needs its own desktop composition like this — that scope is the trade-off against Option 1.</p>
 
   <div style="margin-top:34px">
     <p class="eyebrow">Appendix</p><h2>What approval unlocks</h2>
@@ -467,7 +547,25 @@ table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-ali
       <tr><td><b>W4</b></td><td>Color-literal lint gate ON · dark/RTL certification · capture harness as the standing regression rig</td><td>§1.1, §6.4</td></tr>
     </table></div>
   </div>
-  <p class="spec" style="margin-top:26px">PRAXELLA · Design System 2.0 · Phase-2 approval reference · built on DS-1/2/3 + WL-CHROME · spec: docs/design-system/design-system-2.md · evidence base: docs/design-audit/2026-07-audit.md (DA-1…62)</p>
+  <p class="spec" style="margin-top:26px">PRAXELLA · Design System 2.0 · Phase-2 approval reference v2 (owner-feedback round: Proline colors · pronounced icons · hide-on-scroll · status-bar treatment · first-class desktop option · larger type) · spec: docs/design-system/design-system-2.md · evidence: docs/design-audit/2026-07-audit.md</p>
 </section>
 </div>
+<script>
+// Live hide-on-scroll demo: down = hide, up = reveal (mirrors the §2.2 TabBar contract).
+(function(){
+  var area = document.querySelector('.scrolldemo');
+  var bar = document.querySelector('.demo-bar');
+  if(!area || !bar) return;
+  var last = 0;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  area.addEventListener('scroll', function(){
+    var y = area.scrollTop;
+    if (reduce) return;                     // reduced motion: bar stays
+    if (y <= 8) bar.classList.remove('hidden-demo');          // at top: always visible
+    else if (y > last + 2) bar.classList.add('hidden-demo');  // scrolling down: hide
+    else if (y < last - 2) bar.classList.remove('hidden-demo'); // any up-scroll: reveal
+    last = y;
+  }, {passive:true});
+})();
+</script>
 </body></html>
