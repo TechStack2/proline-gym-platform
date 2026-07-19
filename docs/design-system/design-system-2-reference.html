@@ -1,0 +1,473 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRAXELLA · Design System 2.0 — Approval Reference</title>
+</head><body>
+<style>
+/* ════════════════════════ SHEET CHROME (viewer-theme aware) ════════════════════════ */
+:root{
+  --pg:#ffffff; --ink:#111827; --mut:#6b7280; --soft:#f3f4f6; --line:#e5e7eb;
+  --acc:#cd1419; --acc-soft:rgba(205,20,25,.08);
+  --ok:#15803d; --ok-soft:rgba(21,128,61,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --pg:#131317; --ink:#f5f5f8; --mut:#9292a1; --soft:#1c1c22; --line:#2f2f3a; --acc:#e5484d; --acc-soft:rgba(229,72,77,.12); --ok:#4ade80; --ok-soft:rgba(74,222,128,.13); }
+}
+:root[data-theme="dark"]{ --pg:#131317; --ink:#f5f5f8; --mut:#9292a1; --soft:#1c1c22; --line:#2f2f3a; --acc:#e5484d; --acc-soft:rgba(229,72,77,.12); --ok:#4ade80; --ok-soft:rgba(74,222,128,.13); }
+:root[data-theme="light"]{ --pg:#ffffff; --ink:#111827; --mut:#6b7280; --soft:#f3f4f6; --line:#e5e7eb; --acc:#cd1419; --acc-soft:rgba(205,20,25,.08); --ok:#15803d; --ok-soft:rgba(21,128,61,.12); }
+
+*{box-sizing:border-box}
+body{background:var(--pg); color:var(--ink); font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; margin:0; -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px; margin:0 auto; padding:0 24px 96px}
+.eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--acc)}
+h1{font-size:34px; line-height:1.15; margin:6px 0 8px; letter-spacing:-.01em; text-wrap:balance}
+h2{font-size:22px; margin:0 0 4px; letter-spacing:-.01em}
+h3{font-size:15px; margin:0 0 6px}
+.sub{color:var(--mut); max-width:68ch; margin:0}
+section{padding:44px 0 8px; border-top:1px solid var(--line); margin-top:44px}
+section:first-of-type{border-top:none; margin-top:0}
+.sechead{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px}
+.note{font-size:12.5px; color:var(--mut); background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin:14px 0; max-width:76ch}
+.spec{font-size:12px; color:var(--mut)}
+code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--soft); border:1px solid var(--line); border-radius:5px; padding:1px 5px}
+
+/* top bar */
+.top{position:sticky; top:0; z-index:50; background:var(--pg); border-bottom:1px solid var(--line)}
+.topin{max-width:1080px; margin:0 auto; padding:10px 24px; display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+.wordmark{font-weight:800; letter-spacing:.09em; font-size:13px}
+.wordmark b{color:var(--acc)}
+.top nav{display:flex; gap:4px; flex-wrap:wrap}
+.top nav a{font-size:12px; color:var(--mut); text-decoration:none; padding:5px 9px; border-radius:99px}
+.top nav a:hover,.top nav a:focus-visible{background:var(--soft); color:var(--ink); outline:none}
+.vtag{margin-inline-start:auto; font-size:11px; color:var(--mut); border:1px solid var(--line); border-radius:99px; padding:3px 10px}
+
+/* decision boxes */
+.decision{border:1.5px solid var(--acc); background:var(--acc-soft); border-radius:14px; padding:18px 20px; margin:22px 0}
+.decision .eyebrow{color:var(--acc)}
+.decision p{margin:6px 0 0; max-width:78ch}
+.choices{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+.choice{font-size:12.5px; font-weight:600; border:1px solid var(--line); background:var(--pg); border-radius:99px; padding:6px 14px}
+.choice.rec{border-color:var(--ok); color:var(--ok); background:var(--ok-soft)}
+
+/* grids + swatches */
+.grid{display:grid; gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card{border:1px solid var(--line); border-radius:14px; padding:16px 18px; background:var(--pg)}
+.card h3{display:flex; align-items:center; gap:8px}
+.sw{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:12.5px}
+.chip-sw{width:34px; height:22px; border-radius:6px; border:1px solid rgba(0,0,0,.12); flex:none}
+.sw code{background:none; border:none; color:var(--mut); padding:0}
+.ramp{display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--line); height:34px}
+.ramp div{flex:1}
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; font-size:12px}
+.duo>div{padding:10px 12px}
+.catrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; background:#ffffff; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px} /* specimen pad — tint-on-light, fixed in both themes */
+.cat{font-size:12px; font-weight:600; border-radius:99px; padding:4px 12px}
+
+/* type ramp */
+.typerow{display:flex; align-items:baseline; gap:18px; padding:7px 0; border-bottom:1px dashed var(--line)}
+.typerow:last-child{border-bottom:none}
+.typerow .spec{width:150px; flex:none}
+
+/* ════════════════════════ PRODUCT FRAMES (fixed palettes) ════════════════════════ */
+.ph{ /* light product palette — FIXED, does not follow viewer theme */
+  --p-bg:#f9fafb; --p-card:#ffffff; --p-ink:#111827; --p-mut:#6b7280; --p-line:#e5e7eb;
+  --p-brand:#0e7490; --p-brand-soft:rgba(14,116,144,.10); --p-brand-fg:#ffffff;
+  --p-ok:#15803d; --p-ok-soft:#dcfce7; --p-warn:#b45309; --p-warn-soft:#fef3c7;
+  --p-dan:#dc2626; --p-dan-soft:#fee2e2; --p-info:#2563eb; --p-info-soft:#dbeafe;
+  --p-neu:#4b5563; --p-neu-soft:#f3f4f6;
+  --cat-bjj:#0d9488; --cat-bjj-soft:rgba(13,148,136,.13);
+  --cat-mt:#4f46e5; --cat-mt-soft:rgba(79,70,229,.12);
+  --cat-box:#b45309; --cat-box-soft:rgba(180,83,9,.13);
+  --cat-fit:#059669; --cat-fit-soft:rgba(5,150,105,.12);
+}
+.ph.dark{ /* dark product palette — FIXED */
+  --p-bg:#131317; --p-card:#22222a; --p-ink:#f5f5f8; --p-mut:#9292a1; --p-line:#2f2f3a;
+  --p-brand:#22a3bf; --p-brand-soft:rgba(34,163,191,.16); --p-brand-fg:#08222a;
+  --p-ok:#4ade80; --p-ok-soft:rgba(74,222,128,.14); --p-warn:#fbbf24; --p-warn-soft:rgba(251,191,36,.14);
+  --p-dan:#f87171; --p-dan-soft:rgba(248,113,113,.15); --p-info:#60a5fa; --p-info-soft:rgba(96,165,250,.14);
+  --p-neu:#c6c6d0; --p-neu-soft:rgba(146,146,161,.16);
+  --cat-bjj:#2dd4bf; --cat-bjj-soft:rgba(45,212,191,.15);
+  --cat-mt:#818cf8; --cat-mt-soft:rgba(129,140,248,.15);
+  --cat-box:#fbbf24; --cat-box-soft:rgba(251,191,36,.13);
+  --cat-fit:#34d399; --cat-fit-soft:rgba(52,211,153,.14);
+}
+
+.framerow{display:flex; gap:22px; overflow-x:auto; padding:8px 2px 18px; align-items:flex-start}
+.framecol{flex:none}
+.framecap{font-size:12px; color:var(--mut); margin:8px 2px 0; text-align:center}
+.phone{width:390px; flex:none; border-radius:34px; border:1px solid var(--line); box-shadow:0 12px 34px rgba(0,0,0,.14); overflow:hidden; background:var(--p-bg); color:var(--p-ink)}
+.phone [dir]{unicode-bidi:isolate}
+.scr{background:var(--p-bg); font-size:14.5px; line-height:1.5}
+.phone[dir="rtl"] .scr{font-size:16px; line-height:1.7; font-family:"IBM Plex Sans Arabic","Geeza Pro","Noto Sans Arabic",-apple-system,sans-serif}
+
+/* product chrome inside frames */
+.stat{height:26px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:11.5px; font-weight:600; color:var(--p-mut)}
+.hdr{padding:8px 16px 10px; background:color-mix(in srgb, var(--p-card) 92%, transparent); border-bottom:1px solid var(--p-line)}
+.hdr .brandline{display:flex; align-items:center; gap:9px}
+.mono{width:26px; height:26px; border-radius:8px; background:var(--p-brand); color:var(--p-brand-fg); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none}
+.gymname{font-size:12.5px; font-weight:700}
+.hdr .bell{margin-inline-start:auto; color:var(--p-mut); font-size:15px}
+.bigtitle{font-size:27px; font-weight:800; letter-spacing:-.01em; margin:7px 0 2px}
+.phone[dir="rtl"] .bigtitle{font-size:30px}
+.idchip{display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; border-radius:99px; padding:3px 10px; background:var(--p-brand-soft); color:var(--p-brand)}
+.idchip.coach{background:var(--p-neu-soft); color:var(--p-neu)}
+.idchip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+
+.body{padding:14px 16px 84px; display:flex; flex-direction:column; gap:12px}
+.pcard{background:var(--p-card); border:1px solid var(--p-line); border-radius:16px; padding:14px 15px}
+.pcard h4{margin:0 0 8px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px}
+.pcard h4 .spill{margin-inline-start:auto}
+.rowline{display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--p-line)}
+.rowline:first-of-type{border-top:none}
+.meta{font-size:12px; color:var(--p-mut)}
+.spill{font-size:10.5px; font-weight:700; border-radius:99px; padding:3px 9px}
+.s-ok{background:var(--p-ok-soft); color:var(--p-ok)} .s-warn{background:var(--p-warn-soft); color:var(--p-warn)}
+.s-dan{background:var(--p-dan-soft); color:var(--p-dan)} .s-neu{background:var(--p-neu-soft); color:var(--p-neu)}
+.s-info{background:var(--p-info-soft); color:var(--p-info)}
+.c-bjj{background:var(--cat-bjj-soft); color:var(--cat-bjj)} .c-mt{background:var(--cat-mt-soft); color:var(--cat-mt)}
+.c-box{background:var(--cat-box-soft); color:var(--cat-box)} .c-fit{background:var(--cat-fit-soft); color:var(--cat-fit)}
+.catbar{width:4px; align-self:stretch; border-radius:99px; flex:none}
+.pbtn{display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; border-radius:10px; padding:9px 14px; min-height:38px}
+.pbtn.pri{background:var(--p-brand); color:var(--p-brand-fg)}
+.pbtn.sec{border:1px solid var(--p-line); color:var(--p-ink); background:var(--p-card)}
+.pbtn.ghost{color:var(--p-brand)}
+.pbtn.dang{border:1px solid var(--p-dan); color:var(--p-dan); background:transparent}
+.pbtn.sm{padding:6px 11px; min-height:32px; font-size:12px; border-radius:9px}
+
+/* belt path */
+.beltrow{display:flex; align-items:center; gap:10px}
+.belt{width:34px; height:12px; border-radius:3px; border:1px solid rgba(0,0,0,.15); flex:none}
+.ph.dark .belt{border-color:rgba(255,255,255,.2)}
+.beltbar{flex:1; height:7px; border-radius:99px; background:var(--p-neu-soft); overflow:hidden}
+.beltbar i{display:block; height:100%; width:62%; border-radius:99px; background:var(--p-brand)}
+.phone[dir="rtl"] .beltbar i{margin-inline-start:auto}
+
+/* stats mini */
+.statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.mini{background:var(--p-card); border:1px solid var(--p-line); border-radius:14px; padding:11px 13px}
+.mini b{font-size:19px; display:block}
+.mini span{font-size:11px; color:var(--p-mut)}
+
+/* tab bar */
+.tabs{position:relative; display:flex; border-top:1px solid var(--p-line); background:color-mix(in srgb, var(--p-card) 94%, transparent); padding-bottom:10px /* safe-area stand-in */}
+.tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 2px 4px; font-size:11px; font-weight:600; color:var(--p-mut); position:relative; min-height:48px}
+.tab.on{color:var(--p-brand)}
+.tab.on::before{content:""; position:absolute; top:0; width:26px; height:3px; border-radius:0 0 3px 3px; background:var(--p-brand)}
+.tab .ic{font-size:17px; line-height:1}
+.tab .bdg{position:absolute; top:5px; inset-inline-end:calc(50% - 20px); background:var(--p-brand); color:var(--p-brand-fg); font-size:8.5px; font-weight:800; border-radius:99px; min-width:14px; height:14px; display:flex; align-items:center; justify-content:center; padding:0 3px}
+.coachbar .tab.on{color:#64748b}
+.coachbar .tab.on::before{background:#64748b}
+
+/* primitives sheet demos (use light product palette on sheet) */
+.demo{border:1px solid var(--line); border-radius:14px; padding:18px; background:var(--pg)}
+.demo .lbl{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-bottom:12px}
+.btnrow{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.chiprow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.empty-demo{text-align:center; padding:26px 18px; border:1px dashed var(--p-line); border-radius:14px; background:var(--p-card)}
+.empty-demo .eic{font-size:24px; opacity:.5}
+.empty-demo p{margin:6px 0 2px; font-weight:600; font-size:13.5px; color:var(--p-ink)}
+.empty-demo span{font-size:12px; color:var(--p-mut)}
+.dialog-demo{border:1px solid var(--p-line); border-radius:16px; background:var(--p-card); box-shadow:0 18px 44px rgba(0,0,0,.18); padding:16px; max-width:300px}
+.dialog-demo h4{margin:0 0 4px; font-size:14.5px}
+.dialog-demo p{margin:0 0 14px; font-size:12.5px; color:var(--p-mut)}
+.overlay-demo{background:rgba(0,0,0,.35); border-radius:14px; padding:26px; display:flex; justify-content:center}
+
+/* app frame vignette */
+.deskvig{border:1px solid var(--line); border-radius:14px; overflow-x:auto}
+.desk{display:flex; background:var(--p-bg); min-height:330px; min-width:620px}
+.rail{width:64px; flex:none; background:var(--p-card); border-inline-end:1px solid var(--p-line); display:flex; flex-direction:column; align-items:center; gap:4px; padding:14px 0}
+.rail .ric{width:44px; height:40px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:8.5px; gap:2px; color:var(--p-mut)}
+.rail .ric.on{background:var(--p-brand-soft); color:var(--p-brand)}
+.deskmain{flex:1; display:flex; justify-content:center; padding:18px}
+.appframe{width:min(420px,100%); background:var(--p-card); border:1px solid var(--p-line); border-radius:18px; box-shadow:0 8px 26px rgba(0,0,0,.08); overflow:hidden; align-self:stretch}
+
+table.map{width:100%; border-collapse:collapse; font-size:12.5px}
+table.map th{text-align:start; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--mut); padding:8px 10px; border-bottom:1px solid var(--line)}
+table.map td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+.mapwrap{overflow-x:auto}
+@media (prefers-reduced-motion: no-preference){ a{transition:background .15s} }
+</style>
+
+<div class="top"><div class="topin">
+  <div class="wordmark">PRAXE<b>LLA</b> · DS 2.0</div>
+  <nav>
+    <a href="#approve">How to approve</a><a href="#tokens">Tokens</a><a href="#primitives">Primitives</a>
+    <a href="#tabbars">Tab bars ⚠</a><a href="#screens">Screens</a><a href="#desktop">Desktop ⚠</a>
+  </nav>
+  <span class="vtag">Phase 2 · approval reference · July 2026</span>
+</div></div>
+
+<div class="wrap">
+
+<section id="approve">
+  <p class="eyebrow">Design System 2.0 — Phase 2 approval artifact</p>
+  <h1>One product family, on every screen, in both languages, in both themes.</h1>
+  <p class="sub">This sheet is what you approve. It shows the new token roles, the primitive kit, and four re-imagined screens wearing them — including the two decisions only you can make (marked ⚠). The binding text lives in <code>docs/design-system/design-system-2.md</code>; execution Waves 1–4 cite it section by section. Everything here <b>builds on</b> the shipped foundation (channel-var tokens, role-hue shells, brand-follow, Arabic type ramp) — nothing re-brands.</p>
+  <div class="note"><b>Type note:</b> the product ships Geist (Latin) + IBM Plex Sans Arabic, self-hosted. This reference renders in system stand-ins; letterforms differ slightly, metrics and hierarchy are the spec. Screens show the <b>teal demo gym</b> so brand-follow is visible — a crimson gym gets identical layouts in crimson.</div>
+  <div class="note"><b>How to say yes:</b> ✅ the whole sheet · ✅ per-shell on Decision №1 · ✅/adjust Decision №2. Any "adjust" = one line back to the lane; the primitives absorb it.</div>
+</section>
+
+<!-- ═══════════════════ TOKENS ═══════════════════ -->
+<section id="tokens">
+  <div class="sechead"><div><p class="eyebrow">Spec §1</p><h2>Color roles — crimson stops doing everything</h2>
+  <p class="sub">Five roles. Every colored element belongs to exactly one. Brand stays per-gym (WL); destructive, status and category are fixed and never re-brand.</p></div></div>
+  <div class="grid g3">
+    <div class="card"><h3>Brand / Action <span class="spec">per-gym</span></h3>
+      <div class="ramp"><div style="background:#fef2f2"></div><div style="background:#fecaca"></div><div style="background:#f87171"></div><div style="background:#cd1419"></div><div style="background:#a81014"></div><div style="background:#7f1d1d"></div></div>
+      <div class="sw" style="margin-top:8px"><span class="chip-sw" style="background:#cd1419"></span>Proline default <code>--c-brand-700</code></div>
+      <div class="sw"><span class="chip-sw" style="background:#0e7490"></span>Demo gym (teal) — same slot, per-gym</div>
+      <p class="spec">Primary CTAs, links, active nav, brand chrome. Nothing else.</p></div>
+    <div class="card"><h3>Destructive <span class="spec">fixed — NEW</span></h3>
+      <div class="sw"><span class="chip-sw" style="background:#dc2626"></span><code>--c-danger-600 #dc2626</code></div>
+      <p class="spec">Logout, decline, deactivate, no-show, overdue. Convention: <b>never solid at rest</b> — outline/ghost + icon + confirm. Leaves persistent chrome (the header logout icon moves to More).</p></div>
+    <div class="card"><h3>Status <span class="spec">fixed</span></h3>
+      <div class="sw"><span class="chip-sw" style="background:#15803d"></span>success <code>#15803d</code></div>
+      <div class="sw"><span class="chip-sw" style="background:#b45309"></span>warning <code>#b45309</code></div>
+      <div class="sw"><span class="chip-sw" style="background:#2563eb"></span>info <code>#2563eb</code></div>
+      <div class="sw"><span class="chip-sw" style="background:#6b7280"></span>neutral — <b>zeros & "lapsed" are calm</b></div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Category — per-discipline (DISC-COLOR) <span class="spec">fixed 8-hue palette, tint-strength render</span></h3>
+    <div class="catrow">
+      <span class="cat" style="background:rgba(13,148,136,.13); color:#0d9488">BJJ</span>
+      <span class="cat" style="background:rgba(79,70,229,.12); color:#4f46e5">Muay Thai</span>
+      <span class="cat" style="background:rgba(180,83,9,.13); color:#b45309">Boxing</span>
+      <span class="cat" style="background:rgba(5,150,105,.12); color:#059669">Fitness</span>
+      <span class="cat" style="background:rgba(124,58,237,.12); color:#7c3aed">Zumba</span>
+      <span class="cat" style="background:rgba(225,29,72,.12); color:#e11d48">Ladies</span>
+      <span class="cat" style="background:rgba(8,145,178,.12); color:#0891b2">Kids</span>
+      <span class="cat" style="background:rgba(71,85,105,.12); color:#475569">Open mat</span>
+    </div>
+    <p class="spec" style="margin-top:8px">Assigned by stable hash of discipline id (no migration); schedule blocks, class labels and landing chips consume these — the alarm-red timetable dies. Tint bg (α≈0.13) + 700-weight text: calm at scale.</p></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Neutrals — unchanged mechanism, both themes</h3>
+      <div class="duo"><div style="background:#ffffff; color:#111827"><b>Light</b> · bg #fff · card #fff · ink #111827 · line #e5e7eb</div>
+      <div style="background:#131317; color:#f5f5f8"><b>Dark</b> · bg #131317 · card #22222a · ink #f5f5f8 · line #2f2f3a</div></div>
+      <p class="spec" style="margin-top:8px">Channel-var inversion stays the only dark mechanism. New rule: <b>no color literal outside token files</b> (lint gate, Wave 4) — the class of "invisible dark titles" becomes unwritable. Designed-fixed surfaces use <code>.surface-fixed-dark</code> / <code>.surface-paper</code>.</p></div>
+    <div class="card"><h3>Type ramp — unchanged faces, enforced scale</h3>
+      <div class="typerow"><span class="spec">Large title / 27–30</span><b style="font-size:24px">Today · اليوم</b></div>
+      <div class="typerow"><span class="spec">H2 / 22</span><b style="font-size:19px">Section title</b></div>
+      <div class="typerow"><span class="spec">Body / 14.5 (ar ×1.13)</span><span>Members, schedules, invoices · الأعضاء والجداول</span></div>
+      <div class="typerow"><span class="spec">Label / 12 · tab 11 min</span><span style="font-size:12px">Meta, captions — 10px labels are retired</span></div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════ PRIMITIVES ═══════════════════ -->
+<section id="primitives">
+  <div class="sechead"><div><p class="eyebrow">Spec §2</p><h2>The primitive kit</h2>
+  <p class="sub">Six contracts every surface adopts: PageHeader, TabBar, StatusChip, EmptyState, Dialog, and the fmt module (dates/times/money/phones — always bidi-safe in Arabic). Shown in the light product palette; all token-backed, so dark comes free.</p></div></div>
+  <div class="grid g2">
+    <div class="demo ph"><div class="lbl">Buttons — role-true</div>
+      <div class="btnrow">
+        <span class="pbtn pri">Record payment</span>
+        <span class="pbtn sec">Open diary</span>
+        <span class="pbtn ghost">View billing</span>
+        <span class="pbtn dang">⌫ Decline</span>
+      </div>
+      <p class="spec" style="margin-top:12px">Primary = brand (teal here, crimson at Proline). Destructive = outline + icon + confirm, never solid at rest. One radius (10), one height scale, visible focus ring.</p></div>
+    <div class="demo ph"><div class="lbl">StatusChip — one pill vocabulary</div>
+      <div class="chiprow">
+        <span class="spill s-ok">Active</span>
+        <span class="spill s-ok">Paid</span>
+        <span class="spill s-warn">Partially paid</span>
+        <span class="spill s-neu">Pending</span>
+        <span class="spill s-dan">Overdue</span>
+        <span class="spill s-neu">Lapsed</span>
+        <span class="spill s-warn">Expiring ≤7d</span>
+        <span class="spill s-info">Trial</span>
+      </div>
+      <p class="spec" style="margin-top:12px">One status → one chip → one place per card. <b>“Partially paid” is new</b> — the green-Paid-above-red-balance contradiction becomes unrepresentable. Domain→variant mapping lives in one vocabulary module.</p></div>
+    <div class="demo ph"><div class="lbl">EmptyState — zeros are calm</div>
+      <div class="empty-demo"><div class="eic">🔔</div><p>You're all caught up</p><span>New requests will appear here.</span></div>
+      <p class="spec" style="margin-top:12px">Neutral tone, no alarm amber on $0, no live CTA to process nothing. Roll-up lines must agree with their page. Public landing: empty sections collapse — never “coming soon” walls.</p></div>
+    <div class="demo ph"><div class="lbl">Dialog — one modal, portal-mounted</div>
+      <div class="overlay-demo"><div class="dialog-demo"><h4>Cancel registration?</h4><p>Karim keeps access until Aug 6. The invoice is voided.</p>
+        <div class="btnrow"><span class="pbtn dang sm">Cancel it</span><span class="pbtn sec sm">Keep</span></div></div></div>
+      <p class="spec" style="margin-top:12px">Radix dialog through ModalPortal (focus trap, Esc, labels); sheet variant on mobile. The 17 hand-rolled overlays migrate; native selects → chips or searchable list dialogs.</p></div>
+  </div>
+  <div class="note"><b>fmt module (§2.7):</b> 24-hour clock product-wide · one date style per context · <code>$</code> leads / <code>LBP</code> trails in both directions · phones grouped <span dir="ltr">+961 71 200 015</span> · enums never raw ("black_1" → "Black — Dan 1" / «أسود — دان ١») · every mixed-direction value bidi-isolated, so <span dir="ltr">20:00–21:30</span> can never read backwards in Arabic · missing i18n keys fail CI.</div>
+</section>
+
+<!-- ═══════════════════ TAB BARS — OWNER DECISION 1 ═══════════════════ -->
+<section id="tabbars">
+  <div class="sechead"><div><p class="eyebrow">Spec §3</p><h2>Tab-bar IA — the footer menu, fixed</h2></div></div>
+  <div class="decision"><p class="eyebrow">⚠ Owner decision №1 — approve per shell</p>
+    <p>One shared bar: <b>max 5 slots including More</b>, 44pt targets, 11px+ labels that never truncate (short Arabic label variants), active = color + top indicator, opaque surface, safe-area aware. Staff keeps its 4+More. Proposed folds below — each is a one-line config if you want a different five.</p>
+    <div class="choices"><span class="choice rec">Portal: Home · Classes · Progress · Billing · More (PT + Profile fold in; PT clients get a Home card — closer than today)</span></div>
+    <div class="choices"><span class="choice rec">Coach: Today · Attendance · Students · PT · More (Trials fold in; a “trial today” card surfaces on Today)</span></div>
+  </div>
+  <div class="framerow">
+    <div class="framecol"><div class="phone ph"><div class="tabs">
+      <span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">🗓</span>Classes</span>
+      <span class="tab"><span class="ic">🥋</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span>
+      <span class="tab"><span class="ic">⋯</span>More</span></div></div>
+      <p class="framecap">Portal · en · 5 slots</p></div>
+    <div class="framecol"><div class="phone ph" dir="rtl"><div class="tabs">
+      <span class="tab on"><span class="ic">⌂</span>الرئيسية</span><span class="tab"><span class="ic">🗓</span>الحصص</span>
+      <span class="tab"><span class="ic">🥋</span>تقدّمي</span><span class="tab"><span class="ic">▤</span>الفواتير</span>
+      <span class="tab"><span class="ic">⋯</span>المزيد</span></div></div>
+      <p class="framecap">Portal · ar · fits without truncation (short-label keys)</p></div>
+    <div class="framecol"><div class="phone ph"><div class="tabs coachbar">
+      <span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">✓</span>Attendance</span>
+      <span class="tab"><span class="ic">👥</span>Students</span><span class="tab"><span class="ic">⚡</span>PT</span>
+      <span class="tab"><span class="ic">⋯</span>More<span class="bdg">1</span></span></div></div>
+      <p class="framecap">Coach · en · Trials fold to More (badged when one is today)</p></div>
+    <div class="framecol"><div class="phone ph"><div class="tabs">
+      <span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">📥</span>Inbox<span class="bdg">1</span></span>
+      <span class="tab"><span class="ic">👥</span>Members</span><span class="tab"><span class="ic">🗓</span>Schedule</span>
+      <span class="tab"><span class="ic">⋯</span>More</span></div></div>
+      <p class="framecap">Staff · unchanged IA on the new primitive (badge now counts everything actionable)</p></div>
+  </div>
+  <p class="spec">More sheet contents — portal: PT, Profile, freeze, language, theme, install, sign-out · coach: Trials, Profile, language, theme, sign-out · staff: Money/Team/Settings/Profile as today + sign-out (the destructive icon leaves the header).</p>
+</section>
+
+<!-- ═══════════════════ SCREENS ═══════════════════ -->
+<section id="screens">
+  <div class="sechead"><div><p class="eyebrow">Spec §2–§3 applied</p><h2>Re-imagined screens @390</h2>
+  <p class="sub">Slim one-badge header with tenant identity · member content above promo · belt path as the emotional core · calm zeros · category colors · new bars. Portal Home shown light + dark and en + ar; staff and coach Today follow.</p></div></div>
+
+  <div class="framerow">
+    <!-- PORTAL HOME · EN · LIGHT -->
+    <div class="framecol"><div class="phone ph"><div class="scr">
+      <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+        <div class="bigtitle">Home</div><span class="idchip"><span class="dot"></span>Member · Karim</span></div>
+      <div class="body">
+        <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
+          <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div>
+          <p class="meta" style="margin:8px 0 0">Orange · 5 of 8 classes toward Green eligibility</p></div>
+        <div class="pcard"><h4>Next class</h4>
+          <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+            <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Today · 16:00–17:00 · Main Floor</div></div>
+            <span class="spill c-bjj">BJJ</span></div></div>
+        <div class="pcard"><h4>Balance <span class="spill s-warn spill">Partially paid</span></h4>
+          <div class="rowline"><div style="flex:1"><b style="font-size:16px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div>
+            <span class="pbtn ghost sm">View billing</span></div></div>
+        <div class="statgrid"><div class="mini"><b>12</b><span>classes this month</span></div><div class="mini"><b>3w</b><span>attendance streak</span></div></div>
+        <div class="pcard" style="border-style:dashed"><h4><span class="mono" style="width:20px;height:20px;font-size:10px">D</span>Add Demo Gym to your home screen</h4>
+          <p class="meta" style="margin:0">Your schedule, progress and billing — one tap away. <b style="color:var(--p-brand)">Show me how</b></p></div>
+      </div>
+      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">🗓</span>Classes</span><span class="tab"><span class="ic">🥋</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span><span class="tab"><span class="ic">⋯</span>More</span></div>
+    </div></div><p class="framecap">Portal Home · en · light — member's status first, install demoted, correct tenant</p></div>
+
+    <!-- PORTAL HOME · EN · DARK -->
+    <div class="framecol"><div class="phone ph dark"><div class="scr">
+      <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+        <div class="bigtitle">Home</div><span class="idchip"><span class="dot"></span>Member · Karim</span></div>
+      <div class="body">
+        <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
+          <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div>
+          <p class="meta" style="margin:8px 0 0">Orange · 5 of 8 classes toward Green eligibility</p></div>
+        <div class="pcard"><h4>Next class</h4>
+          <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+            <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Today · 16:00–17:00 · Main Floor</div></div>
+            <span class="spill c-bjj">BJJ</span></div></div>
+        <div class="pcard"><h4>Balance <span class="spill s-warn spill">Partially paid</span></h4>
+          <div class="rowline"><div style="flex:1"><b style="font-size:16px">$33.00</b><div class="meta">1 invoice · due Aug 6</div></div>
+            <span class="pbtn ghost sm">View billing</span></div></div>
+        <div class="statgrid"><div class="mini"><b>12</b><span>classes this month</span></div><div class="mini"><b>3w</b><span>attendance streak</span></div></div>
+      </div>
+      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>Home</span><span class="tab"><span class="ic">🗓</span>Classes</span><span class="tab"><span class="ic">🥋</span>Progress</span><span class="tab"><span class="ic">▤</span>Billing</span><span class="tab"><span class="ic">⋯</span>More</span></div>
+    </div></div><p class="framecap">Portal Home · en · dark — token-only flip: titles, tints and chips all survive</p></div>
+
+    <!-- PORTAL HOME · AR · LIGHT -->
+    <div class="framecol"><div class="phone ph" dir="rtl"><div class="scr">
+      <div class="stat"><span dir="ltr">9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">نادي ديمو</span><span class="bell">🔔</span></div>
+        <div class="bigtitle">الرئيسية</div><span class="idchip"><span class="dot"></span>عضو · كريم</span></div>
+      <div class="body">
+        <div class="pcard"><h4>مسار الحزام <span class="spill s-ok spill">على المسار</span></h4>
+          <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div>
+          <p class="meta" style="margin:8px 0 0">برتقالي · ٥ من ٨ حصص نحو أهلية الأخضر</p></div>
+        <div class="pcard"><h4>الحصة القادمة</h4>
+          <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+            <div style="flex:1"><b style="font-size:15px">جوجيتسو أطفال</b><div class="meta">اليوم · <span dir="ltr">16:00–17:00</span> · الصالة الرئيسية</div></div>
+            <span class="spill c-bjj">جوجيتسو</span></div></div>
+        <div class="pcard"><h4>الرصيد <span class="spill s-warn spill">مدفوع جزئيًا</span></h4>
+          <div class="rowline"><div style="flex:1"><b style="font-size:17px" dir="ltr">$33.00</b><div class="meta">فاتورة واحدة · تستحق <span dir="ltr">6/8</span></div></div>
+            <span class="pbtn ghost sm">عرض الفواتير</span></div></div>
+        <div class="statgrid"><div class="mini"><b>12</b><span>حصة هذا الشهر</span></div><div class="mini"><b>3 أسابيع</b><span>مواظبة متواصلة</span></div></div>
+      </div>
+      <div class="tabs"><span class="tab on"><span class="ic">⌂</span>الرئيسية</span><span class="tab"><span class="ic">🗓</span>الحصص</span><span class="tab"><span class="ic">🥋</span>تقدّمي</span><span class="tab"><span class="ic">▤</span>الفواتير</span><span class="tab"><span class="ic">⋯</span>المزيد</span></div>
+    </div></div><p class="framecap">Portal Home · ar · light — full mirror, ×1.13 ramp, times/money bidi-isolated (never «21:30 - 20:00»)</p></div>
+
+    <!-- STAFF TODAY · EN · LIGHT -->
+    <div class="framecol"><div class="phone ph" style="--p-brand:#0e7490"><div class="scr">
+      <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+        <div class="bigtitle">Today</div><span class="idchip"><span class="dot"></span>Staff · Owner</span></div>
+      <div class="body">
+        <div class="pcard"><h4>Needs you <span class="spill s-warn spill">1</span></h4>
+          <div class="rowline"><div style="flex:1"><b style="font-size:13px">Camp request · Dana Rizk</b><div class="meta">Summer Fight Camp · Jul 18</div></div>
+            <span class="pbtn pri sm">Review</span></div></div>
+        <div class="pcard"><h4>Today's classes <span class="spill s-neu spill">2</span></h4>
+          <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+            <div style="flex:1"><b style="font-size:13px">BJJ Kids</b><div class="meta">16:00–17:00 · 12/12</div></div><span class="pbtn sec sm">Attendance</span></div>
+          <div class="rowline"><span class="catbar" style="background:var(--cat-mt)"></span>
+            <div style="flex:1"><b style="font-size:13px">Muay Thai Pro</b><div class="meta">20:00–21:30 · 4/12</div></div><span class="pbtn sec sm">Attendance</span></div></div>
+        <div class="pcard"><h4>Collected today</h4>
+          <div class="rowline"><div style="flex:1"><b style="font-size:16px">$150.00</b><div class="meta">+ <span dir="ltr">4,450,000 LBP</span> · 3 payments</div></div>
+            <span class="pbtn ghost sm">Money</span></div></div>
+        <div class="btnrow" style="gap:8px"><span class="pbtn sec sm">＋ New lead</span><span class="pbtn sec sm">＋ New member</span><span class="pbtn pri sm">Record payment</span></div>
+      </div>
+      <div class="tabs"><span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">📥</span>Inbox<span class="bdg">1</span></span><span class="tab"><span class="ic">👥</span>Members</span><span class="tab"><span class="ic">🗓</span>Schedule</span><span class="tab"><span class="ic">⋯</span>More</span></div>
+    </div></div><p class="framecap">Staff Today · en — "Needs you" agrees with the badge; category colors replace alarm-red; header slimmed</p></div>
+
+    <!-- COACH TODAY · EN · LIGHT -->
+    <div class="framecol"><div class="phone ph" style="--p-brand:#475569; --p-brand-soft:rgba(71,85,105,.12); --p-brand-fg:#fff"><div class="scr">
+      <div class="stat"><span>9:41</span><span>𝗅𝗍𝖾 ▮</span></div>
+      <div class="hdr"><div class="brandline"><span class="mono" style="background:#0e7490">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+        <div class="bigtitle">Today</div><span class="idchip coach"><span class="dot"></span>Coach · Sami</span></div>
+      <div class="body">
+        <div class="pcard"><h4>Up next</h4>
+          <div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+            <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">16:00–17:00 · 12 on roster</div></div></div>
+          <span class="pbtn pri" style="width:100%; margin-top:8px">Start attendance</span></div>
+        <div class="pcard"><h4>Trial today <span class="spill s-info spill">1</span></h4>
+          <div class="rowline"><div style="flex:1"><b style="font-size:13px">Nadine K.</b><div class="meta">Muay Thai Beginner · 18:00</div></div>
+            <span class="pbtn sec sm">Details</span></div></div>
+        <div class="statgrid">
+          <div class="mini"><b>1</b><span>class today</span></div><div class="mini"><b>13</b><span>my students</span></div>
+          <div class="mini"><b>6</b><span>PT sessions left</span></div><div class="mini"><b>5</b><span>sessions / week</span></div></div>
+      </div>
+      <div class="tabs coachbar"><span class="tab on"><span class="ic">☀</span>Today</span><span class="tab"><span class="ic">✓</span>Attendance</span><span class="tab"><span class="ic">👥</span>Students</span><span class="tab"><span class="ic">⚡</span>PT</span><span class="tab"><span class="ic">⋯</span>More<span class="bdg" style="background:#475569">1</span></span></div>
+    </div></div><p class="framecap">Coach Today · en — the day's action above the fold; graphite role hue kept; trial surfaces the day it matters</p></div>
+  </div>
+</section>
+
+<!-- ═══════════════════ DESKTOP — OWNER DECISION 2 ═══════════════════ -->
+<section id="desktop">
+  <div class="sechead"><div><p class="eyebrow">Spec §4</p><h2>Portal & coach on desktop — the App Frame</h2></div></div>
+  <div class="decision"><p class="eyebrow">⚠ Owner decision №2 — recommended: App Frame</p>
+    <p><b>Recommendation:</b> a deliberately designed, centered app canvas (max 480px) on a muted ground — the rail sits beside it, the header lives <b>inside</b> it (nothing can render under the rail again), all positioning logical-side so Arabic mirrors perfectly. Rationale: members and coaches are phone-first; staff — where desktop hours live — already has first-class desktop. Full desktop layouts for portal/coach remain possible later, surface by surface (billing tables first), by spec amendment. <b>Alternative</b> (not recommended now): first-class desktop for both shells — roughly a wave of layout work per shell for the lowest usage in the product.</p>
+    <div class="choices"><span class="choice rec">App Frame (recommended)</span><span class="choice">First-class desktop layouts</span></div>
+  </div>
+  <div class="deskvig ph"><div class="desk">
+    <div class="rail"><span class="ric on">⌂<span>Home</span></span><span class="ric">🗓<span>Classes</span></span><span class="ric">🥋<span>Progress</span></span><span class="ric">▤<span>Billing</span></span><span class="ric">⋯<span>More</span></span></div>
+    <div class="deskmain"><div class="appframe">
+      <div class="hdr"><div class="brandline"><span class="mono">D</span><span class="gymname">Demo Gym</span><span class="bell">🔔</span></div>
+        <div class="bigtitle" style="font-size:22px">Home</div><span class="idchip"><span class="dot"></span>Member · Karim</span></div>
+      <div class="body" style="padding-bottom:16px">
+        <div class="pcard"><h4>Belt path <span class="spill s-ok spill">On track</span></h4>
+          <div class="beltrow"><span class="belt" style="background:#f97316"></span><div class="beltbar"><i></i></div><span class="belt" style="background:#16a34a"></span></div></div>
+        <div class="pcard"><h4>Next class</h4><div class="rowline"><span class="catbar" style="background:var(--cat-bjj)"></span>
+          <div style="flex:1"><b style="font-size:13.5px">BJJ Kids</b><div class="meta">Today · 16:00–17:00</div></div><span class="spill c-bjj">BJJ</span></div></div>
+      </div>
+    </div></div>
+  </div></div>
+  <p class="spec" style="margin-top:8px">≥768px vignette: rail (nav) + centered frame carrying tenant identity in its own header. One <code>--rail-width</code> token; <code>inset-inline-*</code> only — the header-under-rail and wrong-side-margin class of bugs becomes structurally impossible.</p>
+
+  <div style="margin-top:34px">
+    <p class="eyebrow">Appendix</p><h2>What approval unlocks</h2>
+    <div class="mapwrap"><table class="map">
+      <tr><th>Wave</th><th>Slices</th><th>Authority (spec §)</th></tr>
+      <tr><td><b>W1</b></td><td>DS2-TOKENS · DS2-FMT · DS2-PRIMITIVES · per-shell adoption (light-mode byte-identical, harness-proven)</td><td>§1, §2, §6.2</td></tr>
+      <tr><td><b>W2</b></td><td>NAV-IA (the bars above) · APP-FRAME · PWA-IDENTITY (per-tenant/locale manifest, Apple install layer, theme-color follows the app, role-aware install card, tenant-neutral offline)</td><td>§3, §4, §5</td></tr>
+      <tr><td><b>W3</b></td><td>Shell polish: schedule fit, money zero-states, member-360 back+actions, portal home/belt (this sheet), coach inputs→chips, auth frame, landing brand adoption</td><td>§1.3, §2.4, §2.6, screens</td></tr>
+      <tr><td><b>W4</b></td><td>Color-literal lint gate ON · dark/RTL certification · capture harness as the standing regression rig</td><td>§1.1, §6.4</td></tr>
+    </table></div>
+  </div>
+  <p class="spec" style="margin-top:26px">PRAXELLA · Design System 2.0 · Phase-2 approval reference · built on DS-1/2/3 + WL-CHROME · spec: docs/design-system/design-system-2.md · evidence base: docs/design-audit/2026-07-audit.md (DA-1…62)</p>
+</section>
+</div>
+</body></html>
