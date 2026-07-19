@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server'
+import { beltRankLabel } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
@@ -36,7 +37,8 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
 
   const firstName = isRTL ? profile?.first_name_ar : (locale === 'fr' ? profile?.first_name_fr : profile?.first_name_en)
   const lastName = isRTL ? profile?.last_name_ar : (locale === 'fr' ? profile?.last_name_fr : profile?.last_name_en)
-  const beltLabelVal = belt?.to_rank ? (belt.to_rank as string).replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) : null
+  const tb = await getTranslations({ locale, namespace: 'beltRanks' })
+  const beltLabelVal = belt?.to_rank ? beltRankLabel(belt.to_rank as string, tb) : null
   const mplans: any = (membership as any)?.membership_plans
   const mplan = Array.isArray(mplans) ? mplans[0] : mplans
   const membershipNameVal = mplan ? (isRTL ? mplan.name_ar : (locale === 'fr' ? mplan.name_fr : mplan.name_en)) : null

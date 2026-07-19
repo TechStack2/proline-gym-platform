@@ -185,7 +185,9 @@ export default async function StudentsPage({
         <h1 className={cn("hidden md:block text-3xl font-bold", isRTL && "text-right")}>
           {t('title')}
         </h1>
-        <div className="flex items-center gap-3">
+        {/* DA-21: wrap so the Import/Add buttons drop to a second line at 390 instead of
+            clipping off the right edge ("Im… me…") with no affordance. */}
+        <div className="flex flex-wrap items-center gap-3">
           {Tabs}
           <Link href={`/${locale}/students/import`} data-testid="import-members">
             <Button variant="outline">

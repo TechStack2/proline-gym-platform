@@ -69,7 +69,9 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
           <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
           <p className="mt-0.5 text-sm text-gray-500">{t('subtitle')}</p>
         </div>
-        <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="money-tabs">
+        {/* DA-20: scrollable at 390 — the 4th tab (Win-back) was fully offscreen with
+            no affordance. flex + overflow-x-auto lets it scroll into view. */}
+        <div className="flex max-w-full gap-0 overflow-x-auto rounded-xl border bg-gray-50 p-1 [&>*]:shrink-0" data-testid="money-tabs">
           <TabLink locale={locale} tab={tab} k="overview" label={t('overview')} icon={DollarSign} />
           <TabLink locale={locale} tab={tab} k="invoices" label={t('invoices')} icon={FileText} />
           <TabLink locale={locale} tab={tab} k="payments" label={t('payments')} icon={Banknote} />

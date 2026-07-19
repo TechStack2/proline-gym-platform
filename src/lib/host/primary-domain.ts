@@ -6,10 +6,11 @@
  * per docs/runbooks/custom-domain.md §5) → returns gym_domains.domain WHERE
  * is_primary, else null. With it wired, `canonicalOrigin` + `aliasRedirectTarget`
  * (src/lib/host/canonical.ts) now (a) canonicalize a gym's *.praxella.com
- * subdomain to its custom domain and (b) 301 any non-primary alias → the primary.
+ * subdomain to its custom domain and (b) 308-permanent-redirect any non-primary
+ * alias → the primary (permanentRedirect; 308 preserves the method vs a legacy 301).
  *
  * A gym WITHOUT a primary custom domain still returns null → it self-canonicalizes
- * on its arrival host and no alias 301 fires (byte-identical to pre-OXY-HOST).
+ * on its arrival host and no alias redirect fires (byte-identical to pre-OXY-HOST).
  */
 import { createClient } from '@/lib/supabase/server';
 import { gymCanonicalOriginFrom } from './canonical';

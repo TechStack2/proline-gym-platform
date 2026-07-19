@@ -5,6 +5,7 @@ import { PushToggle } from '@/components/push/push-toggle'
 import { storagePublicUrl } from '@/lib/storage/public-url'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
+import { beltRankLabel } from '@/lib/belts/label'
 import { cn } from '@/lib/utils'
 import {
   User,
@@ -101,9 +102,8 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
       ? coach?.bio_fr
       : coach?.bio_en
 
-  const beltLabel = coach?.belt_rank
-    ? (coach.belt_rank as string).replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-    : null
+  const tb = await getTranslations({ locale, namespace: 'beltRanks' })
+  const beltLabel = coach?.belt_rank ? beltRankLabel(coach.belt_rank as string, tb) : null
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>

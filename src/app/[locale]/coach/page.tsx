@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
+import { beltRankLabel } from '@/lib/belts/label'
 import {
   Calendar, Clock, Users, MapPin, ArrowRight, CheckCircle2,
   CalendarDays, Award, Dumbbell, CalendarClock, Megaphone, Eye, EyeOff, BookOpen,
@@ -35,8 +36,6 @@ function lf(obj: Record<string, string> | null | undefined, locale: string, base
   const en = obj[`${base}_en`]
   return typeof en === 'string' && en.trim() ? en : ''
 }
-const beltLabel = (rank?: string | null) =>
-  rank ? rank.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : ''
 const one = (x: any) => (Array.isArray(x) ? x[0] : x)
 const DUE_TO_TEST_DAYS = 120 // heuristic: no promotion in 4 months ⇒ surface "due to test"
 
@@ -44,6 +43,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
   const isRTL = locale === 'ar'
   const t = await getTranslations({ locale, namespace: 'coachHub' })
   const tct = await getTranslations({ locale, namespace: 'coachTrials' })
+  const tb = await getTranslations({ locale, namespace: 'beltRanks' })
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -323,7 +323,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             ),
             right: (
               <span className="inline-flex items-center gap-2 text-xs">
-                {s.belt && <span className="inline-flex items-center gap-1 text-gray-500"><Award className="h-3 w-3" />{beltLabel(s.belt)}</span>}
+                {s.belt && <span className="inline-flex items-center gap-1 text-gray-500"><Award className="h-3 w-3" />{beltRankLabel(s.belt, tb, '')}</span>}
                 {s.disc && <span className="text-gray-400">{s.disc}</span>}
               </span>
             ),

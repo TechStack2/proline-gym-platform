@@ -787,6 +787,14 @@ export default defineConfig({
       testMatch: /portal-brand\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // W0 QUICK-WINS: visual evidence for the Wave-0 fixes — 5 surfaces × en/ar ×
+      // light/dark @ 390 (dark titles, Manage fit, inbox, /setup + Members titles).
+      name: 'w0-shots',
+      dependencies: ['setup'],
+      testMatch: /w0-shots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
 
     {
       // LPX-1 (landing SEO & polish, parallel track): logged-out /en carries

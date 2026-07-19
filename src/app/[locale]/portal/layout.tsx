@@ -8,6 +8,9 @@ import { getUserBrandColor } from '@/lib/theme/user-brand'
 // AX-1 shell identity: per-shell PWA theme-color (portal = cool teal). DS-2: per
 // light/dark — dark status bar = the shared #131317 ground.
 export const viewport: Viewport = {
+  // DA-2: opt into the notch/home-indicator area so the shells' env(safe-area-inset-*)
+  // padding actually resolves on standalone iOS (0 without viewport-fit=cover).
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#0e7490' },
     { media: '(prefers-color-scheme: dark)', color: '#131317' },

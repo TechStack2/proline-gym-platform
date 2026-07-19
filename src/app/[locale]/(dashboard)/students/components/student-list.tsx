@@ -7,6 +7,7 @@ import { Phone, Calendar, Award, DollarSign, FolderOpen, Dumbbell } from 'lucide
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { beltRankLabel } from '@/lib/belts/label'
 import type { MemberInfo, MembershipStatus } from '@/lib/members/enrichment'
 
 const membershipTone: Record<MembershipStatus, string> = {
@@ -66,6 +67,7 @@ function localized(p: ProfileShape, base: 'first_name' | 'last_name', locale: st
 
 export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = [], memberInfo = {} }: StudentListProps) {
   const t = useTranslations('students')
+  const tb = useTranslations('beltRanks')
   const router = useRouter()
   const owingSet = new Set(owing)
 
@@ -93,7 +95,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
     return beltColors[base] || 'bg-gray-100 text-gray-800'
   }
 
-  const beltLabel = (rank: string) => rank.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const beltLabel = (rank: string) => beltRankLabel(rank, tb)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

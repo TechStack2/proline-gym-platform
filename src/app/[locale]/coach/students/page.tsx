@@ -220,9 +220,14 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
     setFiltered(result);
   }, [search, disciplineFilter, beltFilter, students]);
 
+  // DA-9: localize belt ranks via the bundled beltRanks map (no raw enum / English
+  // belt names in the Arabic UI). `t` returns the path on a miss → readable fallback.
   const beltLabel = (rank: string): string => {
     if (!rank) return '';
-    return rank.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+    const label = t(messages, `beltRanks.${rank}`);
+    return label === `beltRanks.${rank}`
+      ? rank.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+      : label;
   };
 
   if (!messages) {
