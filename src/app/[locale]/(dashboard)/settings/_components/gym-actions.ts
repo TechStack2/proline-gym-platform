@@ -47,6 +47,9 @@ export type GymSettingsInput = {
   map_lat?: string | number | null
   map_lng?: string | number | null
   office_hours?: OfficeHours | null
+  // BILL-POLICY (000107): the gym's billing-cycle policy + month-grid day.
+  billing_cycle_policy?: string
+  billing_cycle_day?: string | number | null
 }
 
 const EDITABLE = [
@@ -90,6 +93,22 @@ export async function saveGymSettings(
 
   // LANDING-CUSTOM: office_hours JSONB — object or explicit null (don't render).
   if (input.office_hours !== undefined) payload.office_hours = input.office_hours ?? null
+
+  // BILL-POLICY: a closed set + a bounded day. Handled here rather than in EDITABLE
+  // because EDITABLE maps '' → NULL, and these columns are NOT NULL — a blank must
+  // be rejected, never written as null.
+  if (input.billing_cycle_policy !== undefined) {
+    const v = String(input.billing_cycle_policy)
+    if (!['calendar', 'anniversary'].includes(v)) return { ok: false, error: 'invalid_billing_policy' }
+    payload.billing_cycle_policy = v
+  }
+  if (input.billing_cycle_day !== undefined) {
+    const n = Math.trunc(Number(input.billing_cycle_day))
+    // 1..28 mirrors the CHECK constraint: every month has these days, so the grid
+    // never walks backwards after a short month.
+    if (!Number.isFinite(n) || n < 1 || n > 28) return { ok: false, error: 'invalid_number' }
+    payload.billing_cycle_day = n
+  }
 
   if (Object.keys(payload).length === 0) return { ok: false, error: 'nothing_to_save' }
 

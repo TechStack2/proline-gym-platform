@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { localizedName, one } from '@/lib/names'
 import { getMemberEnrichment } from '@/lib/members/enrichment'
 import ClassDetail from './ClassDetail'
+import { getGymCyclePolicy } from '@/lib/billing/cycle-policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,6 +87,10 @@ export default async function ClassDetailPage({
     .eq('gym_id', (classData as any).gym_id)
     .order('rate_date', { ascending: false }).limit(1).maybeSingle()
   const rate = (rateRow as any)?.rate ?? null
+  // BILL-POLICY: the gym's cycle policy drives the anchor the preview derives and
+  // the prorate default — it must agree with what _default_billing_anchor does in
+  // SQL, so both read the same two columns.
+  const cyclePolicy = await getGymCyclePolicy(supabase, (classData as any).gym_id)
   const today = new Date().toISOString().slice(0, 10)
 
   const { data: studentRows } = await supabase

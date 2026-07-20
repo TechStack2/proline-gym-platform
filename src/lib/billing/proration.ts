@@ -202,12 +202,78 @@ function monthsBetween(anchor: Date, target: Date): number {
   return k;
 }
 
+// ── BILL-POLICY: the per-gym cycle policy ───────────────────────────────────
+
 /**
- * Derive the default billing anchor for a fresh registration: the first scheduled
- * session on/after the start date, else (no schedule) the start date itself.
+ * `calendar`    — every registration bills on the month grid, on the gym's
+ *                 `cycleDay`. A mid-month join prorates a STUB from the start to
+ *                 the next boundary; every later cycle runs boundary → boundary.
+ * `anniversary` — each registration bills from its own start. No normalization.
+ *                 This is the pre-BILL-POLICY behavior and the default.
  */
-export function defaultBillingAnchor(scheduleDays: WeekdaySet, startDate: string): string {
+export type BillingCyclePolicy = 'calendar' | 'anniversary';
+
+export interface GymCyclePolicy {
+  policy: BillingCyclePolicy;
+  /** The month-grid boundary day, 1..28. Ignored under `anniversary`. */
+  cycleDay: number;
+}
+
+/** What every existing gym has: today's behavior, unchanged. */
+export const DEFAULT_CYCLE_POLICY: GymCyclePolicy = { policy: 'anniversary', cycleDay: 1 };
+
+/** Clamp a stored cycle day into the supported 1..28 grid (SQL mirrors this). */
+export function normalizeCycleDay(day: number | null | undefined): number {
+  const n = Math.trunc(Number(day ?? 1));
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(Math.max(n, 1), 28);
+}
+
+/**
+ * The cycle-day boundary ON OR BEFORE `on` — the SQL twin of
+ * `_calendar_cycle_anchor`. Anchoring at the boundary BEFORE the start is what
+ * makes the first cycle a partial stub.
+ */
+export function calendarCycleAnchor(on: Date, cycleDay: number): Date {
+  const day = normalizeCycleDay(cycleDay);
+  let v = new Date(Date.UTC(on.getUTCFullYear(), on.getUTCMonth(), day));
+  if (v > on) v = addMonths(v, -1);
+  return v;
+}
+
+/**
+ * Derive the default billing anchor for a fresh registration, per the gym's policy.
+ *
+ *   · `anniversary` — the first scheduled session on/after the start date, else
+ *     the start date itself. Byte-identical to the pre-BILL-POLICY behavior, which
+ *     is why the default argument reproduces it exactly for every existing caller.
+ *   · `calendar` — the gym's cycle-day boundary on/before the start date.
+ *
+ * SQL twin: `_default_billing_anchor(gym, class, start)`.
+ */
+export function defaultBillingAnchor(
+  scheduleDays: WeekdaySet,
+  startDate: string,
+  cyclePolicy: GymCyclePolicy = DEFAULT_CYCLE_POLICY,
+): string {
   const start = parseISODate(startDate);
+  if (cyclePolicy.policy === 'calendar') {
+    return toISODate(calendarCycleAnchor(start, cyclePolicy.cycleDay));
+  }
   const first = firstSessionOnOrAfter(scheduleDays, start);
   return toISODate(first ?? start);
+}
+
+/**
+ * R3 — proration's ROLE follows the policy.
+ *
+ *   · `calendar`    — proration IS the normalizing stub charge, so it is offered
+ *     ON by default: without it the member pays a full month for a part month.
+ *   · `anniversary` — a fresh registration's cycle starts on the member's own
+ *     start date, so there is nothing to prorate (remaining === in-cycle and the
+ *     charge is unchanged). Defaulting it ON would imply a discount that never
+ *     materializes, so it stays OFF and stays a deliberate staff choice.
+ */
+export function prorateDefaultFor(policy: BillingCyclePolicy): boolean {
+  return policy === 'calendar';
 }

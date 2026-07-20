@@ -1479,7 +1479,8 @@
         "not_allowed": "Only staff of this gym can save these settings",
         "nothing_to_save": "Nothing to save",
         "no_gym": "Your account has no gym",
-        "not_signed_in": "You are signed out — sign in again"
+        "not_signed_in": "You are signed out — sign in again",
+        "invalid_billing_policy": "Choose one of the two billing cycles."
       },
       "enterArabicName": "Enter Arabic name",
       "enterEnglishName": "Enter English name",
@@ -1523,7 +1524,18 @@
         "fri": "Friday",
         "sat": "Saturday",
         "sun": "Sunday"
-      }
+      },
+      "sectionBilling": "Billing cycle",
+      "billingIntro": "Choose when your members' monthly bills land. This is a gym-wide setting.",
+      "calendarTitle": "Everyone bills on the same day of the month",
+      "calendarBody": "Every member's bill lands on the same date, whichever day they joined.",
+      "calendarExample": "Someone joining on 17 January pays only for the rest of January — a part-month charge — then a full month on 1 February, 1 March, and so on.",
+      "anniversaryTitle": "Each member bills from their own join date",
+      "anniversaryBody": "A member's billing date is the day they started, and it stays there.",
+      "anniversaryExample": "Someone joining on 17 January pays a full month now, then is billed again on 17 February, 17 March, and so on.",
+      "cycleDayLabel": "Billing day of the month",
+      "cycleDayHint": "1 to 28, so the date exists in every month.",
+      "switchNote": "Changing this affects members registered from now on. Members who are already registered keep the billing dates they have today — nothing is rewritten."
     },
     "exchange": {
       "currentRate": "Current Exchange Rate",

@@ -323,6 +323,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // BILL-POLICY: billing cycles as a per-gym POLICY — `calendar` prorates a stub
+      // and lands the next cycle ON the month boundary; `anniversary` keeps today's
+      // behavior; switching is not retroactive. Flips the run-gym's policy and
+      // restores it in afterAll (the gym is shared with later spec files).
+      name: 'bill-policy',
+      dependencies: ['setup'],
+      testMatch: /\/bill-policy\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // W1-FOUNDATION: behavioural guards for the §2 primitive layer as adopted on
       // the staff shell — TabBar nav ARIA + capacity + hide-on-scroll, PageHeader's
       // one-h1-per-breakpoint + DA-29 terminology, and the DA-7 bidi anchors.

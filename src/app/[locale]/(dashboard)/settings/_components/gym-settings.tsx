@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Building2, Mail, Globe, Camera, Loader2, Palette,
-  ImageIcon, Share2, MapPin, Clock, type LucideIcon,
+  ImageIcon, Share2, MapPin, Clock, CalendarClock, type LucideIcon,
 } from 'lucide-react';
 import { downscaleImage } from '@/components/shared/avatar-upload';
 import { storagePublicUrl } from '@/lib/storage/public-url';
@@ -33,6 +33,9 @@ type GymData = {
   website?: string;
   timezone?: string;
   currency_preference?: string;
+  // BILL-POLICY (000107)
+  billing_cycle_policy?: string;
+  billing_cycle_day?: number;
   logo_url?: string;
   city?: string;
   country?: string;
@@ -126,16 +129,18 @@ async function uploadGymHero(gymId: string, file: File): Promise<string> {
 
 // ERROR-COPY: keys owned by the gym.err namespace keep their tailored copy; any other
 // key (the stable keys from actionError) falls back to friendly, shared errors.* copy.
-const GYM_ERR_KEYS = new Set(['invalid_color', 'invalid_currency', 'invalid_number', 'not_allowed', 'nothing_to_save', 'no_gym', 'not_signed_in']);
+const GYM_ERR_KEYS = new Set(['invalid_color', 'invalid_currency', 'invalid_number', 'invalid_billing_policy', 'not_allowed', 'nothing_to_save', 'no_gym', 'not_signed_in']);
 
 // M2-D WIZARD-POLISH: each J5 section saves independently. saveGymSettings already
 // accepts a PARTIAL payload (it skips undefined keys), so a section save sends only its
 // own fields. Field lists mirror the JSX sections below.
-type SectionKey = 'identity' | 'contact' | 'localization' | 'branding' | 'publicPage' | 'hours';
+type SectionKey = 'identity' | 'contact' | 'localization' | 'billing' | 'branding' | 'publicPage' | 'hours';
 const SECTION_FIELDS: Record<SectionKey, string[]> = {
   identity: ['name_en', 'name_ar', 'name_fr', 'tva_registration_number'],
   contact: ['phone', 'email', 'website', 'address_en', 'address_ar', 'address_fr'],
   localization: ['timezone', 'currency_preference', 'city', 'country'],
+  // BILL-POLICY: the gym-wide billing-cycle choice saves on its own.
+  billing: ['billing_cycle_policy', 'billing_cycle_day'],
   branding: ['brand_color', 'hero_image_url', 'tagline_en', 'tagline_ar', 'tagline_fr'],
   // publicPage + hours build their payloads directly in saveSection (numbers + JSONB).
   publicPage: [],
@@ -161,6 +166,9 @@ export function GymSettings({ gym, locale }: Props) {
     website: gym?.website ?? '',
     timezone: gym?.timezone ?? '',
     currency_preference: gym?.currency_preference ?? '',
+    // BILL-POLICY: default to the pre-BILL-POLICY behavior, never a blank.
+    billing_cycle_policy: gym?.billing_cycle_policy ?? 'anniversary',
+    billing_cycle_day: String(gym?.billing_cycle_day ?? 1),
     city: gym?.city ?? '',
     country: gym?.country ?? '',
     tva_registration_number: gym?.tva_registration_number ?? '',
@@ -204,7 +212,7 @@ export function GymSettings({ gym, locale }: Props) {
   const [savedSec, setSavedSec] = useState<SectionKey | null>(null);
   const [sectionError, setSectionError] = useState<{ section: SectionKey; msg: string } | null>(null);
   // Which single field a validation failure maps to (per-field inline error).
-  const [fieldError, setFieldError] = useState<'brand_color' | 'currency_preference' | null>(null);
+  const [fieldError, setFieldError] = useState<'brand_color' | 'currency_preference' | 'billing_cycle_policy' | null>(null);
   // The instant logo/hero uploads keep their own banner (they're not part of a section save).
   const [uploadError, setUploadError] = useState('');
   const [logoBusy, setLogoBusy] = useState(false);
@@ -259,6 +267,7 @@ export function GymSettings({ gym, locale }: Props) {
       setSectionError({ section, msg: GYM_ERR_KEYS.has(res.error) ? t(`gym.err.${res.error}` as Parameters<typeof t>[0]) : errText(res.error) });
       if (res.error === 'invalid_color') setFieldError('brand_color');
       else if (res.error === 'invalid_currency') setFieldError('currency_preference');
+      else if (res.error === 'invalid_billing_policy') setFieldError('billing_cycle_policy');
     }
   };
 
@@ -438,6 +447,64 @@ export function GymSettings({ gym, locale }: Props) {
           </F>
         </div>
         {saveBar('localization')}
+      </Section>
+
+      {/* ── BILL-POLICY: when the monthly bill lands (gym-wide) ── */}
+      <Section icon={CalendarClock} title={t('gym.sectionBilling')} rtl={isRTL} id="billing">
+        <p className={cn('text-xs text-gray-500', isRTL && 'font-arabic')}>{t('gym.billingIntro')}</p>
+
+        <div className="grid gap-2 sm:grid-cols-2" data-testid="gym-billing-policy" data-value={form.billing_cycle_policy}>
+          {([
+            { key: 'calendar', title: t('gym.calendarTitle'), body: t('gym.calendarBody'), example: t('gym.calendarExample') },
+            { key: 'anniversary', title: t('gym.anniversaryTitle'), body: t('gym.anniversaryBody'), example: t('gym.anniversaryExample') },
+          ] as const).map((opt) => {
+            const active = form.billing_cycle_policy === opt.key;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                data-testid="gym-billing-policy-option"
+                data-value={opt.key}
+                data-active={active}
+                aria-pressed={active}
+                onClick={() => setForm((prev) => ({ ...prev, billing_cycle_policy: opt.key }))}
+                className={cn(
+                  'min-w-0 rounded-xl border p-3 text-start transition-colors',
+                  active ? 'border-primary-700 bg-primary-50' : 'border-gray-200 bg-white hover:border-gray-300',
+                )}
+              >
+                <span className={cn('block text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{opt.title}</span>
+                <span className={cn('mt-1 block text-xs text-gray-600', isRTL && 'font-arabic')}>{opt.body}</span>
+                {/* A concrete worked example — the owner should not have to imagine it. */}
+                <span className={cn('mt-2 block text-xs text-gray-500', isRTL && 'font-arabic')}>{opt.example}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* The grid day only means anything under `calendar`. */}
+        {form.billing_cycle_policy === 'calendar' && (
+          <F label={t('gym.cycleDayLabel')} rtlLabel={isRTL}>
+            <Input
+              type="number" min={1} max={28} dir="ltr" data-testid="gym-billing-cycle-day"
+              value={form.billing_cycle_day}
+              onChange={set('billing_cycle_day')}
+              className="w-24 rounded-lg border p-2"
+            />
+            <p className={cn('mt-1 text-2xs text-gray-400', isRTL && 'font-arabic')}>{t('gym.cycleDayHint')}</p>
+          </F>
+        )}
+
+        {/* R4: the consequence of switching, stated honestly. Enforced by construction —
+            anchors are stored per-registration at activation and nothing recomputes them. */}
+        <p data-testid="gym-billing-switch-note" className={cn('rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900', isRTL && 'font-arabic')}>
+          {t('gym.switchNote')}
+        </p>
+
+        {fieldError === 'billing_cycle_policy' && (
+          <p data-testid="gym-err-billing-policy" className="text-xs text-red-600">{t('gym.err.invalid_billing_policy')}</p>
+        )}
+        {saveBar('billing')}
       </Section>
 
       {/* ── Branding (000072) ── */}

@@ -13,6 +13,7 @@ import AddClassModal from '../AddClassModal'
 import { createClient } from '@/lib/supabase/client'
 import { localizedName } from '@/lib/names'
 import { RegistrationsPanel } from './RegistrationsPanel'
+import { DEFAULT_CYCLE_POLICY, type GymCyclePolicy } from '@/lib/billing/proration'
 
 interface ClassDetailProps {
   classData: any
@@ -33,11 +34,13 @@ interface ClassDetailProps {
   /** BILL-CYCLES: FX rate + reference date for the dual-currency proration preview. */
   rate?: number | null
   today?: string
+  /** BILL-POLICY: the gym's billing-cycle policy (anchor derivation + prorate default). */
+  cyclePolicy?: GymCyclePolicy
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-export default function ClassDetail({ classData, locale, registrations = [], students = [], disciplines = [], coaches = [], activeRegCount = 0, memberInfo = {}, rate = null, today }: ClassDetailProps) {
+export default function ClassDetail({ classData, locale, registrations = [], students = [], disciplines = [], coaches = [], activeRegCount = 0, memberInfo = {}, rate = null, today, cyclePolicy = DEFAULT_CYCLE_POLICY }: ClassDetailProps) {
   const t = useTranslations('classes')
   const router = useRouter()
   const [showEnrollModal, setShowEnrollModal] = useState(false)
@@ -317,6 +320,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
               .map((s: any) => Number(s.day_of_week)))) as number[]}
             rate={rate}
             today={today ?? new Date().toISOString().slice(0, 10)}
+            cyclePolicy={cyclePolicy}
           />
         </div>
 
