@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
 import { signInWithPhone, signInWithEmail } from '@/lib/auth/actions';
+import { withAuthTimeout, isTransportError } from '@/lib/auth/transport';
 import { storagePublicUrl } from '@/lib/storage/public-url';
 import { cn } from '@/lib/utils';
 import { Mail, Lock, Eye, EyeOff, Users, LogIn, ArrowLeft } from 'lucide-react';
@@ -96,9 +97,17 @@ export default function LoginPage({ params }: Props) {
   }, [locale, supabase]);
   const brandName = brand.name || 'PRO LINE Gym';
 
+  // AUTH-STUCK: success keeps the spinner only for a bounded grace window — if
+  // navigation to /dashboard hasn't unmounted this page by then (e.g. the network
+  // dropped right after the cookies were set), stop spinning and let the user retry.
+  const NAV_GRACE_MS = 8_000;
+  const navGraceTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (navGraceTimer.current !== null) window.clearTimeout(navGraceTimer.current); }, []);
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (navGraceTimer.current !== null) { window.clearTimeout(navGraceTimer.current); navGraceTimer.current = null; }
 
     if (!email || !password) {
       setError(t('errEmailPassword'));
@@ -112,38 +121,48 @@ export default function LoginPage({ params }: Props) {
     // input goes through a SERVER ACTION that resolves phone → the hidden synthetic
     // email + signs in server-side (setting the session cookies), returning only a
     // generic ok/fail (no account-existence enumeration).
+    // ERROR-HARDEN #3: email sign-in goes through the SERVER action too — the old
+    // client-side supabase.auth.signInWithPassword bypassed the per-(IP+identifier)
+    // limiter and leaked raw GoTrue error.message.
+    //
+    // AUTH-STUCK (field failure, prod): a server-action await REJECTS on a network
+    // drop. Without the try/catch the exception escaped, setLoading(false) never
+    // ran, and the button spun forever. Both branches now share one guarded call:
+    // catch classifies transport vs generic (a transport error carries no account
+    // signal — third state, anti-enumeration posture unchanged), finally clears
+    // the spinner for every non-success outcome, and withAuthTimeout bounds a
+    // hung request so it fails visibly instead of never settling.
     const id = email.trim();
     const isPhone = /^\+?[0-9][0-9\s-]{5,}$/.test(id);
-    if (isPhone) {
-      const res = await signInWithPhone(id, password);
-      if (!res.ok) {
+    let signedIn = false;
+    try {
+      const res = await withAuthTimeout(isPhone ? signInWithPhone(id, password) : signInWithEmail(id, password));
+      if (res.ok) {
+        signedIn = true;
+      } else {
         // LOGIN-LIMITER: too-many-attempts is surfaced distinctly (standard UX; it
         // fires on the SUBMITTED identifier whether or not an account exists, so it
         // leaks nothing). Everything else stays the one generic failure.
         setError(res.rateLimited ? t('tooManyAttempts') : t('loginError'));
-        setLoading(false);
-        return;
       }
-      // Cookies were set server-side — refresh so the browser client adopts the
-      // session, then land on /dashboard (role routing takes over from there).
-      router.push('/dashboard');
-      router.refresh();
-      return;
+    } catch (err) {
+      setError(isTransportError(err) ? t('errConnection') : t('loginError'));
+    } finally {
+      if (!signedIn) setLoading(false);
     }
+    if (!signedIn) return;
 
-    // ERROR-HARDEN #3: email sign-in goes through the SERVER action too — the old
-    // client-side supabase.auth.signInWithPassword bypassed the per-(IP+identifier)
-    // limiter and leaked raw GoTrue error.message. Same limiter + generic errors as
-    // the phone path; cookies are set server-side, so refresh to adopt the session.
-    const res = await signInWithEmail(id, password);
-    if (!res.ok) {
-      setError(res.rateLimited ? t('tooManyAttempts') : t('loginError'));
-      setLoading(false);
-      return;
-    }
-
+    // Cookies were set server-side — refresh so the browser client adopts the
+    // session, then land on /dashboard (role routing takes over from there).
+    // The spinner survives navigation, but only for NAV_GRACE_MS: if we're still
+    // mounted after that, surface it instead of spinning silently.
     router.push('/dashboard');
     router.refresh();
+    navGraceTimer.current = window.setTimeout(() => {
+      navGraceTimer.current = null;
+      setLoading(false);
+      setError(t('errSlowNav'));
+    }, NAV_GRACE_MS);
   };
 
   const fillDemoAccount = (accountEmail: string) => {
@@ -275,7 +294,7 @@ export default function LoginPage({ params }: Props) {
           </div>
 
           {error && (
-            <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+            <div data-testid="login-error" className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
               {error}
             </div>
           )}

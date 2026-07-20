@@ -30,6 +30,8 @@
     "loginSuccess": "Connexion réussie",
     "loginError": "Une erreur s'est produite lors de la connexion",
     "tooManyAttempts": "Trop de tentatives — attendez une minute puis réessayez",
+    "errConnection": "Problème de connexion — vérifiez votre internet et réessayez",
+    "errSlowNav": "Connexion réussie, mais l'écran suivant met trop de temps — vérifiez votre connexion et réessayez",
     "backToLogin": "Retour à la connexion",
     "emailLabel": "Adresse Email",
     "passwordLabel": "Mot de Passe",

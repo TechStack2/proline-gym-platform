@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { withAuthTimeout, isTransportError } from '@/lib/auth/transport'
 import { cn } from '@/lib/utils'
 import { PasswordStrengthHint } from '@/components/shared/password-strength'
 import { isPasswordValid, PASSWORD_MIN_LENGTH } from '@/lib/utils/password'
@@ -52,14 +53,22 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
     if (!valid || loading) return
     setError('')
     setLoading(true)
-    const { error: uErr } = await supabase.auth.updateUser({ password: pw })
-    if (uErr) {
-      setError(t('resetError'))
+    // AUTH-STUCK: supabase-js returns network failures in `error` rather than
+    // throwing, so this surface never hung — but a transport failure showed the
+    // misleading "reset failed". Guard + timeout + the distinct connection state
+    // (same treatment as the login mint site; finally always clears the spinner).
+    try {
+      const { error: uErr } = await withAuthTimeout(supabase.auth.updateUser({ password: pw }))
+      if (uErr) {
+        setError(isTransportError(uErr) ? t('errConnection') : t('resetError'))
+        return
+      }
+      setDone(true)
+    } catch (err) {
+      setError(isTransportError(err) ? t('errConnection') : t('resetError'))
+    } finally {
       setLoading(false)
-      return
     }
-    setDone(true)
-    setLoading(false)
   }
 
   return (

@@ -17,6 +17,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { withAuthTimeout, isTransportError } from '@/lib/auth/transport'
 import { cn } from '@/lib/utils'
 import { Mail, ArrowLeft, CheckCircle2, Loader2, KeyRound } from 'lucide-react'
 
@@ -30,23 +31,35 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || loading) return
     setLoading(true)
+    setError('')
     const origin =
       (typeof window !== 'undefined' ? window.location.origin : '') ||
       process.env.NEXT_PUBLIC_APP_URL || ''
     try {
-      await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${origin}/${locale}/auth/reset`,
-      })
-    } catch {
-      /* swallow — the confirmation is generic either way (no enumeration) */
+      const { error: rErr } = await withAuthTimeout(
+        supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${origin}/${locale}/auth/reset`,
+        }),
+      )
+      // AUTH-STUCK: a TRANSPORT failure means the request never reached the
+      // server — claiming "sent" would be false. It carries no account signal
+      // (fails identically for any input), so surfacing it keeps the
+      // no-enumeration posture. Every SERVER answer stays the generic "sent".
+      if (rErr && isTransportError(rErr)) { setError(t('errConnection')); return }
+      setSent(true)
+    } catch (err) {
+      if (isTransportError(err)) { setError(t('errConnection')); return }
+      /* server answered oddly — the confirmation stays generic (no enumeration) */
+      setSent(true)
+    } finally {
+      setLoading(false)
     }
-    setSent(true)
-    setLoading(false)
   }
 
   return (
@@ -116,6 +129,12 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
                 />
               </div>
             </div>
+
+            {error && (
+              <div data-testid="forgot-error" className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
