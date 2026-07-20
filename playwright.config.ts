@@ -1019,6 +1019,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // PROXY-ACTIONS: server-action CSRF origin allowlist (accept allowlisted
+      // foreign Origin — the proxied custom-domain shape — reject unknown ones).
+      // Pure APIRequestContext probes; no auth, no browser page.
+      name: 'proxy-actions',
+      testMatch: /proxy-actions\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // MJ-2 SIGN-IN-SANE: deterministic phone sign-in (variant resolution +
       // credentialed-only past a login-less family twin) + the landing front door.
       name: 'mj2-sign-in',
