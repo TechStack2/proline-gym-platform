@@ -148,11 +148,13 @@ async function registerAndApprove(browser: Browser, classId: string, display: st
 test('A · calendar — a mid-cycle join prorates the STUB and the next cycle starts ON the boundary', async ({ browser }) => {
   test.setTimeout(150_000)
 
-  // Choose a cycle day that guarantees "today" is mid-cycle whatever day the suite
-  // runs on: the day before today (clamped to the 1..28 grid), or the 15th when
-  // today is the 1st (then the anchor falls in the previous month).
+  // Choose a cycle day that guarantees today is mid-cycle AND that at least one
+  // scheduled session was already skipped — otherwise there is nothing to prorate
+  // and the stub assertion is calendar-dependent. A ~7-day window always contains
+  // an MWF session (the longest MWF gap is 3 days): the day-7 boundary when the
+  // month is far enough along, else the 15th of the PREVIOUS month.
   const dom = new Date(today() + 'T00:00:00Z').getUTCDate()
-  const cycleDay = dom >= 2 ? Math.min(28, dom - 1) : 15
+  const cycleDay = dom >= 8 ? dom - 7 : 15
   await setPolicy('calendar', cycleDay)
 
   const CLASS = `BPcal ${Date.now()}`
