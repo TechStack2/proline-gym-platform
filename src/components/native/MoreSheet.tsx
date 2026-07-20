@@ -30,7 +30,6 @@ type Props = {
 export function MoreSheet({ isOpen, onClose, locale, items, onSignOut }: Props) {
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
-  const isRTL = locale === 'ar';
   // §2.2: sign-out is destructive → two-tap confirm inside the sheet.
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   useEffect(() => {
@@ -45,7 +44,7 @@ export function MoreSheet({ isOpen, onClose, locale, items, onSignOut }: Props) 
       locale={locale}
       snapPoints={[78, 94]}
     >
-      <div className={cn('space-y-1 px-1 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]', isRTL && 'rtl')}>
+      <div className="space-y-1 px-1 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
         {items.map((item) => {
           const Icon = item.icon;
           return (

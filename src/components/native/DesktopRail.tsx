@@ -114,7 +114,7 @@ export function DesktopRail({
                   // Icon rail (md): a centred square target. Expanded (lg): a row.
                   'h-12 justify-center lg:h-auto lg:justify-start lg:gap-3 lg:px-3 lg:py-2.5',
                   'text-sm font-medium touch-manipulation select-none',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent,#cd1419)]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
                   active
                     ? accent === 'shell'
                       ? 'bg-gray-100 font-bold text-[color:var(--shell-accent)]'

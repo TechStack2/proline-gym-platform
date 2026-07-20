@@ -27,7 +27,7 @@
  *
  * Wired into `npm run lint`. Run standalone: node scripts/lint-color-literals.mjs
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 
 const ROOT = process.cwd();
@@ -153,6 +153,19 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+// ALLOWLIST INTEGRITY. An entry naming a file that no longer exists is silent rot:
+// it reads as a live exemption, so nobody re-examines it, and it quietly stops covering
+// anything. Fail on it — an exemption must always point at something real.
+const stale = Object.keys(ALLOWLIST).filter((f) => !existsSync(resolve(ROOT, f)));
+if (stale.length && dirArg < 0) {
+  console.error(
+    '\n\u2716 DS2-TOKENS \u00a71.1 \u2014 the allowlist names files that no longer exist:\n' +
+      stale.map((f) => `  ${f}`).join('\n') +
+      '\n\n  Delete the entry, or fix the path. A stale exemption covers nothing.\n',
+  );
+  process.exit(1);
+}
+
 const violations = [];
 const exempted = [];
 
@@ -194,5 +207,6 @@ if (violations.length) {
 
 console.log(
   `✔ DS2-TOKENS §1.1 — no color literals outside the token files ` +
-    `(${exempted.length} allowlisted, each with a documented reason).`,
+    `(${Object.keys(ALLOWLIST).length} allowlisted, each with a documented reason; ` +
+    `${exempted.length} of them under the scanned tree).`,
 );

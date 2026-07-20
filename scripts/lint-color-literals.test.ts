@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -92,5 +92,18 @@ describe('DS2-TOKENS §1.1 — the color-literal gate', () => {
 
   it('reports the real repo as clean — the gate is ON, not merely present', () => {
     expect(run('src').code).toBe(0);
+  });
+
+  it('every allowlist entry points at a file that exists', () => {
+    // A stale exemption is worse than no exemption: it reads as deliberate, so nobody
+    // re-examines it, while covering nothing. The guard runs on the real tree only
+    // (--dir skips it), so assert it here against the real allowlist.
+    const src = readFileSync('scripts/lint-color-literals.mjs', 'utf8');
+    const block = src.match(/const ALLOWLIST = \{([\s\S]*?)\n\};/)![1];
+    const files = [...block.matchAll(/^ {2}'([^']+)':/gm)].map((m) => m[1]);
+    expect(files.length, 'the allowlist parsed').toBeGreaterThan(0);
+    for (const f of files) {
+      expect(existsSync(f), `allowlisted file is missing: ${f}`).toBe(true);
+    }
   });
 });
