@@ -51,6 +51,18 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
       // server — claiming "sent" would be false. It carries no account signal
       // (fails identically for any input), so surfacing it keeps the
       // no-enumeration posture. Every SERVER answer stays the generic "sent".
+      //
+      // AUTH-ERRORS — this door is DELIBERATELY excluded from the four-state
+      // treatment, and the reason is worth writing down: on this endpoint a
+      // server-side failure IS existence-correlated. GoTrue answers 200 without
+      // sending anything for an address it does not know, so an SMTP outage or an
+      // `over_email_send_rate_limit` can only be provoked by an address that DOES
+      // exist. Surfacing "something went wrong on our side" here would therefore
+      // build exactly the enumeration oracle J6 forbids — the distinction that is
+      // free at the sign-in door is not free at this one. Transport stays
+      // surfaced because it fails before any server answer, identically for every
+      // input. Diagnosability is bought server-side instead (the GoTrue logs), not
+      // by telling the visitor.
       if (rErr && isTransportError(rErr)) { setError(t('errConnection')); return }
       setSent(true)
     } catch (err) {

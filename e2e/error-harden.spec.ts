@@ -14,7 +14,11 @@ import { vis } from './helpers'
  * The forced-error hook is E2E_TEST_MODE-gated (never active in prod).
  */
 const RUN = Date.now().toString().slice(-6)
-const GENERIC = 'An error occurred during login'
+// AUTH-ERRORS: an ordinary rejected attempt now names the CREDENTIAL state rather
+// than the retired catch-all "An error occurred during login". What EH #2 proves is
+// unchanged — a rejected attempt is distinguishable from the limiter, and neither
+// leaks a raw GoTrue message.
+const CREDENTIALS = 'Incorrect email/phone or password'
 const LIMITED = 'Too many attempts'
 
 test('EH #1 · a segment throw renders the branded localized boundary — no raw error, retry present (/en + /ar)', async ({ browser }) => {
@@ -49,7 +53,7 @@ test('EH #2 · email wrong-password ×N is rate-limited distinctly (the client-s
       await page.locator('#email').fill(email)
       await page.locator('#password').fill('WrongPass!123')
       await page.locator('button[type="submit"]').click()
-      await expect(page.getByText(GENERIC), `attempt ${i} fails generically (not limited, not raw)`).toBeVisible({ timeout: 10_000 })
+      await expect(page.getByText(CREDENTIALS), `attempt ${i} fails on credentials (not limited, not raw)`).toBeVisible({ timeout: 10_000 })
     }
     // 6th attempt on the same email → the DISTINCT limiter message.
     await page.goto('/en/auth/login')

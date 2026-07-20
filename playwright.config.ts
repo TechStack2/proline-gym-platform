@@ -1347,6 +1347,17 @@ export default defineConfig({
       testMatch: /\/bill-guards\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // AUTH-ERRORS: a failed sign-in names WHICH thing went wrong (credentials vs
+      // our server) while staying byte-identical between a wrong password and an
+      // address with no account — the J6 anti-enumeration property, asserted as an
+      // equality between the two messages. Plus the reset door's rejected-password
+      // state. Seeds its own throwaway gym + account.
+      name: 'auth-errors',
+      dependencies: ['setup'],
+      testMatch: /\/auth-errors\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     // E2E-TIERED — the `smoke` project materializes ONLY under E2E_TIERED=1 (the
     // targeted branch-run path: `gh workflow run e2e.yml -f projects="<slice>"`).
     // It is ABSENT from the default config, so the FULL push-to-main union gate's

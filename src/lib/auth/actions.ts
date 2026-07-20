@@ -20,7 +20,41 @@ import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createRateLimitStore, checkRateLimit, resetRateLimit, cleanupRateLimitStore, envLimit } from '@/lib/auth/rate-limit'
+import { classifySignInFailure, AUTH_LOG_CODE, type SignInFailure } from '@/lib/auth/auth-error'
 import { normalizePhone, phoneMatchVariants } from '@/lib/utils/phone'
+
+/** What the login screen needs to say something TRUE about a failed attempt. */
+export type SignInResult = { ok: boolean; reason?: SignInFailure }
+
+/**
+ * AUTH-ERRORS R2 — the diagnosable half. One line per failed attempt, carrying a
+ * machine-readable code and NOTHING else that could identify anyone: never the
+ * password, never the submitted email/phone, and never whether the account
+ * exists (a wrong password and an unknown address produce the identical
+ * `auth.signin.credentials` line — proven in auth-error.test.ts).
+ *
+ * Sentry is reserved for `server`. A wrong password is not an error, it is a
+ * user event: capturing them would bury the one real failure under thousands of
+ * typos and burn the FREE-tier quota (5k events/month — see the OBSERVE
+ * posture). The console line still records every bucket, so a support question
+ * ("did their attempt even reach us?") is answerable from the logs.
+ */
+function recordSignInFailure(reason: SignInFailure, raw?: unknown): void {
+  const code = AUTH_LOG_CODE.signin[reason]
+  if (reason !== 'server') {
+    console.warn(`[auth] sign-in failed: ${code}`)
+    return
+  }
+  // `server` only: the underlying GoTrue message helps diagnosis and cannot leak
+  // account existence (existence-bearing failures are `credentials`, never here).
+  const detail = (raw as { message?: unknown } | null)?.message
+  console.error(`[auth] sign-in failed: ${code}`, typeof detail === 'string' ? detail : '')
+  Sentry.captureMessage(code, {
+    level: 'error',
+    tags: { area: 'auth-signin', auth_code: code },
+    extra: { status: (raw as { status?: unknown } | null)?.status ?? null }, // NO identifier, NO password
+  })
+}
 
 // LOGIN-LIMITER — per-(IP+identifier) brute-force limit. This is where the
 // submitted identifier is KNOWN (the middleware only sees pathnames), so the
@@ -43,12 +77,14 @@ function clientIp(): string {
 export async function signInWithPhone(
   phoneRaw: string,
   password: string,
-): Promise<{ ok: boolean; rateLimited?: boolean }> {
+): Promise<SignInResult> {
   // MJ-2: normalize the submitted phone to the ONE canonical shape (03…, +9613…,
   // 009613…, bare all collapse here) so resolution is an exact compare, and so the
   // rate-limit identifier is stable across the shapes a user might type.
   const phone = normalizePhone(phoneRaw)
-  if (!phone || !password) return { ok: false }
+  // Nothing (or nothing usable) submitted: that is a credential problem, and it
+  // is the same answer for every input — no account was ever consulted.
+  if (!phone || !password) return { ok: false, reason: 'credentials' }
 
   // Per-identifier limit BEFORE any GoTrue work (cheap rejection under attack).
   // Counts ONE attempt per signInWithPhone CALL (not per candidate below) — the
@@ -59,7 +95,10 @@ export async function signInWithPhone(
   const idKey = `id:${clientIp()}:${phone}`
   cleanupRateLimitStore(idLimitStore)
   const gate = checkRateLimit(idLimitStore, idKey, limit, windowMs)
-  if (!gate.allowed) return { ok: false, rateLimited: true }
+  if (!gate.allowed) {
+    recordSignInFailure('rate_limited')
+    return { ok: false, reason: 'rate_limited' }
+  }
 
   // Resolve phone → profile ids (service role; bypasses RLS; server-only, never
   // returned). A phone is non-unique BY DESIGN (families share; the ratified
@@ -102,14 +141,22 @@ export async function signInWithPhone(
     : [`m-none-${phone.replace(/[^0-9]/g, '')}@members.proline.lb`]
 
   const supabase = await createClient() // SSR client → writes the session cookies on success
+  // Across candidates, the WORST outcome wins: if any attempt failed for a
+  // non-credential reason the honest answer is `server`, because we cannot say
+  // the password was wrong when a lookup broke midway.
+  let reason: SignInFailure = 'credentials'
+  let lastError: unknown = null
   for (const email of candidates) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (!error) {
       resetRateLimit(idLimitStore, idKey) // success ends the failed-attempt window
       return { ok: true }
     }
+    const classified = classifySignInFailure(error)
+    if (classified !== 'credentials') { reason = classified; lastError = error }
   }
-  return { ok: false }
+  recordSignInFailure(reason, lastError)
+  return { ok: false, reason }
 }
 
 /**
@@ -123,22 +170,30 @@ export async function signInWithPhone(
 export async function signInWithEmail(
   emailRaw: string,
   password: string,
-): Promise<{ ok: boolean; rateLimited?: boolean }> {
+): Promise<SignInResult> {
   const email = (emailRaw || '').trim().toLowerCase()
-  if (!email || !password) return { ok: false }
+  if (!email || !password) return { ok: false, reason: 'credentials' }
 
   const limit = envLimit('AUTH_RATE_LIMIT_PER_ID', 5)
   const windowMs = envLimit('AUTH_RATE_LIMIT_WINDOW_MS', 60 * 1000)
   const idKey = `id:${clientIp()}:${email}`
   cleanupRateLimitStore(idLimitStore)
   const gate = checkRateLimit(idLimitStore, idKey, limit, windowMs)
-  if (!gate.allowed) return { ok: false, rateLimited: true }
+  if (!gate.allowed) {
+    recordSignInFailure('rate_limited')
+    return { ok: false, reason: 'rate_limited' }
+  }
 
   const supabase = await createClient() // SSR client → writes the session cookies on success
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) {
-    console.error('[auth] email sign-in failed:', error.message) // server-side only — never shown raw
-    return { ok: false }
+    // AUTH-ERRORS: the raw GoTrue message stays server-side; what crosses back to
+    // the browser is a bucket, not a message. `credentials` here means EITHER a
+    // wrong password OR no such account — GoTrue does not distinguish them and
+    // neither do we.
+    const reason = classifySignInFailure(error)
+    recordSignInFailure(reason, error)
+    return { ok: false, reason }
   }
   resetRateLimit(idLimitStore, idKey)
   return { ok: true }
