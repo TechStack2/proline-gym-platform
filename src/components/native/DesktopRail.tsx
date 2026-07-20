@@ -37,6 +37,13 @@ export type DesktopRailProps = {
   accent?: 'brand' | 'shell';
   /** Shell identity label key in `common` (shellMember / shellCoach / shellStaff). */
   shellLabelKey?: string;
+  /**
+   * The shell this rail belongs to. The expanded rail's identity chip carries
+   * the SAME `shell-badge`/`data-shell` contract the mobile header's badge does
+   * (testid-stability: the shell badge stays the shell badge on every form
+   * factor — ax1/on1 assert it at desktop).
+   */
+  shell?: 'staff' | 'coach' | 'portal';
 };
 
 function RailBadge({ count }: { count: number }) {
@@ -53,6 +60,7 @@ export function DesktopRail({
   basePath = '',
   accent = 'brand',
   shellLabelKey,
+  shell,
 }: DesktopRailProps) {
   const pathname = usePathname();
   const t = useTranslations('nav');
@@ -81,7 +89,8 @@ export function DesktopRail({
       {shellLabelKey && (
         <div className="mb-2 hidden px-4 lg:block">
           <span
-            data-testid="rail-shell-label"
+            data-testid="shell-badge"
+            data-shell={shell}
             className="inline-flex items-center rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-white"
           >
             {tCommon(shellLabelKey as never)}

@@ -76,6 +76,7 @@ export function CoachLayoutClient({ children, locale, gymName, logoUrl, trialsTo
         basePath={COACH_BASE_PATH}
         accent="shell"
         shellLabelKey="shellCoach"
+        shell="coach"
       />
 
       <div className="flex h-full min-h-0 flex-col ms-[var(--rail-w)]">

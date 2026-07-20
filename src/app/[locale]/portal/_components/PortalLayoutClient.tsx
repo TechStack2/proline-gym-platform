@@ -71,6 +71,7 @@ export function PortalLayoutClient({ children, locale, gymName, logoUrl }: Props
         basePath={PORTAL_BASE_PATH}
         accent="brand"
         shellLabelKey="shellMember"
+        shell="portal"
       />
 
       <div className="flex h-full min-h-0 flex-col ms-[var(--rail-w)]">

@@ -90,11 +90,21 @@ async function assertShell(page: Page, viewport: { width: number; height: number
     )
     .toBe(true)
 
-  // On desktop the shell is the centred max-width column (not full-bleed sprawl —
-  // the "thin/unorganized" fix); on mobile it spans the device width.
+  // W2a (DS 2.0 §4.1) PREMISE UPDATE: desktop is no longer the max-w-3xl reading
+  // column — the RULED first-class desktop composes a content grid capped at
+  // 1200px (+ gutters), offset past the fixed side rail. The anti-sprawl claim
+  // this guarded (DA-44's "full-bleed void") survives as: capped ≤1200+gutters
+  // AND starting AFTER the rail (≥72px from the inline-start edge), never
+  // under it (DA-4's class).
   const bb = await shell.first().boundingBox()
   if (viewport.width >= 768) {
-    expect(bb!.width, `${label}: desktop shell is a capped reading column, not full-bleed`).toBeLessThanOrEqual(820)
+    expect(bb!.width, `${label}: desktop shell is the capped §4.1 content grid, not full-bleed`).toBeLessThanOrEqual(1200 + 48 + 2)
+    const railClear = await shell.first().evaluate((el) => {
+      const r = (el as Element).getBoundingClientRect()
+      const rtl = document.documentElement.dir === 'rtl'
+      return rtl ? window.innerWidth - r.right : r.left
+    })
+    expect(railClear, `${label}: content starts after the rail (never under it)`).toBeGreaterThanOrEqual(72 - 2)
   }
 
   // A design-system card token renders (PortalCard → the ui/* <Card>).
