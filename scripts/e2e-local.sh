@@ -56,6 +56,9 @@ export CRON_SECRET="e2e-cron-secret-not-a-real-secret" # SCHEDULER-WIRE: makes /
 export E2E_WORKERS="${E2E_WORKERS:-2}"                 # worker slots = gyms = playwright workers
 export NEXT_PUBLIC_DEFAULT_LOCALE="en"
 export NEXT_PUBLIC_SUPPORTED_LOCALES="ar,en,fr"
+# PROXY-ACTIONS: fake tenant domain for the server-action origin-allowlist guard
+# (parity with e2e.yml; exercises the env-fed custom-domain path).
+export PRAXELLA_ACTION_ORIGINS="actions-proxy.e2e.test"
 
 PROJECTS="${PROJECTS:-}"
 PW_ARGS="${PW_ARGS:-}"

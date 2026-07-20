@@ -169,11 +169,46 @@ const supabaseRemotePattern = (() => {
   }
 })();
 
+// PROXY-ACTIONS — Server Actions on proxied custom domains (P0 field outage).
+// The CF Worker forwards proline-gym.com → the Railway origin, so Next sees
+// Origin: https://proline-gym.com against Host: proline.up.railway.app and its
+// CSRF check 500s every Server Action BEFORE any app code (writes only — reads
+// were fine, which is why this hid). X-Forwarded-Host can NOT fix it: Railway's
+// edge overwrites the X-Forwarded-* family (the proven reason the proxy uses
+// X-Praxella-Host). allowedOrigins is the supported mechanism.
+// DRIFT-PIN: this builder is duplicated (next.config can't import TS) in
+// src/lib/host/action-origins.ts, whose unit test imports THIS named export and
+// asserts the two lists are identical — they cannot drift silently.
+// Tenant custom domains are dynamic (gym_domains) → PRAXELLA_ACTION_ORIGINS env
+// (comma-separated hosts; prod currently needs: proline-gym.com,www.proline-gym.com).
+// The value is read when the server BOOTS — changing it requires a restart/redeploy
+// (Railway redeploys on a variable change). Onboarding runbook step 6 is REQUIRED.
+export const serverActionAllowedOrigins = [
+  'localhost:3000',
+  '127.0.0.1:3000',
+  'proline.up.railway.app',
+  'praxella.com',
+  'www.praxella.com',
+  '*.praxella.com',
+  ...(process.env.PRAXELLA_ACTION_ORIGINS ?? '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean),
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // OBSERVE — Next 14 needs this flag to load src/instrumentation.ts (where the
   // Sentry server/edge init registers). Stable in Next 15; explicit here for 14.2.
-  experimental: { instrumentationHook: true },
+  experimental: {
+    instrumentationHook: true,
+    // PROXY-ACTIONS (see the block above): accept Server-Action POSTs whose
+    // Origin is a known first-party host arriving through the proxy. The CSRF
+    // posture is NARROWED to this allowlist, never disabled — any other
+    // cross-origin action POST still 500s (e2e/proxy-actions.spec.ts guards both
+    // directions).
+    serverActions: { allowedOrigins: serverActionAllowedOrigins },
+  },
 
   images: {
     remotePatterns: [

@@ -105,7 +105,36 @@ the 1-line `rpc('get_gym_primary_domain', { p_slug: slug })` call — see the fi
 header) and regenerate DB types. No other code changes: `canonicalOrigin` +
 `aliasRedirectTarget` (`src/lib/host/canonical.ts`) already consume the value.
 
-## 6. Verify
+## 6. REQUIRED — Server-Action origin allowlist (`PRAXELLA_ACTION_ORIGINS`)
+
+**Skipping this step silently breaks EVERY write on the new domain** (attendance,
+payments, approvals, login-adjacent actions — all Server Actions), while reads
+keep working. Next.js CSRF-rejects an action POST whose `Origin` (the tenant
+domain) differs from the `Host` it sees (the Railway origin, because the Worker
+proxies) unless the origin is allowlisted
+(`experimental.serverActions.allowedOrigins`, fed from this env var —
+PROXY-ACTIONS incident, 2026-07). `X-Forwarded-Host` cannot carry the tenant
+host: Railway's edge overwrites the `X-Forwarded-*` family.
+
+Append the new domain (apex + `www`) to the comma-separated list on the Railway
+app service — **do not replace the existing entries** — then redeploy (Railway
+redeploys on a variable change; the value is read at server boot):
+
+```bash
+# Read the current value first, then append:
+railway variables --set "PRAXELLA_ACTION_ORIGINS=proline-gym.com,www.proline-gym.com,<new-domain>,www.<new-domain>"
+```
+
+(Equivalent: Railway dashboard → the app service → Variables →
+`PRAXELLA_ACTION_ORIGINS`.) `*.praxella.com`, the apex, the Railway origin and
+localhost are built in (next.config.mjs) — this variable is ONLY the custom
+domains. Current prod value: `proline-gym.com,www.proline-gym.com`.
+
+**Loud-failure guard:** if a write is attempted from a domain missing here, the
+server log shows a `[proxy-actions]` error naming the origin and this runbook
+step — that log line, not a user's silent 500, should be the first symptom.
+
+## 7. Verify
 
 ```bash
 curl -sI https://proline-gym.com/en                       # 200, app renders
@@ -113,6 +142,12 @@ curl -sI https://www.proline-gym.com/en                   # 301 → https://prol
 curl -s  https://proline-gym.com/en | grep -i canonical   # rel=canonical → proline-gym.com/en
 curl -s  https://proline-gym.com/robots.txt               # Sitemap/Host = https://proline-gym.com
 curl -s  https://proline-gym.com/sitemap.xml | grep -o 'https://proline-gym.com/..'
+# PROXY-ACTIONS (step 6): a server-action-shaped POST from the tenant origin must
+# NOT be CSRF-rejected (200 = passed the origin check; 500 = the allowlist is
+# missing the domain). The bogus Next-Action id never reaches real action code.
+curl -s -o /dev/null -w '%{http_code}\n' -X POST https://proline-gym.com/en \
+  -H 'Next-Action: 7f000000000000000000000000000000000000ff' \
+  -H 'Origin: https://proline-gym.com' -H 'Content-Type: text/plain' --data x   # 200
 ```
 
 - Landing shows the tenant's brand + name (not the demo).
