@@ -353,6 +353,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DS2-TOKENS §6.3 evidence matrix: {en,ar}×{light,dark}×{390,1280} over the two
+      // CHANGED surfaces (staff /schedule = DA-31, landing = DA-27) and two CONTROLS
+      // (/today, /invoices) that the token refactor must leave untouched.
+      name: 'ds2-shots',
+      dependencies: ['setup'],
+      testMatch: /\/ds2-shots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // W1-FOUNDATION §6.3 evidence matrix for the deliberately changed staff
       // chrome: {en,ar} × {light,dark} × {390,1280}. Screenshots only.
       name: 'w1-shots',
