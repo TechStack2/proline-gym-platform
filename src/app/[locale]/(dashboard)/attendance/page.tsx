@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar, Users, TrendingUp, AlertTriangle } from 'lucide-react'
 import { AttendanceDashboardClient } from './attendance-dashboard-client'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/page-header';
 
 interface AttendancePageProps {
   params: { locale: string }
@@ -168,7 +169,7 @@ export default async function AttendancePage({ params: { locale }, searchParams 
     <div className="space-y-6">
       <div className="flex items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
         <div>
-          <h1 className="hidden md:block text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
+          <PageHeader segment="attendance" />
           <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm">

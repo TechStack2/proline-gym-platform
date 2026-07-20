@@ -3950,5 +3950,32 @@
     "black_3": "Ceinture noire — 3e dan",
     "black_4": "Ceinture noire — 4e dan",
     "black_5": "Ceinture noire — 5e dan"
+  },
+  "statuses": {
+    "paid": "Payée",
+    "partial": "Partiellement payée",
+    "pending": "En attente",
+    "overdue": "En retard",
+    "cancelled": "Annulée",
+    "refunded": "Remboursée",
+    "void": "Annulée",
+    "active": "Actif",
+    "expiring": "Bientôt expiré",
+    "memberOverdue": "Paiement en retard",
+    "owing": "Solde dû",
+    "lapsed": "Expiré",
+    "frozen": "Gelé",
+    "noMembership": "Aucun abonnement",
+    "inactive": "Inactif",
+    "requested": "Demandé",
+    "waitlisted": "Liste d'attente",
+    "rejected": "Refusé",
+    "expired": "Expiré",
+    "suspended": "Suspendu",
+    "present": "Présent",
+    "absent": "Absent",
+    "late": "En retard",
+    "excused": "Excusé",
+    "noShow": "Absence"
   }
 }

@@ -2,12 +2,13 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { dateLocale } from '@/lib/utils/locale-format'
 import { METHOD_LABEL } from '@/lib/billing/reconcile'
-import { dualMoney, type CurrencyPref } from '@/lib/billing/currency'
+import { type CurrencyPref } from '@/lib/billing/currency'
 import { getRevenueByMonth, getCollectionsByMethod, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
 import { getChurnByMonth } from '@/lib/finances/winback'
 import { getEnabledProducts } from '@/lib/gym/products'
+import { fmtDate, fmtMoney } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 /**
  * FIN-1 owner dashboard (Money → Overview). Tables + numbers only (no chart
@@ -31,11 +32,12 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
   // (lapsed) column when the gym doesn't sell membership.
   const revProducts = products.membership ? PRODUCTS : PRODUCTS.filter((p) => p !== 'membership')
 
-  const monthLabel = (mk: string) =>
-    new Date(`${mk}-01T12:00:00Z`).toLocaleDateString(dateLocale(locale), { month: 'short', year: '2-digit' })
+  const monthLabel = (mk: string) => fmtDate(`${mk}-01`, locale, 'monthYear')
   const productLabel = (p: Product) => t(`product.${p}` as Parameters<typeof t>[0])
   // MONEY-LBP — compact, whole-figure, preference-aware pair for the dense revenue
   // table (keeps the terse look; adds the LBP line only where it belongs per pref).
+  // NOTE: MonthHorizon carries a byte-identical copy of this helper. Folding both
+  // into a `fmtMoney` compact mode is Wave-3 work — W1 only isolates the renders.
   const compact = (u: number, l: number): { primary: string; secondary: string | null } => {
     const usdC = `$${Math.round(u).toLocaleString()}`
     const lbpC = `${Math.round(l).toLocaleString()} LBP`
@@ -71,13 +73,13 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
                   {revProducts.map((p) => (
                     <td key={p} className="p-2 text-end text-gray-600" data-product={p}>
                       {(row.byProduct[p] > 0 || row.byProductLbp[p] > 0)
-                        ? compact(row.byProduct[p], row.byProductLbp[p]).primary
+                        ? <Ltr>{compact(row.byProduct[p], row.byProductLbp[p]).primary}</Ltr>
                         : <span className="text-gray-300">—</span>}
                     </td>
                   ))}
                   <td className="p-2 text-end font-bold text-gray-900" data-testid="revenue-row-total">
-                    {totalMoney.primary}
-                    {totalMoney.secondary && <span className="block text-2xs font-semibold text-gray-500" data-testid="revenue-row-total-lbp">{totalMoney.secondary}</span>}
+                    <Ltr>{totalMoney.primary}</Ltr>
+                    {totalMoney.secondary && <span className="block text-2xs font-semibold text-gray-500" data-testid="revenue-row-total-lbp"><Ltr>{totalMoney.secondary}</Ltr></span>}
                   </td>
                 </tr>
                 )
@@ -96,12 +98,14 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
           ) : (
             <ul className="space-y-1.5" data-testid="method-table">
               {methods.map((m) => {
-                const dm = dualMoney(m.usd, m.lbp, pref)
+                const dm = fmtMoney(m.usd, m.lbp, pref)
                 return (
                 <li key={m.method} className="flex items-center justify-between text-sm" data-testid="method-row" data-method={m.method}>
                   <span className="text-gray-600">{(locale === 'ar' ? METHOD_LABEL[m.method]?.ar : locale === 'fr' ? METHOD_LABEL[m.method]?.fr : METHOD_LABEL[m.method]?.en) || m.method}</span>
+                  {/* DA-7: `dir="ltr"` set a base direction but did not ISOLATE, so
+                      the two amounts still reordered around the separator. */}
                   <span className="font-semibold text-gray-900" dir="ltr" data-testid="method-amount">
-                    {dm.primary}{dm.secondary ? ` · ${dm.secondary}` : ''}
+                    <Ltr>{dm.primary}</Ltr>{dm.secondary ? <> · <Ltr>{dm.secondary}</Ltr></> : ''}
                   </span>
                 </li>
                 )
@@ -115,14 +119,14 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
           <h2 className={cn('mb-3 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('agingTitle')}</h2>
           <div className="grid grid-cols-2 gap-2" data-testid="aging-grid">
             {aging.map((b) => {
-              const dm = dualMoney(b.usd, b.lbp, pref)
+              const dm = fmtMoney(b.usd, b.lbp, pref)
               return (
               <Link key={b.key} href={`/${locale}/money?tab=invoices&aging=${b.key}`}
                 data-testid="aging-bucket" data-bucket={b.key}
                 className="rounded-xl bg-gray-50 p-3 transition-colors hover:bg-gray-100">
                 <p className="text-2xs font-medium uppercase tracking-wider text-gray-500">{t(`aging.${b.key}` as Parameters<typeof t>[0])}</p>
-                <p className={cn('mt-0.5 text-lg font-bold', agingTone[b.key])} data-testid="aging-usd">{dm.primary}</p>
-                {dm.secondary && <p className="text-2xs font-semibold text-gray-500" data-testid="aging-lbp">{dm.secondary}</p>}
+                <p className={cn('mt-0.5 text-lg font-bold', agingTone[b.key])} data-testid="aging-usd"><Ltr>{dm.primary}</Ltr></p>
+                {dm.secondary && <p className="text-2xs font-semibold text-gray-500" data-testid="aging-lbp"><Ltr>{dm.secondary}</Ltr></p>}
                 <p className="text-2xs text-gray-400">{t('invoiceCount', { count: b.count })}</p>
               </Link>
               )

@@ -113,11 +113,15 @@ test('IA-1 · 7-workspace nav (desktop = mobile), /dashboard→/today, /today li
     await mobile.page.goto('/en/today');
     for (const key of ['today', 'inbox', 'members', 'schedule', 'more']) {
       await expect(
-        vis(mobile.page, `[role="tab"][aria-controls="tabpanel-${key}"]`).first(),
+        vis(mobile.page, `[data-testid="tab-${key}"]`).first(),
         `mobile tab bar has ${key}`,
       ).toBeVisible({ timeout: 15_000 });
     }
-    await expect(vis(mobile.page, '[role="tab"][aria-controls="tabpanel-money"]')).toHaveCount(0); // in More, not primary
+    // W1-FOUNDATION §2.2: the staff bar is now the shared TabBar primitive — real
+    // nav ARIA (<nav> + aria-current) instead of the bogus role="tablist"/"tab" +
+    // aria-controls="tabpanel-*" it never had panels for (DA-60). Target the tabs by
+    // their stable testids.
+    await expect(vis(mobile.page, '[data-testid="tab-money"]')).toHaveCount(0); // in More, not primary
   } finally {
     await mobile.ctx.close();
   }

@@ -245,6 +245,11 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Build (bakes NEXT_PUBLIC_* → the local stack)
+        env:
+          # W1-FOUNDATION §2.7: the missing-key gate. A MISSING_MESSAGE throws in
+          # this build, so DA-5 (a raw i18n key shipped to production) fails the
+          # e2e run instead of waiting for someone to notice it in a screenshot.
+          NEXT_PUBLIC_I18N_STRICT: '1'
         run: npm run build
 
       - name: Run E2E harness

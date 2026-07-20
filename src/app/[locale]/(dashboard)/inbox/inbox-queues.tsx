@@ -19,6 +19,7 @@ import { approveRegistration, rejectRegistration } from '../classes/[id]/registr
 import { approvePtRequest, rejectPtRequest } from '../pt/actions'
 import { registerToCamp, declineCampRequest } from '../camps/actions'
 import { approveMemberRequest, declineMemberRequest } from './member-request-actions'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export type RegRequestRow = {
   id: string
@@ -125,7 +126,7 @@ export function InboxQueues({
           {t('campRequests')} ({visCamp.length})
         </h2>
         {visCamp.length === 0 ? (
-          <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
+          <EmptyState title={t('emptyQueue')} data-testid="inbox-queue-empty" />
         ) : (
           <div className="space-y-2">
             {visCamp.map((r) => (
@@ -158,7 +159,7 @@ export function InboxQueues({
           {t('registrations')} ({visReg.length})
         </h2>
         {visReg.length === 0 ? (
-          <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
+          <EmptyState title={t('emptyQueue')} data-testid="inbox-queue-empty" />
         ) : (
           <div className="space-y-2">
             {visReg.map((r) => {
@@ -209,7 +210,7 @@ export function InboxQueues({
           {t('ptRequests')} ({visPt.length})
         </h2>
         {visPt.length === 0 ? (
-          <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
+          <EmptyState title={t('emptyQueue')} data-testid="inbox-queue-empty" />
         ) : (
           <div className="space-y-2">
             {visPt.map((r) => {
@@ -275,7 +276,7 @@ export function InboxQueues({
           {t('memberRequests')} ({visMember.length})
         </h2>
         {visMember.length === 0 ? (
-          <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('emptyQueue')}</p>
+          <EmptyState title={t('emptyQueue')} data-testid="inbox-queue-empty" />
         ) : (
           <div className="space-y-2">
             {visMember.map((r) => (
@@ -315,7 +316,7 @@ export function InboxQueues({
           {t('promotions')}
         </h2>
         {promotions.length === 0 ? (
-          <p className="rounded-2xl border bg-white p-5 text-center text-sm text-gray-400 shadow-sm">{t('noPromotions')}</p>
+          <EmptyState title={t('noPromotions')} data-testid="inbox-queue-empty" />
         ) : (
           <div className="space-y-2">
             {promotions.map((p) => (

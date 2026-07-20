@@ -61,7 +61,11 @@ test('RESPONSIVE-CSP · nav is reachable at 800px (the former md–lg dead zone)
     // The shell now uses the MOBILE chrome below lg → the bottom TabBar is the nav
     // (was: desktop Header whose hamburger targeted a hard-hidden Sidebar = no nav).
     await expect(page.getByTestId('native-large-title').first(), 'the mobile shell is active at 800px').toBeVisible({ timeout: 15_000 })
-    await expect(page.getByRole('tablist').first(), 'the bottom tab bar (reachable nav) is present').toBeVisible()
+    // At 800px the reachable nav is the SIDE RAIL, not the bottom bar: the bar is
+    // `md:hidden` (≥768) and the rail is `hidden md:flex`. The pre-W1 assertion said
+    // `getByRole('tablist').first()`, which matched the rail here — both chrome pieces
+    // carried that role. With real nav ARIA the two are addressed separately.
+    await expect(page.getByTestId('desktop-rail'), 'the side rail (reachable nav) is present').toBeVisible()
     await expect(page.getByTestId('desktop-sidebar'), 'the desktop Sidebar is NOT shown at 800px').toBeHidden()
   } finally {
     await ctx.close()
@@ -73,7 +77,7 @@ test('RESPONSIVE-CSP · <lg shows the TabBar, ≥lg shows the Sidebar (no regres
   try {
     await page.goto('/en/today')
     await expect(page.getByTestId('native-large-title').first(), 'mobile shell at 390px').toBeVisible({ timeout: 15_000 })
-    await expect(page.getByRole('tablist').first(), 'the bottom TabBar at 390px').toBeVisible()
+    await expect(page.getByTestId('tab-bar').first(), 'the bottom TabBar at 390px').toBeVisible()
     await expect(page.getByTestId('desktop-sidebar'), 'no Sidebar at 390px').toBeHidden()
 
     await page.setViewportSize({ width: 1280, height: 900 })

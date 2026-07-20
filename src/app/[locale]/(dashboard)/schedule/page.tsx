@@ -10,6 +10,7 @@ import { Avatar } from '@/components/shared/avatar'
 import { DiaryBookPt, type DiaryAssignment } from './diary-book-pt'
 import { openAvailabilityGaps, hmInTz, type Interval } from '@/lib/coach/availability'
 import { CalendarRange, CalendarClock, Dumbbell, Clock, ChevronRight } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header';
 
 export const dynamic = 'force-dynamic'
 
@@ -256,7 +257,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
       {/* CSP-safe per-discipline cell colors (see cellBgCss above) — nonce'd. */}
       <style nonce={cellNonce} data-testid="schedule-cellbg" dangerouslySetInnerHTML={{ __html: cellBgCss }} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className={cn('hidden md:block text-2xl font-bold', isRTL && 'font-arabic')}>{t('title')}</h1>
+        <PageHeader segment="schedule" />
         <WorkspaceSegments
           locale={locale}
           active="schedule"

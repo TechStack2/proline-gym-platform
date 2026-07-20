@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { getDailyTally } from '@/lib/billing/daily-tally'
 import { balanceUsd, balanceLbp, METHOD_LABEL } from '@/lib/billing/reconcile'
-import { dualMoney } from '@/lib/billing/currency'
 import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import { InvoicesView } from '../invoices/invoices-view'
 import { PaymentsView } from '../payments/payments-view'
@@ -16,6 +15,9 @@ import { getWinbackQueue } from '@/lib/finances/winback'
 import { getEnabledProducts } from '@/lib/gym/products'
 import { gymDisplayName } from '@/lib/whatsapp/identity'
 import { OnlineOnlyNotice } from '@/components/offline/online-only-notice'
+import { PageHeader } from '@/components/ui/page-header';
+import { fmtMoney } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -66,7 +68,7 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
     <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          <PageHeader segment="money" />
           <p className="mt-0.5 text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         {/* DA-20: scrollable at 390 — the 4th tab (Win-back) was fully offscreen with
@@ -157,8 +159,8 @@ async function MoneyOverview({ locale }: { locale: string }) {
   const renewalOutstandingLbp = openRenewalInvs.reduce(
     (s2: number, i: any) => s2 + balanceLbp(i.total_lbp, [{ amount_usd: 0, amount_lbp: paidLbpBy.get(i.id) ?? 0 }]), 0)
 
-  const outMoney = dualMoney(outstanding, outstandingLbp, pref)
-  const renewalMoney = dualMoney(renewalOutstanding, renewalOutstandingLbp, pref)
+  const outMoney = fmtMoney(outstanding, outstandingLbp, pref)
+  const renewalMoney = fmtMoney(renewalOutstanding, renewalOutstandingLbp, pref)
 
   return (
     <>
@@ -166,9 +168,13 @@ async function MoneyOverview({ locale }: { locale: string }) {
       {products.membership && (
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1" data-testid="money-renewals">
         <p className="flex items-center gap-1 text-xs text-gray-500"><RefreshCw className="h-3 w-3" /> {t('renewalsOutstanding')}</p>
-        <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd">{renewalMoney.primary}</p>
+        {/* DA-7: money swapped sides within one Arabic page ("$160.95" next to
+            "80.00$") because an amount with no strong character takes the
+            paragraph direction. <Ltr> isolates it; the symbol side is a property
+            of the currency, fixed in both directions. */}
+        <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd"><Ltr>{renewalMoney.primary}</Ltr></p>
         {renewalMoney.secondary && (
-          <p className="text-sm font-semibold text-amber-500/90" data-testid="money-renewals-lbp">{renewalMoney.secondary}</p>
+          <p className="text-sm font-semibold text-amber-500/90" data-testid="money-renewals-lbp"><Ltr>{renewalMoney.secondary}</Ltr></p>
         )}
         <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: openRenewalInvs.length })}</p>
         <div className="mt-2"><ProcessRenewalsButton /></div>
@@ -176,9 +182,9 @@ async function MoneyOverview({ locale }: { locale: string }) {
       )}
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1">
         <p className="text-xs text-gray-500">{t('outstanding')}</p>
-        <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding">{outMoney.primary}</p>
+        <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding"><Ltr>{outMoney.primary}</Ltr></p>
         {outMoney.secondary && (
-          <p className="text-sm font-semibold text-red-500/90" data-testid="money-outstanding-lbp">{outMoney.secondary}</p>
+          <p className="text-sm font-semibold text-red-500/90" data-testid="money-outstanding-lbp"><Ltr>{outMoney.secondary}</Ltr></p>
         )}
         <p className="mt-0.5 text-xs text-gray-400">{t('openInvoices', { count: (openInvoices ?? []).length })}</p>
         <Link href={`/${locale}/money?tab=invoices`} className="mt-2 inline-block text-xs font-medium text-primary-600 hover:underline">
@@ -192,11 +198,11 @@ async function MoneyOverview({ locale }: { locale: string }) {
             <span className="text-gray-400">{t('noPaymentsToday')}</span>
           ) : (
             [...tally.entries()].map(([method, v]) => {
-              const m = dualMoney(v.usd, v.lbp, pref)
+              const m = fmtMoney(v.usd, v.lbp, pref)
               return (
               <span key={method} className="rounded-full bg-muted px-3 py-1" data-testid="money-tally-method" data-method={method}>
-                {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: {m.primary}
-                {m.secondary ? ` · ${m.secondary}` : ''}
+                {(locale === 'ar' ? METHOD_LABEL[method]?.ar : locale === 'fr' ? METHOD_LABEL[method]?.fr : METHOD_LABEL[method]?.en) || method}: <Ltr>{m.primary}</Ltr>
+                {m.secondary ? <> · <Ltr>{m.secondary}</Ltr></> : ''}
               </span>
               )
             })

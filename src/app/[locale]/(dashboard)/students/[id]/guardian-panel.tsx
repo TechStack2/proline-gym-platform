@@ -20,6 +20,8 @@ import { Loader2, Phone, Search, UserPlus, X, Users } from 'lucide-react'
 // MJ-2×MJ-1 RECONCILE: LOOKUP = MJ-1's find_profile_by_phone RPC; WRITE = MY canonical shape.
 import { findProfileByPhone } from '@/lib/provisioning/guardian-lookup'
 import { InviteButton } from '@/components/shared/invite-button'
+import { fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 export type GuardianRow = {
   linkId: string
@@ -142,8 +144,8 @@ export function GuardianPanel({
               <div>
                 <p className="font-medium text-gray-800">{g.name}{g.relationship ? ` (${g.relationship})` : ''}</p>
                 {g.phone && (
-                  <a href={`tel:${g.phone}`} dir="ltr" className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline">
-                    <Phone className="h-3 w-3" /> {g.phone}
+                  <a href={`tel:${g.phone}`} className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline">
+                    <Phone className="h-3 w-3" /> <Ltr>{fmtPhone(g.phone)}</Ltr>
                   </a>
                 )}
               </div>

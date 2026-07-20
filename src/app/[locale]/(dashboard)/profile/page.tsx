@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils'
 import { User, Phone, Mail, Shield, CalendarDays, Clock, Globe, Save, Check } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import { PushToggle } from '@/components/push/push-toggle'
+import { fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 type Props = { params: { locale: string } }
 
@@ -100,7 +102,7 @@ export default async function StaffProfilePage({ params }: Props) {
         {profile?.phone && (
           <div className="inline-flex items-center gap-1.5 mt-2 text-sm text-gray-500">
             <Phone className="h-3.5 w-3.5" />
-            <span dir="ltr">{profile.phone}</span>
+            <Ltr>{fmtPhone(profile.phone)}</Ltr>
           </div>
         )}
       </div>

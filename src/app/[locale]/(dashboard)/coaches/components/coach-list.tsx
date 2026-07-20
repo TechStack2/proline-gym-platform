@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { beltRankLabel } from '@/lib/belts/label'
+import { fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 // Real schema: coaches has NO name/email/status columns. Names + phone come from
 // the embedded `profiles` row; specialization is `specialization_{ar,en,fr}`;
@@ -66,7 +68,7 @@ export function CoachList({ coaches, locale, isRTL }: CoachListProps) {
                   {profile?.phone && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone className="w-4 h-4" />
-                      <span dir="ltr">{profile.phone}</span>
+                      <Ltr>{fmtPhone(profile.phone)}</Ltr>
                     </div>
                   )}
                   {coach.belt_rank && (

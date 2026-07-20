@@ -1,5 +1,6 @@
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { StrictIntlProvider } from '@/i18n/StrictIntlProvider';
+import { GYM_TIME_ZONE } from '@/lib/fmt';
+import { getLocale, getMessages } from 'next-intl/server';
 
 type Props = {
   children: React.ReactNode;
@@ -27,10 +28,13 @@ type Props = {
  */
 export default async function AuthLayout({ children }: Props) {
   const messages = await getMessages();
+  // Required by StrictIntlProvider — see its header: a client-rendered
+  // NextIntlClientProvider does NOT inherit the request locale.
+  const locale = await getLocale();
 
   return (
-    <NextIntlClientProvider messages={messages}>
+    <StrictIntlProvider messages={messages} locale={locale} timeZone={GYM_TIME_ZONE}>
       {children}
-    </NextIntlClientProvider>
+    </StrictIntlProvider>
   );
 }

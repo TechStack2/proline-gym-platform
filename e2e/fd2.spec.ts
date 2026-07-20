@@ -121,11 +121,18 @@ test('FD-2 · PWA footer: the last Today card clears the fixed mobile tab bar', 
   test.setTimeout(90_000)
   const { ctx, page } = await ctxFor(browser, 'owner', { width: 390, height: 740 })
   try {
+    // This test is about the content's bottom PADDING, not the bar's scroll
+    // behaviour. W1-FOUNDATION §2.2 hides the bar on scroll-down, which would move
+    // the very thing being measured; `prefers-reduced-motion` disables hide-on-scroll
+    // outright (per the spec), so the bar stays parked at the bottom edge and the
+    // original invariant is measured exactly as before. Hide-on-scroll itself is
+    // covered in w1-foundation.spec.ts.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/en/today')
     // pt-refill is always the last card in the Today stack (populated or collapsed).
     const lastCard = page.locator('[data-testid="card-pt-refill"]:visible, [data-testid="card-empty-pt-refill"]:visible').first()
     await expect(lastCard).toBeVisible({ timeout: 15_000 })
-    const bar = page.locator('nav[role="tablist"]:visible').first()
+    const bar = page.locator('[data-testid="tab-bar"]:visible').first()
     await expect(bar).toBeVisible({ timeout: 15_000 })
 
     // Scroll the dashboard content container to the very bottom.

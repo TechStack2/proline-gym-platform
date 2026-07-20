@@ -3,7 +3,8 @@ import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 import localFont from 'next/font/local';
 import { GeistSans } from 'geist/font/sans';
-import { NextIntlClientProvider } from 'next-intl';
+import { StrictIntlProvider } from '@/i18n/StrictIntlProvider';
+import { GYM_TIME_ZONE } from '@/lib/fmt';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -152,13 +153,13 @@ export default async function RootLayout({ children, params }: Props) {
         )}
       >
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-        <NextIntlClientProvider messages={messages}>
+        <StrictIntlProvider messages={messages} locale={locale} timeZone={GYM_TIME_ZONE}>
           {children}
           <Toaster richColors position={isRTL ? 'bottom-left' : 'bottom-right'} />
           <UseToastRenderer />
         <DevSwCleanup />
         <ServiceWorkerRegister />
-        </NextIntlClientProvider>
+        </StrictIntlProvider>
       </body>
     </html>
   );

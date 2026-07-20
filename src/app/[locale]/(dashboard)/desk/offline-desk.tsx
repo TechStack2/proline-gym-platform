@@ -33,6 +33,7 @@ import { outstandingUsd } from '@/lib/billing/reconcile'
 import { phoneDigits } from '@/lib/utils/phone'
 import { RecordPaymentForm, PendingSyncBar, CaptureLeadForm, type DeskInvoice } from './desk-payments'
 import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff, Receipt, User, Wallet, Info, ClipboardList } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header';
 
 type Row = Record<string, any>
 type DeskData = {
@@ -340,7 +341,7 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
     <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="offline-desk" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+          <PageHeader segment="desk" />
           <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-gray-500" data-testid="desk-cached-at">
             {!online && <WifiOff className="h-3.5 w-3.5 text-amber-600" />} {cachedLabel}
           </p>

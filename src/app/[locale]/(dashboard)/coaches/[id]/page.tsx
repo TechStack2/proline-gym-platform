@@ -14,6 +14,8 @@ import { AvailabilityEditor, type AvailabilityRow, type OverrideRow } from '../.
 import { CoachActions } from './coach-actions'
 import { CoachPublishPanel } from './CoachPublishPanel'
 import type { DiaryAssignment } from '../../schedule/diary-book-pt'
+import { fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 
 export const dynamic = 'force-dynamic'
 
@@ -220,8 +222,8 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
               </p>
               {prof?.phone && (
                 <p className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                  <a href={`tel:${prof.phone}`} className="inline-flex items-center gap-1 hover:text-primary-600" data-testid="coach-tel" dir="ltr">
-                    <Phone className="h-3 w-3" />{prof.phone}
+                  <a href={`tel:${prof.phone}`} className="inline-flex items-center gap-1 hover:text-primary-600" data-testid="coach-tel">
+                    <Phone className="h-3 w-3" /><Ltr>{fmtPhone(prof.phone)}</Ltr>
                   </a>
                   {waPhone && (
                     <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-green-600 hover:underline" data-testid="coach-wa">

@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { AttendanceHistoryClient } from './attendance-history-client'
+import { PageHeader } from '@/components/ui/page-header';
 
 interface AttendanceHistoryPageProps {
   params: { locale: string }
@@ -119,7 +120,7 @@ export default async function AttendanceHistoryPage({ params: { locale }, search
   return (
     <div className="space-y-6 p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <div>
-        <h1 className="hidden md:block text-3xl font-bold tracking-tight">{t('title')}</h1>
+        <PageHeader segment="attendance" />
         <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 

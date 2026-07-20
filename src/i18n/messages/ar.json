@@ -3950,5 +3950,32 @@
     "black_3": "حزام أسود — دان 3",
     "black_4": "حزام أسود — دان 4",
     "black_5": "حزام أسود — دان 5"
+  },
+  "statuses": {
+    "paid": "مدفوع",
+    "partial": "مدفوعة جزئياً",
+    "pending": "معلق",
+    "overdue": "متأخر",
+    "cancelled": "ملغي",
+    "refunded": "مسترجع",
+    "void": "ملغاة",
+    "active": "نشط",
+    "expiring": "على وشك الانتهاء",
+    "memberOverdue": "دفعة متأخرة",
+    "owing": "عليه مستحقات",
+    "lapsed": "منتهي",
+    "frozen": "مجمّد",
+    "noMembership": "لا يوجد اشتراك",
+    "inactive": "غير نشط",
+    "requested": "مطلوب",
+    "waitlisted": "قائمة الانتظار",
+    "rejected": "مرفوض",
+    "expired": "منتهي الصلاحية",
+    "suspended": "موقوف",
+    "present": "حاضر",
+    "absent": "غائب",
+    "late": "متأخر عن الموعد",
+    "excused": "بعذر",
+    "noShow": "لم يحضر"
   }
 }

@@ -8,6 +8,10 @@ import { matchingProfileIds } from '@/lib/admin/profile-search'
 import { getFamilySummaries, familyOutstandingTotal } from '@/lib/family/aggregate'
 import { Avatar } from '@/components/shared/avatar'
 import { MembersTabs } from '../components/members-tabs'
+import { PageHeader } from '@/components/ui/page-header';
+import { fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 
 /**
  * GUARDIAN-360 R1 — the staff Guardians list. Field finding 12: guardians were
@@ -81,7 +85,7 @@ export default async function GuardiansPage({
   return (
     <div className="space-y-6" data-testid="guardians-view">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className={cn('hidden md:block text-3xl font-bold', isRTL && 'text-right')}>{t('title')}</h1>
+        <PageHeader segment="students" />
         <MembersTabs active="guardians" locale={locale} />
       </div>
 
@@ -110,20 +114,25 @@ export default async function GuardiansPage({
                   <span className="min-w-0">
                     <span className={cn('block truncate font-semibold text-gray-900', isRTL && 'font-arabic')}>{r.name}</span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500">
-                      {r.phone && <span dir="ltr">{r.phone}</span>}
+                      {r.phone && <Ltr>{fmtPhone(r.phone)}</Ltr>}
                       {r.relationship && <span>· {r.relationship}</span>}
                       <span data-testid="guardian-row-dependents">· {t('dependents', { count: r.dependents })}</span>
                     </span>
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
+                  {/* DA-32: "Settled" was bare green text beside a chevron, so it read
+                      as a link rather than a status. §2.3: statuses are chips — one
+                      vocabulary, one shape. The owing amount keeps its own emphasis
+                      (it is a value, not a status) and gets DA-7 isolation. */}
                   {r.outstanding > 0.005 ? (
                     <span data-testid="guardian-row-outstanding" data-amount={r.outstanding.toFixed(2)}
-                      className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700" dir="ltr">
-                      ${r.outstanding.toFixed(2)}
+                      className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                      <Ltr>${r.outstanding.toFixed(2)}</Ltr>
                     </span>
                   ) : (
-                    <span data-testid="guardian-row-outstanding" data-amount="0.00" className="text-xs text-emerald-600">{t('settled')}</span>
+                    <StatusChip domain="member" status="active" label={t('settled')} size="sm"
+                      data-testid="guardian-row-outstanding" data-amount="0.00" />
                   )}
                   <ChevronRight className={cn('h-4 w-4 text-gray-300', isRTL && 'rotate-180')} aria-hidden />
                 </span>

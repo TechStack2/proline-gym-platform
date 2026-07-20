@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import ClassesList from './ClassesList'
 import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/ui/page-header';
 
 export const dynamic = 'force-dynamic'
 
@@ -117,7 +118,7 @@ export default async function ClassesPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-2xl font-bold">Classes</h1>
+        <PageHeader segment="classes" />
         <WorkspaceSegments
           locale={locale}
           active="classes"

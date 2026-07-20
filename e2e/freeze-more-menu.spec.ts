@@ -17,8 +17,11 @@ import { ROLES } from './roles'
  * lingering overlay swallows it, so we assert the wedge via the probes below rather
  * than a confusing actionability timeout.
  */
-const MORE = '[aria-controls$="-more"]:visible'      // bottom-bar (mobile) or side-rail (tablet)
-const MEMBERS = '[aria-controls$="-members"]:visible'
+// W1-FOUNDATION §2.2: the staff bar is the shared TabBar primitive now — real nav
+// ARIA, so the old `aria-controls$="-more"` hook is gone. The stable handles are the
+// testids, one per surface: bottom bar (mobile) and side rail (tablet).
+const MORE = '[data-testid="tab-more"]:visible, [data-testid="rail-more"]:visible'
+const MEMBERS = '[data-testid="tab-members"]:visible, [data-testid="rail-members"]:visible'
 
 async function runFreezeSequence(page: Page) {
   await page.goto('/en/today', { waitUntil: 'domcontentloaded' })
