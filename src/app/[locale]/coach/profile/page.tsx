@@ -2,6 +2,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { CoachProfileEditor } from './CoachProfileEditor'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { PushToggle } from '@/components/push/push-toggle'
+import { DeskGrid } from '@/components/portal/portal-kit'
 import { storagePublicUrl } from '@/lib/storage/public-url'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
@@ -107,7 +108,10 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
-      <PushToggle />
+    {/* W2a §4.2 Rule 1: main = identity card → stats → contact & role → hourly
+        rate → bio → account details → self-editor; aside = push toggle +
+        interface-language (on mobile these two now render AFTER main — intended). */}
+    <DeskGrid gap="space-y-4" main={<>
       {/* Avatar + Name Card */}
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
         <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-primary-700 text-primary-foreground text-3xl font-bold mb-3">
@@ -218,16 +222,6 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
         )}
       </div>
 
-      {/* PWA-BASICS R1: an always-editable INTERFACE-language control. The coach shell
-          previously exposed no language switcher (only the read-only messaging
-          preference above), so a coach stuck on the wrong UI language had no way out. */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
-        <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider', isRTL && 'font-arabic')}>
-          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
-        </h3>
-        <LanguageSwitcher locale={locale} variant="inline" />
-      </div>
-
       {/* Hourly Rate */}
       {(coach?.hourly_rate_usd || coach?.hourly_rate_lbp) && (
         <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
@@ -304,6 +298,18 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           hasPending={!!coach.has_pending_changes}
         />
       )}
+    </>} aside={<>
+      <PushToggle />
+      {/* PWA-BASICS R1: an always-editable INTERFACE-language control. The coach shell
+          previously exposed no language switcher (only the read-only messaging
+          preference above), so a coach stuck on the wrong UI language had no way out. */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
+        <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider', isRTL && 'font-arabic')}>
+          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
+        </h3>
+        <LanguageSwitcher locale={locale} variant="inline" />
+      </div>
+    </>} />
     </div>
   )
 }

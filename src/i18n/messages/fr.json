@@ -170,7 +170,10 @@
     "excused": "Excusé",
     "shellStaff": "Personnel",
     "shellCoach": "Coach",
-    "shellMember": "Membre"
+    "shellMember": "Membre",
+    "signOut": "Se déconnecter",
+    "signOutConfirm": "Appuyez encore pour confirmer",
+    "theme": "Thème"
   },
   "language": {
     "switch": "Changer de langue",
@@ -3044,7 +3047,9 @@
     "title": "Horaire des cours",
     "empty": "Vous n'êtes inscrit à aucun cours",
     "emptyHint": "Contactez la réception pour vous inscrire",
-    "coach": "Entraîneur"
+    "coach": "Entraîneur",
+    "emptyBrowseCta": "Parcourir les cours",
+    "today": "Aujourd'hui"
   },
   "portalClasses": {
     "title": "Cours",
@@ -3058,7 +3063,10 @@
     "request": "S'inscrire",
     "actingFor": "Vous agissez pour : {name}",
     "emptyTitle": "Aucun cours proposé pour l'instant",
-    "emptyCta": "Voir l'horaire"
+    "emptyCta": "Voir l'horaire",
+    "viewSchedule": "Horaire",
+    "viewBrowse": "Parcourir",
+    "myRegs": "Mes inscriptions"
   },
   "invoiceNew": {
     "title": "Nouvelle facture",

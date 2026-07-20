@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { pctWidthClass } from '@/lib/utils/bar-width';
 import { Award, TrendingUp, CalendarCheck, Target } from 'lucide-react';
 import { computeEligibility } from '@/lib/eligibility';
+import { DeskGrid } from '@/components/portal/portal-kit';
 
 type Props = { params: { locale: string } };
 
@@ -88,6 +89,9 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
+      {/* W2a §4.2 Rule 1: main = stats + eligibility (the progress flow);
+          aside = the promotion-history timeline (the glanceable record). */}
+      <DeskGrid gap="space-y-5" main={<>
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-purple-50 text-purple-700 p-4 shadow-sm">
@@ -153,8 +157,8 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
           </Link>
         </div>
       )}
-
-      {/* Promotion history timeline */}
+      </>} aside={
+      /* Promotion history timeline */
       <div className="rounded-2xl bg-white p-4 shadow-sm">
         <h3 className="font-semibold text-sm text-gray-900 mb-3 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-purple-600" />
@@ -184,6 +188,7 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
           <p className="text-sm text-gray-400 text-center py-4">{t('no_history')}</p>
         )}
       </div>
+      } />
     </div>
   );
 }

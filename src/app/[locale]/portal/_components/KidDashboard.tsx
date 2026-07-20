@@ -12,6 +12,7 @@ import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
 import { MembershipLifecycleActions } from './membership-lifecycle-actions'
 import { ProfileSelfServe } from '../profile/profile-self-serve'
+import { DeskGrid } from '@/components/portal/portal-kit'
 
 /**
  * Guardian's per-kid dashboard (B3). Rendered on /portal?kid=<studentId> for a
@@ -134,6 +135,11 @@ export async function KidDashboard({
 
   return (
     <div className={cn('p-4 space-y-5', isRTL && 'rtl')} data-testid="kid-dashboard" data-kid-id={kid.id}>
+    {/* W2a §4.2 Rule 1: main = balance → switcher → header → membership → regs →
+        waiver → schedule → attendance → belt progress (mobile order); aside = the
+        trailing camps + profile self-serve + household-billing link (a suffix —
+        DOM order unchanged). */}
+    <DeskGrid gap="space-y-5" main={<>
       {/* BILL-GUARDS R6: the family's HOUSEHOLD outstanding across all kids, surfaced
           on the guardian home without a click. Empty (nothing owed) = NO card. */}
       {householdOutstanding > 0.005 && (
@@ -328,7 +334,7 @@ export async function KidDashboard({
           </ul>
         )}
       </div>
-
+    </>} aside={<>
       {/* E1: published camps — guardian requests FOR this kid */}
       <PortalCampsSection studentId={kid.id} actingFor={kid.name} locale={locale} />
 
@@ -358,6 +364,7 @@ export async function KidDashboard({
         </span>
         <ChevronRight className={cn('h-4 w-4 text-gray-400', isRTL && 'rotate-180')} />
       </Link>
+    </>} />
     </div>
   )
 }

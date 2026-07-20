@@ -24,14 +24,32 @@ export default async function CoachLayout({ children, params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/auth/login`)
   // WL-THEME: brand this coach's shell by THEIR gym's colour (never the Host's).
-  const { data: gymRow } = await supabase.from('profiles').select('gyms(brand_color)').eq('id', user.id).maybeSingle()
-  const rawGym = (gymRow as { gyms?: unknown } | null)?.gyms
-  const gymNode = Array.isArray(rawGym) ? rawGym[0] : rawGym
-  const brandColor = (gymNode as { brand_color?: string | null } | null | undefined)?.brand_color ?? null
+  // W2a §4.1: the same server-only helper the portal uses now also carries the
+  // gym NAME + LOGO for the identity bar (one read, one code path).
+  const { getUserGymChrome } = await import('@/lib/theme/user-brand')
+  const chrome = await getUserGymChrome(user.id, locale)
+  // §3: the More entry badges when trials are scheduled today. Same definer RPC
+  // the Today surface uses; best-effort — a failure renders no badge, never blocks.
+  let trialsTodayCount = 0
+  try {
+    const { data: trialsRaw } = await supabase.rpc('get_coach_trials')
+    const todayIso = new Date().toISOString().slice(0, 10)
+    trialsTodayCount = ((trialsRaw || []) as { status?: string; scheduled_date?: string }[])
+      .filter((tr) => tr.status === 'scheduled' && tr.scheduled_date === todayIso).length
+  } catch {
+    trialsTodayCount = 0
+  }
   return (
     <>
-      <BrandThemeStyle brandColor={brandColor} />
-      <CoachLayoutClient locale={locale}>{children}</CoachLayoutClient>
+      <BrandThemeStyle brandColor={chrome.brandColor} />
+      <CoachLayoutClient
+        locale={locale}
+        gymName={chrome.gymName}
+        logoUrl={chrome.logoUrl}
+        trialsTodayCount={trialsTodayCount}
+      >
+        {children}
+      </CoachLayoutClient>
     </>
   )
 }

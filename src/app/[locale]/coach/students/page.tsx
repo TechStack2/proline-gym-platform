@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Users, Search, BookOpen, Award, Calendar, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { DeskGrid } from '@/components/portal/portal-kit';
 
 interface StudentEntry {
   id: string;
@@ -244,6 +245,9 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
         <p className="text-sm text-gray-500 mt-0.5">{msg('coach.students.subtitle')}</p>
       </div>
 
+      {/* W2a §4.2 Rule 1 (asideFirst): search + filters are the coach's controls —
+          above the list on mobile, the aside column on desktop; main = states + list. */}
+      <DeskGrid asideFirst gap="space-y-4" aside={<>
       {/* Search Bar */}
       <div className="relative">
         <Search className={cn(
@@ -294,7 +298,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
           ))}
         </select>
       </div>
-
+      </>} main={<>
       {/* Loading */}
       {loading && (
         <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
@@ -369,6 +373,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
           ))}
         </div>
       )}
+      </>} />
     </div>
   );
 }

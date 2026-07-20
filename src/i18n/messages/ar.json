@@ -170,7 +170,10 @@
     "excused": "معذور",
     "shellStaff": "الإدارة",
     "shellCoach": "المدرب",
-    "shellMember": "الأعضاء"
+    "shellMember": "الأعضاء",
+    "signOut": "تسجيل الخروج",
+    "signOutConfirm": "اضغط مجددًا لتأكيد الخروج",
+    "theme": "المظهر"
   },
   "language": {
     "switch": "تغيير اللغة",
@@ -3044,7 +3047,9 @@
     "title": "جدول الحصص",
     "empty": "لست مسجلاً في أي حصص",
     "emptyHint": "تواصل مع الاستقبال للتسجيل",
-    "coach": "المدرب"
+    "coach": "المدرب",
+    "emptyBrowseCta": "تصفّح الحصص",
+    "today": "اليوم"
   },
   "portalClasses": {
     "title": "الحصص",
@@ -3058,7 +3063,10 @@
     "request": "تسجيل",
     "actingFor": "أنت تتصرف نيابة عن: {name}",
     "emptyTitle": "لا توجد حصص متاحة بعد",
-    "emptyCta": "عرض الجدول"
+    "emptyCta": "عرض الجدول",
+    "viewSchedule": "الجدول",
+    "viewBrowse": "تصفّح",
+    "myRegs": "تسجيلاتي"
   },
   "invoiceNew": {
     "title": "إصدار فاتورة",

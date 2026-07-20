@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/shared/avatar'
-import { PortalCard } from '@/components/portal/portal-kit'
+import { DeskGrid, PortalCard } from '@/components/portal/portal-kit'
 import { CalendarDays, CreditCard, ClipboardList, Wallet, ChevronRight, Users } from 'lucide-react'
 import { getFamilySummaries, type FamilySummary } from '@/lib/family/aggregate'
 
@@ -90,6 +90,10 @@ export async function FamilyHome({
 
   return (
     <div className={cn('space-y-6 p-4', isRTL && 'rtl')} data-testid="family-overview">
+    {/* W2a §4.2 Rule 1: main = balance + overview + switcher + per-child glance
+        cards (the mobile flow); aside = the combined family week schedule (last
+        on mobile — DOM order unchanged). */}
+    <DeskGrid gap="space-y-6" main={<>
       {/* Combined family balance — nothing owed = no card (BILL-GUARDS idiom). */}
       {householdOutstanding > 0.005 && (
         <Link href={`/${locale}/portal/billing`} data-testid="family-outstanding-total" data-amount={householdOutstanding.toFixed(2)}
@@ -171,7 +175,7 @@ export async function FamilyHome({
           )
         })}
       </div>
-
+    </>} aside={<>
       {/* One combined week schedule for the whole family — each entry chipped per child. */}
       <PortalCard data-testid="family-week-schedule">
         <h2 className={cn('mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
@@ -201,6 +205,7 @@ export async function FamilyHome({
           </ul>
         )}
       </PortalCard>
+    </>} />
     </div>
   )
 }
