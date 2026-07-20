@@ -2,8 +2,8 @@
  * PRAXELLA-BRAND — the Praxella mark (single source).
  *
  * A 3×3 "session grid": four corner slots (currentColor) + a center slot that is
- * the coral "booked slot" (Flare #FF5A36) forming the X of pra·X·ella. Reads at
- * favicon size; builds from plain rounded rects. See docs/demo/praxella-landing-design.html.
+ * the coral "booked slot" (Flare, the `--c-flare` token) forming the X of pra·X·ella.
+ * Reads at favicon size; builds from plain rounded rects. See docs/demo/praxella-landing-design.html.
  *
  *  · default  — corners inherit `currentColor`, center is Flare (two-color).
  *  · mono     — all five cells inherit `currentColor` (single-color fallback for
@@ -12,8 +12,6 @@
  * Pure SVG, no client hooks — usable in any server/client tree. Color the corners
  * by setting text color on an ancestor; the center stays Flare unless `mono`.
  */
-export const FLARE = '#FF5A36';
-
 export function PraxellaMark({
   size = 24,
   variant = 'default',
@@ -42,7 +40,11 @@ export function PraxellaMark({
         <rect x="0" y="18" width="6" height="6" rx="1.8" />
         <rect x="18" y="18" width="6" height="6" rx="1.8" />
       </g>
-      <rect x="9" y="9" width="6" height="6" rx="1.8" fill={variant === 'mono' ? 'currentColor' : FLARE} />
+      {/* DS2-TOKENS §1.1: the Flare center cell is `fill-flare` (the --c-flare token),
+          not a literal — a CSS `fill` beats the SVG presentation attribute, so the
+          rendered color is identical. */}
+      <rect x="9" y="9" width="6" height="6" rx="1.8"
+        className={variant === 'mono' ? 'fill-current' : 'fill-flare'} />
     </svg>
   );
 }

@@ -23,14 +23,12 @@
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 355 82% 39%;
-    --success: 142 72% 29%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --info: 221 83% 53%;
-    --info-foreground: 0 0% 100%;
+    /* DS2-TOKENS §1.3/§1.4: the --success/--warning/--destructive/--info HSL pairs
+       that stood here were a SECOND, divergent definition of the status hues (they
+       never matched the tailwind `success`/`warning`/… scales that actually paint
+       the app) and had zero consumers — no `hsl(var(--success))` anywhere in src.
+       Promoted to channel form below (the --c-success, --c-warning, --c-info and
+       --c-danger ramps); the duplicates are deleted rather than left to drift again. */
 
     /* ─── DS-2: neutral CHANNEL vars (R G B) so Tailwind's rgb(var(--c-x) /
        <alpha-value>) makes the pervasive hardcoded neutrals (bg-white ×259,
@@ -91,6 +89,111 @@
     --c-brand-900: 127 29 29;    /* #7f1d1d */
     --c-brand-950: 69 10 10;     /* #450a0a */
     --c-brand-fg: 255 255 255;   /* text ON brand (contrast-computed per gym) */
+
+    /* ═══ DS2-TOKENS §1.3 — THE COLOR-ROLE SPLIT ══════════════════════════════
+       One red used to be brand, action, destructive, category and logout at once
+       (DA-38). Color now has FIVE roles; every colored element is assignable to
+       exactly one, and "which token may I use here?" is answered by ROLE, not hue.
+
+       ROLE         TOKENS                       PER-GYM?  MAY BE CONSUMED BY
+       ──────────────────────────────────────────────────────────────────────────
+       Brand        --c-brand-*                  YES   identity chrome only: shell
+                                                       accent, logo lockup, landing
+                                                       brand surfaces
+       Action       primary-* (alias of brand)   YES   interactive affordances only:
+                                                       primary CTA, links, active nav
+       Destructive  --c-danger-*                 NO    irreversible / negative:
+                                                       delete, deactivate, decline,
+                                                       void, logout, overdue, negative
+                                                       balance
+       Status       --c-success|warning|info|neutral-*
+                                                 NO    STATE, never action. StatusChip
+                                                       (§2.3) is the intended consumer
+       Category     --c-cat-1…8                  NO    discipline identity only
+                                                       (DISC-COLOR), always at TINT
+                                                       strength — never a solid fill
+
+       WHY danger is FIXED and never per-gym: a gym whose brand_color IS red would
+       otherwise paint "Delete" in the same crimson as "Save", and the destructive
+       affordance would vanish into the brand. The split is what makes §1.3's
+       convention enforceable — destructive is never solid-filled at rest (outline/
+       ghost + icon), always confirmed, and never sits in persistent chrome.
+
+       BYTE-IDENTITY (§6.2): every value below is the EXACT hex its role already
+       renders today — the destructive/success/warning/info scales moved out of
+       tailwind.config.ts verbatim. This block changes WHERE a color is defined and
+       WHAT it is permitted to mean; it does not repaint an existing pixel. The one
+       deliberate light-mode change in this slice is the category palette (DA-31),
+       enumerated in the slice report.
+       ══════════════════════════════════════════════════════════════════════════ */
+
+    /* DESTRUCTIVE — a fixed red ramp, brand-INDEPENDENT by construction. Values are
+       tailwind.config.ts's former literal `destructive` scale, extended to a full
+       ramp with the matching Tailwind red steps. Never overridden per gym. */
+    --c-danger-50: 254 242 242;   /* #fef2f2 */
+    --c-danger-100: 254 226 226;  /* #fee2e2 */
+    --c-danger-200: 254 202 202;  /* #fecaca */
+    --c-danger-300: 252 165 165;  /* #fca5a5 */
+    --c-danger-400: 248 113 113;  /* #f87171 */
+    --c-danger-500: 239 68 68;    /* #ef4444 — the former destructive DEFAULT */
+    --c-danger-600: 220 38 38;    /* #dc2626 */
+    --c-danger-700: 185 28 28;    /* #b91c1c */
+    --c-danger-800: 153 27 27;    /* #991b1b */
+    --c-danger-900: 127 29 29;    /* #7f1d1d */
+    --c-danger-fg: 255 255 255;   /* text ON a solid danger fill */
+
+    /* STATUS — fixed semantic hues, promoted from the HSL vars they replace. Surface
+       tints derive with alpha (rgb(var(--c-success-500) / 0.12)), so one hue serves
+       both the dot and its wash. `neutral` is NEW (lapsed/muted state) and paints
+       nothing today. */
+    --c-success-50: 240 253 244;  /* #f0fdf4 */
+    --c-success-500: 34 197 94;   /* #22c55e */
+    --c-success-600: 22 163 74;   /* #16a34a */
+    --c-success-700: 21 128 61;   /* #15803d */
+    --c-success-fg: 255 255 255;
+    --c-warning-50: 255 251 235;  /* #fffbeb */
+    --c-warning-500: 245 158 11;  /* #f59e0b */
+    --c-warning-600: 217 119 6;   /* #d97706 */
+    --c-warning-700: 180 83 9;    /* #b45309 */
+    --c-warning-fg: 255 255 255;
+    --c-info-50: 239 246 255;     /* #eff6ff */
+    --c-info-500: 59 130 246;     /* #3b82f6 */
+    --c-info-600: 37 99 235;      /* #2563eb */
+    --c-info-700: 29 78 216;      /* #1d4ed8 */
+    --c-info-fg: 255 255 255;
+    --c-neutral-50: 248 250 252;  /* #f8fafc */
+    --c-neutral-500: 100 116 139; /* #64748b */
+    --c-neutral-600: 71 85 105;   /* #475569 */
+    --c-neutral-700: 51 65 85;    /* #334155 */
+    --c-neutral-fg: 255 255 255;
+
+    /* CATEGORY (DISC-COLOR) — the fixed 8-hue categorical palette a discipline is
+       hash-assigned from (src/lib/design/category-color.ts). Two channels per hue:
+       the BASE drives the tint wash + hairline, the FG is the 700-weight text that
+       reads on it. Rendered at tint strength ONLY, so a full timetable reads calm
+       rather than carnival — and no class ever reads as an alarm (DA-31). */
+    --c-cat-1: 20 184 166;   --c-cat-1-fg: 15 118 110;  /* teal    */
+    --c-cat-2: 99 102 241;   --c-cat-2-fg: 67 56 202;   /* indigo  */
+    --c-cat-3: 245 158 11;   --c-cat-3-fg: 146 64 14;   /* amber   */
+    --c-cat-4: 16 185 129;   --c-cat-4-fg: 4 120 87;    /* emerald */
+    --c-cat-5: 139 92 246;   --c-cat-5-fg: 109 40 217;  /* violet  */
+    --c-cat-6: 244 63 94;    --c-cat-6-fg: 190 18 60;   /* rose    */
+    --c-cat-7: 6 182 212;    --c-cat-7-fg: 14 116 144;  /* cyan    */
+    --c-cat-8: 100 116 139;  --c-cat-8-fg: 51 65 85;    /* slate   */
+
+    /* NAMED EXCEPTIONS — §1.1: "if a hue is worth using, it is worth naming." These
+       are third-party/platform marks that are NOT ours to re-hue, so they were the
+       standing excuse for a raw literal. Named here, they stop being one. */
+    --c-whatsapp: 37 211 102;      /* #25D366 — WhatsApp brand green */
+    --c-whatsapp-deep: 7 94 84;    /* #075E54 — its dark teal, for text on the tint */
+    --c-whatsapp-600: 30 190 91;   /* #1ebe5b — the pressed/hover shade */
+    --c-flare: 255 90 54;          /* #FF5A36 — PRAXELLA Flare (the mark's coral X) */
+
+    /* The shell accent's default. The .shell-* utilities below (and brand.ts's
+       per-gym override) set --shell-accent; this root value is what an element
+       outside any shell falls back to. Was a repeated `var(--shell-accent,#cd1419)`
+       literal in five components — identical output, one definition. */
+    --shell-accent: rgb(var(--c-brand-700));
 
     /* ─── Typography ─── */
     --font-arabic: 'IBM Plex Sans Arabic', var(--font-geist-sans), system-ui, sans-serif;
@@ -175,24 +278,49 @@
     --input: 240 11% 21%;
     --secondary: 240 6% 88%;
     --secondary-foreground: 240 11% 15%;
+
+    /* DS2-TOKENS — the only role tokens that flip. Brand, danger and the status
+       BASE hues are saturated accents that read on both grounds (the DS-2 rule), so
+       they are deliberately NOT inverted. But a role's *foreground* is text sitting
+       on a tint, and a 700-weight hue on a dark card is unreadable — so the two
+       text-on-tint channels lift to their 300-weight. Nothing here runs in light. */
+    --c-cat-1-fg: 94 234 212;   /* teal-300    */
+    --c-cat-2-fg: 165 180 252;  /* indigo-300  */
+    --c-cat-3-fg: 252 211 77;   /* amber-300   */
+    --c-cat-4-fg: 110 231 183;  /* emerald-300 */
+    --c-cat-5-fg: 196 181 253;  /* violet-300  */
+    --c-cat-6-fg: 253 164 175;  /* rose-300    */
+    --c-cat-7-fg: 103 232 249;  /* cyan-300    */
+    --c-cat-8-fg: 203 213 225;  /* slate-300   */
+    --c-whatsapp-deep: 134 239 172; /* #075E54 is invisible on a dark tint → green-300 */
   }
   html.dark .shell-staff  { --surface: #e5484d; } /* reception crimson → brightened */
   html.dark .shell-portal { --surface: #d97706; } /* member bronze → brighter amber */
   html.dark .shell-coach  { --surface: #64748b; } /* coach graphite → brighter slate */
 
-  /* R3 LANDING DARK PASS: the marketing HERO + FOOTER are DESIGNED-dark surfaces —
-     near-black background + light text in BOTH themes (a hero is dark in light mode
-     too). The DS-2 channel-var flip (html.dark) would invert them — the near-black
-     wash/footer washes to near-WHITE and every `text-white`/`text-gray-3xx` flips to
-     near-black — wrecking the designed look. This class RESETS the neutral channel
-     vars those two surfaces consume back to their :root (light-mode) values within the
-     subtree, so html.dark leaves the designed dark look intact. Light mode is byte-
-     identical (html.dark never matches → this rule never runs). CSP-safe (a stylesheet
-     class, not an inline style). NOTE: --c-gray-50 is deliberately NOT reset — the
-     hero's bottom fade uses `from-gray-50` and SHOULD flip so it blends into the (now
-     dark) next content section. The neutral content sections in between are untouched:
-     their bg-white/gray-50 + text-gray-900 already flip coherently to dark cards. */
-  html.dark .landing-dark {
+  /* ═══ DS2-TOKENS §1.2 — THE FIXED-SURFACE RULE (DS-3, generalized) ═══════════
+     A surface either FLIPS (the default — it consumes the channel vars and html.dark
+     inverts them) or it is DESIGNED-FIXED (it looks the same in both themes because
+     that look IS the design). There is no third way and no per-component re-pinning:
+     a fixed surface opts out through one of the two utilities below, which is what
+     removes "but it must not flip" as an excuse for a raw hex.
+
+       .surface-fixed-dark — pins the neutrals to their designed-DARK values in both
+                             themes. Users: landing hero, landing footer, the landing
+                             Affiliations band (DA-27), any future designed-dark band.
+       .surface-paper      — pins the LIGHT ramp + color-scheme:light. Users: the
+                             thermal receipt, any future print/export surface.
+
+     `.surface-fixed-dark` is the former `.landing-dark`, renamed and unchanged in
+     behavior: it RESETS the neutral channel vars its subtree consumes back to their
+     :root (light-mode) values, so html.dark leaves the designed dark look intact.
+     Light mode is byte-identical (html.dark never matches → this rule never runs).
+     CSP-safe (a stylesheet class, not an inline style). NOTE: --c-gray-50 is
+     deliberately NOT reset — the hero's bottom fade uses `from-gray-50` and SHOULD
+     flip so it blends into the (now dark) next content section. The neutral content
+     sections in between are untouched: their bg-white/gray-50 + text-gray-900 already
+     flip coherently to dark cards. */
+  html.dark .surface-fixed-dark {
     --c-white: 255 255 255;
     --c-secondary-800: 56 56 56;
     --c-secondary-900: 37 37 37;
@@ -336,17 +464,10 @@
     ring-color: hsl(var(--ring));
   }
 
-  /* ─── Skeleton Loading ─── */
-  .skeleton {
-    @apply rounded-md bg-gray-200 animate-skeleton;
-    background: linear-gradient(
-      90deg,
-      hsl(var(--muted)) 25%,
-      hsl(var(--muted) / 0.5) 37%,
-      hsl(var(--muted)) 63%
-    );
-    background-size: 200% 100%;
-  }
+  /* DS2-TOKENS §1.4: the `.skeleton` component class was deleted here — nothing in
+     src wore it (the real loading placeholder is components/ui/page-skeleton.tsx,
+     which uses plain `animate-pulse` utilities), and it was the sole consumer of the
+     `skeleton` keyframe/animation pair in tailwind.config.ts, which goes with it. */
 
   /* ─── Scrollbar Styling ─── */
   .scrollbar-thin {
@@ -401,6 +522,39 @@
      the existing NativeHeader stripe + NativeTabBar active state pick it up with no
      churn. Bundled class (NOT an inline style="" attr → CSP-safe; RESPONSIVE-CSP-
      HARDENING BUG 3: an SSR'd inline var is stripped by the prod strict style-src). */
+  /* ═══ DS2-TOKENS §1.3 — DISC-COLOR, the category tint ════════════════════════
+     A discipline is hash-assigned one of the eight --c-cat-* hues (the hash lives in
+     src/lib/design/category-color.ts and is the single source of the index). The
+     element carries `cat-tint` + `data-cat="N"`; the attribute selects the hue pair
+     into two local vars and the utility renders them at TINT strength.
+
+     WHY A TINT AND NOT A FILL (DA-31): the timetable used to paint every class cell
+     as a SOLID saturated block, and the first palette entry was the brand crimson —
+     so a perfectly normal Monday class was indistinguishable from an error state, and
+     a full week read as a wall of alarms. At 0.14 alpha with the hue's own 700-weight
+     text, a full grid reads calm and the discipline is still legible at a glance.
+
+     Bounded, static rules — so, unlike the per-discipline inline `style` this replaces,
+     there is nothing for the prod CSP (style-src nonce, no 'unsafe-inline') to strip
+     and no nonce'd <style> to inject. The old inline styles were stripped in prod,
+     which React then re-applied every render — the reconciliation loop that froze the
+     tab (RESPONSIVE-CSP BUG 1). That failure mode is now structurally impossible. */
+  [data-cat="1"] { --cat: var(--c-cat-1); --cat-fg: var(--c-cat-1-fg); }
+  [data-cat="2"] { --cat: var(--c-cat-2); --cat-fg: var(--c-cat-2-fg); }
+  [data-cat="3"] { --cat: var(--c-cat-3); --cat-fg: var(--c-cat-3-fg); }
+  [data-cat="4"] { --cat: var(--c-cat-4); --cat-fg: var(--c-cat-4-fg); }
+  [data-cat="5"] { --cat: var(--c-cat-5); --cat-fg: var(--c-cat-5-fg); }
+  [data-cat="6"] { --cat: var(--c-cat-6); --cat-fg: var(--c-cat-6-fg); }
+  [data-cat="7"] { --cat: var(--c-cat-7); --cat-fg: var(--c-cat-7-fg); }
+  [data-cat="8"] { --cat: var(--c-cat-8); --cat-fg: var(--c-cat-8-fg); }
+  .cat-tint {
+    background-color: rgb(var(--cat, var(--c-cat-8)) / 0.14);
+    color: rgb(var(--cat-fg, var(--c-cat-8-fg)));
+    box-shadow: inset 0 0 0 1px rgb(var(--cat, var(--c-cat-8)) / 0.32);
+  }
+  /* On the dark ground the wash needs a touch more body to separate from the card. */
+  html.dark .cat-tint { background-color: rgb(var(--cat, var(--c-cat-8)) / 0.20); }
+
   .shell-staff  { --surface: #cd1419; --shell-accent: var(--surface); } /* reception — crimson */
   .shell-portal { --surface: #b45309; --shell-accent: var(--surface); } /* member — warm bronze */
   .shell-coach  { --surface: #475569; --shell-accent: var(--surface); } /* coach — graphite */
@@ -420,8 +574,14 @@
    (3) NOT RECEIPT-SHAPED. The A4-width card is pinned to 80mm and monochrome on print;
        the dashboard shell (sidebar/header/TabBar) is hidden so the receipt fills the roll.
    Scoped via :has() to the page carrying [data-testid="receipt"] so every OTHER page
-   still prints normally. */
-[data-testid="receipt"] {
+   still prints normally.
+
+   DS2-TOKENS §1.2: (1) is now the named `.surface-paper` utility rather than a rule
+   keyed off one component's test id — same declarations, applied to the same element,
+   so the receipt's computed paint is unchanged; any future print/export surface opts
+   in by wearing the class. Print SCOPING below still keys off [data-testid="receipt"],
+   because that is about which page prints, not about which theme a surface wears. */
+.surface-paper {
   color-scheme: light;
   /* hsl tokens (muted-foreground / border / foreground / card) → exact light values */
   --background: 0 0% 100%;

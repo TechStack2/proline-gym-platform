@@ -36,6 +36,21 @@ jobs:
           fi
           echo "✓ no unstable nested components"
 
+  # DS2-TOKENS §1.1: the color-literal ban. Its own job, for the same isolation reason as
+  # the others — it fails ONLY on color literals, never on the repo's pre-existing
+  # next-lint findings, so it can be a hard gate from day one instead of "someday".
+  color-literals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Guard the §1.1 literal ban (no raw hex outside the token files)
+        run: node scripts/lint-color-literals.mjs
+
   unit-tests:
     runs-on: ubuntu-latest
     steps:

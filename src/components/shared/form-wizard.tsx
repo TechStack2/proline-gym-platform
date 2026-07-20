@@ -60,7 +60,7 @@ export function FormWizard({
         className={cn(
           'flex max-h-[94vh] w-full flex-col overflow-hidden bg-white shadow-xl',
           'rounded-t-2xl sm:max-w-lg sm:rounded-2xl', // sheet on mobile, modal on desktop
-          isRTL && 'rtl text-right',
+          isRTL && 'text-right',
         )}
       >
         <div className="flex items-center justify-between border-b px-5 py-3">

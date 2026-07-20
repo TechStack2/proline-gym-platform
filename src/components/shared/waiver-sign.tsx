@@ -106,7 +106,7 @@ export function WaiverSign({
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
           onClick={() => !busy && setOpen(false)}>
           <div data-testid={`${testidPrefix}-sign-modal`} onClick={(e) => e.stopPropagation()}
-            className={cn('flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl', isRTL && 'rtl')}>
+            className={cn('flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl')}>
             <div className="flex items-center justify-between border-b px-5 py-3">
               <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('signTitle')}</h3>
               <button type="button" onClick={() => !busy && setOpen(false)} aria-label="close"

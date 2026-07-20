@@ -1,8 +1,8 @@
 import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { categoryAttr } from '@/lib/design/category-color'
 import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
@@ -36,11 +36,6 @@ type Props = {
 
 // Mon-first day order (column order flips visually under RTL via dir).
 const WEEK_DOWS = [1, 2, 3, 4, 5, 6, 0] as const
-
-// Tenant-clean discipline palette: stable hue per discipline by sort position.
-const DISCIPLINE_PALETTE = [
-  '#cd1419', '#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#65a30d',
-]
 
 const hhmm = (v: string | null) => (v || '').slice(0, 5)
 
@@ -95,24 +90,20 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
 
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
   const coachName = (id: string | null) => localizedName(one((coaches ?? []).find((c: any) => c.id === id)?.profiles), locale)
-  const disciplineColor = new Map<string, string>(
-    (disciplines ?? []).map((d: any, i: number) => [d.id, DISCIPLINE_PALETTE[i % DISCIPLINE_PALETTE.length]]),
-  )
 
-  // SHELL-RESPONSIVE-FIX (BUG 1): the class-cell colors are per-discipline, so they
-  // WERE inline style={{ backgroundColor }} — which the prod CSP (style-src nonce +
-  // strict-dynamic, no 'unsafe-inline') STRIPS. React then re-applies the stripped
-  // style every render → a reconciliation loop that (amplified by a shell re-render
-  // on resize) FREEZES the tab + floods "Applying inline style violates CSP". Emit
-  // the bounded palette as a NONCE'D <style> + a data-cellbg attr (CSP-safe
-  // stylesheet rules). Server component → the nonce is on the X-CSP-Nonce header.
-  const cellNonce = headers().get('X-CSP-Nonce') ?? ''
-  const cellNorm = (c: string | null | undefined): string =>
-    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : '#cd1419'
-  const cellBgToken = (c: string | null | undefined): string => 's' + cellNorm(c).slice(1)
-  const cellBgCss = [...new Set<string>([...disciplineColor.values(), '#cd1419'].map(cellNorm))]
-    .map((c) => `[data-cellbg="s${c.slice(1)}"]{background-color:${c}}`)
-    .join('')
+  // DS2-TOKENS §1.3 (DISC-COLOR) — the class blocks wear a CATEGORY tint.
+  //
+  // Was: a raw-hex palette indexed by the discipline's sort position, painted as a
+  // SOLID saturated fill, emitted as a NONCE'D <style> keyed by the hex itself. Three
+  // problems, all gone: (1) DA-31 — the first palette entry was the brand crimson and
+  // the fill was full-strength, so a normal class read as an alarm and a full week read
+  // as a wall of them; (2) the hue moved whenever an admin reordered disciplines,
+  // because it keyed off sort_order rather than identity; (3) it needed a per-request
+  // nonce'd stylesheet, i.e. the palette had to be smuggled past the CSP on every load.
+  //
+  // Now: `categoryIndex` hashes the discipline's immutable id to one of the eight fixed
+  // --c-cat-* hues, and `cat-tint` + data-cat render it at tint strength from static
+  // rules in globals.css. Nothing dynamic reaches the CSP at all.
 
   // Filters apply to both views.
   const fDiscipline = searchParams.discipline || ''
@@ -253,9 +244,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   }
 
   return (
-    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
-      {/* CSP-safe per-discipline cell colors (see cellBgCss above) — nonce'd. */}
-      <style nonce={cellNonce} data-testid="schedule-cellbg" dangerouslySetInnerHTML={{ __html: cellBgCss }} />
+    <div className={cn('space-y-6', isRTL && 'text-right')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader segment="schedule" />
         <WorkspaceSegments
@@ -337,8 +326,8 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                               {cell.map((c: any) => (
                                 <Link key={c.id} href={`/${locale}/classes/${c.id}`}
                                   data-testid="week-chip" data-class-en={c.name_en}
-                                  className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white ring-1 ring-black/5 transition-transform hover:scale-[1.02]"
-                                  data-cellbg={cellBgToken(disciplineColor.get(c.discipline_id))}>
+                                  className="cat-tint block rounded-lg px-2.5 py-2 text-xs font-medium transition-transform hover:scale-[1.02]"
+                                  data-cat={categoryAttr(c.discipline_id)}>
                                   <span className="block truncate font-semibold">{lname(c)}</span>
                                   <span className="block truncate opacity-80" dir="ltr">{hhmm(row.start)} · {coachName(c.coach_id)}</span>
                                 </Link>
@@ -384,8 +373,8 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                       {col.classes.map(({ cls, slot }: any) => (
                         <Link key={slot.id} href={`/${locale}/classes/${cls.id}`}
                           data-testid="diary-class-block"
-                          className="block rounded-lg px-2.5 py-2 text-xs font-medium text-white"
-                          data-cellbg={cellBgToken(disciplineColor.get(cls.discipline_id))}>
+                          className="cat-tint block rounded-lg px-2.5 py-2 text-xs font-medium"
+                          data-cat={categoryAttr(cls.discipline_id)}>
                           <span className="block truncate font-semibold">{lname(cls)}</span>
                           <span className="block opacity-80" dir="ltr">{hhmm(slot.start_time)}–{hhmm(slot.end_time)}</span>
                         </Link>

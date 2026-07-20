@@ -59,10 +59,10 @@ export function WhatsAppSettings({ initial, locale }: { initial: WhatsAppStatus;
   }
 
   return (
-    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'rtl text-right')} data-testid="whatsapp-settings">
+    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'text-right')} data-testid="whatsapp-settings">
       <div className="flex items-center justify-between">
         <h3 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-          <MessageCircle className="h-4 w-4 text-[#25D366]" /> {t('title')}
+          <MessageCircle className="h-4 w-4 text-whatsapp" /> {t('title')}
         </h3>
         <span data-testid="whatsapp-status" data-status={status}
           className={cn('rounded-full px-2.5 py-1 text-xs font-medium', TONE[status] ?? TONE.not_configured)}>

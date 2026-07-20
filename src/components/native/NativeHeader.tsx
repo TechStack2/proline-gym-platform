@@ -33,14 +33,18 @@ export type NativeHeaderProps = {
 // badge) now follows the gym brand (brand.ts .shell-staff override) and the staff PWA
 // theme-color is the gym brand (the dashboard layout's generateViewport); coach/portal keep
 // their role hues.
-const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { bar: string; badge: string; labelKey: string }> = {
+// DS2-TOKENS §1.4: the `bar` field is DELETED. It held a raw hex per shell that nothing
+// read — the visible stripe has rendered `var(--shell-accent)` since DS-1, and the three
+// hexes here had already drifted from the real ones (`coach` said #d4af37 gold; the shell
+// is #475569 graphite). A dead map of stale colors is worse than no map.
+const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { badge: string; labelKey: string }> = {
   // WL-CHROME: the STAFF badge sits on the brand surface, so its text follows the brand's
   // luminance-paired foreground (--c-brand-fg: white on a dark brand, near-black on a light
   // one). Proline's default fg is white → byte-identical. Portal/coach badges sit on the
   // role hues (bronze/graphite), so they keep plain white.
-  staff: { bar: '#cd1419', badge: 'bg-[color:var(--surface)] text-[color:rgb(var(--c-brand-fg))]', labelKey: 'shellStaff' },
-  coach: { bar: '#d4af37', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellCoach' },
-  portal: { bar: '#0e7490', badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellMember' },
+  staff: { badge: 'bg-[color:var(--surface)] text-[color:rgb(var(--c-brand-fg))]', labelKey: 'shellStaff' },
+  coach: { badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellCoach' },
+  portal: { badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellMember' },
 };
 
 const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
@@ -53,11 +57,15 @@ const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
   external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي', fr: 'Entraîneur ext.' },
 };
 
+// DS2-TOKENS §1.4: the role dot is an IDENTITY marker, not a status — it says "who is
+// signed in", never "something is wrong". Its four raw hexes were exactly the named
+// tokens spelled out longhand (#eab308 = gold-500, #3b82f6 = info-500, #22c55e =
+// success-500, #a855f7 = purple-500), so naming them repaints nothing.
 const roleBadgeColors: Record<string, string> = {
-  owner: 'bg-[#eab308]',
-  head_coach: 'bg-[#3b82f6]',
-  receptionist: 'bg-[#22c55e]',
-  coach: 'bg-[#a855f7]',
+  owner: 'bg-gold-500',
+  head_coach: 'bg-info-500',
+  receptionist: 'bg-success-500',
+  coach: 'bg-purple-500',
   student: 'bg-gray-400',
   parent: 'bg-orange-400',
   external_coach: 'bg-teal-400',
@@ -126,8 +134,8 @@ export function NativeHeader({
     >
       {/* AX-1 shell accent bar. BUG 3: was style={{ backgroundColor }} (SSR'd →
           stripped by the prod strict style-src CSP). --shell-accent is set by the
-          shell root's shell-{staff,portal,coach} class (globals.css) and equals
-          SHELL_STYLE[shell].bar, so a var'd class is CSP-safe + identical. */}
+          shell root's shell-{staff,portal,coach} class (globals.css), which is now the
+          ONLY definition of the per-shell hue — the var'd class is CSP-safe. */}
       {shellStyle && <div data-testid="shell-accent-stripe" className="h-1 w-full bg-[color:var(--shell-accent)]" aria-hidden />}
       {/* Top row: back button + right actions + collapsed title */}
       <div className="flex items-center justify-between px-4 h-12">

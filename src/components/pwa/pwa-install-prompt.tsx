@@ -137,7 +137,7 @@ export function PwaInstallPrompt({
   // ─── Render ───────────────────────────────────────────────────────
 
   return (
-    <div className={cn('fixed bottom-0 left-0 right-0 z-50', isAr && 'rtl')}>
+    <div className={cn('fixed bottom-0 left-0 right-0 z-50')}>
       {/* Offline Bar */}
       {offlineVisible && (
         <div

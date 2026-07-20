@@ -6,8 +6,9 @@ import { ROLES } from './roles'
  * responsive under the prod CSP:
  *   (a) /schedule day view survives a mobile-resize toggle WITHOUT freezing (the
  *       NativeHeader IntersectionObserver setState is equality-guarded; the
- *       day-view cells are de-inlined), and the cells render their color via the
- *       nonce'd <style> (a refused style → transparent);
+ *       day-view cells are de-inlined), and the cells still render their color —
+ *       since DS2-TOKENS that colour is a static `cat-tint` rule, so an unpainted
+ *       cell now means a broken stylesheet rather than a refused inline style;
  *   (b) at 800px (the former md–lg dead zone) nav is reachable (mobile TabBar);
  *   (c) <lg shows the TabBar, ≥lg shows the Sidebar (no regression);
  *   (d) the portal schedule at mobile is likewise freeze-free (shared NativeHeader).
@@ -40,15 +41,17 @@ test('RESPONSIVE-CSP · schedule day view survives mobile-resize (no freeze) + c
     await expect(page.getByTestId('schedule-views'), 'the day view stays responsive after the resize toggle (no freeze)')
       .toBeVisible({ timeout: 10_000 })
 
-    // The day-view cells are DE-INLINED: their discipline color now comes from a
-    // NONCE'D <style> + data-cellbg (was inline style={{ backgroundColor }}, stripped
-    // by the prod CSP). A REFUSED <style> → transparent. The week grid has
-    // reliably-seeded colored class chips (same nonce'd <style>).
+    // The day-view cells are DE-INLINED. They were inline style={{ backgroundColor }}
+    // (stripped by the prod CSP → re-applied every render → the freeze this test
+    // guards); then a nonce'd <style> + data-cellbg; and since DS2-TOKENS §1.3 a
+    // static `cat-tint` + data-cat rule, which nothing dynamic has to smuggle past the
+    // CSP at all. The assertion below is unchanged and still the right one — a cell
+    // that fails to paint is the visible symptom in every one of those mechanisms.
     await page.goto('/en/schedule')
     const chip = page.getByTestId('week-chip').first()
     await expect(chip, 'the week grid renders colored class chips').toBeVisible({ timeout: 15_000 })
     const bg = await chip.evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(bg, 'the de-inlined cell renders its color (the nonced <style> was applied under the prod CSP)').not.toBe('rgba(0, 0, 0, 0)')
+    expect(bg, 'the de-inlined cell renders its category tint under the prod CSP').not.toBe('rgba(0, 0, 0, 0)')
   } finally {
     await ctx.close()
   }

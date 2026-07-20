@@ -78,7 +78,7 @@ test('AX-1 · /ar renders Arabic on every shell + brand font without layout shif
       // …and the display face is HEADINGS-ONLY: body Arabic copy stays IBM Plex Sans
       // Arabic (the hero sub-headline paragraph), so the superfamily is unchanged.
       const bodyFamily = await page
-        .locator('section.landing-dark p')
+        .locator('section.surface-fixed-dark p')
         .first()
         .evaluate((el) => getComputedStyle(el).fontFamily);
       expect(bodyFamily, `hero body font was "${bodyFamily}"`).toMatch(/IBM[ _]?Plex[ _]?Sans[ _]?Arabic/i);

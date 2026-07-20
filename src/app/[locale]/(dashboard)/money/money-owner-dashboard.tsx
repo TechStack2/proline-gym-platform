@@ -51,7 +51,7 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
   }
 
   return (
-    <div className={cn('mt-6 space-y-6', isRTL && 'rtl text-right')} data-testid="owner-finances">
+    <div className={cn('mt-6 space-y-6', isRTL && 'text-right')} data-testid="owner-finances">
       {/* ── Revenue by month × product ── */}
       <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
         <h2 className={cn('mb-3 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('revenueTitle')}</h2>

@@ -90,7 +90,7 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
   // offline-flush listeners. Now the CHROME is responsive around a single subtree:
   // mobile = NativeHeader + bottom NativeTabBar; desktop = Sidebar + Header.
   return (
-    <div className={cn('shell-staff flex h-screen flex-col bg-gray-50 lg:flex-row lg:overflow-hidden', isRTL && 'rtl')}>
+    <div className={cn('shell-staff flex h-screen flex-col bg-gray-50 lg:flex-row lg:overflow-hidden')}>
       {/* SHELL-RESPONSIVE-FIX (BUG 2): the shell now switches at lg, not md — below
           lg is the MOBILE shell (NativeHeader + bottom TabBar), ≥lg is Sidebar +
           Header. This kills the old md–lg dead zone (desktop Header shown, but its

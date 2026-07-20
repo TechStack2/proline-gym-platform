@@ -149,7 +149,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
   const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
 
   return (
-    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-6', isRTL && 'text-right')}>
       <div className="flex items-center justify-end">
         <Link href={`/${locale}/invoices/new`} data-testid="new-invoice-btn"
           className="inline-flex items-center rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800">

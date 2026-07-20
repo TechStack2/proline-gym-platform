@@ -51,7 +51,7 @@ export async function PaymentsView({ locale, searchParams }: Props) {
   const methodLabel = (m: string) => (locale === 'ar' ? METHOD_LABEL[m]?.ar : locale === 'fr' ? METHOD_LABEL[m]?.fr : METHOD_LABEL[m]?.en) || m
 
   return (
-    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-6', isRTL && 'text-right')}>
       {/* Filters */}
       <form className="flex flex-wrap items-end gap-3" action={`/${locale}/money`} method="get">
         <input type="hidden" name="tab" value="payments" />

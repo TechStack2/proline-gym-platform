@@ -338,7 +338,7 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
   const card = 'rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'
 
   return (
-    <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="offline-desk" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={cn('space-y-4', isRTL && 'text-right')} data-testid="offline-desk" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <PageHeader segment="desk" />

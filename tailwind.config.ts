@@ -131,39 +131,98 @@ const config: Config = {
           black_4: '#212121',
           black_5: '#212121',
         },
-        // Semantic status colors
+        // ── DS2-TOKENS §1.3 — the STATUS role. Fixed semantic hues, never per-gym.
+        // Promoted from literals to the --c-*-* channel vars (globals.css) so a tint
+        // can derive from the same hue with an alpha modifier (bg-success-500/12) and
+        // so dark mode has one place to intervene. The channel DEFAULTS are the exact
+        // former hexes → every existing success/warning/info pixel is unchanged.
+        // These describe STATE. An action never wears them (that is Action/Destructive).
         success: {
-          50: '#f0fdf4',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          DEFAULT: '#22c55e',
-          foreground: '#ffffff',
+          50: 'rgb(var(--c-success-50) / <alpha-value>)',
+          500: 'rgb(var(--c-success-500) / <alpha-value>)',
+          600: 'rgb(var(--c-success-600) / <alpha-value>)',
+          700: 'rgb(var(--c-success-700) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--c-success-500) / <alpha-value>)',
+          foreground: 'rgb(var(--c-success-fg) / <alpha-value>)',
         },
         warning: {
-          50: '#fffbeb',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          DEFAULT: '#f59e0b',
-          foreground: '#ffffff',
-        },
-        destructive: {
-          50: '#fef2f2',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          DEFAULT: '#ef4444',
-          foreground: '#ffffff',
+          50: 'rgb(var(--c-warning-50) / <alpha-value>)',
+          500: 'rgb(var(--c-warning-500) / <alpha-value>)',
+          600: 'rgb(var(--c-warning-600) / <alpha-value>)',
+          700: 'rgb(var(--c-warning-700) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--c-warning-500) / <alpha-value>)',
+          foreground: 'rgb(var(--c-warning-fg) / <alpha-value>)',
         },
         info: {
-          50: '#eff6ff',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          DEFAULT: '#3b82f6',
-          foreground: '#ffffff',
+          50: 'rgb(var(--c-info-50) / <alpha-value>)',
+          500: 'rgb(var(--c-info-500) / <alpha-value>)',
+          600: 'rgb(var(--c-info-600) / <alpha-value>)',
+          700: 'rgb(var(--c-info-700) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--c-info-500) / <alpha-value>)',
+          foreground: 'rgb(var(--c-info-fg) / <alpha-value>)',
         },
+        neutral: {
+          50: 'rgb(var(--c-neutral-50) / <alpha-value>)',
+          500: 'rgb(var(--c-neutral-500) / <alpha-value>)',
+          600: 'rgb(var(--c-neutral-600) / <alpha-value>)',
+          700: 'rgb(var(--c-neutral-700) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--c-neutral-500) / <alpha-value>)',
+          foreground: 'rgb(var(--c-neutral-fg) / <alpha-value>)',
+        },
+
+        // ── DS2-TOKENS §1.3 — the DESTRUCTIVE role, split out of brand. `danger` is
+        // the canonical name; `destructive` stays as its alias so the existing shadcn
+        // variants (button/badge/input/select/textarea) keep working untouched. Both
+        // resolve to the SAME fixed --c-danger-* channels, which no per-gym brand
+        // override ever reaches — that is the point: a crimson-branded gym must not be
+        // able to make "Delete" indistinguishable from "Save". Values are the former
+        // literal destructive scale verbatim → byte-identical.
+        danger: {
+          50: 'rgb(var(--c-danger-50) / <alpha-value>)',
+          100: 'rgb(var(--c-danger-100) / <alpha-value>)',
+          200: 'rgb(var(--c-danger-200) / <alpha-value>)',
+          300: 'rgb(var(--c-danger-300) / <alpha-value>)',
+          400: 'rgb(var(--c-danger-400) / <alpha-value>)',
+          500: 'rgb(var(--c-danger-500) / <alpha-value>)',
+          600: 'rgb(var(--c-danger-600) / <alpha-value>)',
+          700: 'rgb(var(--c-danger-700) / <alpha-value>)',
+          800: 'rgb(var(--c-danger-800) / <alpha-value>)',
+          900: 'rgb(var(--c-danger-900) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--c-danger-500) / <alpha-value>)',
+          foreground: 'rgb(var(--c-danger-fg) / <alpha-value>)',
+        },
+        destructive: {
+          50: 'rgb(var(--c-danger-50) / <alpha-value>)',
+          500: 'rgb(var(--c-danger-500) / <alpha-value>)',
+          600: 'rgb(var(--c-danger-600) / <alpha-value>)',
+          700: 'rgb(var(--c-danger-700) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--c-danger-500) / <alpha-value>)',
+          foreground: 'rgb(var(--c-danger-fg) / <alpha-value>)',
+        },
+
+        // ── DS2-TOKENS §1.3 — the CATEGORY role (DISC-COLOR). Eight fixed hues, hash-
+        // assigned per discipline. Exposed as utilities for legends/labels; the
+        // timetable itself uses the `cat-tint` + data-cat pair in globals.css, which
+        // keeps the wash/text/hairline strengths in one place.
+        cat: {
+          1: 'rgb(var(--c-cat-1) / <alpha-value>)',
+          2: 'rgb(var(--c-cat-2) / <alpha-value>)',
+          3: 'rgb(var(--c-cat-3) / <alpha-value>)',
+          4: 'rgb(var(--c-cat-4) / <alpha-value>)',
+          5: 'rgb(var(--c-cat-5) / <alpha-value>)',
+          6: 'rgb(var(--c-cat-6) / <alpha-value>)',
+          7: 'rgb(var(--c-cat-7) / <alpha-value>)',
+          8: 'rgb(var(--c-cat-8) / <alpha-value>)',
+        },
+
+        // ── DS2-TOKENS §1.1 — named exceptions. A third-party mark we may not re-hue
+        // is a legitimate fixed color; it is NOT a licence for a raw literal.
+        whatsapp: {
+          DEFAULT: 'rgb(var(--c-whatsapp) / <alpha-value>)',
+          600: 'rgb(var(--c-whatsapp-600) / <alpha-value>)',
+          deep: 'rgb(var(--c-whatsapp-deep) / <alpha-value>)',
+        },
+        flare: 'rgb(var(--c-flare) / <alpha-value>)',
         // Surfaces — DS-2: channel-var-backed (rgb(var(--c-*) / <alpha-value>)) so
         // they FLIP under html.dark. Light channels (globals.css :root) = the exact
         // former hex, so light mode is byte-identical; <alpha-value> keeps opacity
@@ -248,6 +307,11 @@ const config: Config = {
         'elevation-3': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
         'elevation-4': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
         'glow-primary': '0 0 20px -5px rgba(205, 20, 25, 0.2)',
+        // DS2-TOKENS §1.1: the two UPWARD elevations — chrome that sits below the
+        // content and lifts toward it. Were inline `shadow-[0_-1px_3px_rgba(…)]`
+        // arbitrary values in three shared components; same values, one name.
+        'bar': '0 -1px 3px rgba(0, 0, 0, 0.05)',    // bottom tab bar
+        'sheet': '0 -4px 20px rgba(0, 0, 0, 0.15)', // bottom sheet
       },
 
       // ────────────────────────────────────────
@@ -282,10 +346,6 @@ const config: Config = {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
-        'skeleton': {
-          '0%': { backgroundPosition: '200% 0' },
-          '100%': { backgroundPosition: '-200% 0' },
-        },
       },
       animation: {
         'slide-in-from-right': 'slide-in-from-right 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -295,7 +355,9 @@ const config: Config = {
         'fade-in': 'fade-in 0.15s ease-out',
         'fade-out': 'fade-out 0.15s ease-in',
         'scale-in': 'scale-in 0.15s ease-out',
-        'skeleton': 'skeleton 1.5s ease-in-out infinite',
+        // DS2-TOKENS §1.4: the `skeleton` keyframe/animation pair was deleted with the
+        // `.skeleton` class in globals.css — that class was its only consumer, and the
+        // real loading placeholder (ui/skeleton.tsx) uses `animate-pulse`.
       },
     },
 

@@ -94,7 +94,7 @@ export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; l
   ]
 
   return (
-    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'rtl text-right')} data-testid="waiver-settings">
+    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'text-right')} data-testid="waiver-settings">
       <div className="flex items-center justify-between">
         <h3 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <FileSignature className="h-4 w-4 text-primary-700" /> {t('title')}

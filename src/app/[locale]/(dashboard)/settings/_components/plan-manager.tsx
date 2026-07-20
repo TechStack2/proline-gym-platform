@@ -146,7 +146,7 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
   ]
 
   return (
-    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'rtl text-right')} data-testid="plan-manager">
+    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'text-right')} data-testid="plan-manager">
       <div className="flex items-center justify-between">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
         <Button size="sm" data-testid="plan-add-btn" disabled={busy} onClick={() => openWizard(null)} className="bg-primary-700 hover:bg-primary-800">

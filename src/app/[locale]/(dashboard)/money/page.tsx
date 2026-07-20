@@ -65,7 +65,7 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
   const tab = validTabs.includes(searchParams.tab ?? '') ? searchParams.tab! : 'overview'
 
   return (
-    <div className={cn('space-y-6', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-6', isRTL && 'text-right')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <PageHeader segment="money" />

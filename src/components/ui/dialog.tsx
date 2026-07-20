@@ -101,7 +101,7 @@ export function Dialog({
               <RadixDialog.Close
                 aria-label={closeLabel}
                 data-testid="dialog-close"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent,#cd1419)]"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </RadixDialog.Close>

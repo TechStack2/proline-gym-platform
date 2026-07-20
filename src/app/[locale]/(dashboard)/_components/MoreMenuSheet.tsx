@@ -32,7 +32,7 @@ export function MoreMenuSheet({ isOpen, onClose, locale, role }: Props) {
       snapPoints={[78, 94]}
     >
       {/* Bottom padding clears the home indicator so the LAST item is never clipped. */}
-      <div className={cn('space-y-1 px-1 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]', isRTL && 'rtl')}>
+      <div className={cn('space-y-1 px-1 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]')}>
         {moreItems.map((item) => {
           const Icon = item.icon;
           const fullPath = `/${locale}${item.path}`;

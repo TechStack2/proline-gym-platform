@@ -227,7 +227,7 @@ export function OnboardingClient({
   }
 
   return (
-    <div className={cn('flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-secondary-900 to-primary-950 p-4', isRTL && 'rtl')}>
+    <div className={cn('flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-secondary-900 to-primary-950 p-4')}>
       <div className="mb-4 text-center">
         <h1 className={cn('text-2xl font-bold text-white', isRTL && 'font-arabic')} data-testid="onboarding-welcome">
           {t('welcome', { name: firstName })}

@@ -12,7 +12,7 @@ import { ROLES } from './roles';
  *      collapsed to the UA system font. The :root→<body> re-anchor resolves it.
  *
  *   R3/R4 LANDING DARK + TOGGLE: the shared ThemeToggle is mounted in the landing
- *      nav; cycling it to dark puts .dark on <html> and the (landing-dark) hero still
+ *      nav; cycling it to dark puts .dark on <html> and the (surface-fixed-dark) hero still
  *      renders with LIGHT text on a dark ground — the headline computes to true white,
  *      NOT the DS-2 channel-var flip's near-black. Light is the default (every other
  *      landing spec in the suite runs light and is unaffected → no dark: leakage).
@@ -83,10 +83,10 @@ test('VISUAL-POLISH · R3/R4 — the landing is coherent under html.dark (toggle
     await expect(toggle).toHaveAttribute('data-theme-mode', 'dark');
     await expect(html, 'html.dark applied from the landing toggle').toHaveClass(/dark/);
 
-    // R3: the hero (landing-dark) stays DARK with LIGHT text — the headline computes to
-    // true white (the landing-dark channel-var reset), NOT the flipped near-black
+    // R3: the hero (surface-fixed-dark) stays DARK with LIGHT text — the headline computes
+    // to true white (the §1.2 fixed-surface channel-var reset), NOT the flipped near-black
     // (rgb(34, 34, 42)) that a naive channel-var flip would give.
-    const h1 = page.locator('section.landing-dark h1').first();
+    const h1 = page.locator('section.surface-fixed-dark h1').first();
     await expect(h1, 'hero headline present under dark').toBeVisible();
     const color = await h1.evaluate((el) => getComputedStyle(el).color);
     expect(color, `hero headline stays light on dark (was "${color}")`).toBe('rgb(255, 255, 255)');

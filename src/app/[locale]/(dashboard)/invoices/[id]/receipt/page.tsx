@@ -93,7 +93,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   meta.push({ k: t('Type', 'النوع', 'Type'), v: <span data-testid="receipt-invoice-type" data-type={inv.invoice_type || 'other'}>{invoiceTypeLabel(inv.invoice_type, locale)}</span> })
 
   return (
-    <div className={cn('mx-auto max-w-md p-4 sm:p-6', isRTL && 'rtl text-right')}>
+    <div className={cn('mx-auto max-w-md p-4 sm:p-6', isRTL && 'text-right')}>
       {/* Scoped @page: 80mm thermal roll, zero margins → no browser URL header/footer.
           Injected here (not globals) so only the receipt route resizes the sheet.
           Inline <style> is CSP-safe: prod style-src is 'self' 'unsafe-inline'. */}
@@ -121,7 +121,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
       <div
         data-testid="receipt"
         className={cn(
-          'mx-auto w-[80mm] max-w-full bg-white p-5 text-gray-900 shadow-md ring-1 ring-gray-200',
+          'surface-paper mx-auto w-[80mm] max-w-full bg-white p-5 text-gray-900 shadow-md ring-1 ring-gray-200',
           'font-mono text-[12px] leading-snug',
           'print:w-full print:p-0 print:shadow-none print:ring-0',
         )}
