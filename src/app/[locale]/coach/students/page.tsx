@@ -4,6 +4,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
 import { createClient } from '@/lib/supabase/client';
 import { Users, Search, BookOpen, Award, Calendar, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -237,12 +238,11 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
-      {/* Header — COACH-SHELL: echoes the mobile chrome large title → desktop-only. */}
+      {/* W2b R3: the ONE title primitive (testid `page-title`, h1 — was an h2
+          with `coach-page-title`); mobile keeps the always-visible subtitle. */}
       <div>
-        <h2 data-testid="coach-page-title" className={cn('hidden md:block text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
-          {msg('coach.students.title')}
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">{msg('coach.students.subtitle')}</p>
+        <PageHeader title={msg('coach.students.title')} subtitle={msg('coach.students.subtitle')} variant="compact" />
+        <p className="text-sm text-gray-500 md:hidden">{msg('coach.students.subtitle')}</p>
       </div>
 
       {/* W2a §4.2 Rule 1 (asideFirst): search + filters are the coach's controls —

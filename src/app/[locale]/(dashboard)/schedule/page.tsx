@@ -297,7 +297,9 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
         weekRows.length === 0 ? (
           <ScheduleEmpty locale={locale} canCreate={canCreateClass} label={t('noClassesYet')} cta={t('createFirstClass')} />
         ) : (
-          <div className="overflow-x-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+          /* DA-22 / §4.2 Rule 5: the timetable fits the ≤1200 grid or scrolls
+             INSIDE this container with a visible affordance — never the page. */
+          <div className="overflow-x-auto scrollbar-thin" dir={isRTL ? 'rtl' : 'ltr'}>
             <table className="w-full min-w-[760px] border-separate border-spacing-1.5" data-testid="week-grid">
               <thead>
                 <tr>

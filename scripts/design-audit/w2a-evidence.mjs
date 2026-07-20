@@ -1,19 +1,33 @@
 #!/usr/bin/env node
 /**
- * W2a evidence harness (slice tooling — no product code).
+ * W2a/W2b evidence harness (slice tooling — no product code).
  *
- * Produces, for the portal + coach shells:
+ * Produces, for ALL FOUR shell surfaces (portal, coach, STAFF — W2b — and the
+ * GUARDIAN portal variant, whose FamilyHome/KidDashboard render only for a
+ * multi-kid parent session):
  *  1. §4.3 PARITY GATE — for every routed surface, the set of interactive
  *     `data-testid`s VISIBLE at 390 must be PRESENT (attached) at 1280 in the
  *     same locale/theme. Reported as numbers per route + a failing list.
  *  2. §4.1 XOR GATE — at <768 the tab bar is visible and the rail is not; at
  *     ≥768 the rail is visible and the tab bar is not (checked at 390/768/1024/1280).
+ *     The staff rail keeps its historical `desktop-sidebar` testid (testid-
+ *     stability) — per-shell `railSelector` handles that.
  *  3. §6.3 capture matrix — {en,ar} × {light,dark} × {390,1280} for the key
  *     surfaces, plus 768 + 1024 rail-state shots (en/light).
  *
+ * Detail routes with dynamic ids (staff Member-360, guardian KidDashboard) are
+ * resolved per session by following the first matching link from a list surface
+ * (`dynamic` config below), then gated like any other route.
+ *
  * Usage: node scripts/design-audit/w2a-evidence.mjs [--base http://localhost:3000]
+ *          [--shells portal,coach]   (default: all four)
  * Env:   E2E_GYM_SLUG (default proline-gym-local), E2E_PASSWORD
  *        W2A_OUT (default: w2a-artifacts/)
+ *
+ * NB: a long-lived local `next start` degrades after a few hundred renders
+ * (60s+ pages). For a full four-shell run, prefer two passes against a FRESH
+ * server each: `--shells portal,coach` then `--shells staff,guardian`, and
+ * merge the two results JSONs.
  */
 import { chromium } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -37,19 +51,51 @@ const SHELLS = {
     routes: ['/coach', '/coach/attendance', '/coach/students', '/coach/trials', '/coach/pt', '/coach/profile'],
     keyRoutes: ['/coach', '/coach/attendance'],
   },
+  // W2b: the staff shell on the same contract. Its rail carries the historical
+  // `desktop-sidebar` testid (testid-stability doctrine).
+  staff: {
+    role: 'owner',
+    railSelector: '[data-testid="desktop-sidebar"]',
+    routes: ['/today', '/inbox', '/students', '/schedule', '/money', '/coaches', '/settings', '/profile'],
+    keyRoutes: ['/today', '/students', '/money', '/schedule'],
+    // Member-360: the roster card navigates via onClick (role="link", no href) —
+    // click the first card and take the landed URL.
+    dynamic: [{ label: 'member-360', from: '/students', clickSelector: '[data-testid="student-card"]' }],
+  },
+  // W2b (auditor rider): the GUARDIAN surfaces — FamilyHome renders at /portal
+  // for a multi-kid parent; KidDashboard behind the first kid chip.
+  guardian: {
+    role: 'parent',
+    routes: ['/portal'],
+    keyRoutes: ['/portal'],
+    dynamic: [{ label: 'kid-dashboard', from: '/portal', linkSelector: 'a[href*="kid="]' }],
+  },
 }
 
 async function login(browser, role) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } })
-  const page = await ctx.newPage()
-  await page.goto(`${BASE}/en/auth/login`)
-  await page.fill('#email', `${role}+${SLUG}@e2e.local`)
-  await page.fill('#password', PWD)
-  await page.click('button[type="submit"]')
-  await page.waitForURL((u) => !u.pathname.includes('/auth/login'), { timeout: 30_000 })
-  const state = await ctx.storageState()
-  await ctx.close()
-  return state
+  // The local stack's GoTrue occasionally rejects a first sign-in with an empty
+  // error (the known "[auth] email sign-in failed" blip) — retry the whole form
+  // flow; a real credential problem still fails all attempts.
+  let lastErr
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+    const page = await ctx.newPage()
+    try {
+      await goto(page, `${BASE}/en/auth/login`)
+      await page.fill('#email', `${role}+${SLUG}@e2e.local`)
+      await page.fill('#password', PWD)
+      await page.click('button[type="submit"]')
+      await page.waitForURL((u) => !u.pathname.includes('/auth/login'), { timeout: 30_000 })
+      const state = await ctx.storageState()
+      await ctx.close()
+      return state
+    } catch (e) {
+      lastErr = e
+      console.log(`login ${role}: attempt ${attempt} failed (${e.name}) — retrying`)
+      await ctx.close()
+    }
+  }
+  throw lastErr
 }
 
 const vis = async (page, sel) => page.locator(sel).filter({ visible: true })
@@ -79,6 +125,12 @@ async function testids(page, mode /* 'visible' | 'present' */) {
   }, mode)
 }
 
+// Slow-host tolerance: prod-build pages on a loaded laptop can exceed the 30s
+// default; navigate on domcontentloaded (settle() below waits for networkidle).
+async function goto(page, url) {
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+}
+
 async function settle(page) {
   await page.waitForLoadState('networkidle').catch(() => {})
   await page.waitForTimeout(400)
@@ -87,21 +139,52 @@ async function settle(page) {
 const results = { parity: [], xor: [], shots: [] }
 const browser = await chromium.launch()
 
-for (const [shell, cfg] of Object.entries(SHELLS)) {
+const onlyShells = (arg('shells') || '').split(',').map((s) => s.trim()).filter(Boolean)
+const selected = Object.entries(SHELLS).filter(([name]) => !onlyShells.length || onlyShells.includes(name))
+
+for (const [shell, cfg] of selected) {
   const storageState = await login(browser, cfg.role)
+
+  // ── 0 · resolve dynamic detail routes (Member-360, KidDashboard) ──
+  for (const dyn of cfg.dynamic || []) {
+    const ctx = await browser.newContext({ storageState, viewport: { width: 1280, height: 800 } })
+    const page = await ctx.newPage()
+    await goto(page, `${BASE}/en${dyn.from}`)
+    await settle(page)
+    let href = null
+    if (dyn.clickSelector) {
+      const before = page.url()
+      await page.locator(dyn.clickSelector).first().click().catch(() => {})
+      await page.waitForURL((u) => u.toString() !== before, { timeout: 15_000 }).catch(() => {})
+      const landed = page.url()
+      href = landed !== before ? landed : null
+    } else {
+      href = await page.locator(dyn.linkSelector).first().getAttribute('href').catch(() => null)
+    }
+    await ctx.close()
+    if (!href) {
+      console.log(`dynamic ${shell} ${dyn.label}: NO link matched ${dyn.linkSelector} on ${dyn.from} — FAIL`)
+      results.parity.push({ shell, route: `<dynamic:${dyn.label}>`, mobileVisible: 0, desktopPresent: 0, missingAtDesktop: ['<unresolved dynamic route>'] })
+      continue
+    }
+    const route = href.replace(/^https?:\/\/[^/]+/, '').replace(/^\/(en|ar|fr)/, '')
+    console.log(`dynamic ${shell} ${dyn.label}: → ${route}`)
+    cfg.routes.push(route)
+    cfg.keyRoutes.push(route)
+  }
 
   // ── 1 · §4.3 parity per route (en/light) ──
   for (const route of cfg.routes) {
     const mob = await browser.newContext({ storageState, viewport: { width: 390, height: 844 } })
     const mp = await mob.newPage()
-    await mp.goto(`${BASE}/en${route}`)
+    await goto(mp, `${BASE}/en${route}`)
     await settle(mp)
     const atMobile = await testids(mp, 'visible')
     await mob.close()
 
     const desk = await browser.newContext({ storageState, viewport: { width: 1280, height: 800 } })
     const dp = await desk.newPage()
-    await dp.goto(`${BASE}/en${route}`)
+    await goto(dp, `${BASE}/en${route}`)
     await settle(dp)
     const atDesktop = new Set(await testids(dp, 'present'))
     await desk.close()
@@ -115,10 +198,10 @@ for (const [shell, cfg] of Object.entries(SHELLS)) {
   for (const width of [390, 768, 1024, 1280]) {
     const ctx = await browser.newContext({ storageState, viewport: { width, height: 900 } })
     const page = await ctx.newPage()
-    await page.goto(`${BASE}/en${cfg.routes[0]}`)
+    await goto(page, `${BASE}/en${cfg.routes[0]}`)
     await settle(page)
     const tabBarVisible = await (await vis(page, '[data-testid="tab-bar"]')).count() > 0
-    const railVisible = await (await vis(page, '[data-testid="desktop-rail"]')).count() > 0
+    const railVisible = await (await vis(page, cfg.railSelector || '[data-testid="desktop-rail"]')).count() > 0
     const ok = width < 768 ? tabBarVisible && !railVisible : railVisible && !tabBarVisible
     results.xor.push({ shell, width, tabBarVisible, railVisible, ok })
     console.log(`xor ${shell} @${width}: tabBar=${tabBarVisible} rail=${railVisible} ${ok ? 'OK' : 'FAIL'}`)
@@ -134,7 +217,7 @@ for (const [shell, cfg] of Object.entries(SHELLS)) {
           const ctx = await browser.newContext({ storageState, viewport: { width, height: width < 768 ? 844 : 800 } })
           if (theme === 'dark') await ctx.addInitScript(() => localStorage.setItem('theme', 'dark'))
           const page = await ctx.newPage()
-          await page.goto(`${BASE}/${locale}${route}`)
+          await goto(page, `${BASE}/${locale}${route}`)
           await settle(page)
           const name = `${shell}-${slug}-${locale}-${theme}-${width}.png`
           await page.screenshot({ path: join(OUT, 'shots', name) })
@@ -147,7 +230,7 @@ for (const [shell, cfg] of Object.entries(SHELLS)) {
     for (const width of [768, 1024]) {
       const ctx = await browser.newContext({ storageState, viewport: { width, height: 900 } })
       const page = await ctx.newPage()
-      await page.goto(`${BASE}/en${route}`)
+      await goto(page, `${BASE}/en${route}`)
       await settle(page)
       const name = `${shell}-${slug}-en-light-${width}.png`
       await page.screenshot({ path: join(OUT, 'shots', name) })

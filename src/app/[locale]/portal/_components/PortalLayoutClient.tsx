@@ -129,7 +129,6 @@ export function PortalLayoutClient({ children, locale, gymName, logoUrl }: Props
           basePath={PORTAL_BASE_PATH}
           scrollSelector="main"
           forceVisible={moreOpen}
-          showRail={false}
           onTabClick={(key) => {
             if (key === 'more') setMoreOpen(true);
           }}

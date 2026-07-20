@@ -1,0 +1,211 @@
+{
+  "parity": [
+    {
+      "shell": "staff",
+      "route": "/today",
+      "mobileVisible": 35,
+      "desktopPresent": 43,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/inbox",
+      "mobileVisible": 7,
+      "desktopPresent": 15,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/students",
+      "mobileVisible": 20,
+      "desktopPresent": 28,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/schedule",
+      "mobileVisible": 14,
+      "desktopPresent": 22,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/money",
+      "mobileVisible": 15,
+      "desktopPresent": 23,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/coaches",
+      "mobileVisible": 11,
+      "desktopPresent": 19,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/settings",
+      "mobileVisible": 19,
+      "desktopPresent": 27,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/profile",
+      "mobileVisible": 7,
+      "desktopPresent": 15,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "staff",
+      "route": "/students/c88bd7da-0053-48ac-a26b-21848129ff8c",
+      "mobileVisible": 26,
+      "desktopPresent": 35,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "guardian",
+      "route": "/portal",
+      "mobileVisible": 15,
+      "desktopPresent": 21,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "guardian",
+      "route": "/portal?kid=41b0ef48-29a6-486d-9370-93f67559a86a",
+      "mobileVisible": 15,
+      "desktopPresent": 21,
+      "missingAtDesktop": []
+    }
+  ],
+  "xor": [
+    {
+      "shell": "staff",
+      "width": 390,
+      "tabBarVisible": true,
+      "railVisible": false,
+      "ok": true
+    },
+    {
+      "shell": "staff",
+      "width": 768,
+      "tabBarVisible": false,
+      "railVisible": true,
+      "ok": true
+    },
+    {
+      "shell": "staff",
+      "width": 1024,
+      "tabBarVisible": false,
+      "railVisible": true,
+      "ok": true
+    },
+    {
+      "shell": "staff",
+      "width": 1280,
+      "tabBarVisible": false,
+      "railVisible": true,
+      "ok": true
+    },
+    {
+      "shell": "guardian",
+      "width": 390,
+      "tabBarVisible": true,
+      "railVisible": false,
+      "ok": true
+    },
+    {
+      "shell": "guardian",
+      "width": 768,
+      "tabBarVisible": false,
+      "railVisible": true,
+      "ok": true
+    },
+    {
+      "shell": "guardian",
+      "width": 1024,
+      "tabBarVisible": false,
+      "railVisible": true,
+      "ok": true
+    },
+    {
+      "shell": "guardian",
+      "width": 1280,
+      "tabBarVisible": false,
+      "railVisible": true,
+      "ok": true
+    }
+  ],
+  "shots": [
+    "staff-today-en-light-390.png",
+    "staff-today-en-light-1280.png",
+    "staff-today-en-dark-390.png",
+    "staff-today-en-dark-1280.png",
+    "staff-today-ar-light-390.png",
+    "staff-today-ar-light-1280.png",
+    "staff-today-ar-dark-390.png",
+    "staff-today-ar-dark-1280.png",
+    "staff-today-en-light-768.png",
+    "staff-today-en-light-1024.png",
+    "staff-students-en-light-390.png",
+    "staff-students-en-light-1280.png",
+    "staff-students-en-dark-390.png",
+    "staff-students-en-dark-1280.png",
+    "staff-students-ar-light-390.png",
+    "staff-students-ar-light-1280.png",
+    "staff-students-ar-dark-390.png",
+    "staff-students-ar-dark-1280.png",
+    "staff-students-en-light-768.png",
+    "staff-students-en-light-1024.png",
+    "staff-money-en-light-390.png",
+    "staff-money-en-light-1280.png",
+    "staff-money-en-dark-390.png",
+    "staff-money-en-dark-1280.png",
+    "staff-money-ar-light-390.png",
+    "staff-money-ar-light-1280.png",
+    "staff-money-ar-dark-390.png",
+    "staff-money-ar-dark-1280.png",
+    "staff-money-en-light-768.png",
+    "staff-money-en-light-1024.png",
+    "staff-schedule-en-light-390.png",
+    "staff-schedule-en-light-1280.png",
+    "staff-schedule-en-dark-390.png",
+    "staff-schedule-en-dark-1280.png",
+    "staff-schedule-ar-light-390.png",
+    "staff-schedule-ar-light-1280.png",
+    "staff-schedule-ar-dark-390.png",
+    "staff-schedule-ar-dark-1280.png",
+    "staff-schedule-en-light-768.png",
+    "staff-schedule-en-light-1024.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-en-light-390.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-en-light-1280.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-en-dark-390.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-en-dark-1280.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-ar-light-390.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-ar-light-1280.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-ar-dark-390.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-ar-dark-1280.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-en-light-768.png",
+    "staff-students-c88bd7da-0053-48ac-a26b-21848129ff8c-en-light-1024.png",
+    "guardian-portal-en-light-390.png",
+    "guardian-portal-en-light-1280.png",
+    "guardian-portal-en-dark-390.png",
+    "guardian-portal-en-dark-1280.png",
+    "guardian-portal-ar-light-390.png",
+    "guardian-portal-ar-light-1280.png",
+    "guardian-portal-ar-dark-390.png",
+    "guardian-portal-ar-dark-1280.png",
+    "guardian-portal-en-light-768.png",
+    "guardian-portal-en-light-1024.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-en-light-390.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-en-light-1280.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-en-dark-390.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-en-dark-1280.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-ar-light-390.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-ar-light-1280.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-ar-dark-390.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-ar-dark-1280.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-en-light-768.png",
+    "guardian-portal-kid-41b0ef48-29a6-486d-9370-93f67559a86a-en-light-1024.png"
+  ]
+}

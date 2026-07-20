@@ -113,11 +113,15 @@ test('W1 · PageHeader: ONE h1 per breakpoint, and the SAME term on both (DA-29/
     await m.ctx.close()
   }
 
-  // The old 768–1023 band rendered BOTH (shell chrome is <lg, the page h1 was ≥md).
+  // 768–1023 band — PREMISE UPDATED (W2b / §4.1): the staff chrome now switches
+  // at md, so this band is DESKTOP mode — the PageHeader h1 is the one title
+  // (the mobile large title is not rendered). The invariant (exactly ONE visible
+  // h1 in the once-double-h1 band) is unchanged.
   const t = await owner(browser, { width: 800, height: 900 })
   try {
     await t.page.goto('/en/students')
-    await expect(vis(t.page, '[data-testid="native-large-title"]').first()).toBeVisible({ timeout: 15_000 })
+    await expect(vis(t.page, '[data-testid="page-title"]').first()).toBeVisible({ timeout: 15_000 })
+    await expect(t.page.locator('[data-testid="native-large-title"]'), 'no mobile large title at 800').toBeHidden()
     await expect(t.page.locator('h1:visible'), 'exactly one visible h1 at 800').toHaveCount(1)
   } finally {
     await t.ctx.close()

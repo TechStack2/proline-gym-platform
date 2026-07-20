@@ -130,7 +130,6 @@ export function CoachLayoutClient({ children, locale, gymName, logoUrl, trialsTo
           basePath={COACH_BASE_PATH}
           scrollSelector="main"
           forceVisible={moreOpen}
-          showRail={false}
           onTabClick={(key) => {
             if (key === 'more') setMoreOpen(true);
           }}

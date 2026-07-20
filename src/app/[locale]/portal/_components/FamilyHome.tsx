@@ -5,7 +5,8 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/shared/avatar'
 import { DeskGrid, PortalCard } from '@/components/portal/portal-kit'
-import { CalendarDays, CreditCard, ClipboardList, Wallet, ChevronRight, Users } from 'lucide-react'
+import { CalendarDays, CreditCard, ClipboardList, Wallet, ChevronRight } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header'
 import { getFamilySummaries, type FamilySummary } from '@/lib/family/aggregate'
 
 /**
@@ -109,12 +110,10 @@ export async function FamilyHome({
         </Link>
       )}
 
-      <div>
-        <h1 className={cn('flex items-center gap-2 text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
-          <Users className="h-6 w-6 text-primary-700" />{t('overviewTitle')}
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">{t('overviewSubtitle')}</p>
-      </div>
+      {/* W2b R3: the ONE title primitive (testid `page-title`; the inline icon
+          goes, per the primitive's contract). `always`: the guardian overview
+          title IS the surface's identity on every breakpoint (as before). */}
+      <PageHeader title={t('overviewTitle')} subtitle={t('overviewSubtitle')} visibility="always" />
 
       {/* Switcher — kept so the per-child chip flow (and existing specs) survive. */}
       <div className="flex flex-wrap gap-2" data-testid="kid-switcher">

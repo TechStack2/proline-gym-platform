@@ -71,11 +71,13 @@ export function IdentityBar({
         {bell}
         <ThemeToggle />
         {roleLabel && (
+          /* WL-CHROME (W2b): staff's --surface is brand-follow → chip text pairs
+             via --shell-chip-fg; portal/coach fall back to #fff (byte-identical). */
           <span
             data-testid="identity-role-chip"
-            className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-xs font-bold text-white"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-xs font-bold text-[color:var(--shell-chip-fg)]"
           >
-            <span className="h-2 w-2 rounded-full bg-white/60" aria-hidden="true" />
+            <span className="h-2 w-2 rounded-full bg-[color:var(--shell-chip-fg)] opacity-60" aria-hidden="true" />
             <span className="leading-none">{roleLabel}</span>
           </span>
         )}

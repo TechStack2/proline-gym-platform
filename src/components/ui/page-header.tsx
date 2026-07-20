@@ -9,11 +9,9 @@
  * rows), and carries the back affordance (DA-8).
  *
  * Contract notes:
- *  · **One h1 per breakpoint (DA-60).** The staff shell renders the mobile title
- *    in `NativeHeader` below `lg` and this header from `lg` up — so the two never
- *    coexist. The previous `hidden md:block` convention overlapped the shell's
- *    `lg:hidden` chrome, putting TWO h1s in the DOM across the whole 768–1023
- *    band.
+ *  · **One h1 per breakpoint (DA-60).** Every shell renders the mobile title in
+ *    `NativeHeader` below `md` (768 — the §4.1 chrome switch, W2b) and this
+ *    header from `md` up — so the two never coexist.
  *  · **One title source.** `segment` resolves through `PAGE_TITLE_KEY` (§2.1's
  *    single map) — the same map the shell uses — so mobile and desktop cannot
  *    drift. `title` is the escape hatch for detail routes whose heading is a
@@ -52,9 +50,10 @@ export type PageHeaderProps = {
   /** `large` (default) is the workspace heading; `compact` is for nested surfaces. */
   variant?: 'large' | 'compact';
   /**
-   * Breakpoint at which this header appears. Staff pages use the default `lg`,
-   * matching the shell's chrome switch so exactly one h1 renders per breakpoint.
-   * `always` is for surfaces with no shell title of their own.
+   * Breakpoint at which this header appears. The default `md` matches every
+   * shell's §4.1 chrome switch (mobile NativeHeader <768, this header ≥768) so
+   * exactly one h1 renders per breakpoint. `always` is for surfaces with no
+   * shell title of their own.
    */
   visibility?: 'lg' | 'md' | 'always';
   className?: string;
@@ -76,7 +75,7 @@ export function PageHeader({
   actions,
   backHref,
   variant = 'large',
-  visibility = 'lg',
+  visibility = 'md',
   className,
   'data-testid': testId,
 }: PageHeaderProps) {

@@ -11,6 +11,10 @@ import { ROLES } from './roles';
  * breakpoint:
  *   - mobile  → the NativeHeader large title (content title hidden)
  *   - desktop → the content title (chrome large title hidden, never title-less)
+ *
+ * W2b R3: the content title is now the shared PageHeader primitive — an h1 with
+ * the unified `page-title` testid (the shell-local `coach-page-title` h2/h1 mix
+ * is gone). The invariant asserted here is unchanged.
  */
 const MOBILE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
@@ -28,7 +32,7 @@ for (const path of ['/en/coach/attendance', '/en/coach/students']) {
       await m.page.goto(path);
       await expect(m.page.locator('[data-testid="native-large-title"]'), 'mobile: chrome large title shows')
         .toBeVisible({ timeout: 15_000 });
-      await expect(m.page.locator('[data-testid="coach-page-title"]'), 'mobile: the content title is hidden (no echo)')
+      await expect(m.page.locator('[data-testid="page-title"]'), 'mobile: the content title is hidden (no echo)')
         .toBeHidden();
     } finally {
       await m.ctx.close();
@@ -38,7 +42,7 @@ for (const path of ['/en/coach/attendance', '/en/coach/students']) {
     const d = await openCoach(browser, DESKTOP);
     try {
       await d.page.goto(path);
-      await expect(d.page.locator('[data-testid="coach-page-title"]'), 'desktop: the content title shows (never title-less)')
+      await expect(d.page.locator('[data-testid="page-title"]'), 'desktop: the content title shows (never title-less)')
         .toBeVisible({ timeout: 15_000 });
       await expect(d.page.locator('[data-testid="native-large-title"]'), 'desktop: the chrome large title is hidden (no echo)')
         .toBeHidden();
@@ -54,7 +58,7 @@ test('COACH-SHELL · /ar coach renders the responsive title RTL-clean (no missin
     await m.page.goto('/ar/coach/attendance');
     await m.page.waitForLoadState('networkidle').catch(() => {});
     await expect(m.page.locator('[data-testid="native-large-title"]'), '/ar mobile: chrome title shows').toBeVisible({ timeout: 15_000 });
-    await expect(m.page.locator('[data-testid="coach-page-title"]'), '/ar mobile: content title hidden').toBeHidden();
+    await expect(m.page.locator('[data-testid="page-title"]'), '/ar mobile: content title hidden').toBeHidden();
     await expect(m.page.locator('body'), '/ar coach has no missing i18n keys').not.toContainText('MISSING_MESSAGE');
   } finally {
     await m.ctx.close();

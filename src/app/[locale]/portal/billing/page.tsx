@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/page-header'
 import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
 import { balanceUsd, outstandingUsd, paidByInvoice, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 import { DeskGrid } from '@/components/portal/portal-kit'
@@ -94,9 +95,9 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
 
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
-      {/* PORTAL-SHELL: billing leads with the balance on mobile (chrome owns the
-          title); a desktop-only H1 keeps desktop from being title-less. */}
-      <h1 data-testid="portal-page-title" className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+      {/* DS 2.0 §2.1 (W2b R3): the ONE title primitive — testid `page-title`
+          (was `portal-page-title`). Desktop-only; mobile leads with the balance. */}
+      <PageHeader title={t('title')} />
       {/* W2a §4.2 Rule 1: main = household + membership + invoices (the money
           flow, mobile order intact); aside = payment history (the glanceable). */}
       <DeskGrid gap="space-y-6" main={<>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
 import { createClient } from '@/lib/supabase/client';
 import { attendanceRecordSchema } from '@/lib/validators';
 import { saveAttendance } from './actions';
@@ -433,12 +434,12 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
-      {/* Header — PORTAL/COACH-SHELL: echoes the mobile chrome large title → desktop-only. */}
+      {/* W2b R3: the ONE title primitive (testid `page-title`, an h1 like every
+          other page title — was an h2 with the shell-local `coach-page-title`);
+          mobile keeps the always-visible subtitle (chrome owns the title). */}
       <div>
-        <h2 data-testid="coach-page-title" className={cn('hidden md:block text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
-          {msg('coach.attendance.title')}
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">{msg('coach.attendance.subtitle')}</p>
+        <PageHeader title={msg('coach.attendance.title')} subtitle={msg('coach.attendance.subtitle')} variant="compact" />
+        <p className="text-sm text-gray-500 md:hidden">{msg('coach.attendance.subtitle')}</p>
       </div>
 
       {/* W2a §4.2 Rule 1: main = banner → date → class → states → mark-all →
