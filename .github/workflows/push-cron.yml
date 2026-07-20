@@ -20,9 +20,10 @@
 name: Push cron (disabled by default)
 
 on:
-  # STEP 2 — uncomment to enable the drain (every 5 minutes — the min GH interval):
-  # schedule:
-  #   - cron: '*/5 * * * *'
+  # ENABLED 2026-07-20 (auditor): VAPID keys + CRON_SECRET live in Railway; repo
+  # secret CRON_SECRET set the same day. The drain is exactly-once via push_sent_at.
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch: {} # manual "Run workflow" (safe to keep; inert without the secret)
 
 jobs:

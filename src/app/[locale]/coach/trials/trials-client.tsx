@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { CalendarClock, CheckCircle2, XCircle, Phone } from 'lucide-react';
 import { recordTrialOutcome } from '@/app/[locale]/(dashboard)/leads/actions';
 import { useErrorText } from '@/lib/errors/use-error-text';
+import { DeskGrid } from '@/components/portal/portal-kit';
 
 export type CoachTrial = {
   id: string;
@@ -63,6 +64,9 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
           <p className="text-gray-500">{tc('empty')}</p>
         </div>
       ) : (
+        /* W2a §4.2 Rule 1: main = the trial rows; aside = the pipeline glance
+           (status counts over the same rows — §2.4 rule 2). */
+        <DeskGrid gap="space-y-3" main={
         <div className="space-y-3">
           {trials.map((tr) => (
             <div
@@ -143,6 +147,19 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
             </div>
           ))}
         </div>
+        } aside={
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{tc('title')}</h3>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {(['scheduled', 'completed', 'no_show'] as const).map((status) => (
+              <li key={status} className="flex items-center justify-between gap-2">
+                <span className="text-gray-500">{t(`trial_status.${status}` as Parameters<typeof t>[0])}</span>
+                <span className="font-semibold text-gray-900">{trials.filter((tr) => tr.status === status).length}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        } />
       )}
     </div>
   );

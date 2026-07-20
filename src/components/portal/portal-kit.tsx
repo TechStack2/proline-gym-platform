@@ -39,12 +39,66 @@ export function PortalContent({
     <div
       data-testid="portal-shell"
       className={cn(
-        'mx-auto w-full max-w-3xl md:px-4',
-        'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0',
+        // DS 2.0 §4.1 (W2a): the desktop content grid — max 1200px, centred in
+        // the space beside the rail, 24px gutters. Below md it is the mobile
+        // column it always was.
+        'mx-auto w-full max-w-[1200px] md:px-6 md:py-2',
+        'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-6',
         className,
       )}
     >
       {children}
+    </div>
+  )
+}
+
+/**
+ * DS 2.0 §4.2 Rule 1 — the mobile card stack becomes main (~2/3, the primary
+ * flow in its mobile order) + aside (~1/3, glanceables) at ≥1024px. At 768–1023
+ * the grid stays single-column (wider cards) — only the rail is gained.
+ */
+export function DeskGrid({
+  main,
+  aside,
+  className,
+  gap = 'space-y-4',
+  asideFirst = false,
+}: {
+  main: React.ReactNode
+  aside: React.ReactNode
+  className?: string
+  /** The stack rhythm inside each column (match the page's mobile spacing). */
+  gap?: string
+  /**
+   * When the aside's content precedes the main flow on MOBILE (filters/controls
+   * above a list), render it first in the DOM (mobile order unchanged) and pin
+   * it to the aside column with explicit grid placement at lg.
+   */
+  asideFirst?: boolean
+}) {
+  const mainEl = (
+    <div className={cn('min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1', !asideFirst ? '' : 'mt-4 lg:mt-0', gap)}>
+      {main}
+    </div>
+  )
+  const asideEl = (
+    <div className={cn('min-w-0 lg:col-start-3 lg:row-start-1', asideFirst ? '' : 'mt-4 lg:mt-0', gap)}>
+      {aside}
+    </div>
+  )
+  return (
+    <div className={cn('lg:grid lg:grid-cols-3 lg:items-start lg:gap-6', className)}>
+      {asideFirst ? (
+        <>
+          {asideEl}
+          {mainEl}
+        </>
+      ) : (
+        <>
+          {mainEl}
+          {asideEl}
+        </>
+      )}
     </div>
   )
 }

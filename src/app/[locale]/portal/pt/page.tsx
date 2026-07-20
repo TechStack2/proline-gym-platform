@@ -7,6 +7,7 @@ import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/sh
 import { PtRequestClient } from './pt-request-client';
 import { BookPtModal } from '@/components/shared/book-pt-modal';
 import { CancelBookingButton, MemberProposalActions } from './session-actions';
+import { DeskGrid } from '@/components/portal/portal-kit';
 
 type Props = { params: { locale: string } };
 
@@ -147,7 +148,10 @@ export default async function PortalPtPage({ params }: Props) {
         <p className="text-sm text-gray-500 mt-0.5">{t('pt_request_subtitle')}</p>
       </div>
 
-      {/* My PT — the package cards (sessions nested; no flat list) */}
+      {/* W2a §4.2 Rule 1: main = my packages (the primary flow); aside = the
+          catalog request section (browse-to-buy glanceable). */}
+      <DeskGrid main={
+      /* My PT — the package cards (sessions nested; no flat list) */
       <div className="space-y-2" data-testid="portal-pt-history">
         <div className="flex items-center justify-between">
           <h2 className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>
@@ -191,14 +195,15 @@ export default async function PortalPtPage({ params }: Props) {
           ))
         )}
       </div>
-
-      {/* 22R: request from the catalog (type cards) — approval routes through
-          sell_pt_package on the staff side. */}
+      } aside={
+      /* 22R: request from the catalog (type cards) — approval routes through
+          sell_pt_package on the staff side. */
       <PtRequestClient
         packages={packages || []}
         coaches={coachOptions}
         locale={locale}
       />
+      } />
     </div>
   );
 }

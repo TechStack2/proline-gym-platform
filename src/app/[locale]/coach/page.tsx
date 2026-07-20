@@ -8,7 +8,7 @@ import {
   CalendarDays, Award, Dumbbell, CalendarClock, Megaphone, Eye, EyeOff, BookOpen,
 } from 'lucide-react'
 import Link from 'next/link'
-import { PortalCard, PortalCardTitle, PortalEmpty } from '@/components/portal/portal-kit'
+import { PortalCard, PortalCardTitle, PortalEmpty, DeskGrid } from '@/components/portal/portal-kit'
 import { ActionCard } from '@/components/dashboard/action-card'
 import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
@@ -194,9 +194,10 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl text-right')} data-testid="coach-360-portal">
-      {/* PWA-BASICS R2: the install affordance (iOS-aware, self-hiding) now reaches
-          coaches — the card was previously mounted only on the staff /today hub. */}
-      <InstallAppCard locale={locale} />
+      {/* W2a §4.2 Rule 1 (the approved v3 vignette): main = the coach's day in
+          its mobile order; aside = PT · trials pipeline · profile status ·
+          install (DA-15 demotion — the install card leaves first-card). */}
+      <DeskGrid main={<>
       {/* Header */}
       <div>
         <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
@@ -330,8 +331,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
           }))}
         />
       </ActionCard>
-
-      <div className="grid gap-4 md:grid-cols-2">
+      </>} aside={<>
         {/* ── PT ── */}
         <ActionCard
           icon={Dumbbell} title={t('pt.title')} count={pt.length}
@@ -370,7 +370,6 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             }))}
           />
         </ActionCard>
-      </div>
 
       {/* ── MY PROFILE / LANDING — display only (publish gate unchanged) ── */}
       <PortalCard data-testid="coach-profile-status">
@@ -386,6 +385,10 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
           </span>
         </div>
       </PortalCard>
+
+      {/* PWA-BASICS R2 (placement per DA-15: below the coach's own day). */}
+      <InstallAppCard locale={locale} />
+      </>} />
     </div>
   )
 }

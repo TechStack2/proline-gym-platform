@@ -2,6 +2,8 @@ import createMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import { routing } from '@/i18n/routing';
+import { normalizeHost } from '@/lib/host/resolver';
+import { isAllowedActionOrigin } from '@/lib/host/action-origins';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -161,6 +163,42 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/auth/callback')
   ) {
     return NextResponse.next();
+  }
+
+  // ─── PROXY-ACTIONS · R2: a Server-Action Origin misconfiguration must be LOUD ───
+  // Next CSRF-rejects an action POST whose Origin ≠ Host unless the origin is in
+  // experimental.serverActions.allowedOrigins (next.config.mjs). A tenant custom
+  // domain that was onboarded WITHOUT the required PRAXELLA_ACTION_ORIGINS update
+  // used to fail as a silent 500 on every write. This does not change the outcome
+  // (Next still enforces) — it names the cause in the server log at the exact
+  // request that will be rejected, so the first symptom is actionable.
+  if (request.method === 'POST' && request.headers.get('next-action')) {
+    const originHeader = request.headers.get('origin');
+    const originHost = (() => {
+      if (!originHeader) return null;
+      try {
+        return new URL(originHeader).host.toLowerCase();
+      } catch {
+        return null;
+      }
+    })();
+    const plainHost = request.headers.get('host')?.toLowerCase() ?? null;
+    if (originHost && originHost !== plainHost && !isAllowedActionOrigin(originHost)) {
+      // When the request came through OUR proxy for this same host, it is a REAL
+      // tenant domain (X-Praxella-Host is only trusted downstream with the key,
+      // but for logging, its presence pinpoints the misconfiguration precisely).
+      const proxiedHost = normalizeHost(request.headers.get('x-praxella-host'));
+      const viaOwnProxy = !!proxiedHost && proxiedHost === normalizeHost(originHost);
+      console.error(
+        `[proxy-actions] Server Action POST from Origin "${originHost}" (host "${plainHost}", path "${pathname}") ` +
+          `is NOT in serverActions.allowedOrigins — Next will reject it with a 500. ` +
+          (viaOwnProxy
+            ? `This origin arrived through the Praxella proxy, so it is an onboarded tenant domain: ` +
+              `add it to PRAXELLA_ACTION_ORIGINS on the app service and redeploy (runbook docs/runbooks/custom-domain.md §6).`
+            : `If this is a newly onboarded tenant domain, add it to PRAXELLA_ACTION_ORIGINS and redeploy ` +
+              `(runbook docs/runbooks/custom-domain.md §6); otherwise this is the CSRF protection working as intended.`),
+      );
+    }
   }
 
   // ─── Rate Limiting for Auth Endpoints ───

@@ -8,6 +8,7 @@ import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { ProfileSelfServe } from './profile-self-serve'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { PushToggle } from '@/components/push/push-toggle'
+import { DeskGrid } from '@/components/portal/portal-kit'
 
 type Props = { params: { locale: string } }
 
@@ -58,7 +59,9 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
 
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
-      <PushToggle />
+      {/* W2a §4.2 Rule 1: main = identity + status + self-serve (the profile
+          flow); aside = device/preferences (push · language) + guardians. */}
+      <DeskGrid main={<>
       <div className="rounded-2xl bg-white p-6 shadow-sm text-center">
         <div className="mb-3 flex justify-center">
           <AvatarUpload
@@ -108,15 +111,6 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
         {student?.medical_notes && <DetailRow icon={AlertCircle} label={t('medical')} value={student.medical_notes} />}
       </div>
 
-      {/* PWA-BASICS R1: always-editable INTERFACE-language control for members
-          (the portal shell's device switcher wasn't reliably reachable on mobile). */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
-        </h3>
-        <LanguageSwitcher locale={locale} variant="inline" />
-      </div>
-
       {/* MJ-3: member self-serve — direct contact/locale save + safety change request. */}
       {student?.id && (
         <ProfileSelfServe
@@ -136,6 +130,17 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
           }}
         />
       )}
+      </>} aside={<>
+      <PushToggle />
+
+      {/* PWA-BASICS R1: always-editable INTERFACE-language control for members
+          (the portal shell's device switcher wasn't reliably reachable on mobile). */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
+        </h3>
+        <LanguageSwitcher locale={locale} variant="inline" />
+      </div>
 
       {guardians && guardians.length > 0 && (
         <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
@@ -151,6 +156,7 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
           })}
         </div>
       )}
+      </>} />
     </div>
   )
 }

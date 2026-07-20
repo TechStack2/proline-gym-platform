@@ -75,7 +75,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
       <div data-testid="portal-classes-empty" className={cn('rounded-2xl bg-white p-8 text-center shadow-sm', isRTL && 'font-arabic')}>
         <CalendarDays className="mx-auto h-10 w-10 text-primary-300" aria-hidden />
         <p className="mt-3 text-sm font-medium text-gray-700">{t('emptyTitle')}</p>
-        <Link href={`/${locale}/portal/schedule`} data-testid="portal-classes-empty-cta"
+        <Link href={`/${locale}/portal/classes?view=schedule`} data-testid="portal-classes-empty-cta"
           className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800">
           <Calendar className="h-4 w-4" aria-hidden /> {t('emptyCta')}
         </Link>

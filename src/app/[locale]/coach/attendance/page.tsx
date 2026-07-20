@@ -11,6 +11,7 @@ import { computeEligibility } from '@/lib/eligibility';
 import { useOnline, usePendingAttendance } from '@/lib/offline/use-online';
 import { cacheRoster, readRoster, queueMark, flushPending } from '@/lib/offline/attendance';
 import { OfflineBanner } from '@/components/offline/offline-banner';
+import { DeskGrid } from '@/components/portal/portal-kit';
 import {
   Calendar,
   ClipboardCheck,
@@ -440,6 +441,10 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         <p className="text-sm text-gray-500 mt-0.5">{msg('coach.attendance.subtitle')}</p>
       </div>
 
+      {/* W2a §4.2 Rule 1: main = banner → date → class → states → mark-all →
+          roster → save (the marking flow, mobile order); aside = the trials
+          block (last on mobile — DOM order unchanged). */}
+      <DeskGrid gap="space-y-4" main={<>
       {/* G2: offline / pending-sync banner */}
       <OfflineBanner online={online} pending={pending} locale={locale} />
 
@@ -632,44 +637,45 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
               </button>
             </>
           )}
-
-          {/* TRIAL-SLOTS R3: trials on this occurrence — marked TRIAL, one-tap check-in.
-              OUTSIDE the roster ternary so a class with no enrolled students still shows
-              its trials (a trial can be the only attendee on the sheet). */}
-          {trials.length > 0 && (
-                <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/40 p-3" data-testid="attendance-trials">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">{msg('coach.attendance.trialsTitle')}</p>
-                  <div className="space-y-2">
-                    {trials.map((tr) => (
-                      <div key={tr.id} data-testid="attendance-trial-row" data-lead-name={tr.name} data-trial-status={tr.status}
-                        className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
-                        <span className="flex items-center gap-2 text-sm">
-                          <span className="rounded bg-purple-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">{msg('coach.attendance.trialBadge')}</span>
-                          {tr.name}
-                        </span>
-                        {tr.status === 'scheduled' ? (
-                          <span className="flex gap-1">
-                            <button data-testid="trial-checkin" disabled={trialBusy === tr.id}
-                              onClick={() => markTrial(tr.id, 'completed', true)}
-                              className="rounded-lg bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">
-                              <Check className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialAttended')}
-                            </button>
-                            <button data-testid="trial-noshow" disabled={trialBusy === tr.id}
-                              onClick={() => markTrial(tr.id, 'no_show', false)}
-                              className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">
-                              <X className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialNoShow')}
-                            </button>
-                          </span>
-                        ) : (
-                          <span className="text-xs font-medium text-gray-600">{tr.show_up ? msg('coach.attendance.trialAttended') : msg('coach.attendance.trialNoShow')}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
         </>
       )}
+      </>} aside={<>
+      {/* TRIAL-SLOTS R3: trials on this occurrence — marked TRIAL, one-tap check-in.
+          OUTSIDE the roster ternary so a class with no enrolled students still shows
+          its trials (a trial can be the only attendee on the sheet). */}
+      {!loading && selectedClassId && trials.length > 0 && (
+        <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/40 p-3" data-testid="attendance-trials">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">{msg('coach.attendance.trialsTitle')}</p>
+          <div className="space-y-2">
+            {trials.map((tr) => (
+              <div key={tr.id} data-testid="attendance-trial-row" data-lead-name={tr.name} data-trial-status={tr.status}
+                className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
+                <span className="flex items-center gap-2 text-sm">
+                  <span className="rounded bg-purple-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">{msg('coach.attendance.trialBadge')}</span>
+                  {tr.name}
+                </span>
+                {tr.status === 'scheduled' ? (
+                  <span className="flex gap-1">
+                    <button data-testid="trial-checkin" disabled={trialBusy === tr.id}
+                      onClick={() => markTrial(tr.id, 'completed', true)}
+                      className="rounded-lg bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">
+                      <Check className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialAttended')}
+                    </button>
+                    <button data-testid="trial-noshow" disabled={trialBusy === tr.id}
+                      onClick={() => markTrial(tr.id, 'no_show', false)}
+                      className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">
+                      <X className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialNoShow')}
+                    </button>
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-gray-600">{tr.show_up ? msg('coach.attendance.trialAttended') : msg('coach.attendance.trialNoShow')}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      </>} />
     </div>
   );
 }

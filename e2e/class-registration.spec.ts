@@ -64,7 +64,7 @@ test('B2 · request → approve(free)→active+invoice+roster → full→waitlis
     await noMissing(owner.page);
 
     // ── Karim requests in the portal ──────────────────────────────────────────
-    await student.page.goto('/en/portal/classes');
+    await student.page.goto('/en/portal/classes?view=browse');
     const karimCard = vis(student.page, '[data-testid="portal-class-card"]').filter({ hasText: CLASS_NAME }).first();
     await expect(karimCard).toBeVisible({ timeout: 15_000 });
     // CYCLE-VIZ: the catalog card frames the class as a recurring monthly product
@@ -111,7 +111,7 @@ test('B2 · request → approve(free)→active+invoice+roster → full→waitlis
     // Karim was promoted off the waitlist + billed.
     await expectNotification(student.page, 'waitlist_promoted');
     await expectNotification(student.page, 'invoice_issued');
-    await student.page.goto('/en/portal/classes');
+    await student.page.goto('/en/portal/classes?view=browse');
     const activeCard = vis(student.page, '[data-testid="portal-class-card"]').filter({ hasText: CLASS_NAME }).first();
     await expect(activeCard.getByTestId('reg-status'))
       .toHaveAttribute('data-status', 'active', { timeout: 15_000 });
