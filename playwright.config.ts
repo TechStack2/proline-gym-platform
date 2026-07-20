@@ -342,6 +342,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // DS2-TOKENS: the §1 token doctrine asserted in the browser — the role split is
+      // real (danger is FIXED and survives a brand override), the status ramps did not
+      // repaint (§6.2 byte-identity, measured), DISC-COLOR paints a stable tint rather
+      // than DA-31's alarm fill, and the §1.2 fixed surfaces stay fixed under html.dark
+      // (landing hero + the DA-27 Affiliations band, and the receipt's paper ramp).
+      name: 'ds2-tokens',
+      dependencies: ['setup'],
+      testMatch: /\/ds2-tokens\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // W1-FOUNDATION §6.3 evidence matrix for the deliberately changed staff
       // chrome: {en,ar} × {light,dark} × {390,1280}. Screenshots only.
       name: 'w1-shots',
