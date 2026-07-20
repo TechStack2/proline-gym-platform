@@ -38,8 +38,14 @@ test('PRINT-FIX · thermal receipt renders as white paper in dark mode, chrome-f
 
   const gyms = await svcGet(`gyms?slug=eq.${E2E_GYM_SLUG}&select=id`)
   const gymId = gyms[0].id
-  const invs = await svcGet(`invoices?gym_id=eq.${gymId}&order=created_at.desc&limit=1&select=id,invoice_number`)
-  expect(invs[0]?.id, 'the seed has an invoice to print a receipt for').toBeTruthy()
+  // The gym is SHARED with every other spec file in this shard, and one of them
+  // (cancel-flow) voids an invoice — so "the newest invoice" is not necessarily a
+  // printable one. A voided invoice renders the VOID stamp instead of PAID/DUE, and
+  // this test asserts the PAID/DUE stamp two dozen lines down. Filter for a live
+  // invoice so the test GUARANTEES the precondition it measures rather than inheriting
+  // it from whichever spec happened to run first.
+  const invs = await svcGet(`invoices?gym_id=eq.${gymId}&voided_at=is.null&order=created_at.desc&limit=1&select=id,invoice_number`)
+  expect(invs[0]?.id, 'the seed has a non-voided invoice to print a receipt for').toBeTruthy()
   const invId = invs[0].id
 
   const ctx = await browser.newContext({ storageState: ROLES.owner.storage, locale: 'en' })
