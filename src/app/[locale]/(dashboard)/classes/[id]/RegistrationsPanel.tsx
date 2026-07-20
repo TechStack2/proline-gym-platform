@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { approveRegistration, rejectRegistration, cancelRegistration, registerWalkIn, setRegistrationAnchor } from './registration-actions'
 import { useErrorText } from '@/lib/errors/use-error-text'
-import { computeProration, defaultBillingAnchor } from '@/lib/billing/proration'
+import { cn } from '@/lib/utils'
+import { computeProration, defaultBillingAnchor, prorateDefaultFor, DEFAULT_CYCLE_POLICY, type GymCyclePolicy } from '@/lib/billing/proration'
 import { fmtUsd, fmtLbp } from '@/lib/billing/currency'
 import { ReasonDialog } from '@/components/billing/reason-dialog'
 
@@ -19,7 +20,7 @@ type Reg = {
   end_date?: string | null; first_cycle_prorated?: boolean | null
 }
 
-type ApprovePayload = { regId: string; discountPct: number; startDate: string; billingAnchor: string; prorate: boolean }
+type ApprovePayload = { regId: string; discountPct: number; startDate: string; billingAnchor?: string; prorate: boolean }
 type Tr = (en: string, ar: string, fr: string) => string
 
 /**
@@ -32,6 +33,7 @@ type Tr = (en: string, ar: string, fr: string) => string
  */
 export function RegistrationsPanel({
   classId, registrations, students, locale, monthlyFeeUsd = null, scheduleDays = [], rate = null, today,
+  cyclePolicy = DEFAULT_CYCLE_POLICY,
 }: {
   classId: string
   registrations: Reg[]
@@ -41,6 +43,8 @@ export function RegistrationsPanel({
   scheduleDays?: number[]
   rate?: number | null
   today?: string
+  /** BILL-POLICY: the gym's cycle policy. Defaults to today's behavior. */
+  cyclePolicy?: GymCyclePolicy
 }) {
   const t: Tr = (en, ar, fr) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const ref = today ?? new Date().toISOString().slice(0, 10)
@@ -96,7 +100,7 @@ export function RegistrationsPanel({
           ) : (
             <div className="space-y-2">
               {requested.map((r) => (
-                <PendingRegRow key={r.id} r={r} t={t} locale={locale} ref_={ref}
+                <PendingRegRow key={r.id} r={r} t={t} locale={locale} ref_={ref} cyclePolicy={cyclePolicy}
                   monthlyFeeUsd={r.monthly_fee_usd ?? monthlyFeeUsd} scheduleDays={scheduleDays} rate={rate} pending={pending}
                   onApprove={(p) => run(() => approveRegistration({ regId: p.regId, classId, discountPct: p.discountPct, startDate: p.startDate, billingAnchor: p.billingAnchor, prorate: p.prorate }))}
                   onReject={() => run(() => rejectRegistration(r.id, classId, undefined))} />
@@ -175,24 +179,29 @@ function fmtDate(iso: string | null | undefined, locale: string): string {
 
 /** One pending request: fee + discount + BILL-CYCLES start/anchor/prorate + live preview. */
 function PendingRegRow({
-  r, t, locale, ref_, monthlyFeeUsd, scheduleDays, rate, pending, onApprove, onReject,
+  r, t, locale, ref_, monthlyFeeUsd, scheduleDays, rate, cyclePolicy, pending, onApprove, onReject,
 }: {
   r: Reg; t: Tr; locale: string; ref_: string
-  monthlyFeeUsd: number | null; scheduleDays: number[]; rate: number | null; pending: boolean
+  monthlyFeeUsd: number | null; scheduleDays: number[]; rate: number | null
+  cyclePolicy: GymCyclePolicy; pending: boolean
   onApprove: (p: ApprovePayload) => void; onReject: () => void
 }) {
   const fee = monthlyFeeUsd ?? 0
   const isFree = fee === 0
   const [discount, setDiscount] = useState('')
   const [startDate, setStartDate] = useState(ref_)
-  const [anchor, setAnchor] = useState(() => defaultBillingAnchor(scheduleDays, ref_))
+  const [anchor, setAnchor] = useState(() => defaultBillingAnchor(scheduleDays, ref_, cyclePolicy))
   const [anchorEdited, setAnchorEdited] = useState(false)
-  const [prorate, setProrate] = useState(false)
+  // BILL-POLICY R3: proration is the NORMALIZING STUB under `calendar`, so it is
+  // offered on by default there. Under `anniversary` a fresh cycle starts on the
+  // member's own start date — there is nothing to prorate — so it stays off and
+  // stays a deliberate staff choice rather than an implied discount.
+  const [prorate, setProrate] = useState(() => prorateDefaultFor(cyclePolicy.policy))
 
   // Auto-derive the anchor from the start date until staff pin it by hand.
   useEffect(() => {
-    if (!anchorEdited) setAnchor(defaultBillingAnchor(scheduleDays, startDate))
-  }, [startDate, anchorEdited, scheduleDays])
+    if (!anchorEdited) setAnchor(defaultBillingAnchor(scheduleDays, startDate, cyclePolicy))
+  }, [startDate, anchorEdited, scheduleDays, cyclePolicy])
 
   const discPct = discount ? parseFloat(discount) : 0
   const net = Math.max(0, fee * (1 - (isFinite(discPct) ? discPct : 0) / 100))
@@ -216,7 +225,12 @@ function PendingRegRow({
           <Input type="number" min="0" max="100" placeholder={t('disc %', 'خصم %', 'remise %')} data-testid="discount-pct"
             className="h-8 w-20 text-xs" value={discount} onChange={(e) => setDiscount(e.target.value)} />
           <Button size="sm" data-testid="approve-btn" disabled={pending}
-            onClick={() => onApprove({ regId: r.id, discountPct: isFinite(discPct) ? discPct : 0, startDate, billingAnchor: anchor, prorate })}
+            onClick={() => onApprove({ regId: r.id, discountPct: isFinite(discPct) ? discPct : 0, startDate,
+              // BILL-POLICY: send an anchor ONLY when staff pinned one by hand.
+              // Otherwise omit it so _default_billing_anchor derives it from the
+              // GYM'S POLICY — the DB stays authoritative for the charge and the
+              // client preview cannot shadow it with a stale policy.
+              billingAnchor: anchorEdited ? anchor : undefined, prorate })}
             className="bg-primary-700 hover:bg-primary-800">{t('Approve', 'موافقة', 'Approuver')}</Button>
           <Button size="sm" variant="outline" data-testid="reject-btn" disabled={pending}
             onClick={onReject}>{t('Reject', 'رفض', 'Refuser')}</Button>
@@ -241,19 +255,31 @@ function PendingRegRow({
             <input type="checkbox" data-testid="reg-prorate" checked={prorate} onChange={(e) => setProrate(e.target.checked)} />
             {t('Prorate first cycle', 'احتساب الدورة الأولى بالتناسب', 'Proratiser le 1er cycle')}
           </label>
-          <div data-testid="reg-proration-preview" className="text-xs">
+          {/* BILL-POLICY R3: say plainly — BEFORE staff confirms — what the member
+              is charged NOW and when the NEXT bill lands. True in both policies;
+              under `calendar` the first line is the normalizing stub. */}
+          <div data-testid="reg-proration-preview" className="space-y-0.5 text-xs">
             {!preview.billsNow ? (
-              <span className="text-blue-700">
-                {t('Starts', 'يبدأ', 'Débute')} {fmtDate(startDate, locale)} · {t('first bill', 'أول فاتورة', 'première facture')} {fmtDate(preview.cycleStart, locale)}: {fmtUsd(preview.firstInvoiceUsd)}{showLbp ? ` · ${fmtLbp(preview.firstInvoiceLbp)}` : ''}
-              </span>
-            ) : preview.prorated ? (
-              <span className="text-amber-700">
-                {t('First invoice', 'الفاتورة الأولى', 'Première facture')} ({preview.sessionsRemaining}/{preview.sessionsInCycle} {t('sessions', 'حصص', 'séances')}): <b>{fmtUsd(preview.firstInvoiceUsd)}</b>{showLbp ? ` · ${fmtLbp(preview.firstInvoiceLbp)}` : ''} · {t('then', 'ثم', 'puis')} {fmtUsd(preview.fullMonthUsd)}/{t('mo', 'شهر', 'mois')}
-              </span>
+              <>
+                <span className="block text-blue-700" data-testid="reg-charge-now">
+                  {t('Starts', 'يبدأ', 'Débute')} {fmtDate(startDate, locale)} · {t('nothing charged now', 'لا رسوم الآن', 'aucun frais maintenant')}
+                </span>
+                <span className="block text-gray-600" data-testid="reg-next-bill">
+                  {t('first bill', 'أول فاتورة', 'première facture')} {fmtDate(preview.cycleStart, locale)}: <b>{fmtUsd(preview.firstInvoiceUsd)}</b>{showLbp ? ` · ${fmtLbp(preview.firstInvoiceLbp)}` : ''}
+                </span>
+              </>
             ) : (
-              <span className="text-gray-600">
-                {t('First invoice', 'الفاتورة الأولى', 'Première facture')}: <b>{fmtUsd(preview.firstInvoiceUsd)}</b>{showLbp ? ` · ${fmtLbp(preview.firstInvoiceLbp)}` : ''}
-              </span>
+              <>
+                <span className={cn('block', preview.prorated ? 'text-amber-700' : 'text-gray-600')} data-testid="reg-charge-now">
+                  {t('Charged now', 'المبلغ الآن', 'Facturé maintenant')}: <b>{fmtUsd(preview.firstInvoiceUsd)}</b>{showLbp ? ` · ${fmtLbp(preview.firstInvoiceLbp)}` : ''}
+                  {preview.prorated
+                    ? ` (${preview.sessionsRemaining}/${preview.sessionsInCycle} ${t('sessions', 'حصص', 'séances')})`
+                    : ''}
+                </span>
+                <span className="block text-gray-600" data-testid="reg-next-bill">
+                  {t('Next bill', 'الفاتورة التالية', 'Prochaine facture')} {fmtDate(preview.cycleEnd, locale)}: {fmtUsd(preview.fullMonthUsd)}/{t('mo', 'شهر', 'mois')}
+                </span>
+              </>
             )}
           </div>
         </div>

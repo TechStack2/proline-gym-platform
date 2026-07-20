@@ -6,8 +6,12 @@ import {
   cycleWindow,
   computeProration,
   defaultBillingAnchor,
+  calendarCycleAnchor,
+  normalizeCycleDay,
+  prorateDefaultFor,
   parseISODate,
   toISODate,
+  type GymCyclePolicy,
 } from './proration';
 
 const D = parseISODate;
@@ -214,5 +218,152 @@ describe('defaultBillingAnchor', () => {
   });
   it('falls back to the start date when the class has no schedule', () => {
     expect(defaultBillingAnchor([], '2024-01-14')).toBe('2024-01-14');
+  });
+});
+
+// ── BILL-POLICY ─────────────────────────────────────────────────────────────
+const ANNIVERSARY: GymCyclePolicy = { policy: 'anniversary', cycleDay: 1 };
+const CAL_1ST: GymCyclePolicy = { policy: 'calendar', cycleDay: 1 };
+const CAL_15TH: GymCyclePolicy = { policy: 'calendar', cycleDay: 15 };
+
+describe('BILL-POLICY · calendarCycleAnchor — the boundary on/before a date', () => {
+  it('snaps a mid-month date back to the cycle day', () => {
+    expect(toISODate(calendarCycleAnchor(D('2024-01-17'), 1))).toBe('2024-01-01');
+    expect(toISODate(calendarCycleAnchor(D('2024-01-17'), 15))).toBe('2024-01-15');
+  });
+  it('a date BEFORE the cycle day falls into the previous month', () => {
+    expect(toISODate(calendarCycleAnchor(D('2024-01-09'), 15))).toBe('2023-12-15');
+    expect(toISODate(calendarCycleAnchor(D('2024-01-01'), 15))).toBe('2023-12-15');
+  });
+  it('a date ON the boundary is already the anchor', () => {
+    expect(toISODate(calendarCycleAnchor(D('2024-01-15'), 15))).toBe('2024-01-15');
+    expect(toISODate(calendarCycleAnchor(D('2024-03-01'), 1))).toBe('2024-03-01');
+  });
+  it('clamps an out-of-range cycle day into the 1..28 grid (SQL mirrors this)', () => {
+    expect(normalizeCycleDay(0)).toBe(1);
+    expect(normalizeCycleDay(31)).toBe(28);
+    expect(normalizeCycleDay(null)).toBe(1);
+    expect(toISODate(calendarCycleAnchor(D('2024-01-30'), 31))).toBe('2024-01-28');
+  });
+  it('a cycle-day grid never walks backwards across a short month', () => {
+    // The reason cycleDay is capped at 28: every month has one, so stepping the
+    // grid a month at a time always lands on the same day-of-month.
+    let cur = D('2024-01-28');
+    for (const expected of ['2024-02-28', '2024-03-28', '2024-04-28']) {
+      cur = addMonths(cur, 1);
+      expect(toISODate(cur)).toBe(expected);
+    }
+  });
+});
+
+describe('BILL-POLICY · defaultBillingAnchor follows the gym policy', () => {
+  it('anniversary reproduces the pre-BILL-POLICY anchor exactly', () => {
+    // Jan 17 2024 is a Wednesday → MWF start is that same day.
+    expect(defaultBillingAnchor(MWF, '2024-01-17', ANNIVERSARY)).toBe('2024-01-17');
+    // Jan 16 is a Tuesday → next MWF session is Wed the 17th.
+    expect(defaultBillingAnchor(MWF, '2024-01-16', ANNIVERSARY)).toBe('2024-01-17');
+    expect(defaultBillingAnchor([], '2024-01-16', ANNIVERSARY)).toBe('2024-01-16');
+  });
+  it('the DEFAULT argument is anniversary — every pre-existing caller is unchanged', () => {
+    expect(defaultBillingAnchor(MWF, '2024-01-16')).toBe(
+      defaultBillingAnchor(MWF, '2024-01-16', ANNIVERSARY),
+    );
+  });
+  it('calendar snaps to the gym boundary, ignoring the class schedule', () => {
+    expect(defaultBillingAnchor(MWF, '2024-01-17', CAL_1ST)).toBe('2024-01-01');
+    expect(defaultBillingAnchor(MWF, '2024-01-17', CAL_15TH)).toBe('2024-01-15');
+    expect(defaultBillingAnchor([], '2024-01-17', CAL_1ST)).toBe('2024-01-01');
+  });
+});
+
+describe('BILL-POLICY · the owner-reported flaw is actually fixed', () => {
+  const base = { monthlyFeeUsd: 100, scheduleDays: MWF, rate: null, prorate: true };
+
+  it('anniversary: a 17th join bills a FULL month and stays on the 17th (the flaw, now a deliberate policy)', () => {
+    const startDate = '2024-01-17';
+    const anchor = defaultBillingAnchor(MWF, startDate, ANNIVERSARY);
+    const r = computeProration({ ...base, startDate, billingAnchor: anchor, today: startDate });
+    expect(anchor).toBe('2024-01-17');
+    expect(r.prorated).toBe(false);          // nothing to prorate — cycle starts at the join
+    expect(r.firstInvoiceUsd).toBe(100);     // full month
+    expect(r.cycleStart).toBe('2024-01-17');
+    expect(r.cycleEnd).toBe('2024-02-17');   // …and every later cycle is the 17th
+  });
+
+  it('calendar: the SAME 17th join prorates a stub and lands the next cycle on the boundary', () => {
+    const startDate = '2024-01-17';
+    const anchor = defaultBillingAnchor(MWF, startDate, CAL_1ST);
+    const r = computeProration({ ...base, startDate, billingAnchor: anchor, today: startDate });
+    expect(anchor).toBe('2024-01-01');
+    expect(r.cycleStart).toBe('2024-01-01');
+    expect(r.cycleEnd).toBe('2024-02-01');   // ← the boundary the owner intended
+    expect(r.prorated).toBe(true);
+    // Jan 2024 MWF = 14 sessions; from Wed Jan 17 inclusive → 7 remain.
+    expect(r.sessionsInCycle).toBe(14);
+    expect(r.sessionsRemaining).toBe(7);
+    expect(r.sessionValueUsd).toBe(7.14);
+    expect(r.firstInvoiceUsd).toBe(50);      // 100 ÷ 14 × 7
+  });
+
+  it('calendar: joining ON the boundary is a full month, not a $0 stub', () => {
+    const startDate = '2024-02-01';
+    const anchor = defaultBillingAnchor(MWF, startDate, CAL_1ST);
+    const r = computeProration({ ...base, startDate, billingAnchor: anchor, today: startDate });
+    expect(anchor).toBe('2024-02-01');
+    expect(r.prorated).toBe(false);
+    expect(r.firstInvoiceUsd).toBe(100);
+    expect(r.cycleEnd).toBe('2024-03-01');
+  });
+
+  it('calendar on a NON-1st cycle day: stub runs start → the 15th', () => {
+    const startDate = '2024-01-20';
+    const anchor = defaultBillingAnchor(MWF, startDate, CAL_15TH);
+    const r = computeProration({ ...base, startDate, billingAnchor: anchor, today: startDate });
+    expect(anchor).toBe('2024-01-15');
+    expect(r.cycleStart).toBe('2024-01-15');
+    expect(r.cycleEnd).toBe('2024-02-15');
+    expect(r.prorated).toBe(true);
+    expect(r.firstInvoiceUsd).toBeLessThan(100);
+  });
+
+  it('anniversary with a Jan-31 start clamps its later cycles (Feb 29 in a leap year)', () => {
+    const startDate = '2024-01-31';
+    const anchor = defaultBillingAnchor([], startDate, ANNIVERSARY);
+    expect(anchor).toBe('2024-01-31');
+    const r = computeProration({
+      ...base, scheduleDays: DAILY, startDate, billingAnchor: anchor, today: startDate,
+    });
+    expect(r.cycleStart).toBe('2024-01-31');
+    expect(r.cycleEnd).toBe('2024-02-29');   // clamped, matching Postgres
+  });
+
+  it('a staff anchor override still wins under BOTH policies', () => {
+    const startDate = '2024-01-17';
+    const OVERRIDE = '2024-01-08';
+    for (const pol of [ANNIVERSARY, CAL_1ST]) {
+      // The override must differ from what the policy would have derived, or this
+      // proves nothing.
+      const derived = defaultBillingAnchor(MWF, startDate, pol);
+      expect(derived, `${pol.policy} derives a different anchor`).not.toBe(OVERRIDE);
+      const r = computeProration({
+        ...base, startDate, billingAnchor: OVERRIDE, today: startDate,
+      });
+      expect(r.cycleStart, `${pol.policy} honors the override`).toBe(OVERRIDE);
+    }
+  });
+});
+
+describe('BILL-POLICY · proration ROLE follows the policy (R3)', () => {
+  it('calendar offers proration by default; anniversary does not', () => {
+    expect(prorateDefaultFor('calendar')).toBe(true);
+    expect(prorateDefaultFor('anniversary')).toBe(false);
+  });
+  it('under anniversary, prorate ON changes nothing for a fresh start — so defaulting it ON would imply a discount that never lands', () => {
+    const startDate = '2024-01-17';
+    const anchor = defaultBillingAnchor(MWF, startDate, ANNIVERSARY);
+    const on = computeProration({ monthlyFeeUsd: 100, scheduleDays: MWF, startDate, billingAnchor: anchor, today: startDate, rate: null, prorate: true });
+    const off = computeProration({ monthlyFeeUsd: 100, scheduleDays: MWF, startDate, billingAnchor: anchor, today: startDate, rate: null, prorate: false });
+    expect(on.firstInvoiceUsd).toBe(off.firstInvoiceUsd);
+    expect(on.prorated).toBe(false);
   });
 });

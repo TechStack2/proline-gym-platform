@@ -1481,7 +1481,8 @@
         "not_allowed": "Seul le personnel de cette salle peut enregistrer ces réglages",
         "nothing_to_save": "Rien à enregistrer",
         "no_gym": "Votre compte n'a pas de salle",
-        "not_signed_in": "Session expirée — reconnectez-vous"
+        "not_signed_in": "Session expirée — reconnectez-vous",
+        "invalid_billing_policy": "Choisissez l'un des deux cycles de facturation."
       },
       "enterArabicName": "Entrez le nom arabe",
       "enterEnglishName": "Entrez le nom anglais",
@@ -1525,7 +1526,18 @@
         "fri": "Vendredi",
         "sat": "Samedi",
         "sun": "Dimanche"
-      }
+      },
+      "sectionBilling": "Cycle de facturation",
+      "billingIntro": "Choisissez quand arrivent les factures mensuelles de vos membres. Ce réglage s'applique à toute la salle.",
+      "calendarTitle": "Tout le monde est facturé le même jour du mois",
+      "calendarBody": "La facture de chaque membre tombe à la même date, quel que soit son jour d'inscription.",
+      "calendarExample": "Un membre inscrit le 17 janvier ne paie que le reste de janvier — un montant partiel — puis un mois complet le 1er février, le 1er mars, etc.",
+      "anniversaryTitle": "Chaque membre est facturé depuis sa date d'inscription",
+      "anniversaryBody": "La date de facturation d'un membre est son jour de début, et elle ne bouge pas.",
+      "anniversaryExample": "Un membre inscrit le 17 janvier paie un mois complet maintenant, puis est facturé le 17 février, le 17 mars, etc.",
+      "cycleDayLabel": "Jour de facturation du mois",
+      "cycleDayHint": "De 1 à 28, pour que la date existe dans tous les mois.",
+      "switchNote": "Ce changement s'applique aux membres inscrits à partir de maintenant. Les membres déjà inscrits conservent leurs dates de facturation actuelles — rien n'est réécrit."
     },
     "exchange": {
       "currentRate": "Taux de change actuel",
