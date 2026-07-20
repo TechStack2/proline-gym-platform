@@ -56,7 +56,9 @@ test('UX-2 · mobile Settings nav + wizard convention (student w/ guardian, lead
   const phone = await ctxFor(browser, 'owner', { width: 390, height: 844 });
   try {
     await phone.page.goto('/en/today');
-    await phone.page.locator('[aria-controls="tabpanel-more"]:visible').first().click();
+    // W1-FOUNDATION §2.2: the More tab is a real nav control with a stable testid
+    // (the aria-controls="tabpanel-*" it used to carry pointed at no panel — DA-60).
+    await phone.page.locator('[data-testid="tab-more"]:visible').first().click();
     await expect(
       phone.page.locator('a[href="/en/settings"]:visible').first(),
       'Settings must be reachable from the mobile More sheet (owner)',
