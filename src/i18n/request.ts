@@ -1,6 +1,6 @@
 import { getRequestConfig } from 'next-intl/server';
 import { routing } from './routing';
-import { I18N_STRICT, throwOnMissingMessage } from './strict';
+import { I18N_STRICT, reportIntlError, strictMessageFallback } from './strict';
 
 export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;
@@ -15,6 +15,8 @@ export default getRequestConfig(async ({ requestLocale }) => {
     timeZone: 'Asia/Beirut',
     // §2.7 missing-key gate — spread so the non-strict config object stays exactly
     // what it was (no `onError: undefined` overriding next-intl's default handler).
-    ...(I18N_STRICT ? { onError: throwOnMissingMessage } : {}),
+    ...(I18N_STRICT
+      ? { onError: reportIntlError, getMessageFallback: strictMessageFallback }
+      : {}),
   };
 });

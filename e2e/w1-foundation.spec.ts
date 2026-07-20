@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
-import { ROLES } from './roles'
+import { ROLES, type Role } from './roles'
 import { vis } from './helpers'
 
 /**
@@ -158,3 +158,39 @@ test('W1 · DA-7 anchors are ISOLATED, not merely dir-attributed (§2.7)', async
     await ctx.close()
   }
 })
+
+/**
+ * §2.7 missing-key gate — the explicit sweep. In the CI build
+ * (NEXT_PUBLIC_I18N_STRICT=1) a missing message renders `MISSING_MESSAGE:<key>`
+ * instead of a bare key path that reads like copy, so this walks the surfaces
+ * DA-5 would have hidden on and names the offender when one appears.
+ */
+const SWEEP: { role: Role; paths: string[] }[] = [
+  { role: 'owner', paths: ['/today', '/inbox', '/students', '/students/guardians', '/schedule', '/money', '/coaches', '/settings', '/setup'] },
+  { role: 'coach', paths: ['/coach', '/coach/pt', '/coach/students'] },
+  { role: 'student', paths: ['/portal', '/portal/billing', '/portal/progress'] },
+]
+
+for (const locale of ['en', 'ar'] as const) {
+  test(`W1 · no MISSING_MESSAGE anywhere on the swept surfaces · ${locale}`, async ({ browser }) => {
+    test.setTimeout(180_000)
+    const offenders: string[] = []
+    for (const { role, paths } of SWEEP) {
+      const ctx = await browser.newContext({ storageState: ROLES[role].storage, locale, viewport: DESKTOP })
+      const page = await ctx.newPage()
+      try {
+        for (const path of paths) {
+          await page.goto(`/${locale}${path}`)
+          await page.waitForLoadState('networkidle').catch(() => {})
+          const body = await page.locator('body').innerText()
+          for (const hit of body.match(/MISSING_MESSAGE:[\w.]+/g) ?? []) {
+            offenders.push(`${locale}${path} → ${hit}`)
+          }
+        }
+      } finally {
+        await ctx.close()
+      }
+    }
+    expect(offenders, 'every rendered message resolves').toEqual([])
+  })
+}

@@ -10,13 +10,15 @@
  */
 import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps } from 'react';
-import { I18N_STRICT, throwOnMissingMessage } from './strict';
+import { I18N_STRICT, reportIntlError, strictMessageFallback } from './strict';
 
 export function StrictIntlProvider(props: ComponentProps<typeof NextIntlClientProvider>) {
   return (
     <NextIntlClientProvider
       {...props}
-      {...(I18N_STRICT ? { onError: throwOnMissingMessage } : {})}
+      {...(I18N_STRICT
+        ? { onError: reportIntlError, getMessageFallback: strictMessageFallback }
+        : {})}
     />
   );
 }
