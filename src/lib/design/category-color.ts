@@ -50,9 +50,9 @@ export function categoryIndex(id: string | null | undefined): CategoryIndex {
 }
 
 /**
- * The `data-cat` attribute value for a discipline. Pair it with the `cat-tint` (or
- * `cat-dot`) class — the attribute selects the hue, the class sets the strength, and
- * the two together are the ONLY sanctioned way to render a category color.
+ * The `data-cat` attribute value for a discipline. Pair it with the `cat-tint` class —
+ * the attribute selects the hue, the class sets the strength, and the two together are
+ * the ONLY sanctioned way to render a category color.
  */
 export function categoryAttr(id: string | null | undefined): string {
   return String(categoryIndex(id));

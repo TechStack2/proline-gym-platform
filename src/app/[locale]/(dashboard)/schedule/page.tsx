@@ -105,7 +105,6 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   // --c-cat-* hues, and `cat-tint` + data-cat render it at tint strength from static
   // rules in globals.css. Nothing dynamic reaches the CSP at all.
 
-
   // Filters apply to both views.
   const fDiscipline = searchParams.discipline || ''
   const fCoach = searchParams.coach || ''

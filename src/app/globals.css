@@ -554,9 +554,6 @@
   }
   /* On the dark ground the wash needs a touch more body to separate from the card. */
   html.dark .cat-tint { background-color: rgb(var(--cat, var(--c-cat-8)) / 0.20); }
-  /* The category DOT — the same hue at full strength, for legends/labels where a
-     wash would be too faint to identify. Never used as a surface fill. */
-  .cat-dot { background-color: rgb(var(--cat, var(--c-cat-8))); }
 
   .shell-staff  { --surface: #cd1419; --shell-accent: var(--surface); } /* reception — crimson */
   .shell-portal { --surface: #b45309; --shell-accent: var(--surface); } /* member — warm bronze */
