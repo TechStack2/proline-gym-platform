@@ -14,15 +14,24 @@
  * already makes on eight surfaces, plus the explicit sweep in
  * e2e/w1-foundation.spec.ts — and the failure names the exact key.
  *
- * WHY A SENTINEL AND NOT A THROW. §2.7 specifies "onError throws in CI/e2e
- * builds". It was implemented that way first and the evidence argued against it:
- * in run 29708539112 a throwing handler turned a single missing key into a 500 on
- * the landing route, so `npm run start` never satisfied Playwright's readiness
- * probe and the ENTIRE union gate died on `Timed out waiting for config.webServer`
- * — zero tests ran, and the log carried only a minified digest, not the key. A
- * gate whose failure mode is "the suite cannot start, and will not tell you why"
- * is a gate that gets switched off. The sentinel keeps the app up, keeps every
- * other test meaningful, and names the offender. Same intent, better failure mode.
+ * ⚠ DEVIATION FROM §2.7's LETTER — needs Lane A / owner ratification.
+ * The spec says "onError throws in CI/e2e builds". This ships a sentinel instead.
+ * The reasoning is about failure MODE, not intent (both make DA-5 impossible to
+ * ship):
+ *   · throw    → the page 500s. Under `npm run start` the very first missing key
+ *                also fails Playwright's webServer readiness probe, so the union
+ *                gate dies before a single test runs and the production build
+ *                reports a minified `digest`, not the key. One gate signal, zero
+ *                test signal, and nothing that says which key.
+ *   · sentinel → the app renders. The offending key is in the DOM, so the sweep
+ *                in e2e/w1-foundation names locale + path + key, the eight specs
+ *                that already assert `not.toContainText('MISSING_MESSAGE')` fire
+ *                too, and every OTHER test still produces its result.
+ * (Full disclosure: runs 29708539112 and 29723649891 died on exactly that
+ * webServer timeout while the throwing version was in place, and this file
+ * originally cited them as proof. That attribution was WRONG — the real cause was
+ * StrictIntlProvider not forwarding `locale`. The argument above stands on its own
+ * merits; the runs are not evidence for it.)
  *
  * Only MISSING_MESSAGE is escalated. next-intl routes several benign conditions
  * through the same channel (environment fallbacks, insufficient paths); promoting
