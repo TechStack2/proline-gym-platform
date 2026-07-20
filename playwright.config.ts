@@ -342,6 +342,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // OWNER-RESET: the vendor console recovers a gym owner's login. Seeds its OWN
+      // platform admin + gym + owner (never the shared run-gym — resetting a shared
+      // owner's password would invalidate every other spec's stored session).
+      name: 'owner-reset',
+      dependencies: ['setup'],
+      testMatch: /\/owner-reset\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // DS2-TOKENS: the §1 token doctrine asserted in the browser — the role split is
       // real (danger is FIXED and survives a brand override), the status ramps did not
       // repaint (§6.2 byte-identity, measured), DISC-COLOR paints a stable tint rather

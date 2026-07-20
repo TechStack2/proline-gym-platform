@@ -3688,7 +3688,22 @@
       "confirmReactivate": "Réactiver la salle",
       "cancel": "Annuler",
       "suspendFailed": "Impossible de mettre à jour la salle. Réessayez.",
-      "requestsLink": "Demandes"
+      "requestsLink": "Demandes",
+      "resetPw": "Réinitialiser le mot de passe du propriétaire",
+      "resetPwTitle": "Réinitialiser le mot de passe du propriétaire ?",
+      "resetPwBody": "Un NOUVEAU mot de passe temporaire sera émis pour le propriétaire de {gym}. Son mot de passe actuel cesse de fonctionner immédiatement et il devra en choisir un nouveau à la connexion.",
+      "resetPwAccount": "Compte",
+      "resetPwCta": "Émettre un mot de passe temporaire",
+      "resetPwDoneTitle": "Mot de passe temporaire émis",
+      "resetPwDoneWarn": "Copiez-le maintenant — il ne sera plus affiché.",
+      "resetPwDoneHint": "Remettez-le à {name} directement. Il choisira son propre mot de passe à la connexion.",
+      "resetPwCopy": "Copier le mot de passe",
+      "close": "Fermer",
+      "errNoOwner": "{gym} n'a aucun compte propriétaire actif : il n'y a rien à réinitialiser.",
+      "errMultipleOwners": "{gym} a plusieurs propriétaires. Réinitialiser reviendrait à deviner lequel — réglez cela d'abord.",
+      "errOwnerNoAccount": "Le propriétaire de {gym} n'a pas encore de connexion. Invitez-le plutôt que de réinitialiser.",
+      "errOwnerChanged": "Le propriétaire a changé pendant la confirmation. Rien n'a été réinitialisé — réessayez.",
+      "errResetFailed": "Impossible de réinitialiser le mot de passe. Réessayez."
     },
     "howItWorks": {
       "title": "Comment ça marche",
