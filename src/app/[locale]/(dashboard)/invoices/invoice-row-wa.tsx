@@ -37,7 +37,7 @@ export function InvoiceRowWa({ invoiceId, phone, dueMessage, reminderMessage, se
     <span className="mt-1 flex flex-wrap gap-1.5" data-testid="invoice-row-wa">
       <a href={waLink(phone, dueMessage)} target="_blank" rel="noopener noreferrer"
         onClick={() => log('invoice_due')} data-testid="invoice-row-wa-send" title={sendLabel}
-        className="inline-flex items-center gap-1 rounded-full bg-[#25D366]/10 px-2 py-0.5 text-[11px] font-medium text-[#075E54] hover:bg-[#25D366]/20">
+        className="inline-flex items-center gap-1 rounded-full bg-whatsapp/10 px-2 py-0.5 text-[11px] font-medium text-whatsapp-deep hover:bg-whatsapp/20">
         <Send className="h-3 w-3" /> {sendLabel}
       </a>
       <a href={waLink(phone, reminderMessage)} target="_blank" rel="noopener noreferrer"

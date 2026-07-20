@@ -198,7 +198,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
   ]
 
   return (
-    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'rtl text-right')} data-testid="belt-ladder-manager">
+    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'text-right')} data-testid="belt-ladder-manager">
       <div className="flex items-center justify-between">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
         <Button size="sm" data-testid="belt-add-btn" disabled={busy || !discId || unusedRanks.length === 0}

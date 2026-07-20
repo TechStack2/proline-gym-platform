@@ -98,7 +98,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   }
 
   return (
-    <div className={cn('space-y-6 p-6', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-6 p-6', isRTL && 'text-right')}>
       <div className="flex items-center justify-between">
         <Link href={`/${locale}/invoices`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> {t('Invoices', 'الفواتير', 'Factures')}

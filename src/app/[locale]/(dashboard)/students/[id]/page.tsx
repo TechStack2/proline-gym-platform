@@ -422,7 +422,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const lastSeenDate = ((attendance ?? []) as any[])[0]?.attendance_date ?? null
 
   return (
-    <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="member-360">
+    <div className={cn('space-y-4', isRTL && 'text-right')} data-testid="member-360">
       {/* ── Header: identity + belt + guardians ── */}
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">

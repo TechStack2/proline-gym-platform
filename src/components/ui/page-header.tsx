@@ -98,7 +98,7 @@ export function PageHeader({
               className={cn(
                 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
                 '-ms-2 text-gray-600 transition-colors hover:bg-gray-100',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent,#cd1419)]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
               )}
             >
               {/* The chevron follows reading direction; `rtl:` flips it without a

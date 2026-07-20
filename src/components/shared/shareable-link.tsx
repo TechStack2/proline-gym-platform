@@ -93,8 +93,8 @@ export function ShareableLink({
           rel="noopener noreferrer"
           data-testid={`${testid}-wa`}
           className={cn(
-            'mt-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5',
-            'text-xs font-semibold text-primary-foreground transition-colors hover:bg-[#1ebe5b]',
+            'mt-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-whatsapp px-3 py-1.5',
+            'text-xs font-semibold text-primary-foreground transition-colors hover:bg-whatsapp-600',
           )}
         >
           <MessageCircle className="h-3.5 w-3.5" /> {shareLabel}

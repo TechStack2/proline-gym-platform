@@ -460,7 +460,7 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
     return (
       <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-          <div data-testid="class-wizard" className={cn('flex w-full flex-col bg-white p-6 sm:max-w-xl sm:rounded-2xl sm:shadow-xl', isRTL && 'rtl text-right')}>
+          <div data-testid="class-wizard" className={cn('flex w-full flex-col bg-white p-6 sm:max-w-xl sm:rounded-2xl sm:shadow-xl', isRTL && 'text-right')}>
             <div className="flex flex-col items-center gap-3 py-8" data-testid="wizard-success">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
                 <Check className="h-7 w-7 text-green-600" />

@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     // src unit tests + the OXY-HOST Cloudflare Worker's pure-logic tests (plain
     // ESM, no Workers runtime required — infra/cf-worker/src/*.test.mjs).
-    include: ['src/**/*.test.ts', 'infra/cf-worker/**/*.test.mjs'],
+    include: ['src/**/*.test.ts', 'infra/cf-worker/**/*.test.mjs', 'scripts/**/*.test.ts'],
   },
   resolve: {
     alias: {

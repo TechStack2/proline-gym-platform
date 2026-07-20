@@ -275,7 +275,7 @@ export function OfflineQRScanner({
   };
 
   return (
-    <div className={cn('space-y-6', isAr && 'rtl')}>
+    <div className={cn('space-y-6')}>
       {/* Sync Status Bar */}
       {!isOnlineNow && (
         <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-amber-800 text-sm">

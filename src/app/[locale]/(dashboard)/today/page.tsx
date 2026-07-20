@@ -63,7 +63,7 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
   ] as const
 
   return (
-    <div className={cn('space-y-4', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-4', isRTL && 'text-right')}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           {/* SHELL-IA: mobile shows the NativeHeader large title; the date subtitle

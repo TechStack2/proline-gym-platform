@@ -42,7 +42,7 @@ export function LandingFooter({ locale, gymName, logoUrl, address, contact = EMP
   const addressLine = address || (isDefault ? 'Sky Business Center, Baabda' : '');
 
   return (
-    <footer className="landing-dark bg-secondary-950 text-gray-300">
+    <footer className="surface-fixed-dark bg-secondary-950 text-gray-300">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}

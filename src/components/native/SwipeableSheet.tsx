@@ -235,7 +235,7 @@ export function SwipeableSheet({
         className={cn(
           'absolute bottom-0 inset-x-0',
           'bg-white rounded-t-2xl',
-          'shadow-[0_-4px_20px_rgba(0,0,0,0.15)]',
+          'shadow-sheet',
           'flex flex-col',
           'max-h-[95vh]',
           'pb-[env(safe-area-inset-bottom,0px)]',

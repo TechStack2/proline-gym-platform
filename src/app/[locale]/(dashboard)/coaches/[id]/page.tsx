@@ -188,7 +188,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(dateLocale(locale), { weekday: 'short', day: 'numeric', month: 'short' })
 
   return (
-    <div className={cn('space-y-4', isRTL && 'rtl text-right')} data-testid="coach-360">
+    <div className={cn('space-y-4', isRTL && 'text-right')} data-testid="coach-360">
       {/* ── Header: identity + specialties + contact ── */}
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">

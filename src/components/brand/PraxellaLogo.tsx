@@ -36,7 +36,7 @@ export function PraxellaLogo({
       <PraxellaMark size={markSize} variant={mono ? 'mono' : 'default'} />
       <span className={cn('px-wordmark', wordClassName)} aria-hidden="true">
         {pre}
-        <span className="text-[#FF5A36]">{x}</span>
+        <span className="text-flare">{x}</span>
         {post}
       </span>
     </span>

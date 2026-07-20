@@ -65,7 +65,7 @@ export function InvoiceWhatsApp(props: Props) {
               onClick={() => log('invoice_due')}
               data-testid="invoice-wa-send"
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-xl border border-[#25D366]/40 px-3 py-2 text-sm font-medium text-[#075E54] hover:bg-[#25D366]/10',
+                'inline-flex items-center gap-1.5 rounded-xl border border-whatsapp/40 px-3 py-2 text-sm font-medium text-whatsapp-deep hover:bg-whatsapp/10',
               )}
             >
               <Send className="h-4 w-4" /> {props.sendInvoiceLabel}

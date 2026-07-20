@@ -161,7 +161,7 @@ export default async function GuardianDetailPage({
   const familyOutstanding = familyOutstandingTotal(kidSummaries)
 
   return (
-    <div className={cn('space-y-5', isRTL && 'rtl text-right')} data-testid="guardian-detail" data-guardian-id={id}>
+    <div className={cn('space-y-5', isRTL && 'text-right')} data-testid="guardian-detail" data-guardian-id={id}>
       <Link href={`/${locale}/students/guardians`} data-testid="guardian-back"
         className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800">
         <ChevronLeft className={cn('h-4 w-4', isRTL && 'rotate-180')} />{t('backToList')}

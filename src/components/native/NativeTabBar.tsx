@@ -70,7 +70,7 @@ export function NativeTabBar({
           'bg-white/80 backdrop-blur-xl border-t border-white/20',
           'pb-[env(safe-area-inset-bottom,0px)]',
           'flex items-stretch',
-          'shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'
+          'shadow-bar'
         )}
       >
         {tabs.map((tab) => {
@@ -93,7 +93,7 @@ export function NativeTabBar({
             'text-xs font-medium transition-colors duration-200',
             'touch-manipulation select-none',
             isActive
-              ? 'text-[var(--shell-accent,#cd1419)]'
+              ? 'text-[var(--shell-accent)]'
               : 'text-gray-400 hover:text-gray-600'
           );
 
@@ -184,7 +184,7 @@ export function NativeTabBar({
             'text-[10px] font-medium transition-colors duration-200',
             'touch-manipulation select-none',
             isActive
-              ? 'text-[var(--shell-accent,#cd1419)] bg-black/5'
+              ? 'text-[var(--shell-accent)] bg-black/5'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
           );
 

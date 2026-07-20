@@ -176,7 +176,7 @@ export function TabBar({
           // DA-23: opaque enough that content cannot bleed through and read as an
           // active tab. Token-backed white → flips correctly in dark.
           'border-t border-gray-100 bg-white/95 backdrop-blur-xl',
-          'shadow-[0_-1px_3px_rgba(0,0,0,0.05)]',
+          'shadow-bar',
           'pb-[env(safe-area-inset-bottom,0px)]',
           'flex items-stretch',
           // Transform-only motion: no layout shift, and stilled for reduced motion.
@@ -195,7 +195,7 @@ export function TabBar({
                 aria-hidden
                 className={cn(
                   'absolute inset-x-3 top-0 h-1 rounded-b-full transition-opacity',
-                  active ? 'bg-[color:var(--shell-accent,#cd1419)] opacity-100' : 'opacity-0',
+                  active ? 'bg-[color:var(--shell-accent)] opacity-100' : 'opacity-0',
                 )}
               />
               <span className="relative flex items-center justify-center">
@@ -219,9 +219,9 @@ export function TabBar({
             // Option B: 56pt bar (min-h-[56px]) with 44pt+ targets.
             'min-h-[56px] min-w-[44px] px-1 py-2',
             'touch-manipulation select-none transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent,#cd1419)] focus-visible:ring-inset',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)] focus-visible:ring-inset',
             active
-              ? 'text-[color:var(--shell-accent,#cd1419)]'
+              ? 'text-[color:var(--shell-accent)]'
               : 'text-gray-500 hover:text-gray-700',
           );
 
@@ -271,9 +271,9 @@ export function TabBar({
               'flex w-[68px] flex-col items-center justify-center gap-0.5 rounded-xl py-2',
               'text-[10px] transition-colors duration-200',
               'touch-manipulation select-none',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent,#cd1419)]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
               active
-                ? 'bg-black/5 font-bold text-[color:var(--shell-accent,#cd1419)]'
+                ? 'bg-black/5 font-bold text-[color:var(--shell-accent)]'
                 : 'font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600',
             );
             const content = (

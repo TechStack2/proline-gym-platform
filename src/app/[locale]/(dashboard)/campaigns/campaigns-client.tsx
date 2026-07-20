@@ -91,7 +91,7 @@ export function CampaignsClient({ rows, locale, shareOrigin }: { rows: CampaignR
   ]
 
   return (
-    <div className={cn('space-y-4', isRTL && 'rtl text-right')}>
+    <div className={cn('space-y-4', isRTL && 'text-right')}>
       <div className="flex items-center justify-between">
         <div>
           <PageHeader segment="campaigns" />

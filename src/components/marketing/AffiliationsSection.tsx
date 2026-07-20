@@ -38,7 +38,7 @@ export async function AffiliationsSection({ locale, gymSlug }: AffiliationsSecti
 
   if (rows.length > 0) {
     return (
-      <section id="affiliations" className="bg-secondary-950 py-14 lg:py-16">
+      <section id="affiliations" className="surface-fixed-dark bg-secondary-950 py-14 lg:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <h2 className={cn('font-display text-2xl sm:text-3xl font-bold text-white')}>
@@ -72,12 +72,12 @@ export async function AffiliationsSection({ locale, gymSlug }: AffiliationsSecti
   // A non-default gym with no affiliation rows shows a tasteful empty state.
   if (!isDefault) {
     return (
-      <LandingSectionEmpty id="affiliations" bgClass="bg-secondary-950" compact title={t('title')} subtitle={t('subtitle')} emptyLabel={t('empty')} isRTL={isRTL} />
+      <LandingSectionEmpty id="affiliations" bgClass="surface-fixed-dark bg-secondary-950" compact title={t('title')} subtitle={t('subtitle')} emptyLabel={t('empty')} isRTL={isRTL} />
     );
   }
 
   return (
-    <section id="affiliations" className="bg-secondary-950 py-14 lg:py-16">
+    <section id="affiliations" className="surface-fixed-dark bg-secondary-950 py-14 lg:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <h2 className={cn('font-display text-2xl sm:text-3xl font-bold text-white')}>

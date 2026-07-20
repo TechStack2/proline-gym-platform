@@ -29,10 +29,10 @@ export function WhatsAppShare({
       rel="noopener noreferrer"
       data-testid={testid}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 font-medium text-[#075E54] hover:bg-[#25D366]/10',
+        'inline-flex shrink-0 items-center gap-1 font-medium text-whatsapp-deep hover:bg-whatsapp/10',
         variant === 'chip'
-          ? 'rounded-full bg-[#25D366]/10 px-2.5 py-1 text-xs'
-          : 'rounded-xl border border-[#25D366]/40 px-3 py-2 text-sm',
+          ? 'rounded-full bg-whatsapp/10 px-2.5 py-1 text-xs'
+          : 'rounded-xl border border-whatsapp/40 px-3 py-2 text-sm',
       )}
     >
       <MessageCircle className="h-3.5 w-3.5" /> {label}

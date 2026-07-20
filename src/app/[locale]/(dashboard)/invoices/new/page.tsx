@@ -50,7 +50,7 @@ export default async function NewInvoicePage({ params: { locale } }: Props) {
   const tvaRegistered = !!gymTax?.tva_registration_number
 
   return (
-    <div className={`space-y-6 p-6 ${isRTL ? 'rtl text-right' : ''}`}>
+    <div className={`space-y-6 p-6 ${isRTL ? 'text-right' : ''}`}>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{tn('title')}</h1>
         <p className="text-muted-foreground">{tn('subtitle')}</p>

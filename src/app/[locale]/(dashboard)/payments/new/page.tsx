@@ -33,7 +33,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
     const { data: pays } = await supabase.from('payments').select('amount_usd').eq('invoice_id', searchParams.invoice)
     if (inv) {
       return (
-        <div className={`space-y-6 p-6 ${isRTL ? 'rtl text-right' : ''}`}>
+        <div className={`space-y-6 p-6 ${isRTL ? 'text-right' : ''}`}>
           <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة', 'Enregistrer le paiement')} · {inv.invoice_number}</h1>
           <PaymentForm
             locale={locale}
@@ -67,7 +67,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
   for (const p of pays ?? []) paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
 
   return (
-    <div className={`space-y-6 p-6 ${isRTL ? 'rtl text-right' : ''}`}>
+    <div className={`space-y-6 p-6 ${isRTL ? 'text-right' : ''}`}>
       <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة', 'Enregistrer le paiement')}</h1>
       <p className="text-muted-foreground">{t('Pick an open invoice to settle.', 'اختر فاتورة مفتوحة للتسوية.', 'Choisissez une facture ouverte à régler.')}</p>
       {list.length === 0 ? (

@@ -147,7 +147,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
   ]
 
   return (
-    <div className={cn('space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'rtl text-right')} data-testid="ptpkg-manager">
+    <div className={cn('space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'text-right')} data-testid="ptpkg-manager">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>

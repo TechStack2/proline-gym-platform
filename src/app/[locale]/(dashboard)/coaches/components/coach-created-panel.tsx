@@ -60,7 +60,7 @@ export function CoachCreatedPanel({
           className={cn(
             'flex max-h-[94vh] w-full flex-col overflow-hidden bg-white shadow-xl',
             'rounded-t-2xl sm:max-w-lg sm:rounded-2xl',
-            isRTL && 'rtl text-right',
+            isRTL && 'text-right',
           )}
         >
           <div className="flex items-center gap-2 border-b px-5 py-3">
