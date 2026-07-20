@@ -30,6 +30,8 @@
     "loginSuccess": "Login successful",
     "loginError": "An error occurred during login",
     "tooManyAttempts": "Too many attempts — please wait a minute and try again",
+    "errConnection": "Connection problem — check your internet and try again",
+    "errSlowNav": "Signed in, but the next screen is taking too long — check your connection and try again",
     "backToLogin": "Back to login",
     "emailLabel": "Email Address",
     "passwordLabel": "Password",

@@ -7,7 +7,7 @@
  * forced-change flag + refreshes the session → role home. Arabic-first, RTL,
  * design-system. Forced flow — there is no escape (onClose is a no-op).
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
@@ -21,6 +21,7 @@ import { WaiverConsentFields } from '@/components/shared/waiver-sign'
 import { signWaiver } from '@/lib/waivers/actions'
 import { CalendarDays, CreditCard, Dumbbell, ClipboardList } from 'lucide-react'
 import { completeOnboarding } from './actions'
+import { withAuthTimeout, isTransportError } from '@/lib/auth/transport'
 import { useErrorText } from '@/lib/errors/use-error-text';
 
 // PWD-FOCUS: these MUST be module-level (stable component types). When they lived
@@ -76,6 +77,10 @@ export function OnboardingClient({
 
   const tw = useTranslations('waiver')
   const tc = useTranslations('common')
+  const ta = useTranslations('auth')
+  // AUTH-STUCK: unmount-safe success-path grace timer (same pattern as login).
+  const navGraceTimer = useRef<number | null>(null)
+  useEffect(() => () => { if (navGraceTimer.current !== null) window.clearTimeout(navGraceTimer.current) }, [])
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [lang, setLang] = useState(locale)
@@ -92,27 +97,53 @@ export function OnboardingClient({
   const finish = async () => {
     setBusy(true)
     setError('')
-    // 1. The user changes their OWN password (clears the temp credential).
-    const { error: pErr } = await supabase.auth.updateUser({ password: pw })
-    if (pErr) { console.error('[onboarding] password change failed:', pErr); setBusy(false); setError(tc('genericError')); return } // ERROR-HARDEN
-    // 2. Language preference (self-update, RLS).
-    if (lang !== locale || lang) {
-      await supabase.from('profiles').update({ locale: lang }).eq('id', userId)
+    // AUTH-STUCK: `completeOnboarding()` is a server action — its await REJECTS on
+    // a network drop (same field-failure class as the login page), and the old body
+    // had no try/catch, so `setBusy(false)` never ran and the wizard spun forever.
+    // One guarded block: transport failures get the distinct connection message,
+    // anything else keeps its existing error copy, and busy always clears on
+    // every non-success outcome.
+    let finished: { home: string } | null = null
+    try {
+      // 1. The user changes their OWN password (clears the temp credential).
+      const { error: pErr } = await withAuthTimeout(supabase.auth.updateUser({ password: pw }))
+      if (pErr) { // ERROR-HARDEN
+        console.error('[onboarding] password change failed:', pErr)
+        setError(isTransportError(pErr) ? ta('errConnection') : tc('genericError'))
+        return
+      }
+      // 2. Language preference (self-update, RLS; best-effort — never blocks finishing).
+      if (lang !== locale || lang) {
+        try { await supabase.from('profiles').update({ locale: lang }).eq('id', userId) } catch { /* keep going */ }
+      }
+      // 3. F3: if a waiver step was shown and signed, record it (best-effort —
+      //    a signing hiccup must never block finishing onboarding).
+      if (waiver && wvSig && wvName.trim() && wvAgree) {
+        try { await signWaiver({ studentId: waiver.studentId, signature: wvSig, typedName: wvName }) } catch { /* never abort */ }
+      }
+      // 4. Clear the forced-change flag + accept the invite + refresh JWT.
+      const res = await withAuthTimeout(completeOnboarding())
+      if (!res.ok) { setError(errText(res.error)); return }
+      finished = { home: res.home }
+    } catch (err) {
+      setError(isTransportError(err) ? ta('errConnection') : tc('genericError'))
+      return
+    } finally {
+      if (!finished) setBusy(false)
     }
-    // 3. F3: if a waiver step was shown and signed, record it (best-effort —
-    //    a signing hiccup must never block finishing onboarding).
-    if (waiver && wvSig && wvName.trim() && wvAgree) {
-      try { await signWaiver({ studentId: waiver.studentId, signature: wvSig, typedName: wvName }) } catch { /* never abort */ }
-    }
-    // 4. Clear the forced-change flag + accept the invite + refresh JWT.
-    const res = await completeOnboarding()
-    setBusy(false)
-    if (!res.ok) { setError(errText(res.error)); return }
     // MJ-2 FIRST-LOGIN WELCOME: a member lands on the guided "you're in" moment
     // (name + gym brand + what they can do → CTA into the portal) instead of a bare
     // redirect. Staff/coaches keep their role home (Today / setup / vendor console).
-    router.push(`/${lang}${isMember ? '/welcome' : res.home}`)
+    // AUTH-STUCK success-path safety: same bounded grace as the login page — if
+    // navigation hasn't unmounted the wizard in time, stop the spinner and let the
+    // user retry instead of spinning silently.
+    router.push(`/${lang}${isMember ? '/welcome' : finished.home}`)
     router.refresh()
+    navGraceTimer.current = window.setTimeout(() => {
+      navGraceTimer.current = null
+      setBusy(false)
+      setError(ta('errSlowNav'))
+    }, 8_000)
   }
 
   const orientation = isCoach

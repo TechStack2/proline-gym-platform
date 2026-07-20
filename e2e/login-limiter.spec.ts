@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { roleEmail, E2E_PASSWORD } from './roles'
 
 /**
  * LOGIN-LIMITER — the auth limiter is per-(IP + identifier), not per-IP.
@@ -55,6 +56,74 @@ test('LOGIN-LIMITER · per-identifier: 6th wrong attempt on one phone is limited
       'a different identifier from the same IP fails generically (not limited)').toBeVisible({ timeout: 15_000 })
     await expect(page.getByText(LIMITED, { exact: false }),
       'the limited message is NOT shown for identifier B').toHaveCount(0)
+  } finally {
+    await ctx.close()
+  }
+})
+
+/**
+ * AUTH-STUCK — the login screen must never hang silently (P1 field failure:
+ * a prod owner's network dropped mid sign-in; the server-action await rejected,
+ * the exception escaped the handler, and the spinner spun forever).
+ *
+ * SW note: the app registers a service worker in prod builds, and the known
+ * page.route()+continue() hang applies under it — so these tests ONLY abort or
+ * HOLD intercepted requests (never continue): abort exercises the reject path,
+ * an unsettled route exercises the stall path. Aborted requests never reach the
+ * server, so they also never consume per-identifier limiter attempts.
+ */
+test('AUTH-STUCK · transport failure: spinner clears, connection error shows, form recovers', async ({ browser }) => {
+  test.setTimeout(90_000)
+  const ctx = await browser.newContext({ locale: 'en' })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/en/auth/login')
+
+    // From here, the only request matching the login URL is the server-action
+    // POST (the page is already loaded; /auth/forgot etc. don't match). Abort =
+    // the browser's own offline failure shape (fetch TypeError).
+    await page.route('**/auth/login**', (r) => r.abort('internetdisconnected'))
+
+    await page.locator('#email').fill(roleEmail('owner'))
+    await page.locator('#password').fill(E2E_PASSWORD)
+    await page.locator('button[type="submit"]').click()
+
+    // (a) the distinct CONNECTION error is visible (not the generic credential one),
+    await expect(page.getByTestId('login-error'), 'transport failure surfaces the connection state')
+      .toContainText('Connection problem', { timeout: 15_000 })
+    // (b) the spinner cleared — the submit button is enabled again,
+    await expect(page.locator('button[type="submit"]'), 'loading state cleared').toBeEnabled()
+
+    // (c) the form is usable again: lift the network failure, same submit succeeds.
+    await page.unroute('**/auth/login**')
+    await page.locator('button[type="submit"]').click()
+    await page.waitForURL((u) => !u.pathname.includes('/auth/login'), { timeout: 30_000 })
+  } finally {
+    await ctx.close()
+  }
+})
+
+test('AUTH-STUCK · success-path stall: navigation grace stops the spinner with a retry affordance', async ({ browser }) => {
+  test.setTimeout(90_000)
+  const ctx = await browser.newContext({ locale: 'en' })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/en/auth/login')
+
+    // HOLD every /dashboard fetch (never settle the route — no continue, no
+    // abort): sign-in succeeds server-side, but the post-login navigation can
+    // never complete — the exact "signed in on a dying connection" stall.
+    await page.route('**/dashboard**', () => { /* intentionally never settled */ })
+
+    await page.locator('#email').fill(roleEmail('owner'))
+    await page.locator('#password').fill(E2E_PASSWORD)
+    await page.locator('button[type="submit"]').click()
+
+    // Within the ~8s grace + margin: the spinner stops and the slow-navigation
+    // message appears instead of spinning silently.
+    await expect(page.getByTestId('login-error'), 'stalled navigation surfaces the slow-nav state')
+      .toContainText('taking too long', { timeout: 15_000 })
+    await expect(page.locator('button[type="submit"]'), 'retry affordance — button usable again').toBeEnabled()
   } finally {
     await ctx.close()
   }
