@@ -3688,7 +3688,22 @@
       "confirmReactivate": "Reactivate gym",
       "cancel": "Cancel",
       "suspendFailed": "Couldn't update the gym. Please try again.",
-      "requestsLink": "Requests"
+      "requestsLink": "Requests",
+      "resetPw": "Reset owner password",
+      "resetPwTitle": "Reset the owner's password?",
+      "resetPwBody": "This issues a NEW temporary password for {gym}'s owner. Their current password stops working immediately, and they'll be asked to choose a new one when they sign in.",
+      "resetPwAccount": "Account",
+      "resetPwCta": "Issue temporary password",
+      "resetPwDoneTitle": "Temporary password issued",
+      "resetPwDoneWarn": "Copy it now — this is the only time it will be shown.",
+      "resetPwDoneHint": "Give it to {name} directly. They'll set their own password when they sign in.",
+      "resetPwCopy": "Copy password",
+      "close": "Close",
+      "errNoOwner": "{gym} has no active owner account, so there is nothing to reset.",
+      "errMultipleOwners": "{gym} has more than one owner. Resetting would mean guessing which one — resolve that first.",
+      "errOwnerNoAccount": "{gym}'s owner has no login yet. Invite them instead of resetting.",
+      "errOwnerChanged": "The owner changed while you were confirming. Nothing was reset — please try again.",
+      "errResetFailed": "Couldn't reset the password. Please try again."
     },
     "howItWorks": {
       "title": "How it works",
