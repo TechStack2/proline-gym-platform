@@ -127,6 +127,7 @@ export default async function ClassDetailPage({
       memberInfo={memberInfo}
       rate={rate}
       today={today}
+      cyclePolicy={cyclePolicy}
     />
   )
 }

@@ -20,7 +20,7 @@ type Reg = {
   end_date?: string | null; first_cycle_prorated?: boolean | null
 }
 
-type ApprovePayload = { regId: string; discountPct: number; startDate: string; billingAnchor: string; prorate: boolean }
+type ApprovePayload = { regId: string; discountPct: number; startDate: string; billingAnchor?: string; prorate: boolean }
 type Tr = (en: string, ar: string, fr: string) => string
 
 /**
@@ -225,7 +225,12 @@ function PendingRegRow({
           <Input type="number" min="0" max="100" placeholder={t('disc %', 'خصم %', 'remise %')} data-testid="discount-pct"
             className="h-8 w-20 text-xs" value={discount} onChange={(e) => setDiscount(e.target.value)} />
           <Button size="sm" data-testid="approve-btn" disabled={pending}
-            onClick={() => onApprove({ regId: r.id, discountPct: isFinite(discPct) ? discPct : 0, startDate, billingAnchor: anchor, prorate })}
+            onClick={() => onApprove({ regId: r.id, discountPct: isFinite(discPct) ? discPct : 0, startDate,
+              // BILL-POLICY: send an anchor ONLY when staff pinned one by hand.
+              // Otherwise omit it so _default_billing_anchor derives it from the
+              // GYM'S POLICY — the DB stays authoritative for the charge and the
+              // client preview cannot shadow it with a stale policy.
+              billingAnchor: anchorEdited ? anchor : undefined, prorate })}
             className="bg-primary-700 hover:bg-primary-800">{t('Approve', 'موافقة', 'Approuver')}</Button>
           <Button size="sm" variant="outline" data-testid="reject-btn" disabled={pending}
             onClick={onReject}>{t('Reject', 'رفض', 'Refuser')}</Button>
