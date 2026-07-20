@@ -145,7 +145,7 @@ test('IA-1 · cross-role: portal request → staff inbox badge + inline approve 
     const detailUrl = owner.page.url();
 
     // ── Karim requests it in the portal ──
-    await student.page.goto('/en/portal/classes');
+    await student.page.goto('/en/portal/classes?view=browse');
     const card = vis(student.page, '[data-testid="portal-class-card"]').filter({ hasText: className }).first();
     await expect(card).toBeVisible({ timeout: 15_000 });
     await card.getByTestId('request-btn').click();

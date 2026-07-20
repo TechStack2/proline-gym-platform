@@ -3,6 +3,7 @@ import { localizedName, one } from '@/lib/names';
 import { CoachPtRosterClient } from './pt-roster-client';
 import { AvailabilityEditor } from './availability-editor';
 import { PtProposals } from '@/components/shared/pt-proposals';
+import { DeskGrid } from '@/components/portal/portal-kit';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,19 +50,24 @@ export default async function CoachPtPage({ params }: { params: { locale: string
 
   return (
     <div className="space-y-4">
-      {coach && (
-        <div className="px-4 pt-4 space-y-4">
-          {proposals.length > 0 && <PtProposals rows={proposals} locale={locale} />}
-          <AvailabilityEditor
-            coachId={coach.id}
-            gymId={coach.gym_id}
-            windows={(windows ?? []) as any}
-            overrides={(overrides ?? []) as any}
-            locale={locale}
-          />
-        </div>
-      )}
-      <CoachPtRosterClient roster={roster || []} sessions={sessions || []} locale={locale} />
+      {/* W2a §4.2 Rule 1 (asideFirst): proposals + availability are the coach's
+          controls — above the roster on mobile, the aside column on desktop. */}
+      <DeskGrid
+        asideFirst
+        aside={coach && (
+          <div className="px-4 pt-4 space-y-4 lg:px-0">
+            {proposals.length > 0 && <PtProposals rows={proposals} locale={locale} />}
+            <AvailabilityEditor
+              coachId={coach.id}
+              gymId={coach.gym_id}
+              windows={(windows ?? []) as any}
+              overrides={(overrides ?? []) as any}
+              locale={locale}
+            />
+          </div>
+        )}
+        main={<CoachPtRosterClient roster={roster || []} sessions={sessions || []} locale={locale} />}
+      />
     </div>
   );
 }

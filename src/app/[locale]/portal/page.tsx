@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight, ClipboardList, Dumbbell, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar as KidAvatar } from '@/components/shared/avatar'
-import { PortalCard, PortalCardTitle } from '@/components/portal/portal-kit'
+import { PortalCard, PortalCardTitle, DeskGrid } from '@/components/portal/portal-kit'
 import { ActionCard } from '@/components/dashboard/action-card'
 import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
@@ -278,9 +278,11 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
   return (
     <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
-    {/* PWA-BASICS R2: the install affordance (iOS-aware, self-hiding) now reaches
-        members — the card was previously mounted only on the staff /today hub. */}
-    <InstallAppCard locale={locale} />
+    {/* W2a §4.2 Rule 1 (the approved v3 vignette): main carries the member's
+        flow in its mobile order; the aside carries install + waiver + camps.
+        On mobile that also lands DA-15's demotion — the install card drops
+        below the member's own status instead of squatting first-card. */}
+    <DeskGrid gap="space-y-6" main={<>
     {/* ML-1 / MJ-3: lifecycle banner + self-serve request affordances. */}
     {enabledProducts.membership && ['expiring', 'overdue', 'lapsed', 'frozen'].includes(msState) && (
       <div data-testid="portal-lifecycle-banner" data-state={msState}
@@ -518,6 +520,9 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           )
         })()}
       </section>
+    </>} aside={<>
+      {/* PWA-BASICS R2 (placement per DA-15: below the member's own status). */}
+      <InstallAppCard locale={locale} />
 
       {/* F3: waiver status + sign CTA when unsigned/outdated (preserved) */}
       {waiver && waiver.state !== 'none' && (
@@ -546,6 +551,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
 
       {/* E1: published camps — member-self request */}
       {student && <PortalCampsSection studentId={student.id} actingFor={null} locale={locale} />}
+    </>} />
     </div>
   )
 }

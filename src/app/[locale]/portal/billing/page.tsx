@@ -5,6 +5,7 @@ import { dateLocale } from '@/lib/utils/locale-format'
 import { cn } from '@/lib/utils'
 import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
 import { balanceUsd, outstandingUsd, paidByInvoice, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { DeskGrid } from '@/components/portal/portal-kit'
 
 type Props = { params: { locale: string } }
 
@@ -96,6 +97,9 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
       {/* PORTAL-SHELL: billing leads with the balance on mobile (chrome owns the
           title); a desktop-only H1 keeps desktop from being title-less. */}
       <h1 data-testid="portal-page-title" className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+      {/* W2a §4.2 Rule 1: main = household + membership + invoices (the money
+          flow, mobile order intact); aside = payment history (the glanceable). */}
+      <DeskGrid gap="space-y-6" main={<>
       {household && (
         <div className="space-y-3" data-testid="household-billing">
           <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -158,7 +162,6 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
       )}
 
       {student && (
-      <>
       <div>
         <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('invoices')}</h3>
         {invoices && invoices.length > 0 ? (
@@ -210,7 +213,8 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
           </div>
         )}
       </div>
-
+      )}
+      </>} aside={student && (
       <div>
         <h3 className="font-semibold text-sm text-gray-900 mb-3">{t('paymentHistory')}</h3>
         {payments && payments.length > 0 ? (
@@ -232,8 +236,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
           </div>
         )}
       </div>
-      </>
-      )}
+      )} />
     </div>
   )
 }

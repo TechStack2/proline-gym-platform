@@ -67,7 +67,7 @@ test('PORTAL-SHELL · /ar portal renders the responsive title RTL-clean (no miss
 test('PORTAL-SHELL · /fr portal renders French clean (no missing keys, no English leak)', async ({ browser }) => {
   const m = await openPortal(browser, MOBILE, 'fr');
   try {
-    await m.page.goto('/fr/portal/classes');
+    await m.page.goto('/fr/portal/classes?view=browse');
     await m.page.waitForLoadState('networkidle').catch(() => {});
     await expect(m.page.locator('[data-testid="native-large-title"]'), '/fr mobile: chrome title shows').toBeVisible({ timeout: 15_000 });
     await expect(m.page.locator('body'), '/fr portal has no missing i18n keys').not.toContainText('MISSING_MESSAGE');

@@ -170,7 +170,10 @@
     "excused": "Excused",
     "shellStaff": "Staff",
     "shellCoach": "Coach",
-    "shellMember": "Member"
+    "shellMember": "Member",
+    "signOut": "Sign out",
+    "signOutConfirm": "Tap again to sign out",
+    "theme": "Theme"
   },
   "language": {
     "switch": "Change Language",
@@ -3032,7 +3035,9 @@
     "title": "Class Schedule",
     "empty": "You're not enrolled in any classes",
     "emptyHint": "Contact reception to enroll",
-    "coach": "Coach"
+    "coach": "Coach",
+    "emptyBrowseCta": "Browse classes",
+    "today": "Today"
   },
   "portalClasses": {
     "title": "Classes",
@@ -3046,7 +3051,10 @@
     "request": "Request",
     "actingFor": "Acting for: {name}",
     "emptyTitle": "No classes offered yet",
-    "emptyCta": "See the timetable"
+    "emptyCta": "See the timetable",
+    "viewSchedule": "Schedule",
+    "viewBrowse": "Browse",
+    "myRegs": "My registrations"
   },
   "invoiceNew": {
     "title": "New invoice",
