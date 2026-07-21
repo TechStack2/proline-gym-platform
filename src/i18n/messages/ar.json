@@ -2498,6 +2498,8 @@
     "viewInvoices": "عرض الفواتير ←",
     "todayTally": "تحصيلات اليوم (حسب الطريقة)",
     "noPaymentsToday": "لا مدفوعات اليوم.",
+    "tallyUnavailable": "تعذّر تحميل مدفوعات اليوم — المجموع أدناه غير موثوق.",
+    "tallyRetry": "إعادة المحاولة",
     "viewPayments": "عرض المدفوعات ←",
     "renewalsOutstanding": "تجديدات مستحقة",
     "renewalsOpen": "{count} فواتير تجديد مفتوحة",

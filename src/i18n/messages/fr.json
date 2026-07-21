@@ -2498,6 +2498,8 @@
     "viewInvoices": "Voir les factures →",
     "todayTally": "Encaissements du jour (par méthode)",
     "noPaymentsToday": "Aucun paiement aujourd'hui.",
+    "tallyUnavailable": "Les paiements du jour n'ont pas pu être chargés — le total ci-dessous n'est pas fiable.",
+    "tallyRetry": "Réessayer",
     "viewPayments": "Voir les paiements →",
     "renewalsOutstanding": "Renouvellements dus",
     "renewalsOpen": "{count} factures de renouvellement ouvertes",
