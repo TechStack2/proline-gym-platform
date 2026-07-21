@@ -110,12 +110,13 @@ BEGIN
     EXECUTE format('SELECT count(*) FROM public.payments WHERE payment_date >= %L AND payment_date < (%L::date + 1)', day, day);
   EXCEPTION WHEN OTHERS THEN
     RESET ROLE;
-    RETURN format('rows(no RLS)=%s | bare=%.1f ms | WITH RLS: %s', n, bare, SQLERRM);
+    -- Postgres format() is NOT printf: only %s/%I/%L exist, so round() does the work.
+    RETURN format('rows(no RLS)=%s | bare=%s ms | WITH RLS: %s', n, round(bare, 1), SQLERRM);
   END;
   rls := EXTRACT(epoch FROM clock_timestamp() - t0) * 1000;
   RESET ROLE;
-  RETURN format('rows(no RLS)=%s | bare=%.1f ms | with RLS=%.1f ms | RLS multiplier=%.0fx',
-                n, bare, rls, rls / GREATEST(bare, 0.001));
+  RETURN format('rows(no RLS)=%s | bare=%s ms | with RLS=%s ms | RLS multiplier=%sx',
+                n, round(bare, 1), round(rls, 1), round(rls / GREATEST(bare, 0.001)));
 END $$;
 
 -- Populate `payments` the way the gate does: spread across EVERY seeded gym (the
@@ -136,17 +137,17 @@ END $$;
 
 \echo '════════ 2. BEFORE — no payment_date index ════════'
 SELECT pg_temp.add_payments(200)  AS payments_now \gset
-\echo '· volume: :payments_now rows'
+\echo '· volume:' :payments_now 'rows'
 SELECT pg_temp.rls_cost(:'owner_uid');
 SELECT * FROM pg_temp.explain_tally(:'owner_uid', 'BEFORE @ 200 rows — unscoped (today''s code)');
 
 SELECT pg_temp.add_payments(1000) AS payments_now \gset
-\echo '· volume: :payments_now rows'
+\echo '· volume:' :payments_now 'rows'
 SELECT pg_temp.rls_cost(:'owner_uid');
 SELECT * FROM pg_temp.explain_tally(:'owner_uid', 'BEFORE @ ~1.2k rows — unscoped (today''s code)');
 
 SELECT pg_temp.add_payments(5000) AS payments_now \gset
-\echo '· volume: :payments_now rows'
+\echo '· volume:' :payments_now 'rows'
 SELECT pg_temp.rls_cost(:'owner_uid');
 SELECT * FROM pg_temp.explain_tally(:'owner_uid', 'BEFORE @ ~6k rows — unscoped (today''s code)');
 SELECT * FROM pg_temp.explain_tally_scoped(:'owner_uid', :'gym_id', 'BEFORE @ ~6k rows — GYM-SCOPED in SQL, still no index');
