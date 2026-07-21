@@ -91,6 +91,11 @@ test.describe('PWA-BASICS + INVITE-HOST', () => {
         await page.evaluate(() => localStorage.removeItem('pwa_install_dismissed'))
         await page.reload()
         await expect(vis(page, '[data-testid="install-app-card"]').first(), `${role} sees the install card`).toBeVisible({ timeout: 15_000 })
+        // W2c §5: the pitch is the ROLE's own (member/coach copy, not the
+        // front-desk pitch) and the identity is the USER's gym.
+        const copy = vis(page, '[data-testid="install-app-copy"]').first()
+        await expect(copy, `${role} copy is role-aware`).toHaveAttribute('data-role', role === 'coach' ? 'coach' : 'member')
+        await expect(copy, `${role} copy names the gym (chrome read, not the host default)`).toContainText(/\S/)
         // Native button OR the manual (incl. iOS) instructions — never a dead end.
         if (await vis(page, '[data-testid="install-app-btn"]').count() === 0) {
           await expect(vis(page, '[data-testid="install-app-instructions"]').first()).toBeVisible()

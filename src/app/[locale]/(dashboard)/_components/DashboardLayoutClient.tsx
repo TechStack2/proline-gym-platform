@@ -11,6 +11,7 @@ import type { DashboardRole } from './DashboardTabConfig';
 import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { PushPrompt } from '@/components/push/push-prompt';
+import { OfflineIdentityStamp } from '@/components/pwa/offline-identity-stamp';
 import { useInboxCount } from '@/hooks/use-inbox-count';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
@@ -157,6 +158,7 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
 
         <main className="flex-1 overflow-y-auto scrollbar-thin">
           <PushPrompt />
+          <OfflineIdentityStamp gymName={gymName} locale={locale} />
           <PageTransition direction="forward" isActive={true} locale={locale} desktopStatic>
             {/* §4.1 content grid (Rule 5): max 1200px, centred beside the rail,
                 24px gutters ≥768 — the 1920px balloon-cards die here. Mobile edge

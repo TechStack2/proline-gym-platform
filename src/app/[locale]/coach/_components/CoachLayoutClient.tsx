@@ -11,6 +11,7 @@ import { LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { PushPrompt } from '@/components/push/push-prompt';
+import { OfflineIdentityStamp } from '@/components/pwa/offline-identity-stamp';
 import { PortalContent } from '@/components/portal/portal-kit';
 
 type Props = {
@@ -115,6 +116,7 @@ export function CoachLayoutClient({ children, locale, gymName, logoUrl, trialsTo
 
         <main className="flex-1 overflow-y-auto">
           <PushPrompt />
+          <OfflineIdentityStamp gymName={gymName} locale={locale} />
           <PageTransition direction="forward" isActive={true} locale={locale}>
             <div key={pathname} data-testid="shell-content">
               <PortalContent>{children}</PortalContent>

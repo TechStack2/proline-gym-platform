@@ -12,6 +12,7 @@ import { PortalCard, PortalCardTitle, DeskGrid } from '@/components/portal/porta
 import { ActionCard } from '@/components/dashboard/action-card'
 import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
+import { getUserGymChrome } from '@/lib/theme/user-brand'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
@@ -29,6 +30,10 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return null
+
+  // W2c §5: the USER's gym identity for the install card (cache()d — the layout
+  // already resolved it this request, so this is a free read).
+  const chrome = await getUserGymChrome(user.id, locale)
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -521,8 +526,9 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         })()}
       </section>
     </>} aside={<>
-      {/* PWA-BASICS R2 (placement per DA-15: below the member's own status). */}
-      <InstallAppCard locale={locale} />
+      {/* PWA-BASICS R2 (placement per DA-15: below the member's own status).
+          W2c §5: identity = the USER's gym (chrome read), member-role pitch. */}
+      <InstallAppCard locale={locale} gymName={chrome.gymName} logoUrl={chrome.logoUrl} role="member" />
 
       {/* F3: waiver status + sign CTA when unsigned/outdated (preserved) */}
       {waiver && waiver.state !== 'none' && (

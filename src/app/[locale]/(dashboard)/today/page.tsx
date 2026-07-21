@@ -9,6 +9,8 @@ import { WeekHorizon } from './_components/WeekHorizon'
 import { MonthHorizon } from './_components/MonthHorizon'
 import { SetupChecklist } from './_components/SetupChecklist'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
+import { DEFAULT_GYM_SLUG } from '@/lib/marketing/gym'
+import { storagePublicUrl } from '@/lib/storage/public-url'
 import { UserPlus, Users, DollarSign } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header';
 
@@ -35,12 +37,14 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: profile } = await supabase.from('profiles').select('gym_id, gyms:gym_id (name_ar, name_en, name_fr)').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('gym_id, gyms:gym_id (slug, name_ar, name_en, name_fr, logo_url)').eq('id', user.id).single()
   const gymId = profile?.gym_id
   if (!gymId) return null
-  // TENANT-CONTENT: gym-derived name for the white-labelled install card.
+  // TENANT-CONTENT: gym-derived name + logo for the white-labelled install card
+  // (W2c §5: the card shows the USER's gym logo, not a monogram, when set).
   const g: any = Array.isArray((profile as any)?.gyms) ? (profile as any).gyms[0] : (profile as any)?.gyms
   const gymName: string = (locale === 'ar' ? g?.name_ar : locale === 'fr' ? g?.name_fr : g?.name_en) || g?.name_en || ''
+  const gymLogo: string | null = g?.slug === DEFAULT_GYM_SLUG ? '/logo.jpg' : storagePublicUrl('avatars', g?.logo_url) || null
 
   const now = new Date()
   const horizon: Horizon = parseHorizon(searchParams?.h)
@@ -79,7 +83,7 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
 
       {/* PWA-INSTALL: dismissible, platform-aware "Install the app" affordance for the
           front-desk laptop (the offline guarantee). Renders nothing once installed. */}
-      <InstallAppCard locale={locale} gymName={gymName} />
+      <InstallAppCard locale={locale} gymName={gymName} logoUrl={gymLogo} role="staff" />
 
       {/* ONBOARDING-CHECKLIST: derived first-run setup guide — renders only while
           setup is incomplete, hides itself once every applicable item is done. */}

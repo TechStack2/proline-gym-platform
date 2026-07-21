@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { DARK_APP_GROUND } from '@/lib/theme/brand';
 
 // DS-2: light / dark / system theme toggle. Persists the choice in localStorage
 // (key 'theme') — the SAME key the root layout's no-FOUC init script reads before
@@ -21,6 +22,30 @@ function prefersDark(): boolean {
 function applyTheme(mode: ThemeMode): void {
   const dark = mode === 'dark' || (mode === 'system' && prefersDark());
   document.documentElement.classList.toggle('dark', dark);
+
+  // W2c/DA-62: theme-color follows the APP, not the OS. The server emits ONE
+  // light meta; the boot script parked its light value in data-light. Swap the
+  // shared dark ground in/out with the app state.
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    if (!meta.getAttribute('data-light')) meta.setAttribute('data-light', meta.getAttribute('content') || '');
+    meta.setAttribute('content', dark ? DARK_APP_GROUND : meta.getAttribute('data-light') || '');
+  }
+
+  // §5 stored-theme-at-install approximation: keep the manifest link's ?theme=
+  // in step with the app state, so an install made after a toggle gets the
+  // right splash ground.
+  const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+  if (link) {
+    try {
+      const url = new URL(link.href, window.location.origin);
+      if (dark) url.searchParams.set('theme', 'dark');
+      else url.searchParams.delete('theme');
+      link.href = url.pathname + (url.search || '');
+    } catch {
+      /* a malformed href must never break the toggle */
+    }
+  }
 }
 
 export function ThemeToggle({ className }: { className?: string }) {

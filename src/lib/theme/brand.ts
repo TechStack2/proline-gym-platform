@@ -22,6 +22,19 @@
  */
 const HEX6 = /^#[0-9a-fA-F]{6}$/
 
+/** A valid 6-digit hex brand color, or the default crimson when unset/invalid.
+ *  Canonical home is HERE (client-safe, token-file) — marketing/gym.ts re-exports
+ *  for its server-side consumers; the W2c icon renderer needs it in the browser. */
+export const DEFAULT_BRAND_COLOR = '#cd1419'
+
+/** The shared dark app ground (status bar / splash in dark) — DS-2's #131317,
+ *  named here (the token file) so consumers import it instead of re-typing the
+ *  literal (W2c/DA-62: boot script, ThemeToggle, manifest builder). */
+export const DARK_APP_GROUND = '#131317'
+export function safeBrandColor(c: string | null | undefined): string {
+  return c && HEX6.test(c) ? c : DEFAULT_BRAND_COLOR
+}
+
 function toRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]

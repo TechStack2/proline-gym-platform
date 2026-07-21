@@ -3425,9 +3425,20 @@
         "title": "Install this app",
         "s1": "Open your browser menu.",
         "s2": "Choose “Install” or “Add to Home Screen”."
+      },
+      "androidChrome": {
+        "title": "Install {gym} (Chrome)",
+        "s1": "Tap the install icon in the address bar — or open the ⋮ menu.",
+        "s2": "Choose “Install app”."
       }
     },
-    "appFallback": "the app"
+    "appFallback": "the app",
+    "manifestDescription": "{gym} — classes, schedule, progress and payments in one app.",
+    "roleDescription": {
+      "member": "Your gym in your pocket — {gym} schedule, progress, and billing on this device.",
+      "coach": "Your day at a glance — {gym} classes, attendance, and PT sessions on this device.",
+      "staff": "Install {gym} on this device for a faster, offline-ready front desk."
+    }
   },
   "coachEdit": {
     "title": "Edit my public profile",

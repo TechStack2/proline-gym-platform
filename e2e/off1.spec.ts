@@ -23,17 +23,22 @@ async function ownerPage(browser: Browser, locale = 'en') {
 }
 
 test.describe('OFF-1 · installed-PWA offline foundation (desktop viewport)', () => {
-  test('the web-app manifest is linked + installable (locale-neutral start_url, icons resolve)', async ({ browser }) => {
+  test('the web-app manifest is linked + installable (per-locale start_url, icons resolve)', async ({ browser }) => {
     const { ctx, page } = await ownerPage(browser)
     try {
       await page.goto('/en/today')
       // install precondition: the manifest must be discoverable in <head>.
       const href = await page.locator('link[rel="manifest"]').first().getAttribute('href')
       expect(href, 'the web-app manifest is linked in <head> (was missing → not installable)').toBeTruthy()
+      // PREMISE UPDATED (W2c §5): the link carries the page's locale and
+      // start_url follows it — an installing user's app opens in THEIR language
+      // (the OFF-PERF stranding class dies at the root; the old locale-neutral
+      // '/' start_url is superseded by the ruled §5 contract).
+      expect(href, 'the manifest link carries the page locale').toContain('locale=en')
       const man = await page.request.get(href!)
       expect(man.status(), 'manifest resolves').toBe(200)
       const json = await man.json()
-      expect(json.start_url, 'start_url is locale-neutral (was hard-coded /en)').toBe('/')
+      expect(json.start_url, 'start_url carries the installing locale (§5)').toBe('/en')
       expect(json.display).toBe('standalone')
       // Chrome needs a valid >=192 PNG icon to offer install — they must resolve.
       for (const px of [192, 512]) {
