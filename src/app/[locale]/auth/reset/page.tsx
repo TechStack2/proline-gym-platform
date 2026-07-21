@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { withAuthTimeout, isTransportError } from '@/lib/auth/transport'
+import { classifyPasswordUpdateFailure } from '@/lib/auth/auth-error'
 import { cn } from '@/lib/utils'
 import { PasswordStrengthHint } from '@/components/shared/password-strength'
 import { isPasswordValid, PASSWORD_MIN_LENGTH } from '@/lib/utils/password'
@@ -48,6 +49,21 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
   // AUTH-DEPTH: the same shared policy as the onboarding change-password step.
   const valid = isPasswordValid(pw) && pw === pw2
 
+  // AUTH-ERRORS: the same four-state treatment as the login door. This surface used
+  // to answer EVERY non-transport failure with "the link may have expired" — so a
+  // user who reused their current password (GoTrue `same_password`) was sent to
+  // request reset links forever for a problem no link could fix, and a real outage
+  // read as an expired link. Each state now says only what is true.
+  const failureText = (e: unknown): string => {
+    if (isTransportError(e)) return t('errConnection')
+    switch (classifyPasswordUpdateFailure(e)) {
+      case 'password_policy': return t('errPasswordPolicy')
+      case 'session': return t('resetError') // the link really has expired — unchanged copy
+      case 'rate_limited': return t('tooManyAttempts')
+      default: return t('errServer')
+    }
+  }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!valid || loading) return
@@ -60,12 +76,12 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
     try {
       const { error: uErr } = await withAuthTimeout(supabase.auth.updateUser({ password: pw }))
       if (uErr) {
-        setError(isTransportError(uErr) ? t('errConnection') : t('resetError'))
+        setError(failureText(uErr))
         return
       }
       setDone(true)
     } catch (err) {
-      setError(isTransportError(err) ? t('errConnection') : t('resetError'))
+      setError(failureText(err))
     } finally {
       setLoading(false)
     }
@@ -137,7 +153,7 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
               <p className="-mt-2 text-xs text-red-600">{t('resetMismatch')}</p>
             )}
 
-            {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+            {error && <div data-testid="reset-error" className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
             <button
               type="submit"

@@ -13,13 +13,18 @@ import { roleEmail, E2E_PASSWORD } from './roles'
  * This guard proves — from ONE IP (the runner):
  *   1. wrong password ×5 on ONE identifier → attempt 6 is rate-limited
  *      (the distinct too-many-attempts message), and
- *   2. a DIFFERENT identifier right after still gets the ordinary generic
+ *   2. a DIFFERENT identifier right after still gets the ordinary credentials
  *      failure — NOT the limiter — so one noisy account can't lock out the
  *      rest of the gym's wifi.
  * The limiter keys on the SUBMITTED identifier whether or not an account
  * exists (no existence leak), so fixture phones need no real accounts.
  */
-const GENERIC = 'An error occurred during login'
+// AUTH-ERRORS: an ordinary failed attempt now names the CREDENTIAL state instead of
+// the retired catch-all "An error occurred during login". The property this spec
+// cares about is unchanged — an ordinary failure must be distinguishable from the
+// limiter firing — and it is still the same message for every identifier, existing
+// or not (the anti-enumeration posture below still holds).
+const CREDENTIALS = 'Incorrect email/phone or password'
 const LIMITED = 'Too many attempts'
 
 async function attemptPhoneLogin(page: Page, phone: string, password: string) {
@@ -37,10 +42,10 @@ test('LOGIN-LIMITER · per-identifier: 6th wrong attempt on one phone is limited
     const PHONE_A = '+96170001111'
     const PHONE_B = '+96170002222'
 
-    // 5 wrong attempts on identifier A → each fails with the GENERIC error.
+    // 5 wrong attempts on identifier A → each fails with the CREDENTIALS error.
     for (let i = 1; i <= 5; i++) {
       await attemptPhoneLogin(page, PHONE_A, `Wrong${i}!x`)
-      await expect(page.getByText(GENERIC), `attempt ${i} fails generically (not limited)`)
+      await expect(page.getByText(CREDENTIALS), `attempt ${i} fails on credentials (not limited)`)
         .toBeVisible({ timeout: 15_000 })
     }
 
@@ -49,11 +54,11 @@ test('LOGIN-LIMITER · per-identifier: 6th wrong attempt on one phone is limited
     await expect(page.getByText(LIMITED, { exact: false }),
       'attempt 6 on the SAME identifier is rate-limited').toBeVisible({ timeout: 15_000 })
 
-    // Identifier B from the SAME IP, immediately: ordinary generic failure —
-    // NOT the limiter. (Old per-IP posture would have 429'd everyone by now.)
+    // Identifier B from the SAME IP, immediately: the ordinary credentials
+    // failure — NOT the limiter. (Old per-IP posture would have 429'd everyone by now.)
     await attemptPhoneLogin(page, PHONE_B, 'Wrong1!x')
-    await expect(page.getByText(GENERIC),
-      'a different identifier from the same IP fails generically (not limited)').toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(CREDENTIALS),
+      'a different identifier from the same IP fails on credentials (not limited)').toBeVisible({ timeout: 15_000 })
     await expect(page.getByText(LIMITED, { exact: false }),
       'the limited message is NOT shown for identifier B').toHaveCount(0)
   } finally {

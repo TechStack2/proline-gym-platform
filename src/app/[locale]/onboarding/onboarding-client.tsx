@@ -22,6 +22,7 @@ import { signWaiver } from '@/lib/waivers/actions'
 import { CalendarDays, CreditCard, Dumbbell, ClipboardList } from 'lucide-react'
 import { completeOnboarding } from './actions'
 import { withAuthTimeout, isTransportError } from '@/lib/auth/transport'
+import { classifyPasswordUpdateFailure, AUTH_LOG_CODE } from '@/lib/auth/auth-error'
 import { useErrorText } from '@/lib/errors/use-error-text';
 
 // PWD-FOCUS: these MUST be module-level (stable component types). When they lived
@@ -94,6 +95,18 @@ export function OnboardingClient({
   const isCoach = role === 'coach' || role === 'head_coach' || role === 'external_coach'
   const isMember = role === 'student' || role === 'parent'
 
+  // AUTH-ERRORS: the same four states as the reset door (the auth namespace owns
+  // this copy — it is the same GoTrue call and the same user-facing facts).
+  const passwordFailureText = (e: unknown): string => {
+    if (isTransportError(e)) return ta('errConnection')
+    switch (classifyPasswordUpdateFailure(e)) {
+      case 'password_policy': return ta('errPasswordPolicy')
+      case 'rate_limited': return ta('tooManyAttempts')
+      case 'session': return ta('errSessionExpired')
+      default: return ta('errServer')
+    }
+  }
+
   const finish = async () => {
     setBusy(true)
     setError('')
@@ -108,8 +121,12 @@ export function OnboardingClient({
       // 1. The user changes their OWN password (clears the temp credential).
       const { error: pErr } = await withAuthTimeout(supabase.auth.updateUser({ password: pw }))
       if (pErr) { // ERROR-HARDEN
-        console.error('[onboarding] password change failed:', pErr)
-        setError(isTransportError(pErr) ? ta('errConnection') : tc('genericError'))
+        // AUTH-ERRORS: a user arriving here holds a TEMP password, so the single
+        // likeliest failure is re-typing that temp password (GoTrue `same_password`)
+        // — which used to render the generic "something went wrong" and left them
+        // with no idea the fix was in their own hands. Named states only.
+        console.error(`[onboarding] password change failed: ${AUTH_LOG_CODE.password_update[classifyPasswordUpdateFailure(pErr)]}`)
+        setError(passwordFailureText(pErr))
         return
       }
       // 2. Language preference (self-update, RLS; best-effort — never blocks finishing).

@@ -140,13 +140,27 @@ export default function LoginPage({ params }: Props) {
       if (res.ok) {
         signedIn = true;
       } else {
-        // LOGIN-LIMITER: too-many-attempts is surfaced distinctly (standard UX; it
-        // fires on the SUBMITTED identifier whether or not an account exists, so it
-        // leaks nothing). Everything else stays the one generic failure.
-        setError(res.rateLimited ? t('tooManyAttempts') : t('loginError'));
+        // AUTH-ERRORS: four distinct states, because the old single message made a
+        // wrong password look like a platform outage (field failure, 7/20).
+        //   · credentials  — identical for a wrong password AND for an address with
+        //                    no account (J6: no enumeration oracle; the action puts
+        //                    both in this bucket, so the copy cannot drift apart)
+        //   · rate_limited — LOGIN-LIMITER; fires on the SUBMITTED identifier
+        //                    whether or not it exists, so it leaks nothing either
+        //   · server       — OUR failure; never tell someone their password is
+        //                    wrong when it was our side that broke
+        //   · connection   — the transport state below (AUTH-STUCK)
+        setError(
+          res.reason === 'rate_limited' ? t('tooManyAttempts')
+          : res.reason === 'server' ? t('errServer')
+          : t('errCredentials'),
+        );
       }
     } catch (err) {
-      setError(isTransportError(err) ? t('errConnection') : t('loginError'));
+      // A rejected action is either the network (the user's) or a server that
+      // answered badly (ours). Both are true statements; neither mentions the
+      // account, so the anti-enumeration posture is untouched.
+      setError(isTransportError(err) ? t('errConnection') : t('errServer'));
     } finally {
       if (!signedIn) setLoading(false);
     }
