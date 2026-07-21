@@ -121,6 +121,53 @@ export async function untilConsistent(
 }
 
 /**
+ * UNTILSETTLED (FLAKE-HEAL-2R) — retry an action that can HANG rather than fail.
+ *
+ * `untilConsistent` above retries an action that REJECTS. It is useless against an
+ * action that never settles at all: `toPass` only starts a new attempt once the
+ * previous one has finished, so ONE hung attempt silently consumes the entire
+ * budget and the retry never gets a turn. That is exactly how the off3b IndexedDB
+ * injection failed — `indexedDB.open()` fires `onblocked` (neither `onsuccess` nor
+ * `onerror`) when another connection holds the database at an older version, so the
+ * in-page promise settled never, and the retry added by the previous flake-heal
+ * could not fire.
+ *
+ * `attemptMs` is a per-attempt DEADLINE, not a wait: it makes a stuck attempt fail
+ * FAST so the next one can start. The overall budget is unchanged — this converts
+ * one hung attempt into several real ones, it does not buy more time.
+ *
+ * The in-page callbacks (`onblocked`, `onabort`) are handled at each call site too;
+ * this bound is the backstop for the settle paths nobody enumerated.
+ */
+export async function untilSettled(
+  action: () => Promise<void>,
+  opts: { attemptMs?: number; timeout?: number; intervals?: number[] } = {},
+): Promise<void> {
+  const attemptMs = opts.attemptMs ?? 5_000;
+  await expect(async () => {
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        action(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`untilSettled: attempt did not settle within ${attemptMs}ms — retrying`)),
+            attemptMs,
+          );
+        }),
+      ]);
+    } finally {
+      // Abandoning the losing promise is fine (the page tears the evaluate down),
+      // but the timer must not outlive the attempt or it rejects into the void.
+      if (timer) clearTimeout(timer);
+    }
+  }).toPass({
+    timeout: opts.timeout ?? 20_000,
+    intervals: opts.intervals ?? [250, 500, 1_000, 2_000],
+  });
+}
+
+/**
  * AWAITEFFECT (MJ-4 addendum — the J6 poll-DB-commit-first idiom, generalized).
  *
  * For approve/mutate flows where a UI assertion reflects a SERVER COMMIT that can

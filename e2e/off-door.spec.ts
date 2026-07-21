@@ -74,6 +74,10 @@ async function waitDeskShellWarmed(page: Page, deskUrl: string, timeout = 90_000
 async function mirrorCounts(page: Page): Promise<{ students: number; enrollments: number }> {
   return page.evaluate(() => new Promise<{ students: number; enrollments: number }>((resolve) => {
     const open = indexedDB.open('proline_offline_db')
+    // FLAKE-HEAL-2R: a blocked open fires NEITHER onsuccess nor onerror. This reader
+    // already degrades to the -1 sentinel on error; blocked must degrade the same way
+    // rather than hang the evaluate forever.
+    open.onblocked = () => resolve({ students: -1, enrollments: -1 })
     open.onsuccess = () => {
       const db = open.result
       const out = { students: -1, enrollments: -1 }
@@ -144,6 +148,8 @@ async function deskFootprint(page: Page): Promise<Footprint> {
   const OFF5 = [...OFF4, 'coaches']
   return page.evaluate((sets) => new Promise<Footprint>((resolve) => {
     const open = indexedDB.open('proline_offline_db')
+    // FLAKE-HEAL-2R: as above — blocked degrades to the empty footprint, never a hang.
+    open.onblocked = () => resolve({ per: {}, off4: { rows: 0, bytes: 0 }, off5: { rows: 0, bytes: 0 }, delta: { rows: 0, bytes: 0 } })
     open.onsuccess = () => {
       const db = open.result
       const all = Array.from(new Set([...sets.off4, ...sets.off5]))

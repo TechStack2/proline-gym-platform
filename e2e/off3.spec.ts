@@ -1,7 +1,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
 import { randomUUID } from 'crypto'
 import { ROLES } from './roles'
-import { vis, untilConsistent } from './helpers'
+import { vis, untilConsistent, untilSettled } from './helpers'
 
 /**
  * OFF-3 — the front desk RECORDS offline. Generalizes G2's queue→flush→idempotent-
@@ -118,22 +118,29 @@ test.describe('OFF-3 · offline front-desk writes (money path + idempotency)', (
       // second time. Per-run (not hardcoded) so retries / parallel projects on the
       // shared gym never collide on the global-unique client_uuid.
       const opId = randomUUID()
-      const inject = () => page.evaluate(({ opId, invId }) => new Promise<void>((resolve, reject) => {
-        const open = indexedDB.open('proline_offline_db')
-        open.onsuccess = () => {
-          const db = open.result
-          const tx = db.transaction('pending_payments', 'readwrite')
-          tx.objectStore('pending_payments').put({
-            op_id: opId, invoice_id: invId, student_id: '', amount_usd: 25, amount_lbp: 0,
-            method: 'cash_usd', reference: null, exchange_rate: null,
-            payment_date: new Date().toISOString().slice(0, 10),
-            client_ts: new Date().toISOString(), status: 'pending',
-          })
-          tx.oncomplete = () => { db.close(); resolve() }
-          tx.onerror = () => reject(tx.error)
-        }
-        open.onerror = () => reject(open.error)
-      }), { opId, invId: inv.id })
+      // FLAKE-HEAL-2R: bounded + both unhandled settle paths wired (see off3b's
+      // injectLead). Re-attempting is safe — op_id is the store's PRIMARY KEY, which
+      // is the very idempotency this test then proves against record_payment.
+      const inject = () => untilSettled(async () => {
+        await page.evaluate(({ opId, invId }) => new Promise<void>((resolve, reject) => {
+          const open = indexedDB.open('proline_offline_db')
+          open.onsuccess = () => {
+            const db = open.result
+            const tx = db.transaction('pending_payments', 'readwrite')
+            tx.objectStore('pending_payments').put({
+              op_id: opId, invoice_id: invId, student_id: '', amount_usd: 25, amount_lbp: 0,
+              method: 'cash_usd', reference: null, exchange_rate: null,
+              payment_date: new Date().toISOString().slice(0, 10),
+              client_ts: new Date().toISOString(), status: 'pending',
+            })
+            tx.oncomplete = () => { db.close(); resolve() }
+            tx.onerror = () => reject(tx.error)
+            tx.onabort = () => reject(tx.error ?? new Error('IDB_TX_ABORTED'))
+          }
+          open.onerror = () => reject(open.error)
+          open.onblocked = () => reject(new Error('IDB_OPEN_BLOCKED'))
+        }), { opId, invId: inv.id })
+      })
 
       const flushFromDesk = async () => {
         await page.goto('/en/desk')
