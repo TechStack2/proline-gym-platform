@@ -134,8 +134,18 @@ test('AUTH-ERRORS · a failing server says OUR side broke — never that the pas
     // The page is already loaded, so from here the only request matching this URL
     // is the sign-in server action itself. FULFILL a 500 (never continue — the
     // known route+continue hang under the service worker).
+    //
+    // The content-type is load-bearing. Next only awaits an action's RESULT when
+    // the response announces itself as a flight payload; a 500 with any other
+    // content-type is returned WITHOUT a result, so the promise our submit handler
+    // is awaiting simply never settles — measured: the submit sat for the full 15s
+    // withAuthTimeout window and then surfaced the CONNECTION state, because from
+    // the browser's side a request that never completes is indistinguishable from a
+    // dead link. Announcing the flight content-type makes the client parse the
+    // body, fail, and REJECT — which is the shape a real 500 takes once the
+    // response is well-formed enough to be read.
     await page.route('**/auth/login**', (r) =>
-      r.fulfill({ status: 500, contentType: 'text/plain', body: 'upstream exploded' }))
+      r.fulfill({ status: 500, contentType: 'text/x-component', body: 'not-a-flight-payload' }))
 
     // CORRECT credentials: whatever this screen says next cannot be about them.
     await attempt(page, REAL_EMAIL, PW)
