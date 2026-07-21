@@ -10,13 +10,14 @@
 name: MONEY-TALLY explain (temporary diagnostic)
 
 on:
-  workflow_dispatch:
-    inputs:
-      gyms:
-        description: 'How many gyms to seed into the ONE database (the union seeds one per worker slot).'
-        type: string
-        required: false
-        default: '4'
+  # A workflow_dispatch entry is only dispatchable once it exists on the DEFAULT
+  # branch, which this scaffolding never reaches — so it self-triggers on pushes to
+  # its own branch instead. Scoped to this branch and to its own two files.
+  push:
+    branches: [prompt-money-tally]
+    paths:
+      - '.github/workflows/money-tally-explain.yml'
+      - 'scripts/diag/money-tally-explain.sql'
 
 jobs:
   explain:
@@ -65,7 +66,7 @@ jobs:
       - name: Seed one gym per worker slot (the union's shape)
         run: |
           set -euo pipefail
-          for w in $(seq 0 $(( ${{ inputs.gyms }} - 1 ))); do
+          for w in $(seq 0 3); do
             psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 -tAc \
               "select seed_e2e_gym('mt-diag-w${w}', 'E2eTestPass!23');" >/dev/null
             echo "✅ seeded mt-diag-w${w}"
