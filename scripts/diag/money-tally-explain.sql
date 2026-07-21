@@ -68,7 +68,10 @@ BEGIN
 END $$;
 
 -- Same read, but with the GYM SCOPE pushed into SQL (the R3 candidate) — what
--- PostgREST emits for `.select('…, students!inner(gym_id)').eq('students.gym_id', X)`.
+-- PostgREST emits for `.select('…, invoices!inner(gym_id)').eq('invoices.gym_id', X)`.
+-- Through INVOICES, not students: `invoices.gym_id` is a NOT NULL column one hop away
+-- (payments.invoice_id → invoices.gym_id), and it is the same path the staff RLS
+-- policy already walks — so the predicate and the policy agree by construction.
 CREATE OR REPLACE FUNCTION pg_temp.explain_tally_scoped(p_uid uuid, p_gym uuid, p_label text)
 RETURNS SETOF text LANGUAGE plpgsql AS $$
 DECLARE r record; day text := to_char(now(), 'YYYY-MM-DD');
@@ -82,9 +85,9 @@ BEGIN
       EXPLAIN (ANALYZE, BUFFERS, TIMING ON)
       SELECT p.amount_usd, p.amount_lbp, p.payment_method
       FROM public.payments p
-      JOIN public.students s ON s.id = p.student_id
+      JOIN public.invoices i ON i.id = p.invoice_id
       WHERE p.payment_date >= %L AND p.payment_date < (%L::date + 1)
-        AND s.gym_id = %L
+        AND i.gym_id = %L
     $q$, day, day, p_gym)
   LOOP RETURN NEXT r."QUERY PLAN"; END LOOP;
   RESET ROLE;
