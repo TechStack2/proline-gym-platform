@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { getDailyTally } from '@/lib/billing/daily-tally'
+import { TallyError } from '@/components/money/tally-error'
 import { dualMoney } from '@/lib/billing/currency'
 import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import { METHOD_LABEL, balanceUsd } from '@/lib/billing/reconcile'
@@ -33,6 +34,9 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const isRTL = locale === 'ar'
   const t = await getTranslations('today')
   const tw = await getTranslations('whatsapp')
+  // MONEY-TALLY: the drawer-failure copy lives in the `money` namespace so BOTH
+  // render sites say the identical sentence — one string, not two that can drift.
+  const tm = await getTranslations('money')
   const supabase = await createClient()
 
   const now = new Date()
@@ -145,7 +149,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   const [
     { data: enrollments },
     { data: pays },
-    tally,
+    tallyRes,
     renewals,
     { data: liveCamps },
     { data: chaseRaw },
@@ -158,7 +162,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     allOpenIds.length
       ? supabase.from('payments').select('invoice_id, amount_usd').in('invoice_id', allOpenIds)
       : Promise.resolve({ data: [] as { invoice_id: string; amount_usd: number | null }[] }),
-    getDailyTally(supabase, dayStart),
+    getDailyTally(supabase, { gymId, date: dayStart }),
     getRenewalsDue(supabase, gymId, locale, refillThresholds),
     supabase
       .from('camps')
@@ -187,6 +191,10 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
       .limit(30),
     getWinbackQueue(supabase, gymId, locale),
   ])
+
+  // MONEY-TALLY: the drawer read is now discriminated — an empty Map is the render
+  // fallback for the ERROR branch, never a claim that nothing was collected.
+  const tally = tallyRes.ok ? tallyRes.tally : new Map<string, { usd: number; lbp: number }>()
 
   const enrolledBy = new Map<string, number>()
   for (const e of enrollments ?? []) enrolledBy.set(e.class_id, (enrolledBy.get(e.class_id) ?? 0) + 1)
@@ -472,8 +480,15 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
             </div>
             <p className="mb-1 text-xs font-medium text-gray-500">{t('collections')}</p>
             <div className="flex flex-wrap gap-2 text-sm" data-testid="today-tally">
-              {tally.size === 0 ? (
-                <span className="text-gray-400">{t('noPayments')}</span>
+              {!tallyRes.ok ? (
+                <TallyError
+                  testid="today-tally-error"
+                  message={tm('tallyUnavailable')}
+                  retryLabel={tm('tallyRetry')}
+                  retryHref={`/${locale}/today`}
+                />
+              ) : tally.size === 0 ? (
+                <span className="text-gray-400" data-testid="today-tally-empty">{t('noPayments')}</span>
               ) : (
                 [...tally.entries()].map(([method, v]) => {
                   const m = dualMoney(v.usd, v.lbp, pref)

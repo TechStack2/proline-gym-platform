@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { getDailyTally } from '@/lib/billing/daily-tally'
+import { TallyError } from '@/components/money/tally-error'
 import { balanceUsd, balanceLbp, METHOD_LABEL } from '@/lib/billing/reconcile'
 import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import { InvoicesView } from '../invoices/invoices-view'
@@ -119,9 +120,9 @@ async function MoneyOverview({ locale }: { locale: string }) {
   // wave; only the payments reconciliation (below) depends on the open-invoice ids.
   //   products — NO-MEMBERSHIP-GAPS: the renewals card + ProcessRenewals are
   //   membership-cycle furniture, hidden for a classes+PT gym.
-  const [products, tally, pref, { data: openInvoices }, { data: renewalRows }] = await Promise.all([
+  const [products, tallyRes, pref, { data: openInvoices }, { data: renewalRows }] = await Promise.all([
     getEnabledProducts(supabase, gymId),
-    getDailyTally(supabase), // the cash drawer: today's per-method tally (shared D1 logic)
+    getDailyTally(supabase, { gymId }), // the cash drawer: today's per-method tally (shared D1 logic)
     gymCurrencyPref(supabase, gymId), // MONEY-LBP: order/emphasis of the dual totals
     supabase
       .from('invoices')
@@ -133,6 +134,10 @@ async function MoneyOverview({ locale }: { locale: string }) {
       .from('renewal_invoices')
       .select('invoice_id, invoices:invoice_id!inner (id, total_usd, total_lbp, status, gym_id)'),
   ])
+  // MONEY-TALLY: unwrap once. `tally` is only meaningful when the read succeeded —
+  // the empty Map here is the render fallback for the ERROR branch below, never a
+  // claim that nothing was collected.
+  const tally = tallyRes.ok ? tallyRes.tally : new Map<string, { usd: number; lbp: number }>()
 
   // Outstanding obligations: reconcile the open invoices against their payments. USD
   // is the D1 canon (balance from Σ amount_usd); LBP rides along as recorded
@@ -194,8 +199,18 @@ async function MoneyOverview({ locale }: { locale: string }) {
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1 sm:col-span-2">
         <p className="mb-2 text-xs text-gray-500">{t('todayTally')}</p>
         <div className="flex flex-wrap gap-3 text-sm" data-testid="money-tally">
-          {tally.size === 0 ? (
-            <span className="text-gray-400">{t('noPaymentsToday')}</span>
+          {/* MONEY-TALLY: three outcomes, three distinct renders. "Could not read the
+              drawer" must never wear the clothes of "nobody has paid yet" — that
+              equivalence is the defect this slice removes. */}
+          {!tallyRes.ok ? (
+            <TallyError
+              testid="money-tally-error"
+              message={t('tallyUnavailable')}
+              retryLabel={t('tallyRetry')}
+              retryHref={`/${locale}/money`}
+            />
+          ) : tally.size === 0 ? (
+            <span className="text-gray-400" data-testid="money-tally-empty">{t('noPaymentsToday')}</span>
           ) : (
             [...tally.entries()].map(([method, v]) => {
               const m = fmtMoney(v.usd, v.lbp, pref)

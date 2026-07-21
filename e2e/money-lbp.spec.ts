@@ -203,3 +203,51 @@ test('3 · USD preference — USD leads; the LBP total still shows because it wa
     await ctx.close()
   }
 })
+
+/**
+ * MONEY-TALLY — the cash-drawer RPC (000108) is a SECURITY DEFINER function, so the
+ * tenant boundary it takes off RLS's hands is its OWN to enforce. That gate is proven
+ * here at the HTTP layer, where it is genuinely reachable — unlike the read's failure
+ * path, which happens inside a server component and is pinned in
+ * src/lib/billing/daily-tally.test.ts instead.
+ *
+ * The third case is the one worth having: the function takes a `p_gym_id`, but that
+ * argument is an ASSERTION, not the scope. The scope is derived from the caller's own
+ * session (get_user_gym_id()), because BILL-POLICY's lesson — a client-sent argument
+ * silently shadows a server-derived default — would here be shadowing a tenant
+ * boundary. Naming someone else's gym must fail, not re-scope.
+ */
+test('MONEY-TALLY · the drawer RPC fails closed, and its gym argument cannot re-scope it', async () => {
+  const today = new Date().toISOString().slice(0, 10)
+  const callTally = (bearer: string | null, gym: string | null) =>
+    fetch(`${URL}/rest/v1/rpc/get_daily_tally`, {
+      method: 'POST',
+      headers: {
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || KEY!,
+        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_gym_id: gym, p_date: today }),
+    })
+
+  // (a) No session at all → refused. anon is never granted EXECUTE, so this is
+  //     stopped by the grant itself, before the function body runs.
+  const anon = await callTally(null, gymId)
+  expect(anon.ok, 'an anonymous caller cannot read any gym cash drawer').toBeFalsy()
+  expect([401, 403, 404]).toContain(anon.status)
+
+  // (b) The gym's own staff → served, and the seeded LBP method is present.
+  const tok = await ownerToken()
+  const mine = await callTally(tok, gymId)
+  expect(mine.status, 'the gym owner reads their own drawer').toBe(200)
+  const rows = (await mine.json()) as { payment_method: string; usd: number; lbp: number }[]
+  expect(rows.some((r) => r.payment_method === 'cash_lbp'), 'the seeded cash_lbp collections are tallied').toBe(true)
+
+  // (c) The SAME staff token naming a DIFFERENT gym → refused, not silently
+  //     re-scoped and not answered with the caller's own gym. A uuid that belongs to
+  //     nobody is the sharpest form of the test: the only thing that can reject it is
+  //     the assertion itself.
+  const other = await callTally(tok, '00000000-0000-4000-8000-000000000000')
+  expect(other.status, 'the p_gym_id argument is an assertion, never the scope').toBe(403)
+  expect(await other.text()).toContain('cash drawer')
+})

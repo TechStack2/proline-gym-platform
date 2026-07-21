@@ -175,3 +175,55 @@ SELECT * FROM pg_temp.explain_tally(:'owner_uid', 'AFTER (aged table) — unscop
 SELECT * FROM pg_temp.explain_tally_scoped(:'owner_uid', :'gym_id', 'AFTER (aged table) — gym-scoped + index');
 
 \echo '════════ done ════════'
+
+\echo '════════ 6. THE FIX — 000108 get_daily_tally (SECURITY DEFINER) ════════'
+-- Re-inflate to the volume that hurt, ALL dated today (the e2e gate's own shape, and
+-- the shape no date index can prune).
+SELECT pg_temp.add_payments(6000) AS payments_now \gset
+UPDATE public.payments SET payment_date = now();
+ANALYZE public.payments;
+SELECT count(*) AS rows_all_today FROM public.payments;
+
+\echo '── the OLD read (table select, per-row RLS cascade) ──'
+SELECT pg_temp.rls_cost(:'owner_uid');
+
+\echo '── the NEW read (the definer RPC), same session, same rows ──'
+CREATE OR REPLACE FUNCTION pg_temp.time_rpc(p_uid uuid, p_gym uuid)
+RETURNS text LANGUAGE plpgsql AS $$
+DECLARE t0 timestamptz; ms numeric; n int;
+BEGIN
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  t0 := clock_timestamp();
+  SELECT count(*) INTO n FROM get_daily_tally(p_gym, current_date);
+  ms := EXTRACT(epoch FROM clock_timestamp() - t0) * 1000;
+  RESET ROLE;
+  RETURN format('get_daily_tally → %s method rows in %s ms', n, round(ms, 1));
+END $$;
+SELECT pg_temp.time_rpc(:'owner_uid', :'gym_id');
+
+\echo '── and it FAILS CLOSED: same call naming a gym the caller does not own ──'
+CREATE OR REPLACE FUNCTION pg_temp.probe_denied(p_uid uuid)
+RETURNS text LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  PERFORM * FROM get_daily_tally('00000000-0000-4000-8000-000000000000'::uuid, current_date);
+  RESET ROLE;
+  RETURN 'NOT DENIED — the gym argument re-scoped the read (BUG)';
+EXCEPTION WHEN OTHERS THEN
+  RESET ROLE;
+  RETURN format('denied as expected: %s (%s)', SQLERRM, SQLSTATE);
+END $$;
+SELECT pg_temp.probe_denied(:'owner_uid');
+
+\echo '── the plan the RPC actually runs ──'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT p.payment_method::text, sum(p.amount_usd), sum(p.amount_lbp)
+FROM payments p JOIN invoices i ON i.id = p.invoice_id
+WHERE i.gym_id = :'gym_id'
+  AND p.payment_date >= current_date::timestamptz
+  AND p.payment_date < (current_date + 1)::timestamptz
+GROUP BY p.payment_method;
