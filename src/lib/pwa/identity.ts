@@ -13,12 +13,18 @@
  *    change — "where cleanly resolvable"). Cached per request.
  */
 import { cache } from 'react';
+import { createTranslator } from 'next-intl';
 import { createClient } from '@/lib/supabase/server';
 import { DEFAULT_GYM_SLUG, safeBrandColor, type LandingGym } from '@/lib/marketing/gym';
 import { storagePublicUrl } from '@/lib/storage/public-url';
+import { processedIconPath } from '@/lib/pwa/icon-paths';
+import enMessages from '@/i18n/messages/en.json';
+import arMessages from '@/i18n/messages/ar.json';
+import frMessages from '@/i18n/messages/fr.json';
 
-// The byte-identical default manifest (mirrors public/manifest.json). The dynamic
-// route emits EXACTLY this for the default gym or any gym with unset fields.
+// The byte-identical default identity. (public/manifest.json is GONE — W2c §5:
+// the dynamic route is the ONLY manifest; a stale static copy could never carry
+// per-tenant or per-locale identity and was pure precache dead weight.)
 const DEFAULT_NAME = 'PRO LINE Gym';
 const DEFAULT_SHORT = 'PRO LINE';
 const DEFAULT_THEME = '#cd1419';
@@ -29,37 +35,82 @@ const DEFAULT_ICONS = [72, 96, 128, 144, 152, 192, 384, 512].map((s) => ({
   purpose: 'any maskable',
 }));
 
-export function buildGymManifest(gym: LandingGym | null) {
-  // The default gym keeps today's exact static values; any OTHER gym overrides
-  // only name/short_name/theme_color/icons from its own row (each field NULL →
-  // the default), so an unset tenant renders byte-equivalently to today.
+export type ManifestLocale = 'ar' | 'en' | 'fr';
+const MESSAGES: Record<ManifestLocale, unknown> = { en: enMessages, ar: arMessages, fr: frMessages };
+
+/**
+ * §5: does the processed maskable set exist for this logo? The uploader writes
+ * `gym-icon-192/512/180.png` next to the logo; there is no DB record (no
+ * migration), so existence is probed once per request (react cache) with a
+ * short timeout — a miss (legacy logo, storage down) degrades to the legacy
+ * icon behavior, never a broken install.
+ */
+const hasProcessedIcons = cache(async (icon192Url: string): Promise<boolean> => {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch(icon192Url, { method: 'HEAD', signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(t);
+    return res.ok;
+  } catch {
+    return false;
+  }
+});
+
+export async function buildGymManifest(
+  gym: LandingGym | null,
+  opts: { locale?: ManifestLocale; theme?: 'light' | 'dark' } = {},
+) {
+  // The default gym keeps its static identity values; any OTHER gym overrides
+  // name/short_name/theme_color/icons from its own row (each field NULL → the
+  // default). W2c (§5, DA-15/16): the manifest additionally varies by LOCALE
+  // (start_url/lang/dir/description — an Arabic owner's installed app opens in
+  // Arabic) and by the installing user's stored THEME (background_color = the
+  // splash ground; stored-theme-at-install approximation — the manifest link
+  // carries ?theme= only when the app booted dark, so a later toggle does not
+  // retroactively change an existing install).
+  const locale: ManifestLocale = opts.locale === 'ar' || opts.locale === 'fr' ? opts.locale : 'en';
+  const t = createTranslator({ locale, messages: MESSAGES[locale] as never, namespace: 'pwa' });
   const isDefault = !gym || gym.slug === DEFAULT_GYM_SLUG;
   const name = isDefault ? DEFAULT_NAME : gym!.name_en || DEFAULT_NAME;
   const shortName = isDefault ? DEFAULT_SHORT : gym!.name_en || DEFAULT_SHORT;
   const themeColor = isDefault ? DEFAULT_THEME : safeBrandColor(gym!.brand_color);
+
   // AVATAR-PATHS: logo_url is a stored bucket path → resolve to a public URL for the
   // manifest icon src (a committed '/…' asset or legacy absolute url passes through).
   const logoIcon = storagePublicUrl('avatars', gym?.logo_url);
-  const icons =
-    !isDefault && logoIcon
-      ? [
-          { src: logoIcon, sizes: '192x192', purpose: 'any' },
-          { src: logoIcon, sizes: '512x512', purpose: 'any' },
-        ]
-      : DEFAULT_ICONS;
+  let icons: Array<{ src: string; sizes: string; type?: string; purpose: string }> = DEFAULT_ICONS;
+  if (!isDefault && logoIcon && gym?.logo_url) {
+    const icon192 = storagePublicUrl('avatars', processedIconPath(gym.logo_url, 192));
+    const icon512 = storagePublicUrl('avatars', processedIconPath(gym.logo_url, 512));
+    if (icon192 && icon512 && (await hasProcessedIcons(icon192))) {
+      // §5: REAL padded maskable squares emitted at upload — the sizes are true.
+      icons = [
+        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      ];
+    } else {
+      // Legacy logo (uploaded before W2c): the raw image is still the best
+      // identity available, but the sizes STOP LYING — a rectangle is not a
+      // 192/512 square, so it is declared `sizes:'any'` and never maskable.
+      icons = [{ src: logoIcon, sizes: 'any', purpose: 'any' }];
+    }
+  }
 
   return {
     name,
     short_name: shortName,
-    description: 'PRO LINE Gym Management Platform — Tri-lingual martial arts gym management',
-    start_url: '/',
+    // §5: the gym's own identity, localized — never the vendor pitch.
+    description: t('manifestDescription', { gym: name }),
+    start_url: `/${locale}`,
     display: 'standalone',
     orientation: 'any',
-    background_color: '#252525',
+    // §5: the splash ground follows the stored theme at install time.
+    background_color: opts.theme === 'dark' ? '#131317' : '#ffffff',
     theme_color: themeColor,
     scope: '/',
-    lang: 'en',
-    dir: 'ltr',
+    lang: locale,
+    dir: locale === 'ar' ? 'rtl' : 'ltr',
     categories: ['health', 'fitness', 'sports'],
     icons,
     screenshots: [],
@@ -93,6 +144,26 @@ export const getCurrentUserGym = cache(async (): Promise<UserGym | null> => {
     return null; // never let identity resolution break metadata → fall back to default
   }
 });
+
+/**
+ * W2c §5 Apple layer: the apple-touch-icon for the SIGNED-IN user's gym — the
+ * processed 180×180 square when the upload-time set exists (probed via the same
+ * cached 192 HEAD the manifest uses), else the shipped 192 default (Safari
+ * scales it). Members resolve no gym row → the default, same as the favicon.
+ */
+export async function getAppleTouchIconUrl(): Promise<string> {
+  try {
+    const gym = await getCurrentUserGym();
+    if (gym?.logo_url && gym.slug !== DEFAULT_GYM_SLUG) {
+      const url180 = storagePublicUrl('avatars', processedIconPath(gym.logo_url, 180));
+      const probe192 = storagePublicUrl('avatars', processedIconPath(gym.logo_url, 192));
+      if (url180 && probe192 && (await hasProcessedIcons(probe192))) return url180;
+    }
+  } catch {
+    // fall through to the default — identity resolution must never break metadata
+  }
+  return '/icons/icon-192x192.png';
+}
 
 // WL-CHROME: the authed user's PWA / browser status-bar theme colour — the gym brand for a
 // real tenant, the byte-identical Proline crimson for the default gym or any unset field.

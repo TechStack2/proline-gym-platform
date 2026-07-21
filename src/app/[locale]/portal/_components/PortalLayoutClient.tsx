@@ -11,6 +11,7 @@ import { LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { PushPrompt } from '@/components/push/push-prompt';
+import { OfflineIdentityStamp } from '@/components/pwa/offline-identity-stamp';
 import { HeaderAvatar } from '@/components/shared/header-avatar';
 import { PortalContent } from '@/components/portal/portal-kit';
 
@@ -112,6 +113,7 @@ export function PortalLayoutClient({ children, locale, gymName, logoUrl }: Props
 
         <main className="flex-1 overflow-y-auto">
           <PushPrompt />
+          <OfflineIdentityStamp gymName={gymName} locale={locale} />
           <PageTransition direction="forward" isActive={true} locale={locale}>
             {/* PERF-1 #5c: the fixed mobile TabBar clearance lives here (and in
                 PortalContent) — the last row must never hide behind the bar. */}

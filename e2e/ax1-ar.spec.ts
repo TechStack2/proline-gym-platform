@@ -35,14 +35,21 @@ async function assertArabicActive(page: Page, label: string, knownArabic: string
   expect(leak, `${label}: leaked a raw i18n key → "${leak?.[0]}"`).toBeNull();
 }
 
-// DS-2: the PWA theme-color is now per light/dark (two media-scoped meta tags).
-// Select by scheme so we can assert BOTH the light identity color and the shared
-// dark-ground (#131317) status-bar color.
+// PREMISE UPDATED (W2c §5/DA-62): theme-color now follows the APP's html.dark
+// state, not the OS media query — ONE meta whose content the boot script /
+// ThemeToggle swap. 'light' = the meta as served (the shell's light identity
+// colour); 'dark' = the same meta after booting the app with the stored dark
+// theme (reload with localStorage.theme='dark') — asserting the app-state
+// behaviour DA-62 demanded, which the old media-scoped pair could not do.
 async function themeColor(page: Page, scheme: 'light' | 'dark' = 'light'): Promise<string | null> {
-  return page
-    .locator(`meta[name="theme-color"][media="(prefers-color-scheme: ${scheme})"]`)
-    .first()
-    .getAttribute('content');
+  if (scheme === 'dark') {
+    await page.evaluate(() => localStorage.setItem('theme', 'dark'));
+    await page.reload();
+    const v = await page.locator('meta[name="theme-color"]').first().getAttribute('content');
+    await page.evaluate(() => localStorage.removeItem('theme'));
+    return v;
+  }
+  return page.locator('meta[name="theme-color"]').first().getAttribute('content');
 }
 
 test('AX-1 · /ar renders Arabic on every shell + brand font without layout shift + shell identity badges', async ({ browser }) => {

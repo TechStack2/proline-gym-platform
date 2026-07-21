@@ -3422,9 +3422,20 @@
         "title": "Installer cette application",
         "s1": "Ouvrez le menu du navigateur.",
         "s2": "Choisissez « Installer » ou « Ajouter à l'écran d'accueil »."
+      },
+      "androidChrome": {
+        "title": "Installer {gym} (Chrome)",
+        "s1": "Touchez l'icône d'installation dans la barre d'adresse — ou le menu ⋮.",
+        "s2": "Choisissez « Installer l'application »."
       }
     },
-    "appFallback": "l'application"
+    "appFallback": "l'application",
+    "manifestDescription": "{gym} — cours, planning, progression et paiements dans une seule app.",
+    "roleDescription": {
+      "member": "Votre salle dans la poche — planning, progression et factures {gym} sur cet appareil.",
+      "coach": "Votre journée en un coup d'œil — cours, présences et séances PT {gym} sur cet appareil.",
+      "staff": "Installez {gym} sur cet appareil pour un accueil plus rapide, prêt hors ligne."
+    }
   },
   "coachEdit": {
     "title": "Modifier mon profil public",

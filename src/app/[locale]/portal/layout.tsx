@@ -11,10 +11,10 @@ export const viewport: Viewport = {
   // DA-2: opt into the notch/home-indicator area so the shells' env(safe-area-inset-*)
   // padding actually resolves on standalone iOS (0 without viewport-fit=cover).
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#0e7490' },
-    { media: '(prefers-color-scheme: dark)', color: '#131317' },
-  ],
+  // W2c/DA-62: ONE light meta — theme-color follows the APP's html.dark state
+  // (the boot script + ThemeToggle swap in the shared #131317 dark ground), not
+  // the OS media query it used to track via a media-scoped pair.
+  themeColor: '#0e7490',
 }
 
 type Props = { children: React.ReactNode; params: { locale: string } }

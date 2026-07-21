@@ -9,12 +9,27 @@
  * otherwise it shows the per-platform manual steps (macOS Safari "Add to Dock",
  * Mac/Win Chrome-Edge address-bar install icon). Already-installed → renders nothing.
  */
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { usePwaInstall } from '@/lib/pwa/use-pwa-install'
 import { Download, X, CheckCircle2 } from 'lucide-react'
 
-export function InstallAppCard({ locale, gymName }: { locale: string; gymName?: string }) {
+export type InstallCardRole = 'member' | 'coach' | 'staff'
+
+export function InstallAppCard({
+  locale,
+  gymName,
+  logoUrl,
+  role = 'staff',
+}: {
+  locale: string
+  gymName?: string
+  /** W2c §5: the USER's gym logo (the shells' chrome read) — never the host default's. */
+  logoUrl?: string | null
+  /** W2c §5: role-aware pitch — member/coach/staff each get their own copy. */
+  role?: InstallCardRole
+}) {
   const t = useTranslations('pwa')
   const isRTL = locale === 'ar'
   const { canPrompt, shouldOffer, instructions, dismiss, promptInstall } = usePwaInstall()
@@ -22,12 +37,12 @@ export function InstallAppCard({ locale, gymName }: { locale: string; gymName?: 
   // Already installed (standalone) / dismissed → no nag.
   if (!shouldOffer) return null
 
-  // TENANT-CONTENT: the install card is white-labelled — the gym's own name +
-  // initial, not the hardcoded "Proline"/"PL". Falls back only if no gym resolved.
+  // TENANT-CONTENT: the install card is white-labelled — the gym's own logo (or
+  // name-initial monogram), not the hardcoded "Proline"/"PL".
   const gym = (gymName || '').trim()
   const initial = gym ? gym.charAt(0).toUpperCase() : 'PL'
   // DA-15: never interpolate an empty name into the copy ('choose "Install ".') — fall
-  // back to a neutral label when no gym resolved. (Tenant/role/placement fixes = Wave 2.)
+  // back to a neutral label when no gym resolved.
   const gymLabel = gym || t('appFallback')
 
   const onInstall = async () => {
@@ -40,10 +55,19 @@ export function InstallAppCard({ locale, gymName }: { locale: string; gymName?: 
       className="rounded-2xl border border-primary-700/20 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-700 text-sm font-extrabold text-primary-foreground">{initial}</div>
+          <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary-700 text-sm font-extrabold text-primary-foreground">
+            {logoUrl ? (
+              <Image src={logoUrl} alt="" width={40} height={40} className="h-full w-full object-cover" data-testid="install-app-logo" />
+            ) : (
+              initial
+            )}
+          </div>
           <div>
             <p className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('cardTitle')}</p>
-            <p className="mt-0.5 text-xs text-gray-500">{t('cardDescription', { gym: gymLabel })}</p>
+            {/* §5: the pitch is the ROLE's — member/coach/staff each hear their own. */}
+            <p className="mt-0.5 text-xs text-gray-500" data-testid="install-app-copy" data-role={role}>
+              {t(`roleDescription.${role}`, { gym: gymLabel })}
+            </p>
           </div>
         </div>
         <button type="button" data-testid="install-app-dismiss" onClick={dismiss} aria-label={t('dismissButton')}

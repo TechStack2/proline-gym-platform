@@ -82,8 +82,10 @@ const classBarColor = (page: import('@playwright/test').Page) =>
   page.locator('[data-testid="today-class-row"] span[data-chipbg="brand"]').first()
     .evaluate((el) => getComputedStyle(el).backgroundColor)
 // WL-CHROME: the light <meta name="theme-color"> content (the PWA/status-bar colour).
+// W2c §5/DA-62: ONE meta now (app-state-driven; no media attribute) — with no
+// stored theme the app boots light, so the content IS the light identity colour.
 const lightThemeColor = (page: import('@playwright/test').Page) =>
-  page.locator('meta[name="theme-color"][media="(prefers-color-scheme: light)"]').getAttribute('content')
+  page.locator('meta[name="theme-color"]').first().getAttribute('content')
 // WL-CHROME: the STAFF shell chrome bg (top-accent stripe / role badge) — only in the
 // mobile NativeHeader (the <lg shell), so read it on a mobile viewport.
 const bgColor = (page: import('@playwright/test').Page, testid: string) =>

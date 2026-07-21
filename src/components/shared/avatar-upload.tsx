@@ -23,7 +23,7 @@ import { Camera, Loader2 } from 'lucide-react'
  * (heic2any) that transcodes to JPEG, then decode that. It's imported LAZILY, only
  * when native decode fails, so the JPEG/PNG happy path never pays the bundle cost.
  */
-async function decodeToBitmap(file: File): Promise<ImageBitmap> {
+export async function decodeToBitmap(file: File): Promise<ImageBitmap> {
   try {
     return await createImageBitmap(file)
   } catch {

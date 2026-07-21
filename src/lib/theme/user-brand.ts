@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
@@ -35,7 +36,9 @@ export type UserGymChrome = {
  * Same server-only admin read, widened; same degrade-to-empty contract. The
  * default gym keeps the static /logo.jpg (the staff-shell convention).
  */
-export async function getUserGymChrome(userId: string, locale: string): Promise<UserGymChrome> {
+// W2c: cache()d — the shell layout AND the hub page (install card identity) both
+// call this in one request; the admin read runs once.
+export const getUserGymChrome = cache(async (userId: string, locale: string): Promise<UserGymChrome> => {
   try {
     const { DEFAULT_GYM_SLUG } = await import('@/lib/marketing/gym')
     const { storagePublicUrl } = await import('@/lib/storage/public-url')
@@ -60,4 +63,4 @@ export async function getUserGymChrome(userId: string, locale: string): Promise<
   } catch {
     return { brandColor: null, gymName: '', logoUrl: null }
   }
-}
+})

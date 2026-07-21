@@ -12,8 +12,11 @@ import {
   Building2, Mail, Globe, Camera, Loader2, Palette,
   ImageIcon, Share2, MapPin, Clock, CalendarClock, type LucideIcon,
 } from 'lucide-react';
-import { downscaleImage } from '@/components/shared/avatar-upload';
+import { downscaleImage, decodeToBitmap } from '@/components/shared/avatar-upload';
 import { storagePublicUrl } from '@/lib/storage/public-url';
+import { renderMaskableIcon } from '@/lib/pwa/maskable';
+import { processedIconPath, PROCESSED_ICON_SIZES } from '@/lib/pwa/icon-paths';
+import { safeBrandColor } from '@/lib/theme/brand';
 import { saveGymSettings } from './gym-actions';
 import { TimezonePicker } from './timezone-picker';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
@@ -91,8 +94,14 @@ const Section = ({ icon: Icon, title, rtl, id, children }: { icon: LucideIcon; t
 const CURRENCIES = ['USD', 'LBP', 'BOTH'] as const;
 
 /** Upload the gym logo (avatar-upload pattern: downscale → avatars bucket upsert
- * at `<gymId>/gym-logo.jpg` (staff path-scope, 000039) → gyms.logo_url, caller RLS). */
-async function uploadGymLogo(gymId: string, file: File): Promise<string> {
+ * at `<gymId>/gym-logo.jpg` (staff path-scope, 000039) → gyms.logo_url, caller RLS).
+ * W2c §5: the SAME upload also renders the REAL maskable icon set (512/192
+ * manifest + 180 apple-touch) — square PNGs, brand-color matte, logo contain-fit
+ * in the maskable safe zone — at the sibling paths the manifest builder probes
+ * (icon-paths.ts is the shared derivation). Icon failures are non-fatal: the
+ * logo upload must never break because an icon render did (the manifest then
+ * simply keeps the legacy behavior for this gym). */
+async function uploadGymLogo(gymId: string, file: File, brandColor?: string): Promise<string> {
   const supabase = createClient();
   const blob = await downscaleImage(file);
   const path = `${gymId}/gym-logo.jpg`;
@@ -106,6 +115,24 @@ async function uploadGymLogo(gymId: string, file: File): Promise<string> {
   // resolves it. Return a freshly-versioned absolute url for the optimistic UI only.
   const { error: gymErr } = await supabase.from('gyms').update({ logo_url: path }).eq('id', gymId);
   if (gymErr) throw gymErr;
+
+  try {
+    const bitmap = await decodeToBitmap(file);
+    const matte = safeBrandColor(brandColor);
+    for (const size of PROCESSED_ICON_SIZES) {
+      const icon = await renderMaskableIcon(bitmap, size, matte);
+      const { error: iconErr } = await supabase.storage
+        .from('avatars')
+        .upload(processedIconPath(path, size), icon, {
+          upsert: true,
+          contentType: 'image/png',
+          cacheControl: '3600',
+        });
+      if (iconErr) throw iconErr;
+    }
+  } catch (iconErr) {
+    console.warn('[pwa] maskable icon render failed — manifest keeps legacy icons', iconErr);
+  }
   return storagePublicUrl('avatars', path, Date.now());
 }
 
@@ -294,7 +321,7 @@ export function GymSettings({ gym, locale }: Props) {
     if (!file || !gym.id) return;
     setLogoBusy(true); setUploadError('');
     try {
-      const url = await uploadGymLogo(gym.id, file);
+      const url = await uploadGymLogo(gym.id, file, form.brand_color);
       setLogoUrl(url);
       router.refresh();
     } catch (err: any) {

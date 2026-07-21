@@ -46,11 +46,11 @@ export type LandingGym = {
 export { DEFAULT_CONTACT, resolveLandingContact, type LandingContact } from './contact';
 
 /** A valid 6-digit hex brand color, or the default crimson when unset/invalid.
- *  (Validated because it flows into an SVG attribute — only trust a real hex.) */
-export const DEFAULT_BRAND_COLOR = '#cd1419';
-export function safeBrandColor(c: string | null | undefined): string {
-  return c && /^#[0-9a-fA-F]{6}$/.test(c) ? c : DEFAULT_BRAND_COLOR;
-}
+ *  (Validated because it flows into an SVG attribute — only trust a real hex.)
+ *  W2c: canonical definition moved to the client-safe token file
+ *  (lib/theme/brand.ts) — the upload-time icon renderer needs it in the browser
+ *  and THIS module is server-only; re-exported here so no server consumer moves. */
+export { DEFAULT_BRAND_COLOR, safeBrandColor } from '@/lib/theme/brand';
 
 /**
  * WL-DOMAIN-ROUTING: map a request Host → the mapped gym's slug (or null when the

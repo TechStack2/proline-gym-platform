@@ -21,10 +21,10 @@ export async function generateViewport(): Promise<Viewport> {
     // DA-2: opt into the notch/home-indicator area so the shell's env(safe-area-inset-*)
     // padding actually resolves on standalone iOS (0 without viewport-fit=cover).
     viewportFit: 'cover',
-    themeColor: [
-      { media: '(prefers-color-scheme: light)', color: themeColor },
-      { media: '(prefers-color-scheme: dark)', color: '#131317' },
-    ],
+    // W2c/DA-62: ONE light meta (the gym brand) — theme-color follows the APP's
+    // html.dark state (boot script + ThemeToggle swap in the shared #131317
+    // dark ground), not the OS media query.
+    themeColor,
   }
 }
 

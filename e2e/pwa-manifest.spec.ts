@@ -67,12 +67,34 @@ test('PWA-IDENTITY · a mapped domain manifest carries THAT gym name/color/icon'
   expect(m.name, 'name is the mapped gym').toBe(NAME)
   expect(m.short_name, 'short_name is the mapped gym').toBe(NAME)
   expect(m.theme_color, 'theme_color is the gym brand color').toBe(BRAND)
-  // The gym's logo becomes the install icon (192 + 512 for installability).
+  // W2c §5 (premise updated, DA-16): the gym's raw logo is still the identity
+  // icon for a LEGACY logo (no processed maskable set uploaded) — but the sizes
+  // STOP LYING: a rectangle is declared `sizes:'any'`, never a fake 192/512
+  // maskable square. (Real squares appear only when the upload-time set exists —
+  // covered by the identity unit tests.)
   expect(m.icons?.[0]?.src, 'icon resolves the gym logo, not the default').toBe(LOGO)
-  expect(m.icons.some((i: { sizes: string }) => i.sizes === '512x512'), 'a 512 icon for install criteria').toBe(true)
+  expect(m.icons?.[0]?.sizes, 'legacy logo sizes stop lying').toBe('any')
+  expect(m.icons?.[0]?.purpose, 'legacy logo never claims maskable').toBe('any')
   // Structural fields stay put.
   expect(m.display).toBe('standalone')
-  expect(m.start_url).toBe('/')
+  // W2c §5: start_url carries the requested locale (default en when absent).
+  expect(m.start_url).toBe('/en')
+})
+
+test('PWA-IDENTITY · W2c §5: the manifest varies per locale + stored theme', async ({ request }) => {
+  // Arabic install → Arabic app: start_url/lang/dir follow ?locale=ar.
+  const ar = await (await request.get('/manifest.webmanifest?locale=ar')).json()
+  expect(ar.start_url, 'an Arabic install opens in Arabic').toBe('/ar')
+  expect(ar.lang).toBe('ar')
+  expect(ar.dir).toBe('rtl')
+  // Dark-theme install → dark splash ground; light default is the light ground.
+  const dark = await (await request.get('/manifest.webmanifest?locale=en&theme=dark')).json()
+  expect(dark.background_color, 'dark install gets the dark splash ground').toBe('#131317')
+  expect(dark.start_url).toBe('/en')
+  // The description is the gym identity, never the vendor pitch (DA-16).
+  const en = await (await request.get('/manifest.webmanifest?locale=en')).json()
+  expect(en.description).not.toContain('Management Platform')
+  expect(en.description, 'description carries the gym name').toContain('PRO LINE')
 })
 
 test('PWA-IDENTITY · an unmapped/vendor host manifest is today\'s default (no regression)', async ({ request }) => {
@@ -82,7 +104,10 @@ test('PWA-IDENTITY · an unmapped/vendor host manifest is today\'s default (no r
   expect(m.name, 'default name unchanged').toBe('PRO LINE Gym')
   expect(m.short_name, 'default short_name unchanged').toBe('PRO LINE')
   expect(m.theme_color, 'default theme_color unchanged').toBe('#cd1419')
-  expect(m.background_color).toBe('#252525')
+  // W2c §5 (premise updated): the splash ground is the LIGHT app ground by
+  // default (#ffffff; a dark-theme install gets #131317 via ?theme=dark) — the
+  // old #252525 was neither theme's real ground.
+  expect(m.background_color).toBe('#ffffff')
   // Default icons = the committed /icons set, not a gym logo.
   expect(m.icons?.[0]?.src, 'default icon is the committed asset').toBe('/icons/icon-72x72.png')
   expect(m.icons.length, 'all 8 default sizes present').toBe(8)

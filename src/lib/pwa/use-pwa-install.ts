@@ -15,7 +15,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
-export type InstallInstructions = 'macSafari' | 'chromiumDesktop' | 'iosSafari' | 'generic'
+export type InstallInstructions = 'macSafari' | 'chromiumDesktop' | 'androidChrome' | 'iosSafari' | 'generic'
 
 // Shared with the legacy bottom-bar prompt so a dismiss is remembered across both.
 const DISMISS_KEY = 'pwa_install_dismissed'
@@ -27,8 +27,16 @@ function detectInstructions(): InstallInstructions {
   const isChromium = /chrome|crios|edg/i.test(ua)
   const isSafari = /safari/i.test(ua) && !isChromium && !/fxios|firefox/i.test(ua)
   const isMac = /macintosh|mac os x/i.test(ua) && !isIOS
+  const isAndroid = /android/i.test(ua)
   if (isIOS && isSafari) return 'iosSafari'
+  // W2c §5: iOS non-Safari browsers can't reach A2HS from their own chrome —
+  // generic steps, never the desktop-Chrome address-bar copy (crios matched
+  // isChromium and got desktop instructions before).
+  if (isIOS) return 'generic'
   if (isMac && isSafari) return 'macSafari'
+  // W2c §5: Android Chrome's affordance is the ⋮ menu / install chip, not the
+  // desktop address-bar icon — its own step set.
+  if (isAndroid && isChromium) return 'androidChrome'
   if (isChromium) return 'chromiumDesktop'
   return 'generic'
 }

@@ -12,6 +12,7 @@ import { PortalCard, PortalCardTitle, PortalEmpty, DeskGrid } from '@/components
 import { ActionCard } from '@/components/dashboard/action-card'
 import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
+import { getUserGymChrome } from '@/lib/theme/user-brand'
 
 type Props = { params: { locale: string } }
 
@@ -47,6 +48,10 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+
+  // W2c §5: the USER's gym identity for the install card (cache()d — the layout
+  // already resolved it this request, so this is a free read).
+  const chrome = await getUserGymChrome(user.id, locale)
 
   const { data: coach } = await supabase
     .from('coaches')
@@ -386,8 +391,9 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
         </div>
       </PortalCard>
 
-      {/* PWA-BASICS R2 (placement per DA-15: below the coach's own day). */}
-      <InstallAppCard locale={locale} />
+      {/* PWA-BASICS R2 (placement per DA-15: below the coach's own day).
+          W2c §5: identity = the USER's gym (chrome read), coach-role pitch. */}
+      <InstallAppCard locale={locale} gymName={chrome.gymName} logoUrl={chrome.logoUrl} role="coach" />
       </>} />
     </div>
   )

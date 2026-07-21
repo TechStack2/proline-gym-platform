@@ -45,6 +45,51 @@ test.describe('PWA-INSTALL · desktop install + admin affordance', () => {
     }
   })
 
+  // W2c §5: the manual steps are chosen by PLATFORM (UA) — iOS Safari gets
+  // Share→Add-to-Home-Screen, Android Chrome gets the install-icon/⋮ steps,
+  // never the desktop address-bar copy.
+  for (const [label, ua, expectStep] of [
+    [
+      'iOS Safari',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      'iosSafari',
+    ],
+    [
+      'Android Chrome',
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+      'androidChrome',
+    ],
+  ] as const) {
+    test(`platform steps by UA — ${label}`, async ({ browser }) => {
+      test.setTimeout(90_000)
+      const ctx = await browser.newContext({
+        storageState: ROLES.owner.storage,
+        locale: 'en',
+        userAgent: ua,
+        viewport: { width: 390, height: 844 },
+      })
+      const page = await ctx.newPage()
+      try {
+        await page.goto('/en/today')
+        await page.evaluate(() => localStorage.removeItem('pwa_install_dismissed'))
+        await page.reload()
+        await expect(card(page).first(), `${label}: the card renders`).toBeVisible({ timeout: 15_000 })
+        const steps = vis(page, '[data-testid="install-app-instructions"]').first()
+        await expect(steps, `${label}: manual steps shown (no native prompt on this UA)`).toBeVisible()
+        // The rendered title is the platform's own step set (i18n text varies —
+        // assert via the platform-specific keyword the other platforms lack).
+        if (expectStep === 'iosSafari') {
+          await expect(steps, 'iOS steps mention Share / Add to Home Screen').toContainText(/share|home screen/i)
+        } else {
+          await expect(steps, 'Android steps mention the install icon / menu').toContainText(/install/i)
+          await expect(steps, 'Android steps are not the desktop address-bar copy').not.toContainText(/dock/i)
+        }
+      } finally {
+        await ctx.close()
+      }
+    })
+  }
+
   test('captured beforeinstallprompt → the button triggers the native prompt', async ({ browser }) => {
     test.setTimeout(90_000)
     const { ctx, page } = await ownerPage(browser)
