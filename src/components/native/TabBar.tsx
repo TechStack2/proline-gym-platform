@@ -60,8 +60,6 @@ export type TabBarProps = {
   forceVisible?: boolean;
   /** Opt out of hide-on-scroll entirely (the bar stays put). */
   hideOnScroll?: boolean;
-  /** Render the md+ side rail (staff uses it only in the md–lg band). */
-  showRail?: boolean;
 };
 
 /**
@@ -138,7 +136,6 @@ export function TabBar({
   scrollSelector,
   forceVisible = false,
   hideOnScroll = true,
-  showRail = true,
 }: TabBarProps) {
   assertTabCapacity(tabs, shell);
 
@@ -250,63 +247,10 @@ export function TabBar({
         })}
       </nav>
 
-      {/* ── Desktop side rail (md+). Carried over from NativeTabBar unchanged;
-             §4/W2 owns its layering + logical-side fix. ── */}
-      {showRail && (
-        <nav
-          aria-label={t('dashboard')}
-          data-testid="desktop-rail"
-          dir={isRTL ? 'rtl' : 'ltr'}
-          className={cn(
-            'fixed inset-y-0 z-40 hidden w-20 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+4rem)] md:flex',
-            'flex-col items-center gap-1 border-r border-gray-100 bg-white',
-            isRTL ? 'right-0 border-l' : 'left-0',
-          )}
-        >
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = isActive(tab.path);
-            const isAction = tab.path.startsWith('#');
-            const className = cn(
-              'flex w-[68px] flex-col items-center justify-center gap-0.5 rounded-xl py-2',
-              'text-[10px] transition-colors duration-200',
-              'touch-manipulation select-none',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
-              active
-                ? 'bg-black/5 font-bold text-[color:var(--shell-accent)]'
-                : 'font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600',
-            );
-            const content = (
-              <>
-                <Icon className="h-6 w-6" aria-hidden="true" />
-                <span className="max-w-full leading-none">{label(tab.key)}</span>
-              </>
-            );
-            return isAction ? (
-              <button
-                key={tab.key}
-                type="button"
-                data-testid={`rail-${tab.key}`}
-                onClick={() => onTabClick?.(tab.key)}
-                className={className}
-              >
-                {content}
-              </button>
-            ) : (
-              <Link
-                key={tab.key}
-                href={`/${locale}${tab.path}`}
-                data-testid={`rail-${tab.key}`}
-                aria-current={active ? 'page' : undefined}
-                onClick={() => onTabClick?.(tab.key)}
-                className={className}
-              >
-                {content}
-              </Link>
-            );
-          })}
-        </nav>
-      )}
+      {/* The legacy md+ side rail that lived here (carried over from NativeTabBar)
+          is GONE (W2b): every shell now renders the §4.1 DesktopRail, and with it
+          died the last physical-side `isRTL ? 'right-0' : 'left-0'` fork in shell
+          chrome. This primitive is the <768 bottom bar, nothing else. */}
     </>
   );
 }

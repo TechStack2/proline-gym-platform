@@ -19,6 +19,12 @@ export type ShellNavEntry = {
   /** Mobile bottom-bar membership (§3 ruling picks each shell's four). */
   mobilePrimary?: boolean
   badge?: number
+  /**
+   * Optional testid for the rail badge (testid-stability: the staff Inbox badge
+   * has always been `inbox-badge` and ia-nav asserts it — the badge keeps its
+   * name when the carrier chrome changes).
+   */
+  badgeTestId?: string
 }
 
 export type ShellNavSplit = {

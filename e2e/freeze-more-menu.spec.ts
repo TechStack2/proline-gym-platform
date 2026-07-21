@@ -18,10 +18,12 @@ import { ROLES } from './roles'
  * than a confusing actionability timeout.
  */
 // W1-FOUNDATION §2.2: the staff bar is the shared TabBar primitive now — real nav
-// ARIA, so the old `aria-controls$="-more"` hook is gone. The stable handles are the
-// testids, one per surface: bottom bar (mobile) and side rail (tablet).
-const MORE = '[data-testid="tab-more"]:visible, [data-testid="rail-more"]:visible'
-const MEMBERS = '[data-testid="tab-members"]:visible, [data-testid="rail-members"]:visible'
+// ARIA, so the old `aria-controls$="-more"` hook is gone. W2b (§4.1): the More
+// trigger exists ONLY below md — at ≥768 the rail lists every entry and there is
+// no sheet to freeze, so the sequence is mobile-only (the tablet test below
+// guards the ≥768 premise instead).
+const MORE = '[data-testid="tab-more"]:visible'
+const MEMBERS = '[data-testid="tab-members"]:visible, [data-testid="nav-members"]:visible'
 
 async function runFreezeSequence(page: Page) {
   await page.goto('/en/today', { waitUntil: 'domcontentloaded' })
@@ -73,10 +75,17 @@ test.describe('FREEZE-MORE-MENU', () => {
     await assertStillInteractive(page)
   })
 
-  test('tablet — More sheet backdrop + dismiss never wedges the app', async ({ page }) => {
+  // PREMISE UPDATED (W2b / §4.1): at tablet widths the staff shell is DESKTOP
+  // mode — the rail lists every nav entry and there is NO More trigger/sheet to
+  // freeze. This leg now guards that premise (no More surface ≥768) and that nav
+  // still works there — the freeze sequence itself is covered by the mobile leg.
+  test('tablet — no More surface ≥768 (rail lists everything); nav still works', async ({ page }) => {
     test.setTimeout(60_000)
     await page.setViewportSize({ width: 820, height: 1180 })
-    await runFreezeSequence(page)
-    await assertStillInteractive(page)
+    await page.goto('/en/today', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('desktop-sidebar'), 'the rail is up').toBeVisible({ timeout: 15_000 })
+    await expect(page.locator(MORE), 'no More trigger at tablet').toHaveCount(0)
+    await page.locator(MEMBERS).first().click()
+    await expect(page, 'rail navigation works at tablet').toHaveURL(/\/students(\b|\/|\?|$)/)
   })
 })

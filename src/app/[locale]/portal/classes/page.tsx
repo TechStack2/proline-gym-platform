@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/page-header'
 import { localizedName, one } from '@/lib/names'
 import { Calendar, Search } from 'lucide-react'
 import { PortalClassesClient } from './portal-classes-client'
@@ -128,10 +129,10 @@ export default async function PortalClassesPage({ params: { locale }, searchPara
   return (
     <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
       <div>
-        <h1 className={cn('hidden md:block text-lg font-bold text-gray-900', isRTL && 'font-arabic text-right')}>
-          {tt('title')}
-        </h1>
-        <p className={cn('text-sm text-gray-500 mt-0.5', isRTL && 'text-right')}>
+        {/* W2b R3: the ONE title primitive (testid `page-title`); mobile keeps
+            the always-visible subtitle line (chrome owns the mobile title). */}
+        <PageHeader title={tt('title')} subtitle={tt('subtitle')} variant="compact" />
+        <p className={cn('text-sm text-gray-500 md:hidden', isRTL && 'text-right')}>
           {tt('subtitle')}
         </p>
       </div>

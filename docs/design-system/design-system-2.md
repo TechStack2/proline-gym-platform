@@ -17,7 +17,7 @@
 - Raw hex in TS/TSX string literals that reach `className`/`style`
 - New `dark:` variants in tenant surfaces (the channel-var flip owns dark; `dark:` fights it — the audit found exactly one legitimate-looking `dark:` and it was a bug)
 
-**Allowlist (the only files that may contain color literals):** `src/app/globals.css`, `tailwind.config.ts`, `src/lib/theme/brand.ts`, `src/lib/design-tokens.ts`, `public/offline.html` (until its Wave-2 tenant-neutral pass), email/print templates that never render in-app.
+**Allowlist (the only files that may contain color literals):** `src/app/globals.css`, `tailwind.config.ts`, `src/lib/theme/brand.ts`, `public/offline.html` (until its Wave-2 tenant-neutral pass), email/print templates that never render in-app. (`src/lib/design-tokens.ts` was on this list until DS2-TOKENS deleted the file — its live values moved into `tailwind.config.ts`/`globals.css`; recorded here per the allowlist-integrity guard, which fails on entries naming nonexistent files.)
 
 **Named exceptions become tokens, not literals:** WhatsApp green → `--c-whatsapp: 37 211 102` (+ `--c-whatsapp-deep`); the gold belt gradient stays as the existing `.text-belt-gradient` utility (already in globals.css). If a hue is worth using, it is worth naming.
 

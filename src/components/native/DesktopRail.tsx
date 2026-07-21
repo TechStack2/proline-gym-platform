@@ -44,11 +44,23 @@ export type DesktopRailProps = {
    * factor — ax1/on1 assert it at desktop).
    */
   shell?: 'staff' | 'coach' | 'portal';
+  /**
+   * Testid-stability (W2b): the staff shell's rail REPLACES the legacy Sidebar,
+   * and the doctrine keeps a testid on the element with the same role — so staff
+   * passes its historical names (`desktop-sidebar`, `nav-*`) and the five spec
+   * files that navigate staff by them keep passing. Portal/coach use the
+   * defaults (`desktop-rail`, `rail-*`).
+   */
+  railTestId?: string;
+  itemTestIdPrefix?: string;
 };
 
-function RailBadge({ count }: { count: number }) {
+function RailBadge({ count, testId }: { count: number; testId?: string }) {
   return (
-    <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary-700 px-1 text-[10px] font-bold leading-none text-primary-foreground">
+    <span
+      data-testid={testId}
+      className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary-700 px-1 text-[10px] font-bold leading-none text-primary-foreground"
+    >
       {count > 99 ? '99+' : count}
     </span>
   );
@@ -61,6 +73,8 @@ export function DesktopRail({
   accent = 'brand',
   shellLabelKey,
   shell,
+  railTestId = 'desktop-rail',
+  itemTestIdPrefix = 'rail',
 }: DesktopRailProps) {
   const pathname = usePathname();
   const t = useTranslations('nav');
@@ -77,7 +91,7 @@ export function DesktopRail({
   return (
     <nav
       aria-label={t('dashboard')}
-      data-testid="desktop-rail"
+      data-testid={railTestId}
       className={cn(
         // §4.1: fixed, full height, logical start side, z-40, width = the token.
         'fixed inset-y-0 start-0 z-40 hidden w-[var(--rail-w)] md:flex',
@@ -88,10 +102,14 @@ export function DesktopRail({
       {/* Shell identity chip — expanded rail only (the icon rail has no room). */}
       {shellLabelKey && (
         <div className="mb-2 hidden px-4 lg:block">
+          {/* WL-CHROME: staff's --surface follows the BRAND, so its chip text must
+              pair with the brand's luminance (--shell-chip-fg = rgb(var(--c-brand-fg))
+              on .shell-staff). Portal/coach surfaces are fixed dark role hues — the
+              #fff fallback resolves there, byte-identical to the previous text-white. */}
           <span
             data-testid="shell-badge"
             data-shell={shell}
-            className="inline-flex items-center rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-white"
+            className="inline-flex items-center rounded-full bg-[color:var(--surface)] px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-[color:var(--shell-chip-fg)]"
           >
             {tCommon(shellLabelKey as never)}
           </span>
@@ -106,7 +124,7 @@ export function DesktopRail({
             <li key={item.key}>
               <Link
                 href={`/${locale}${item.path}`}
-                data-testid={`rail-${item.key}`}
+                data-testid={`${itemTestIdPrefix}-${item.key}`}
                 aria-current={active ? 'page' : undefined}
                 title={t(item.key as never)}
                 className={cn(
@@ -134,7 +152,7 @@ export function DesktopRail({
                 <span className="hidden min-w-0 flex-1 truncate lg:inline">{t(item.key as never)}</span>
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="hidden lg:inline-flex">
-                    <RailBadge count={item.badge} />
+                    <RailBadge count={item.badge} testId={item.badgeTestId} />
                   </span>
                 )}
               </Link>

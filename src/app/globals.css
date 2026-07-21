@@ -558,6 +558,12 @@
   .shell-staff  { --surface: #cd1419; --shell-accent: var(--surface); } /* reception — crimson */
   .shell-portal { --surface: #b45309; --shell-accent: var(--surface); } /* member — warm bronze */
   .shell-coach  { --surface: #475569; --shell-accent: var(--surface); } /* coach — graphite */
+  /* W2b WL-CHROME: the staff shell's --surface follows the gym BRAND (WL-THEME), so
+     chip text on it pairs with the brand's luminance-matched foreground. Portal/
+     coach surfaces are fixed dark role hues — they use the chip's #fff fallback. */
+  .shell-staff  { --shell-chip-fg: rgb(var(--c-brand-fg, 255 255 255)); }
+  .shell-portal,
+  .shell-coach  { --shell-chip-fg: #fff; } /* fixed dark role hues → white text, as before */
 }
 
 /* PRINT-FIX — thermal 80mm receipt (field finding [8]). The receipt printed wrong

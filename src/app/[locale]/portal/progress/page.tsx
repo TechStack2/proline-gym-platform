@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { beltRankLabel } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
 import { pctWidthClass } from '@/lib/utils/bar-width';
 import { Award, TrendingUp, CalendarCheck, Target } from 'lucide-react';
 import { computeEligibility } from '@/lib/eligibility';
@@ -83,10 +84,11 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
   return (
     <div className={cn('p-4 space-y-5', isRTL && 'rtl')} data-testid="portal-progress">
       <div className="pt-2">
-        {/* PORTAL-SHELL: title echoes the mobile chrome large title → desktop-only;
-            mobile leads with the subtitle (chrome owns the title). */}
-        <h1 data-testid="portal-page-title" className={cn('hidden md:block text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
-        <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
+        {/* DS 2.0 §2.1 (W2b R3): the ONE title primitive — testid `page-title`
+            (was the shell-local `portal-page-title`). Desktop-only, as before;
+            mobile still leads with the subtitle (chrome owns the title). */}
+        <PageHeader title={t('title')} subtitle={t('subtitle')} />
+        <p className="text-sm text-gray-500 md:hidden">{t('subtitle')}</p>
       </div>
 
       {/* W2a §4.2 Rule 1: main = stats + eligibility (the progress flow);

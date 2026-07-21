@@ -68,3 +68,4 @@ scratchpad/
 # DESIGN-AUDIT capture artifacts (full raw packs — curated evidence lives in docs/design-audit/shots)
 design-audit-artifacts/
 design-audit-rerun/
+w2b-artifacts/

@@ -1,6 +1,3 @@
-export { NativeTabBar } from './NativeTabBar';
-export type { TabItem, NativeTabBarProps } from './NativeTabBar';
-
 export { NativeHeader } from './NativeHeader';
 export type { NativeHeaderProps } from './NativeHeader';
 

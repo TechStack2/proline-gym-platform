@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { CalendarClock, CheckCircle2, XCircle, Phone } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { CheckCircle2, XCircle, Phone } from 'lucide-react';
 import { recordTrialOutcome } from '@/app/[locale]/(dashboard)/leads/actions';
 import { useErrorText } from '@/lib/errors/use-error-text';
 import { DeskGrid } from '@/components/portal/portal-kit';
@@ -52,11 +53,10 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
 
   return (
     <div className="p-4 space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* COACH-SHELL: echoes the mobile chrome large title → desktop-only (md:flex keeps the icon row). */}
-      <h1 data-testid="coach-page-title" className={cn('hidden md:flex text-xl font-bold text-gray-900 items-center gap-2', isRTL && 'font-arabic')}>
-        <CalendarClock className="h-5 w-5 text-primary-600" />
-        {tc('title')}
-      </h1>
+      {/* W2b R3: the ONE title primitive (testid `page-title` — was
+          `coach-page-title` with an inline icon; the decoration goes, per the
+          primitive's one-title contract). Desktop-only, as before. */}
+      <PageHeader title={tc('title')} variant="compact" />
 
       {trials.length === 0 ? (
         <div className="text-center py-16">

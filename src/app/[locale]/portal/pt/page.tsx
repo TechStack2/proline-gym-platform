@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
 import { localizedName, one } from '@/lib/names';
 import { STATUS_BADGE, statusLabel } from '@/lib/billing/reconcile';
 import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/shared/pt-package-card';
@@ -142,10 +143,10 @@ export default async function PortalPtPage({ params }: Props) {
   return (
     <div className="p-4 space-y-4">
       <div>
-        <h1 className={cn('hidden md:block text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>
-          {t('pt_title')}
-        </h1>
-        <p className="text-sm text-gray-500 mt-0.5">{t('pt_request_subtitle')}</p>
+        {/* W2b R3: the ONE title primitive (testid `page-title`); mobile keeps
+            the always-visible subtitle line (chrome owns the mobile title). */}
+        <PageHeader title={t('pt_title')} subtitle={t('pt_request_subtitle')} variant="compact" />
+        <p className="text-sm text-gray-500 md:hidden">{t('pt_request_subtitle')}</p>
       </div>
 
       {/* W2a §4.2 Rule 1: main = my packages (the primary flow); aside = the
