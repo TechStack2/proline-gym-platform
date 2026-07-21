@@ -36,7 +36,24 @@ async function injectLead(page: Page, opId: string, first: string, disciplineId:
   // and `tx.onabort`, the latter being how a transaction dies on a version change or
   // quota abort (`onerror` does NOT fire for an abort) — and the per-attempt bound
   // catches whatever a browser does that nobody enumerated.
+  //
+  // OBSERVED (union 29850018502, this same helper): the bound fires repeatedly —
+  // "attempt did not settle within 5000ms" four times over — which means the hang is
+  // NOT the `onblocked` path hypothesised above (that now rejects instantly). No IDB
+  // callback fires at all, which is what a plain versionless `indexedDB.open()` does
+  // while another connection sits mid-upgrade: the request simply queues, and
+  // `onblocked` is never one of its outcomes. That wedge lives in the PAGE, so
+  // re-running the same evaluate against the same document can never clear it — only
+  // tearing the document down can. Attempts after the first therefore RE-ANCHOR on a
+  // freshly loaded /desk. The first attempt does not (its caller already anchored), so
+  // the happy path is unchanged and the total budget stays 20s; only the per-attempt
+  // bound grows to cover a navigation.
+  let attempt = 0
   await untilSettled(async () => {
+    if (attempt++ > 0) {
+      await page.goto('/en/desk')
+      await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 5_000 })
+    }
     await page.evaluate(({ opId, first, disciplineId }) => new Promise<void>((resolve, reject) => {
       const open = indexedDB.open('proline_offline_db')
       open.onsuccess = () => {
@@ -54,7 +71,7 @@ async function injectLead(page: Page, opId: string, first: string, disciplineId:
       open.onerror = () => reject(open.error)
       open.onblocked = () => reject(new Error('IDB_OPEN_BLOCKED'))
     }), { opId, first, disciplineId })
-  })
+  }, { attemptMs: 8_000 })
 }
 
 const leadCards = (page: Page, fullName: string) =>
