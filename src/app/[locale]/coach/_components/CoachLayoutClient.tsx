@@ -7,7 +7,7 @@ import { NativeHeader, PageTransition, DesktopRail, IdentityBar, MoreSheet } fro
 import { TabBar } from '@/components/native/TabBar';
 import { COACH_NAV, coachNav, COACH_BASE_PATH } from './CoachTabConfig';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut } from 'lucide-react';
+
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { PushPrompt } from '@/components/push/push-prompt';
@@ -90,25 +90,23 @@ export function CoachLayoutClient({ children, locale, gymName, logoUrl, trialsTo
           onSignOut={handleLogout}
         />
 
+        {/* W3a (DA-17/18): slim single-row chrome — the COACH badge + "● Coach"
+            duplication dies (one shell badge), the gym identity rides the start
+            slot, and the header logout moves to the More sheet (§1.3). */}
         <div className="md:hidden">
           <NativeHeader
             title={headerTitle}
             locale={locale}
             variant="large"
             titleMobileOnly
-            role="coach"
             shell="coach"
+            slim
+            gymName={gymName}
+            logoUrl={logoUrl}
             rightActions={
               <div className="flex items-center gap-2">
                 {isDesktop === false && <NotificationBell locale={locale} />}
                 <ThemeToggle />
-                <button
-                  onClick={handleLogout}
-                  className="rounded-full h-10 w-10 inline-flex items-center justify-center hover:bg-red-50 transition-colors"
-                  aria-label="Sign out"
-                >
-                  <LogOut className="h-5 w-5 text-red-500" />
-                </button>
               </div>
             }
           />

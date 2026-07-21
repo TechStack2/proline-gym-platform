@@ -1,7 +1,10 @@
 import { getTranslations } from 'next-intl/server'
 import { beltRankLabel } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, fmtTime, fmtWeekday } from '@/lib/fmt'
+import { fmtUsd } from '@/lib/billing/currency'
+import { Ltr, Bdi } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 import { PortalCampsSection } from './_components/portal-camps'
 import { MembershipLifecycleActions } from './_components/membership-lifecycle-actions'
 import { cn } from '@/lib/utils'
@@ -244,10 +247,10 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
       }
     }
   }
-  const weekday = (diff: number) =>
-    new Date(Date.now() + diff * 864e5).toLocaleDateString(dateLocale(locale), { weekday: 'long' })
+  // W3a §2.7: weekday + clock through the fmt module (was a raw toLocaleDateString
+  // + an unformatted HH:MM slice).
   const nextClassLabel = nextClass
-    ? `${nextClass.dayDiff === 0 ? t('today') : weekday(nextClass.dayDiff)} ${nextClass.start.slice(0, 5)} · ${nextClass.name}`
+    ? `${nextClass.dayDiff === 0 ? t('today') : fmtWeekday((todayDow + nextClass.dayDiff) % 7, locale, 'long')} ${fmtTime(nextClass.start, locale)} · ${nextClass.name}`
     : null
   const mplans: any = (membership as any)?.membership_plans
   const mplan = Array.isArray(mplans) ? mplans[0] : mplans
@@ -268,13 +271,11 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
     return isRTL ? cdata.name_ar || cdata.name_en : (locale === 'fr' ? cdata.name_fr || cdata.name_en : cdata.name_en)
   }
 
-  const statusLabels: Record<string,string> = {
+  // W3a §2.3: the ad-hoc attendance status maps died — StatusChip + the
+  // vocabulary are the one path (labels stay the portalHome att.* strings).
+  const attLabels: Record<string, string> = {
     present: t('att.present'), absent: t('att.absent'),
     late: t('att.late'), excused: t('att.excused'),
-  }
-  const statusColors: Record<string,string> = {
-    present: 'bg-green-100 text-green-700', absent: 'bg-red-100 text-red-700',
-    late: 'bg-yellow-100 text-yellow-700', excused: 'bg-blue-100 text-blue-700'
   }
 
   // NO-MEMBERSHIP: hide the member's membership surfaces (banner, scan tile, card)
@@ -282,7 +283,9 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
   const enabledProducts = await getEnabledProducts(supabase, student?.gym_id)
 
   return (
-    <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
+    /* W3a R3: the undefined `rtl` class is swept (DA-61) — dir on <html> owns
+       direction; the class was defined nowhere. */
+    <div className="p-4 space-y-6">
     {/* W2a §4.2 Rule 1 (the approved v3 vignette): main carries the member's
         flow in its mobile order; the aside carries install + waiver + camps.
         On mobile that also lands DA-15's demotion — the install card drops
@@ -290,9 +293,11 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
     <DeskGrid gap="space-y-6" main={<>
     {/* ML-1 / MJ-3: lifecycle banner + self-serve request affordances. */}
     {enabledProducts.membership && ['expiring', 'overdue', 'lapsed', 'frozen'].includes(msState) && (
+      /* W3a §2.3: banner hues via the role tints (dark-correct; the -50 pastels
+         were light-pinned). */
       <div data-testid="portal-lifecycle-banner" data-state={msState}
         className={cn('rounded-2xl p-3 text-sm font-medium',
-          msState === 'frozen' ? 'bg-blue-50 text-blue-700' : msState === 'expiring' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700')}>
+          msState === 'frozen' ? 'tint-info' : msState === 'expiring' ? 'tint-warning' : 'tint-danger')}>
         {msState === 'frozen' ? t('banner.frozen') : msState === 'expiring' ? t('banner.expiring') : t('banner.lapsed')}
       </div>
     )}
@@ -310,15 +315,15 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           (nothing owed) = NO card — don't celebrate a zero. Links into billing. */}
       {balanceDue > 0.005 && (
         <Link href={`/${locale}/portal/billing`} data-testid="portal-outstanding-balance" data-amount={balanceDue.toFixed(2)}
-          className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100">
+          className="flex items-center justify-between rounded-2xl border border-danger-500/25 bg-danger-500/10 p-4 transition-colors hover:bg-danger-500/15">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600"><Wallet className="h-5 w-5" aria-hidden /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-danger-500/15 text-danger-600"><Wallet className="h-5 w-5" aria-hidden /></div>
             <div>
-              <p className={cn('text-sm font-semibold text-red-800', isRTL && 'font-arabic')}>{t('outstandingTitle')}</p>
-              <p className={cn('text-xs text-red-600', isRTL && 'font-arabic')}>{t('outstandingCount', { count: openInvoices.length })}</p>
+              <p className={cn('text-sm font-semibold text-[color:rgb(var(--c-danger-tint-fg))]', isRTL && 'font-arabic')}>{t('outstandingTitle')}</p>
+              <p className={cn('text-xs text-danger-600', isRTL && 'font-arabic')}>{t('outstandingCount', { count: openInvoices.length })}</p>
             </div>
           </div>
-          <span className="text-lg font-bold text-red-800" dir="ltr">${balanceDue.toFixed(2)}</span>
+          <Ltr className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]">{fmtUsd(balanceDue)}</Ltr>
         </Link>
       )}
 
@@ -326,21 +331,27 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           lifecycle banner, above the static greeting/glance). The self-view cards
           keep self-next-class/self-next-pt too — this is the prominent top glance. */}
       {(nextClassLabel || nextPt) && (
-        <div data-testid="portal-next-session" className="rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
-          <p className={cn('text-xs font-semibold uppercase tracking-wide text-primary-700', isRTL && 'font-arabic')}>{t('upNext')}</p>
+        /* DA-12: the UP NEXT card was a light-pinned lavender tint that went
+           unreadable in dark. Now a brand ALPHA wash (derives from the ground in
+           both themes) + the on-tint brand text channel that lifts under dark. */
+        <div data-testid="portal-next-session" className="rounded-2xl border border-primary-700/15 bg-primary-700/[0.06] p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[color:rgb(var(--c-brand-tint-fg))]">{t('upNext')}</p>
           <div className="mt-2 space-y-1.5">
             {nextClassLabel && (
               <div className="flex items-center gap-2 text-sm text-gray-800">
-                <CalendarDays className="h-4 w-4 shrink-0 text-primary-600" aria-hidden />
+                <CalendarDays className="h-4 w-4 shrink-0 text-[color:rgb(var(--c-brand-tint-fg))]" aria-hidden />
                 <span className="text-gray-500">{t('nextClass')}:</span>
-                <span className="font-medium" dir="ltr">{nextClassLabel}</span>
+                {/* DA-7: first-strong isolation — the Arabic weekday + class name
+                    read RTL; the clock digits are direction-neutral. */}
+                <Bdi className="font-medium">{nextClassLabel}</Bdi>
               </div>
             )}
             {nextPt && (
               <div className="flex items-center gap-2 text-sm text-gray-800">
-                <Dumbbell className="h-4 w-4 shrink-0 text-primary-600" aria-hidden />
+                <Dumbbell className="h-4 w-4 shrink-0 text-[color:rgb(var(--c-brand-tint-fg))]" aria-hidden />
                 <span className="text-gray-500">{t('nextPt')}:</span>
-                <span className="font-medium" dir="ltr">{new Date(nextPt.scheduled_at).toLocaleString(dateLocale(locale), { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                {/* §2.7: 24h clock via fmt (the raw toLocaleString rendered 12h). */}
+                <Ltr className="font-medium">{`${fmtDate(nextPt.scheduled_at, locale, 'weekday')} ${fmtTime(nextPt.scheduled_at, locale)}`}</Ltr>
               </div>
             )}
           </div>
@@ -375,14 +386,16 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           ))}
         </div>
       )}
-      {/* Scan bar — quick glance (mirrors Coach-360) */}
+      {/* Scan bar — quick glance (mirrors Coach-360). W3a/DA-12 family: the icon
+          wells were light-pinned -50 pastels (islands in dark) — now role-hue
+          alpha tints that derive from the ground in both themes. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: t('classes'), value: enrolledCount || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: t('classes'), value: enrolledCount || 0, icon: Users, color: 'text-info-500', bg: 'bg-info-500/10' },
           // NO-MEMBERSHIP: the membership tile only shows when the gym sells it.
-          ...(enabledProducts.membership ? [{ label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'text-green-600' : 'text-red-600', bg: membership?.status === 'active' ? 'bg-green-50' : 'bg-red-50' }] : []),
-          { label: t('belt'), value: beltLabelVal || '—', icon: Award, color: 'text-violet-600', bg: 'bg-violet-50' },
-          { label: t('balance'), value: balanceDue > 0 ? `$${balanceDue.toFixed(2)}` : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'text-red-600' : 'text-emerald-600', bg: balanceDue > 0 ? 'bg-red-50' : 'bg-emerald-50' },
+          ...(enabledProducts.membership ? [{ label: t('membership'), value: membership?.status === 'active' ? t('active') : t('expired'), icon: CreditCard, color: membership?.status === 'active' ? 'text-success-600' : 'text-danger-600', bg: membership?.status === 'active' ? 'bg-success-500/10' : 'bg-danger-500/10' }] : []),
+          { label: t('belt'), value: beltLabelVal || '—', icon: Award, color: 'text-cat-5', bg: 'bg-cat-5/10' },
+          { label: t('balance'), value: balanceDue > 0 ? fmtUsd(balanceDue) : t('none'), icon: TrendingUp, color: balanceDue > 0 ? 'text-danger-600' : 'text-success-600', bg: balanceDue > 0 ? 'bg-danger-500/10' : 'bg-success-500/10' },
         ].map((s, i) => {
           const Icon = s.icon
           return (
@@ -415,11 +428,16 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-gray-800">{membership?.status === 'active' ? (membershipNameVal || t('active')) : t('noMembership')}</p>
-              {membership && <p className="text-xs text-gray-500">{t('expires')}: {new Date(membership.end_date).toLocaleDateString(dateLocale(locale))}</p>}
+              {membership && <p className="text-xs text-gray-500">{t('expires')}: <Ltr>{fmtDate(membership.end_date, locale)}</Ltr></p>}
             </div>
-            <span data-testid="self-membership" className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold', membership?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-              {membership?.status === 'active' ? t('active') : t('noMembership')}
-            </span>
+            {/* §2.3: StatusChip + the member vocabulary (labels kept verbatim). */}
+            <StatusChip
+              data-testid="self-membership"
+              domain="member"
+              status={membership?.status === 'active' ? 'active' : 'none'}
+              label={membership?.status === 'active' ? t('active') : t('noMembership')}
+              className="shrink-0 font-semibold"
+            />
           </div>
         </PortalCard>
         )}
@@ -427,7 +445,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
         {/* 2 · Billing → open-invoice rows reconcile to the balance → billing */}
         <ActionCard
           icon={Wallet} title={t('billing')} count={openInvoices.length}
-          badge={balanceDue > 0 ? `$${balanceDue.toFixed(2)}` : t('allSettled')}
+          badge={balanceDue > 0 ? fmtUsd(balanceDue) : t('allSettled')}
           emptyText={t('allSettled')} testid="billing" isRTL={isRTL}
           footer={<Link href={`/${locale}/portal/billing`} data-testid="billing-open" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-700">{t('billing')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>}
         >
@@ -435,14 +453,14 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
             testid="billing-drill" rowTestid="billing-row" isRTL={isRTL}
             summary={<span className="flex items-center justify-between gap-2 text-sm">
               <span className="font-medium text-gray-700">{t('outstanding')}</span>
-              <span data-testid="billing-balance" className="font-bold text-gray-900">${balanceDue.toFixed(2)}</span>
+              <Ltr data-testid="billing-balance" className="font-bold text-gray-900">{fmtUsd(balanceDue)}</Ltr>
             </span>}
             rows={openInvoices.map((inv): DrillRow => ({
               href: `/${locale}/portal/billing`,
-              left: inv.invoice_number || t('invoice'),
+              left: <Ltr>{inv.invoice_number || t('invoice')}</Ltr>,
               // PORTAL-BALANCE: each row shows its NET remaining balance (a
               // part-paid invoice's row must reconcile to the summary above).
-              right: <span className="font-medium">${invNetBalance(inv).toFixed(2)}</span>,
+              right: <Ltr className="font-medium">{fmtUsd(invNetBalance(inv))}</Ltr>,
               value: invNetBalance(inv),
             }))}
           />
@@ -456,11 +474,11 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           </PortalCardTitle>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">{t('ptRemaining')}</span>
-            <span data-testid="self-pt-remaining" className="font-bold text-gray-900">{ptTotal > 0 ? `${ptRemaining}/${ptTotal}` : '—'}</span>
+            <Ltr data-testid="self-pt-remaining" className="font-bold text-gray-900">{ptTotal > 0 ? `${ptRemaining}/${ptTotal}` : '—'}</Ltr>
           </div>
           <div className="mt-1 flex items-center justify-between text-sm">
             <span className="text-gray-500">{t('nextPt')}</span>
-            <span data-testid="self-next-pt" className="text-xs font-medium text-gray-700" dir="ltr">{nextPt ? new Date(nextPt.scheduled_at).toLocaleString(dateLocale(locale), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+            <Ltr data-testid="self-next-pt" className="text-xs font-medium text-gray-700">{nextPt ? `${fmtDate(nextPt.scheduled_at, locale, 'weekday')} ${fmtTime(nextPt.scheduled_at, locale)}` : '—'}</Ltr>
           </div>
         </PortalCard>
 
@@ -486,10 +504,10 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
           const attendanceRows: DrillRow[] = att.map((ra) => ({
             href: `/${locale}/portal/schedule`,
             left: getCName(ra),
+            // §2.3: the attendance vocabulary picks the hue; labels stay the
+            // portalHome att.* strings this page always rendered.
             right: (
-              <span className={cn('inline-flex rounded-full px-2 py-0.5 text-2xs font-medium', statusColors[ra.status] || 'bg-gray-100 text-gray-700')}>
-                {statusLabels[ra.status] || ra.status}
-              </span>
+              <StatusChip domain="attendance" status={ra.status} size="sm" label={attLabels[ra.status]} />
             ),
           }))
           return (
@@ -502,7 +520,7 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
               isRTL={isRTL}
               footer={
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs" data-testid="classes-footer">
-                  <span className="text-gray-500">{t('enrolledClasses')}: <span className="font-medium text-gray-700">{enrolledCount || 0}</span> · {t('nextClass')}: <span data-testid="self-next-class" className="font-medium text-gray-700" dir="ltr">{nextClassLabel || '—'}</span></span>
+                  <span className="text-gray-500">{t('enrolledClasses')}: <span className="font-medium text-gray-700">{enrolledCount || 0}</span> · {t('nextClass')}: <Bdi data-testid="self-next-class" className="font-medium text-gray-700">{nextClassLabel || '—'}</Bdi></span>
                   <Link href={`/${locale}/portal/classes`} data-testid="classes-open" className="inline-flex items-center gap-1 font-medium text-primary-700">{t('classes')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></Link>
                 </div>
               }
@@ -514,9 +532,9 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
                 summary={
                   <span className="flex items-center justify-between gap-2 text-sm">
                     <span className="font-medium text-gray-700">{getCName(att[0])}</span>
-                    <span className="text-xs text-gray-500">
-                      {att[0] ? new Date(att[0].attendance_date).toLocaleDateString(dateLocale(locale)) : ''}
-                    </span>
+                    <Ltr className="text-xs text-gray-500">
+                      {att[0] ? fmtDate(att[0].attendance_date, locale) : ''}
+                    </Ltr>
                   </span>
                 }
                 rows={attendanceRows}

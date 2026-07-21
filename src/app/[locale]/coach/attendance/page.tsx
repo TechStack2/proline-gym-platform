@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { fmtDate, fmtTimeRange, fmtWeekday } from '@/lib/fmt';
+import { Ltr } from '@/components/ui/bdi';
 import { createClient } from '@/lib/supabase/client';
 import { attendanceRecordSchema } from '@/lib/validators';
 import { saveAttendance } from './actions';
@@ -48,25 +52,20 @@ interface ClassOption {
   student_count: number;
 }
 
-// ─── Localized message lookup ───
-const t = (messages: any, path: string): string => {
-  const keys = path.split('.');
-  let val: any = messages;
-  for (const k of keys) {
-    val = val?.[k];
-  }
-  return typeof val === 'string' ? val : path;
-};
-
 export default function CoachAttendancePage({ params }: { params: { locale: string } }) {
   const { locale } = params;
-  const isRTL = locale === 'ar';
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialClassId = searchParams.get('classId');
   const supabase = createClient();
 
-  const [messages, setMessages] = useState<any>(null);
+  // W3a §2.7: through next-intl (root hook — this page spans four namespaces).
+  // The old messages-import + path-walker silently rendered the key path on a
+  // miss — the DA-5 class the missing-key gate exists to catch.
+  const tRoot = useTranslations();
+  const msg = (path: string, values?: Record<string, string | number>) =>
+    tRoot(path as never, values as never);
+
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>(initialClassId || '');
   const [students, setStudents] = useState<StudentEntry[]>([]);
@@ -86,15 +85,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
   // which day's existing records prefill, and the date written by saveAttendance —
   // it reuses the SAME upsert write path, no new writes.
   const todayStr = new Date().toISOString().split('T')[0];
-  const minDateStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-
-  // Load i18n messages
-  useEffect(() => {
-    import(`@/i18n/messages/${locale}.json`).then(m => setMessages(m.default));
-  }, [locale]);
-
-  const msg = useCallback((path: string) => (messages ? t(messages, path) : path), [messages]);
 
   // Fetch today's classes for this coach
   useEffect(() => {
@@ -419,21 +410,27 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
     }
   };
 
+  // W3a §2.3/DA-25: active states wear the role TINTS (dark-correct) instead of
+  // the light-pinned -100 fills; hue per the attendance vocabulary.
   const statusButtons: { status: AttendanceStatus; labelKey: string; icon: any; color: string }[] = [
-    { status: 'present', labelKey: 'coach.attendance.present', icon: Check, color: 'bg-green-100 text-green-700 border-green-400' },
-    { status: 'absent', labelKey: 'coach.attendance.absent', icon: X, color: 'bg-red-100 text-red-700 border-red-400' },
-    { status: 'late', labelKey: 'coach.attendance.late', icon: Clock, color: 'bg-amber-100 text-amber-700 border-amber-400' },
-    { status: 'excused', labelKey: 'coach.attendance.excused', icon: AlertCircle, color: 'bg-blue-100 text-blue-700 border-blue-400' },
+    { status: 'present', labelKey: 'coach.attendance.present', icon: Check, color: 'tint-success border-success-500/40' },
+    { status: 'absent', labelKey: 'coach.attendance.absent', icon: X, color: 'tint-danger border-danger-500/40' },
+    { status: 'late', labelKey: 'coach.attendance.late', icon: Clock, color: 'tint-warning border-warning-500/40' },
+    { status: 'excused', labelKey: 'coach.attendance.excused', icon: AlertCircle, color: 'tint-info border-info-500/40' },
   ];
-
-  if (!messages) {
-    return <div className="p-4 text-gray-400 text-sm">{'Loading...'}</div>;
-  }
 
   const selectedClass = classes.find(c => c.id === selectedClassId);
 
+  // REP-1's window as day CHIPS (§2.6: native date inputs leave coach surfaces —
+  // DA-25/33): today back through −7, newest first.
+  const dayChips: string[] = Array.from({ length: 8 }, (_, i) => {
+    const d = new Date(Date.now() - i * 86400000);
+    return d.toISOString().split('T')[0];
+  });
+
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="p-4 space-y-4">
       {/* W2b R3: the ONE title primitive (testid `page-title`, an h1 like every
           other page title — was an h2 with the shell-local `coach-page-title`);
           mobile keeps the always-visible subtitle (chrome owns the title). */}
@@ -454,21 +451,36 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         <label className="block text-xs font-medium text-gray-500 mb-1.5">
           {msg('attendanceHistory.coach.dateLabel')}
         </label>
-        <input
-          type="date"
-          data-testid="coach-attendance-date"
-          value={selectedDate}
-          min={minDateStr}
-          max={todayStr}
-          onChange={e => setSelectedDate(e.target.value || todayStr)}
-          className={cn(
-            'w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700'
-          )}
-        />
+        {/* §2.6 (DA-25/33): the native date input becomes the 8-day quick-range —
+            chips apply on tap; the −7-day window is the chips themselves (the old
+            min/max). Container keeps the historical testid (same role: the date
+            control); each chip is addressable by data-date. */}
+        <div data-testid="coach-attendance-date" className="flex flex-wrap gap-1.5">
+          {dayChips.map((d, i) => (
+            <button
+              key={d}
+              type="button"
+              data-testid="attendance-date-chip"
+              data-date={d}
+              data-active={selectedDate === d || undefined}
+              onClick={() => setSelectedDate(d)}
+              className={cn(
+                'inline-flex min-h-[36px] items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+                selectedDate === d
+                  ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300',
+              )}
+            >
+              {i === 0
+                ? msg('coach.attendance.today')
+                : <Ltr>{`${fmtWeekday(new Date(d + 'T12:00:00Z').getUTCDay(), locale)} ${fmtDate(d, locale, 'dayMonth')}`}</Ltr>}
+            </button>
+          ))}
+        </div>
         <p className="mt-1 text-xs text-gray-400">
           {selectedDate !== todayStr
-            ? msg('attendanceHistory.coach.pastBadge').replace('{date}', selectedDate)
+            ? msg('attendanceHistory.coach.pastBadge', { date: selectedDate })
             : msg('attendanceHistory.coach.hint')}
         </p>
       </div>
@@ -478,24 +490,44 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
         <label className="block text-xs font-medium text-gray-500 mb-1.5">
           {msg('coach.attendance.selectClass')}
         </label>
-        <select
-          data-testid="attendance-class-select"
-          value={selectedClassId}
-          onChange={e => setSelectedClassId(e.target.value)}
-          className={cn(
-            'w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700',
-            'appearance-none bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23999%27 stroke-width=%272%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E")] bg-no-repeat',
-            isRTL ? 'bg-[position:left_12px_center]' : 'bg-[position:right_12px_center]'
+        {/* §2.6 (DA-33): the class picker — a coach's day is a handful of
+            classes, so it is CHIPS, apply on tap (the audit's white OS <select>
+            with its physical-side arrow dies). Container keeps the historical
+            testid (same role: the class picker); chips address by data-class-id.
+            Tapping the selected chip clears it (back to the pick state). */}
+        <div data-testid="attendance-class-select" className="flex flex-col gap-1.5">
+          {classes.length === 0 && (
+            <p className="text-xs text-gray-400">{msg('coach.attendance.selectClassPlaceholder')}</p>
           )}
-        >
-          <option value="">{msg('coach.attendance.selectClassPlaceholder')}</option>
-          {classes.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.start_time}–{c.end_time} — {c.name} ({c.student_count} {msg('common.students')})
-            </option>
-          ))}
-        </select>
+          {classes.map(c => {
+            const active = selectedClassId === c.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                data-testid="attendance-class-chip"
+                data-class-id={c.id}
+                data-active={active || undefined}
+                onClick={() => setSelectedClassId(active ? '' : c.id)}
+                className={cn(
+                  'flex min-h-[44px] w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+                  active
+                    ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
+                )}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Ltr className="shrink-0 font-semibold">{fmtTimeRange(c.start_time, c.end_time, locale)}</Ltr>
+                  <span className="truncate">{c.name}</span>
+                </span>
+                <span className={cn('shrink-0 text-xs', active ? 'opacity-80' : 'text-gray-400')}>
+                  {c.student_count} {msg('common.students')}
+                </span>
+              </button>
+            );
+          })}
+        </div>
         {selectedClass && (
           <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
             {selectedClass.discipline && (
@@ -519,10 +551,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
 
       {/* No class selected state */}
       {!selectedClassId && (
-        <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
-          <ClipboardCheck className="mx-auto h-10 w-10 mb-3" />
-          <p>{msg('coach.attendance.noClassSelected')}</p>
-        </div>
+        <EmptyState icon={ClipboardCheck} title={msg('coach.attendance.noClassSelected')} data-testid="attendance-no-class" />
       )}
 
       {/* Loading */}
@@ -537,18 +566,15 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
       {!loading && selectedClassId && (
         <>
           {students.length === 0 ? (
-            <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
-              <Users className="mx-auto h-10 w-10 mb-3" />
-              <p>{msg('coach.attendance.noStudents')}</p>
-            </div>
+            <EmptyState icon={Users} title={msg('coach.attendance.noStudents')} />
           ) : (
             <>
               {/* Mark All Present */}
               <button
                 onClick={markAllPresent}
                 className={cn(
-                  'w-full inline-flex items-center justify-center gap-2 rounded-xl bg-green-50 px-4 py-2.5',
-                  'text-sm font-medium text-green-700 hover:bg-green-100 transition-colors'
+                  'tint-success w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5',
+                  'text-sm font-medium transition-colors hover:opacity-90'
                 )}
               >
                 <Check className="h-4 w-4" />
@@ -569,7 +595,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex-1 min-w-0">
-                          <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>
+                          <p className="text-sm font-semibold text-gray-900 truncate">
                             {student.first_name} {student.last_name}
                           </p>
                         </div>
@@ -578,7 +604,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                             data-testid="attendance-eligibility"
                             className={cn(
                               'shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium',
-                              student.eligible ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500',
+                              student.eligible ? 'tint-success' : 'tint-neutral',
                             )}
                           >
                             {student.eligible ? msg('coach.attendance.eligible') : msg('coach.attendance.notYet')} · {student.eligibilityLabel}
@@ -587,7 +613,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                       </div>
 
                       {/* Status Toggle Buttons */}
-                      <div className={cn('grid grid-cols-4 gap-1.5', isRTL ? 'text-right' : 'text-left')}>
+                      <div className="grid grid-cols-4 gap-1.5">
                         {statusButtons.map(({ status, labelKey, icon: Icon, color }) => {
                           const isActive = currentStatus === status;
                           return (
@@ -598,7 +624,7 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
                               className={cn(
                                 'flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-all border',
                                 isActive
-                                  ? color + ' border-current'
+                                  ? color
                                   : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'
                               )}
                             >
@@ -645,26 +671,26 @@ export default function CoachAttendancePage({ params }: { params: { locale: stri
           OUTSIDE the roster ternary so a class with no enrolled students still shows
           its trials (a trial can be the only attendee on the sheet). */}
       {!loading && selectedClassId && trials.length > 0 && (
-        <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/40 p-3" data-testid="attendance-trials">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">{msg('coach.attendance.trialsTitle')}</p>
+        <div className="mt-4 rounded-xl border border-cat-5/30 bg-cat-5/10 p-3" data-testid="attendance-trials">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[color:rgb(var(--c-cat-5-fg))]">{msg('coach.attendance.trialsTitle')}</p>
           <div className="space-y-2">
             {trials.map((tr) => (
               <div key={tr.id} data-testid="attendance-trial-row" data-lead-name={tr.name} data-trial-status={tr.status}
                 className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
                 <span className="flex items-center gap-2 text-sm">
-                  <span className="rounded bg-purple-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">{msg('coach.attendance.trialBadge')}</span>
+                  <span className="rounded bg-cat-5 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">{msg('coach.attendance.trialBadge')}</span>
                   {tr.name}
                 </span>
                 {tr.status === 'scheduled' ? (
                   <span className="flex gap-1">
                     <button data-testid="trial-checkin" disabled={trialBusy === tr.id}
                       onClick={() => markTrial(tr.id, 'completed', true)}
-                      className="rounded-lg bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">
+                      className="rounded-lg bg-success-600 px-2 py-1 text-xs font-medium text-success-foreground hover:opacity-90 disabled:opacity-50">
                       <Check className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialAttended')}
                     </button>
                     <button data-testid="trial-noshow" disabled={trialBusy === tr.id}
                       onClick={() => markTrial(tr.id, 'no_show', false)}
-                      className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">
+                      className="tint-danger rounded-lg border border-danger-500/30 px-2 py-1 text-xs font-medium hover:opacity-90 disabled:opacity-50">
                       <X className="inline h-3.5 w-3.5" /> {msg('coach.attendance.trialNoShow')}
                     </button>
                   </span>

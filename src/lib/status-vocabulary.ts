@@ -35,7 +35,13 @@ export type StatusEntry = {
   strikethrough?: boolean;
 };
 
-export type StatusDomain = 'invoice' | 'member' | 'registration' | 'attendance';
+export type StatusDomain =
+  | 'invoice'
+  | 'member'
+  | 'registration'
+  | 'attendance'
+  | 'trial'
+  | 'landing';
 
 const INVOICE: Record<string, StatusEntry> = {
   paid: { variant: 'success', i18nKey: 'paid' },
@@ -77,11 +83,31 @@ const ATTENDANCE: Record<string, StatusEntry> = {
   no_show: { variant: 'danger', i18nKey: 'noShow' },
 };
 
+// W3a (§2 "extend, never fork"): the two coach-shell domains the adoption pass
+// surfaced. Labels stay with their callers (leads.trial_status.* / coachHub
+// carry richer context), so entries here pick ONLY the variant via `label`
+// override at the call site — but the color decision still lives here.
+const TRIAL: Record<string, StatusEntry> = {
+  scheduled: { variant: 'info', i18nKey: 'scheduled' },
+  completed: { variant: 'success', i18nKey: 'completed' },
+  no_show: { variant: 'danger', i18nKey: 'noShow' },
+  cancelled: { variant: 'neutral', i18nKey: 'cancelled' },
+};
+
+const LANDING: Record<string, StatusEntry> = {
+  live: { variant: 'success', i18nKey: 'live' },
+  pending: { variant: 'warning', i18nKey: 'pending' },
+  coming_soon: { variant: 'info', i18nKey: 'comingSoon' },
+  hidden: { variant: 'neutral', i18nKey: 'hidden' },
+};
+
 const DOMAINS: Record<StatusDomain, Record<string, StatusEntry>> = {
   invoice: INVOICE,
   member: MEMBER,
   registration: REGISTRATION,
   attendance: ATTENDANCE,
+  trial: TRIAL,
+  landing: LANDING,
 };
 
 const UNKNOWN: StatusEntry = { variant: 'neutral', i18nKey: '' };

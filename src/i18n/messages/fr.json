@@ -2031,7 +2031,8 @@
       "trialBadge": "Essai",
       "trialAttended": "Présent",
       "trialNoShow": "Absent",
-      "trialRecorded": "Résultat de l’essai enregistré"
+      "trialRecorded": "Résultat de l’essai enregistré",
+      "today": "Aujourd'hui"
     },
     "students": {
       "title": "Mes Élèves",
@@ -2045,7 +2046,8 @@
       "never": "Jamais",
       "viewProfile": "Voir le profil",
       "allDisciplines": "Toutes les disciplines",
-      "allBelts": "Toutes les ceintures"
+      "allBelts": "Toutes les ceintures",
+      "lastSeen": "Dernière présence"
     },
     "profile": {
       "role_label": "Entraîneur"
@@ -3046,7 +3048,8 @@
     "noteToStaff": "Note au personnel (facultatif)",
     "noteToStaffPh": "Tout ce que le personnel doit savoir",
     "cancel": "Annuler",
-    "sendRequest": "Envoyer la demande"
+    "sendRequest": "Envoyer la demande",
+    "interfaceLanguage": "Langue de l'interface"
   },
   "portalSchedule": {
     "title": "Horaire des cours",
@@ -3071,7 +3074,9 @@
     "emptyCta": "Voir l'horaire",
     "viewSchedule": "Horaire",
     "viewBrowse": "Parcourir",
-    "myRegs": "Mes inscriptions"
+    "myRegs": "Mes inscriptions",
+    "monthly": "Mensuel",
+    "renewsOn": "renouvelé le"
   },
   "invoiceNew": {
     "title": "Nouvelle facture",
@@ -4029,6 +4034,29 @@
     "absent": "Absent",
     "late": "En retard",
     "excused": "Excusé",
-    "noShow": "Absence"
+    "noShow": "Absence",
+    "scheduled": "Planifié",
+    "completed": "Terminé",
+    "live": "Publié",
+    "comingSoon": "Bientôt",
+    "hidden": "Masqué"
+  },
+  "coachProfilePage": {
+    "classes": "Cours",
+    "students": "Élèves",
+    "contactInfo": "Coordonnées",
+    "email": "Email",
+    "phone": "Téléphone",
+    "preferredLanguage": "Langue préférée",
+    "notSet": "Non défini",
+    "role": "Rôle",
+    "headCoach": "Entraîneur en chef",
+    "coach": "Entraîneur",
+    "hourlyRate": "Tarif horaire",
+    "hr": "h",
+    "bio": "Biographie",
+    "accountDetails": "Détails du compte",
+    "joined": "Date d'inscription",
+    "interfaceLanguage": "Langue de l'interface"
   }
 }

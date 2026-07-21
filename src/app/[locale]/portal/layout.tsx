@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { PortalLayoutClient } from './_components/PortalLayoutClient'
 import { BrandThemeStyle } from '@/components/shared/brand-theme-style'
 import { getUserGymChrome } from '@/lib/theme/user-brand'
+import { PORTAL_THEME_COLOR } from '@/lib/theme/brand'
 
 // AX-1 shell identity: per-shell PWA theme-color (portal = cool teal). DS-2: per
 // light/dark — dark status bar = the shared #131317 ground.
@@ -12,9 +13,9 @@ export const viewport: Viewport = {
   // padding actually resolves on standalone iOS (0 without viewport-fit=cover).
   viewportFit: 'cover',
   // W2c/DA-62: ONE light meta — theme-color follows the APP's html.dark state
-  // (the boot script + ThemeToggle swap in the shared #131317 dark ground), not
-  // the OS media query it used to track via a media-scoped pair.
-  themeColor: '#0e7490',
+  // (the boot script + ThemeToggle swap in the shared dark ground), not the OS
+  // media query it used to track. W3a R3: the hue lives in the token file.
+  themeColor: PORTAL_THEME_COLOR,
 }
 
 type Props = { children: React.ReactNode; params: { locale: string } }

@@ -2031,7 +2031,8 @@
       "trialBadge": "Trial",
       "trialAttended": "Attended",
       "trialNoShow": "No-show",
-      "trialRecorded": "Trial outcome recorded"
+      "trialRecorded": "Trial outcome recorded",
+      "today": "Today"
     },
     "students": {
       "title": "My Students",
@@ -2045,7 +2046,8 @@
       "never": "Never",
       "viewProfile": "View Profile",
       "allDisciplines": "All Disciplines",
-      "allBelts": "All Belts"
+      "allBelts": "All Belts",
+      "lastSeen": "Last seen"
     },
     "profile": {
       "role_label": "Coach"
@@ -3046,7 +3048,8 @@
     "noteToStaff": "Note to staff (optional)",
     "noteToStaffPh": "Anything staff should know",
     "cancel": "Cancel",
-    "sendRequest": "Send request"
+    "sendRequest": "Send request",
+    "interfaceLanguage": "Interface language"
   },
   "portalSchedule": {
     "title": "Class Schedule",
@@ -3071,7 +3074,9 @@
     "emptyCta": "See the timetable",
     "viewSchedule": "Schedule",
     "viewBrowse": "Browse",
-    "myRegs": "My registrations"
+    "myRegs": "My registrations",
+    "monthly": "Monthly",
+    "renewsOn": "renews"
   },
   "invoiceNew": {
     "title": "New invoice",
@@ -4029,6 +4034,29 @@
     "absent": "Absent",
     "late": "Late",
     "excused": "Excused",
-    "noShow": "No-show"
+    "noShow": "No-show",
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "live": "Live",
+    "comingSoon": "Coming soon",
+    "hidden": "Hidden"
+  },
+  "coachProfilePage": {
+    "classes": "Classes",
+    "students": "Students",
+    "contactInfo": "Contact info",
+    "email": "Email",
+    "phone": "Phone",
+    "preferredLanguage": "Preferred language",
+    "notSet": "Not set",
+    "role": "Role",
+    "headCoach": "Head Coach",
+    "coach": "Coach",
+    "hourlyRate": "Hourly rate",
+    "hr": "hr",
+    "bio": "Bio",
+    "accountDetails": "Account details",
+    "joined": "Joined",
+    "interfaceLanguage": "Interface language"
   }
 }

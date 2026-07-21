@@ -1,4 +1,6 @@
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate } from '@/lib/fmt'
+import { fmtUsd } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { cn } from '@/lib/utils'
@@ -51,7 +53,6 @@ export async function PortalCampsSection({ studentId, actingFor, locale }: {
   }
 
   const lname = (c: any) => ((isRTL ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en)
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' })
 
   return (
     <section className="rounded-2xl bg-white p-4 shadow-sm" data-testid="portal-camps">
@@ -69,22 +70,22 @@ export async function PortalCampsSection({ studentId, actingFor, locale }: {
                 <div className="min-w-0">
                   <p className={cn('truncate text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{lname(c)}</p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
-                    <span className="inline-flex items-center gap-1" dir="ltr"><Clock className="h-3 w-3" />{fmtD(c.start_date)} – {fmtD(c.end_date)}</span>
+                    <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /><Ltr>{`${fmtDate(c.start_date, locale, 'dayMonth')} – ${fmtDate(c.end_date, locale, 'dayMonth')}`}</Ltr></span>
                     {c.min_age != null && <span>{t('ages', { min: c.min_age, max: c.max_age ?? '—' })}</span>}
-                    <span className="font-semibold text-gray-700">${Number(c.price_usd).toFixed(0)}</span>
+                    <Ltr className="font-semibold text-gray-700">{fmtUsd(Number(c.price_usd))}</Ltr>
                   </p>
                 </div>
                 {full ? (
-                  <span data-testid="portal-camp-full" className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">{t('full')}</span>
+                  <span data-testid="portal-camp-full" className="tint-warning shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">{t('full')}</span>
                 ) : (
-                  <span className="shrink-0 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">{t('spotsLeft', { count: spots.get(c.id) ?? 0 })}</span>
+                  <span className="tint-success shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium">{t('spotsLeft', { count: spots.get(c.id) ?? 0 })}</span>
                 )}
               </div>
               <div className="mt-2">
                 {myStatus ? (
                   <span data-testid="portal-camp-status" data-status={myStatus}
                     className={cn('rounded-full px-2 py-0.5 text-xs font-medium',
-                      myStatus === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
+                      myStatus === 'confirmed' ? 'tint-success' : 'tint-warning')}>
                     {t(`status.${myStatus}` as any)}
                   </span>
                 ) : !full ? (

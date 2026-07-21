@@ -67,7 +67,7 @@ export function PtRequestClient({ packages, coaches, locale }: Props) {
   };
 
   return (
-    <div className={cn('space-y-6', isRTL && 'rtl')}>
+    <div className="space-y-6">
       {/* Available packages */}
       <section className="space-y-2">
         <h2 className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>

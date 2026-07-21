@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, humanizeEnum } from '@/lib/fmt'
+import { fmtUsd, fmtLbp } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
@@ -89,12 +92,20 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
   const membershipNameVal = mplan ? (isRTL ? mplan.name_ar : (locale === 'fr' ? mplan.name_fr : mplan.name_en)) : null
 
   const statusIcons: Record<string,any> = { paid: CheckCircle, pending: Clock, overdue: AlertCircle, cancelled: AlertCircle, refunded: DollarSign, partial: Clock }
-  const statusColors: Record<string,string> = { paid: 'bg-green-100 text-green-700', pending: 'bg-yellow-100 text-yellow-700', overdue: 'bg-red-100 text-red-700', cancelled: 'bg-gray-100 text-gray-500', refunded: 'bg-blue-100 text-blue-700', partial: 'bg-orange-100 text-orange-700' }
+  // W3a §2.3: the forked colour map died — StatusChip + the invoice vocabulary
+  // pick the hue; the labels stay this page's st.* strings.
   const statusLabels: Record<string,string> = { paid: t('st.paid'), pending: t('st.pending'), overdue: t('st.overdue'), cancelled: t('st.cancelled'), refunded: t('st.refunded'), partial: t('st.partial') }
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
+  // DA-11b: a stored-open invoice that has REAL money against it is "Partially
+  // paid", not its stored status — the green-Paid-above-red-balance contradiction
+  // class dies here. Derived for DISPLAY only; the stored status is untouched.
+  const displayStatus = (inv: { id: string; status: string; total_usd: number | null }, bal: number): string => {
+    if ((inv.status === 'pending' || inv.status === 'overdue') && bal > 0.005 && bal < Number(inv.total_usd ?? 0) - 0.005) return 'partial'
+    return inv.status
+  }
 
   return (
-    <div className={cn('p-4 space-y-6', isRTL && 'rtl')}>
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="p-4 space-y-6">
       {/* DS 2.0 §2.1 (W2b R3): the ONE title primitive — testid `page-title`
           (was `portal-page-title`). Desktop-only; mobile leads with the balance. */}
       <PageHeader title={t('title')} />
@@ -109,9 +120,10 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
             </h3>
             <p className="mt-2 flex items-baseline gap-2">
               <span className="text-xs text-gray-500">{t('outstanding')}</span>
-              <span data-testid="household-outstanding" className={cn('text-2xl font-bold', household.outstanding > 0 ? 'text-red-600' : 'text-green-600')}>
-                ${household.outstanding.toFixed(2)}
-              </span>
+              {/* §2.4: a settled household is a calm fact, not a green celebration. */}
+              <Ltr data-testid="household-outstanding" className={cn('text-2xl font-bold', household.outstanding > 0 ? 'text-danger-600' : 'text-gray-900')}>
+                {fmtUsd(household.outstanding)}
+              </Ltr>
             </p>
             <p className="mt-1 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500" data-testid="pay-at-desk-note">
               {t('payAtDesk')}
@@ -136,8 +148,8 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                               {invoiceTypeLabel(inv.invoice_type, locale)}
                             </span>
                           </div>
-                          <span className="text-gray-500">${Number(inv.total_usd).toFixed(2)}{inv.balance > 0 ? ` · ${t('due')} $${inv.balance.toFixed(2)}` : ''}</span>
-                          <span className={cn('rounded-full px-2 py-0.5 font-medium', statusColors[inv.status] || 'bg-gray-100 text-gray-500')}>{statusLabels[inv.status] || inv.status}</span>
+                          <span className="text-gray-500"><Ltr>{fmtUsd(Number(inv.total_usd))}</Ltr>{inv.balance > 0 ? <> · {t('due')} <Ltr>{fmtUsd(inv.balance)}</Ltr></> : null}</span>
+                          <StatusChip domain="invoice" status={displayStatus(inv, inv.balance)} size="sm" label={statusLabels[displayStatus(inv, inv.balance)]} />
                         </div>
                         {invoiceNote(inv, locale) && <p className="mt-0.5 text-[11px] text-gray-400" data-testid="household-invoice-note">{invoiceNote(inv, locale)}</p>}
                       </li>
@@ -155,9 +167,9 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-700">{membershipNameVal}</p>
-              <p className="text-xs text-gray-500">{t('expires')}: {fmtDate(membership.end_date)}</p>
+              <p className="text-xs text-gray-500">{t('expires')}: <Ltr>{fmtDate(membership.end_date, locale)}</Ltr></p>
             </div>
-            <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">{t('active')}</span>
+            <StatusChip domain="member" status="active" label={t('active')} className="font-semibold" />
           </div>
         </div>
       )}
@@ -170,15 +182,17 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
             {invoices.map((inv: any) => {
               const Icon = statusIcons[inv.status] || FileText
               const bal = invBalance(inv)
+              const shown = displayStatus(inv, bal)
               return (
                 <div key={inv.id} className="rounded-xl bg-white p-4 shadow-sm flex items-center justify-between"
                   data-testid="portal-invoice" data-invoice-number={inv.invoice_number} data-status={inv.status}>
                   <div className="flex items-center gap-3">
-                    <div className={cn('rounded-full p-2', inv.status==='paid'?'bg-green-50':inv.status==='overdue'?'bg-red-50':'bg-gray-50')}>
-                      <Icon className={cn('h-4 w-4', inv.status==='paid'?'text-green-600':inv.status==='overdue'?'text-red-600':'text-gray-500')} />
+                    {/* W3a/DA-25 family: role-hue alpha tints instead of light-pinned -50 wells. */}
+                    <div className={cn('rounded-full p-2', inv.status==='paid'?'bg-success-500/10':inv.status==='overdue'?'bg-danger-500/10':'bg-gray-100')}>
+                      <Icon className={cn('h-4 w-4', inv.status==='paid'?'text-success-600':inv.status==='overdue'?'text-danger-600':'text-gray-500')} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-700">#{inv.invoice_number?.slice(-8)}</p>
+                      <p className="text-sm font-medium text-gray-700"><Ltr>#{inv.invoice_number?.slice(-8)}</Ltr></p>
                       <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                         <span data-testid="portal-invoice-type" data-type={inv.invoice_type || 'other'}
                           className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
@@ -188,7 +202,7 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                           <span className="text-[11px] text-gray-500" data-testid="portal-invoice-note">{invoiceNote(inv, locale)}</span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500">{fmtDate(inv.created_at)}</p>
+                      <p className="text-xs text-gray-500"><Ltr>{fmtDate(inv.created_at, locale)}</Ltr></p>
                       <Link href={`/${locale}/invoices/${inv.id}/receipt`} data-testid="portal-receipt-link"
                         className="mt-0.5 inline-flex items-center gap-1 text-xs text-primary-700 hover:underline">
                         <Printer className="h-3 w-3" /> {t('receipt')}
@@ -196,10 +210,13 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                     </div>
                   </div>
                   <div className="text-end">
-                    <p className="font-bold text-gray-900">${inv.total_usd?.toFixed(2)}</p>
-                    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[inv.status])} data-testid="portal-invoice-status">{statusLabels[inv.status]}</span>
+                    <p className="font-bold text-gray-900"><Ltr>{fmtUsd(inv.total_usd)}</Ltr></p>
+                    {/* §2.3 + DA-11b: ONE chip; a part-paid legacy row reads
+                        "Partially paid", never Paid-above-a-balance. */}
+                    <StatusChip domain="invoice" status={shown} label={statusLabels[shown]} size="sm" data-testid="portal-invoice-status" />
                     <p className="mt-0.5 text-xs" data-testid="portal-invoice-balance">
-                      <span className={bal > 0 ? 'text-red-600' : 'text-green-600'}>{t('balance')}: ${bal.toFixed(2)}</span>
+                      {/* §2.4: a settled balance is calm neutral, not celebration green. */}
+                      <span className={bal > 0 ? 'text-danger-600' : 'text-gray-500'}>{t('balance')}: <Ltr>{fmtUsd(bal)}</Ltr></span>
                     </p>
                   </div>
                 </div>
@@ -223,10 +240,17 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
             {payments.map((pay: any) => (
               <div key={pay.id} className="rounded-xl bg-white p-3 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">${pay.amount_usd?.toFixed(2)}{pay.amount_lbp ? ` / LBP ${pay.amount_lbp?.toLocaleString()}` : ''}</p>
-                  <p className="text-xs text-gray-400">{pay.payment_method?.replace(/_/g,' ')} — {fmtDate(pay.payment_date)}</p>
+                  {/* §2.7: fixed symbol sides in BOTH directions — $ leads, LBP
+                      trails — each amount LTR-isolated (DA-7's money class). */}
+                  <p className="text-sm font-medium text-gray-700">
+                    <Ltr>{fmtUsd(pay.amount_usd)}</Ltr>
+                    {pay.amount_lbp ? <> / <Ltr>{fmtLbp(pay.amount_lbp)}</Ltr></> : null}
+                  </p>
+                  {/* DA-34: the raw enum dump ("bank transfer") goes through the
+                      shared humanizer; the date through fmt. */}
+                  <p className="text-xs text-gray-400">{humanizeEnum(pay.payment_method ?? '')} — <Ltr>{fmtDate(pay.payment_date, locale)}</Ltr></p>
                 </div>
-                <DollarSign className="h-4 w-4 text-green-500" />
+                <DollarSign className="h-4 w-4 text-success-500" />
               </div>
             ))}
           </div>

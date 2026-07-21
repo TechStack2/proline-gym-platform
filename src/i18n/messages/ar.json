@@ -2031,7 +2031,8 @@
       "trialBadge": "تجربة",
       "trialAttended": "حضر",
       "trialNoShow": "لم يحضر",
-      "trialRecorded": "تم تسجيل نتيجة التجربة"
+      "trialRecorded": "تم تسجيل نتيجة التجربة",
+      "today": "اليوم"
     },
     "students": {
       "title": "طلابي",
@@ -2045,7 +2046,8 @@
       "never": "لم يحضر بعد",
       "viewProfile": "عرض الملف",
       "allDisciplines": "كل الاختصاصات",
-      "allBelts": "كل الأحزمة"
+      "allBelts": "كل الأحزمة",
+      "lastSeen": "آخر حضور"
     },
     "profile": {
       "role_label": "مدرب"
@@ -3046,7 +3048,8 @@
     "noteToStaff": "ملاحظة للموظفين (اختياري)",
     "noteToStaffPh": "أي شيء يجب أن يعرفه الموظفون",
     "cancel": "إلغاء",
-    "sendRequest": "إرسال الطلب"
+    "sendRequest": "إرسال الطلب",
+    "interfaceLanguage": "لغة الواجهة"
   },
   "portalSchedule": {
     "title": "جدول الحصص",
@@ -3071,7 +3074,9 @@
     "emptyCta": "عرض الجدول",
     "viewSchedule": "الجدول",
     "viewBrowse": "تصفّح",
-    "myRegs": "تسجيلاتي"
+    "myRegs": "تسجيلاتي",
+    "monthly": "شهري",
+    "renewsOn": "يتجدد"
   },
   "invoiceNew": {
     "title": "إصدار فاتورة",
@@ -4029,6 +4034,29 @@
     "absent": "غائب",
     "late": "متأخر عن الموعد",
     "excused": "بعذر",
-    "noShow": "لم يحضر"
+    "noShow": "لم يحضر",
+    "scheduled": "مجدولة",
+    "completed": "مكتملة",
+    "live": "منشور",
+    "comingSoon": "قريبًا",
+    "hidden": "مخفي"
+  },
+  "coachProfilePage": {
+    "classes": "حصة",
+    "students": "طالب",
+    "contactInfo": "معلومات التواصل",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "preferredLanguage": "اللغة المفضلة",
+    "notSet": "غير محدد",
+    "role": "الدور",
+    "headCoach": "مدرب رئيسي",
+    "coach": "مدرب",
+    "hourlyRate": "الأجر بالساعة",
+    "hr": "ساعة",
+    "bio": "نبذة",
+    "accountDetails": "تفاصيل الحساب",
+    "joined": "تاريخ الانضمام",
+    "interfaceLanguage": "لغة الواجهة"
   }
 }

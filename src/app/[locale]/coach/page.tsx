@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, fmtTime, fmtTimeRange, fmtWeekday } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 import { cn } from '@/lib/utils'
 import { beltRankLabel } from '@/lib/belts/label'
 import {
@@ -61,7 +63,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
 
   if (!coach) {
     return (
-      <div className={cn('p-4', isRTL && 'rtl')}>
+      <div className="p-4">
         <PortalCard>
           <PortalEmpty icon={Calendar}>{t('noCoach')}</PortalEmpty>
         </PortalCard>
@@ -132,7 +134,6 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
   }
   weekRows.sort((a, b) => (a.day - b.day) || a.start.localeCompare(b.start))
   const weekHours = Math.round((weekRows.reduce((s, r) => s + r.mins, 0) / 60) * 10) / 10
-  const weekdayName = (d: number) => new Date(2024, 0, 7 + d).toLocaleDateString(dateLocale(locale), { weekday: 'short' })
 
   // ── MY STUDENTS — distinct active students across the coach's classes, by
   //    discipline + belt; flag who's due to test. Rows reconcile to the headline. ──
@@ -186,19 +187,23 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
     .sort((a, b) => (a.scheduled_date + (a.scheduled_time || '')).localeCompare(b.scheduled_date + (b.scheduled_time || '')))
 
   // ── landing status (display only; the publish gate is untouched). ──
+  // W3a §2.3: the colour decision moved into the status vocabulary ('landing'
+  // domain); labels/icons stay this page's richer context.
   const landing = (coach as any).has_pending_changes
-    ? { key: 'pending', label: t('profile.pending'), cls: 'bg-amber-100 text-amber-800', Icon: Clock }
+    ? { key: 'pending', label: t('profile.pending'), Icon: Clock }
     : (coach as any).landing_visible
       ? (coach as any).landing_status === 'coming_soon'
-        ? { key: 'coming_soon', label: t('profile.comingSoon'), cls: 'bg-blue-100 text-blue-700', Icon: Eye }
-        : { key: 'live', label: t('profile.live'), cls: 'bg-green-100 text-green-700', Icon: Eye }
-      : { key: 'hidden', label: t('profile.notVisible'), cls: 'bg-gray-100 text-gray-600', Icon: EyeOff }
+        ? { key: 'coming_soon', label: t('profile.comingSoon'), Icon: Eye }
+        : { key: 'live', label: t('profile.live'), Icon: Eye }
+      : { key: 'hidden', label: t('profile.notVisible'), Icon: EyeOff }
 
   const totalToday = todayRows.length
   const completedToday = todayRows.filter((r) => r.cap >= 0 && r.enrolled > 0 && r.marked >= r.enrolled).length
 
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl text-right')} data-testid="coach-360-portal">
+    /* W3a R3: the undefined `rtl` class + physical text-right swept (DA-61 /
+       §4.1 — dir already aligns the text). */
+    <div className="p-4 space-y-4" data-testid="coach-360-portal">
       {/* W2a §4.2 Rule 1 (the approved v3 vignette): main = the coach's day in
           its mobile order; aside = PT · trials pipeline · profile status ·
           install (DA-15 demotion — the install card leaves first-card). */}
@@ -213,10 +218,11 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
 
       {/* Premium scan bar — 4 headline numbers, each scoped to a card below */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat icon={Calendar} value={totalToday} label={t('stats.today')} tone="text-blue-600" bg="bg-blue-50" />
-        <Stat icon={Users} value={students.length} label={t('stats.students')} tone="text-primary-700" bg="bg-primary-50" brand />
-        <Stat icon={CalendarDays} value={weekRows.length} label={t('stats.week')} tone="text-violet-600" bg="bg-violet-50" />
-        <Stat icon={Dumbbell} value={ptRemaining} label={t('stats.ptSessions')} tone="text-emerald-600" bg="bg-emerald-50" />
+        {/* W3a/DA-12 family: icon wells as role-hue alpha tints (dark-correct). */}
+        <Stat icon={Calendar} value={totalToday} label={t('stats.today')} tone="text-info-500" bg="bg-info-500/10" />
+        <Stat icon={Users} value={students.length} label={t('stats.students')} tone="text-primary-700" bg="bg-primary-700/10" brand />
+        <Stat icon={CalendarDays} value={weekRows.length} label={t('stats.week')} tone="text-cat-5" bg="bg-cat-5/10" />
+        <Stat icon={Dumbbell} value={ptRemaining} label={t('stats.ptSessions')} tone="text-cat-4" bg="bg-cat-4/10" />
       </div>
 
       {/* ── TODAY ── */}
@@ -232,7 +238,8 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
               className="flex items-center justify-between gap-3 rounded-xl border bg-gray-50/60 px-3 py-2.5">
               <Link href={`/${locale}/coach/attendance?classId=${r.classId}`} className="min-w-0 flex-1">
                 <span className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                  <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />{r.start}–{r.end}
+                  {/* DA-7: the time range is ONE isolated unit. */}
+                  <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" /><Ltr>{fmtTimeRange(r.start, r.end, locale)}</Ltr>
                   <span className="truncate">· {r.name}</span>
                 </span>
                 <span className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
@@ -242,7 +249,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
               </Link>
               <Link href={`/${locale}/coach/attendance?classId=${r.classId}`} data-testid="coach-today-attendance"
                 className={cn('inline-flex shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium',
-                  complete ? 'bg-green-50 text-green-700' : 'bg-primary-700 text-primary-foreground hover:bg-primary-800')}>
+                  complete ? 'tint-success' : 'bg-primary-700 text-primary-foreground hover:bg-primary-800')}>
                 {complete ? <CheckCircle2 className="h-4 w-4" /> : <>{t('today.startAttendance')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} /></>}
               </Link>
             </div>
@@ -261,7 +268,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             <Link key={tr.id} href={`/${locale}/coach/trials`} data-testid="coach-home-trial-row" data-lead-name={tr.lead_name}
               className="flex items-center justify-between rounded-xl border px-3 py-2 hover:bg-gray-50">
               <span className="text-sm font-medium text-gray-800">{tr.lead_name}</span>
-              <span className="text-xs text-gray-500">{tr.scheduled_time ? tr.scheduled_time.slice(0, 5) : ''}</span>
+              <Ltr className="text-xs text-gray-500">{tr.scheduled_time ? fmtTime(tr.scheduled_time, locale) : ''}</Ltr>
             </Link>
           ))}
         </PortalCard>
@@ -287,7 +294,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
           </span>}
           rows={weekRows.map((r): DrillRow => ({
             href: `/${locale}/coach/attendance?classId=${r.classId}`,
-            left: <span><span className="font-medium">{weekdayName(r.day)}</span> {r.start}–{r.end} · {r.name}</span>,
+            left: <span><span className="font-medium">{fmtWeekday(r.day, locale)}</span> <Ltr>{fmtTimeRange(r.start, r.end, locale)}</Ltr> · {r.name}</span>,
           }))}
         />
       </ActionCard>
@@ -304,7 +311,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
               </span>
             ))}
             {dueCount > 0 && (
-              <span data-testid="coach-students-due" className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+              <span data-testid="coach-students-due" className="tint-warning inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
                 <Award className="h-3 w-3" />{t('students.dueToTest', { n: dueCount })}
               </span>
             )}
@@ -315,7 +322,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
           testid="coach-students-drill" rowTestid="coach-students-row" isRTL={isRTL}
           summary={<span className="flex items-center justify-between gap-2 text-sm">
             <span className="font-medium text-gray-700">{t('students.headline', { n: students.length })}</span>
-            {dueCount > 0 && <span className="text-xs font-medium text-amber-700">{t('students.dueToTest', { n: dueCount })}</span>}
+            {dueCount > 0 && <span className="text-xs font-medium text-warning-600">{t('students.dueToTest', { n: dueCount })}</span>}
           </span>}
           rows={students.map((s): DrillRow => ({
             // Coaches are redirected away from /dashboard/* by middleware, so drill
@@ -324,7 +331,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             left: (
               <span className="inline-flex items-center gap-2">
                 {s.name}
-                {s.due && <span data-testid="coach-student-due-chip" className="rounded-full bg-amber-100 px-1.5 py-0.5 text-2xs font-medium text-amber-800">{t('students.due')}</span>}
+                {s.due && <span data-testid="coach-student-due-chip" className="tint-warning rounded-full px-1.5 py-0.5 text-2xs font-medium">{t('students.due')}</span>}
               </span>
             ),
             right: (
@@ -352,7 +359,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             rows={pt.map((r): DrillRow => ({
               href: `/${locale}/coach/pt`,
               left: r.name,
-              right: <span className={cn('font-medium', r.low ? 'text-amber-700' : 'text-gray-600')}>{r.remaining}/{r.total}</span>,
+              right: <Ltr className={cn('font-medium', r.low ? 'text-warning-600' : 'text-gray-600')}>{`${r.remaining}/${r.total}`}</Ltr>,
             }))}
           />
         </ActionCard>
@@ -371,7 +378,7 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             rows={upcomingTrials.map((tr): DrillRow => ({
               href: `/${locale}/coach/trials`,
               left: tr.lead_name,
-              right: <span className="text-xs text-gray-500" dir="ltr">{new Date(tr.scheduled_date).toLocaleDateString(dateLocale(locale), { month: 'short', day: 'numeric' })}{tr.scheduled_time ? ` ${tr.scheduled_time.slice(0, 5)}` : ''}</span>,
+              right: <Ltr className="text-xs text-gray-500">{`${fmtDate(tr.scheduled_date, locale, 'dayMonth')}${tr.scheduled_time ? ` ${fmtTime(tr.scheduled_time, locale)}` : ''}`}</Ltr>,
             }))}
           />
         </ActionCard>
@@ -384,10 +391,8 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
         </PortalCardTitle>
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-gray-500">{t('profile.landingLabel')}</p>
-          <span data-testid="coach-landing-status" data-status={landing.key}
-            className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium', landing.cls)}>
-            <landing.Icon className="h-3 w-3" />{landing.label}
-          </span>
+          <StatusChip data-testid="coach-landing-status" domain="landing" status={landing.key}
+            label={landing.label} icon={<landing.Icon className="h-3 w-3" />} />
         </div>
       </PortalCard>
 

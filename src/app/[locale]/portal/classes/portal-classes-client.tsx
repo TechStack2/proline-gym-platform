@@ -4,15 +4,14 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Calendar, Clock, DollarSign, Loader2, RefreshCw, CalendarDays } from 'lucide-react'
+import { Calendar, Clock, Loader2, RefreshCw, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, fmtTime, fmtWeekday } from '@/lib/fmt'
+import { fmtUsd } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 import { requestClassRegistration, cancelMyRegistration } from './actions'
 import { useErrorText } from '@/lib/errors/use-error-text';
-
-const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const DAYS_AR = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
-const DAYS_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
 
 type Reg = { id: string; status: string; waitlist_position: number | null; end_date: string | null }
 type ClassItem = {
@@ -25,12 +24,10 @@ type ClassItem = {
 export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { classes: ClassItem[]; locale: string; hasStudent: boolean; kidId?: string }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('portalClasses')
-  const DAYS = locale === 'ar' ? DAYS_AR : locale === 'fr' ? DAYS_FR : DAYS_EN
   // CYCLE-VIZ: recurring-monthly framing, computed from the registration's
   // end_date (000034: end_date = start_date + 1 month). No backend change.
-  const monthlyWord = locale === 'ar' ? 'شهري' : locale === 'fr' ? 'Mensuel' : 'Monthly'
-  const renewsWord = locale === 'ar' ? 'يتجدد' : locale === 'fr' ? 'renouvelé le' : 'renews'
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
+  // W3a §2.7: the hardcoded tri-lingual word maps became i18n keys (the DA-36
+  // class — the missing-key gate can now see them); dates/days via fmt.
   const router = useRouter()
   const errText = useErrorText();
   const [pending, startTransition] = useTransition()
@@ -42,11 +39,6 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
     if (r.status === 'requested') return t('statusRequested')
     if (r.status === 'waitlisted') return t('statusWaitlist', { n: r.waitlist_position ?? '' })
     return r.status
-  }
-  const statusStyle: Record<string, string> = {
-    active: 'bg-green-100 text-green-700',
-    requested: 'bg-yellow-100 text-yellow-700',
-    waitlisted: 'bg-orange-100 text-orange-700',
   }
 
   function request(classId: string) {
@@ -91,7 +83,7 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
         const busy = busyId === c.id && pending
         return (
           <div key={c.id} data-testid="portal-class-card" data-class-id={c.id}
-            className={cn('rounded-2xl bg-white p-4 shadow-sm', isRTL && 'text-right')}>
+            className="rounded-2xl bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-semibold text-gray-900">{c.name}</p>
@@ -99,24 +91,28 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                   {c.schedules.slice(0, 3).map((s, i) => (
                     <span key={i} className="inline-flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />{DAYS[s.day_of_week]}
-                      <Clock className="h-3 w-3" />{s.start_time?.slice(0, 5)}
+                      <Calendar className="h-3 w-3" />{fmtWeekday(s.day_of_week, locale)}
+                      <Clock className="h-3 w-3" /><Ltr>{fmtTime(s.start_time, locale)}</Ltr>
                     </span>
                   ))}
                 </div>
                 {/* CYCLE-VIZ: the recurring monthly cycle — "Monthly · renews {date}"
                     when registered (from end_date), "Monthly" in the catalog. */}
                 <span data-testid="class-cycle" data-renews={reg?.end_date ?? undefined}
-                  className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">
+                  className="tint-brand mt-2 inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium">
                   <RefreshCw className="h-3 w-3" aria-hidden />
-                  {reg?.end_date ? `${monthlyWord} · ${renewsWord} ${fmtDate(reg.end_date)}` : monthlyWord}
+                  {reg?.end_date
+                    ? <>{t('monthly')} · {t('renewsOn')} <Ltr>{fmtDate(reg.end_date, locale)}</Ltr></>
+                    : t('monthly')}
                 </span>
               </div>
               <div className="text-end">
                 {c.monthly_fee_usd != null && (
-                  <p className="inline-flex items-center gap-0.5 text-sm font-bold text-gray-900">
-                    <DollarSign className="h-3.5 w-3.5" />{Number(c.monthly_fee_usd).toFixed(2)}
-                    <span className="text-xs font-normal text-gray-400">/{t('perMonth')}</span>
+                  /* DA-52: ONE price lockup — "$35.00 /mo", the $ glyph part of
+                     the amount (the floating DollarSign icon dies). */
+                  <p className="text-sm font-bold text-gray-900">
+                    <Ltr>{fmtUsd(c.monthly_fee_usd)}</Ltr>
+                    <span className="text-xs font-normal text-gray-400"> /{t('perMonth')}</span>
                   </p>
                 )}
               </div>
@@ -125,10 +121,8 @@ export function PortalClassesClient({ classes, locale, hasStudent, kidId }: { cl
             <div className="mt-3 flex items-center justify-end gap-2">
               {reg ? (
                 <>
-                  <span data-testid="reg-status" data-status={reg.status}
-                    className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold', statusStyle[reg.status] || 'bg-gray-100 text-gray-600')}>
-                    {statusLabel(reg)}
-                  </span>
+                  <StatusChip domain="registration" status={reg.status} label={statusLabel(reg)}
+                    data-testid="reg-status" className="font-semibold" />
                   <button data-testid="cancel-reg-btn" disabled={busy} onClick={() => cancel(reg.id, c.id)}
                     className="rounded-md border px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
                     {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('cancelReg')}

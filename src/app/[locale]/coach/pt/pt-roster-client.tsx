@@ -1,6 +1,8 @@
 'use client';
 
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, fmtTime } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -38,13 +40,6 @@ type SessionRow = {
 
 type Props = { roster: RosterRow[]; sessions: SessionRow[]; locale: string };
 
-const STATUS_STYLE: Record<string, string> = {
-  scheduled: 'bg-blue-100 text-blue-700',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-100 text-gray-600',
-  no_show: 'bg-red-100 text-red-700',
-};
-
 // FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
 const SessionItem = ({ s, busy, run, t, locale }: {
   s: SessionRow;
@@ -56,12 +51,12 @@ const SessionItem = ({ s, busy, run, t, locale }: {
   <div data-testid="pt-session-row" data-session-id={s.session_id} data-assignment-id={s.assignment_id ?? ''} data-status={s.status} data-remaining={s.sessions_remaining ?? ''} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
     <div className="flex items-center justify-between">
       <p className="text-xs text-gray-600">
-        {new Date(s.scheduled_at).toLocaleDateString(dateLocale(locale))}
+        <Ltr>{`${fmtDate(s.scheduled_at, locale)} ${fmtTime(s.scheduled_at, locale)}`}</Ltr>
         {s.sessions_remaining != null ? ` · ${t('sessions_remaining', { remaining: s.sessions_remaining, total: s.sessions_total ?? 0 })}` : ''}
       </p>
-      <span className={cn('shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium', STATUS_STYLE[s.status])}>
-        {t(`session_status.${s.status}` as Parameters<typeof t>[0])}
-      </span>
+      {/* §2.3: the trial-vocabulary hues carry PT sessions too (same states). */}
+      <StatusChip domain="trial" status={s.status} size="sm" className="shrink-0 text-[10px]"
+        label={t(`session_status.${s.status}` as Parameters<typeof t>[0])} />
     </div>
     {(s.status === 'scheduled' || s.status === 'completed') && (
       <div className="flex gap-1.5">
@@ -70,7 +65,7 @@ const SessionItem = ({ s, busy, run, t, locale }: {
           data-testid="pt-complete"
           disabled={busy !== null}
           onClick={() => run(`cmp-${s.session_id}`, () => completePtSession({ sessionId: s.session_id }), t('session_completed'))}
-          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-success-600 px-2 py-1.5 text-xs font-medium text-success-foreground disabled:opacity-50"
         >
           <CheckCircle2 className="h-3.5 w-3.5" />
           {s.status === 'completed' ? t('session_status.completed') : t('complete')}
@@ -82,7 +77,7 @@ const SessionItem = ({ s, busy, run, t, locale }: {
               data-testid="pt-noshow"
               disabled={busy !== null}
               onClick={() => run(`ns-${s.session_id}`, () => cancelOrNoShowPtSession({ sessionId: s.session_id, outcome: 'no_show' }), t('session_no_show'))}
-              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-red-50 text-red-700 border border-red-200 px-2 py-1.5 text-xs font-medium disabled:opacity-50"
+              className="tint-danger flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-danger-500/30 px-2 py-1.5 text-xs font-medium disabled:opacity-50"
             >
               <XCircle className="h-3.5 w-3.5" />{t('no_show')}
             </button>
@@ -160,7 +155,7 @@ export function CoachPtRosterClient({ roster, sessions, locale }: Props) {
   };
 
   return (
-    <div className={cn('p-4 space-y-5', isRTL && 'rtl')}>
+    <div className="p-4 space-y-5">
       <div>
         <h2 className={cn('text-lg font-bold text-gray-900', isRTL && 'font-arabic')}>{t('my_pt_students')}</h2>
         <p className="text-sm text-gray-500 mt-0.5">{t('my_pt_students_subtitle')}</p>

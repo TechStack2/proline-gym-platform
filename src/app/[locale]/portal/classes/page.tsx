@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
+import { StatusChip } from '@/components/ui/status-chip'
 import { PageHeader } from '@/components/ui/page-header'
 import { localizedName, one } from '@/lib/names'
 import { Calendar, Search } from 'lucide-react'
@@ -115,11 +116,8 @@ export default async function PortalClassesPage({ params: { locale }, searchPara
   const segHref = (v: 'schedule' | 'browse') =>
     `/${locale}/portal/classes?view=${v}${kid ? `&kid=${kid.id}` : ''}`
 
-  const regStatusStyle: Record<string, string> = {
-    active: 'bg-green-100 text-green-700',
-    requested: 'bg-yellow-100 text-yellow-700',
-    waitlisted: 'bg-orange-100 text-orange-700',
-  }
+  // W3a §2.3: colour via the registration vocabulary (StatusChip); labels stay
+  // this page's strings (waitlist carries the position).
   const regStatusLabel = (r: any): string =>
     r.status === 'active' ? tt('statusActive')
     : r.status === 'requested' ? tt('statusRequested')
@@ -127,12 +125,14 @@ export default async function PortalClassesPage({ params: { locale }, searchPara
     : r.status
 
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+    /* W3a R3: the undefined `rtl` class + the physical text-right swept (DA-61 /
+       §4.1 logical-side law — dir already aligns the text). */
+    <div className="p-4 space-y-4">
       <div>
         {/* W2b R3: the ONE title primitive (testid `page-title`); mobile keeps
             the always-visible subtitle line (chrome owns the mobile title). */}
         <PageHeader title={tt('title')} subtitle={tt('subtitle')} variant="compact" />
-        <p className={cn('text-sm text-gray-500 md:hidden', isRTL && 'text-right')}>
+        <p className="text-sm text-gray-500 md:hidden">
           {tt('subtitle')}
         </p>
       </div>
@@ -184,9 +184,7 @@ export default async function PortalClassesPage({ params: { locale }, searchPara
                 {openRegs.map((r: any) => (
                   <li key={r.id} className="flex items-center justify-between gap-2 text-sm">
                     <span className="min-w-0 truncate text-gray-700">{regNames.get(r.class_id) ?? ''}</span>
-                    <span className={cn('inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold', regStatusStyle[r.status] || 'bg-gray-100 text-gray-600')}>
-                      {regStatusLabel(r)}
-                    </span>
+                    <StatusChip domain="registration" status={r.status} label={regStatusLabel(r)} className="shrink-0 font-semibold" />
                   </li>
                 ))}
               </ul>

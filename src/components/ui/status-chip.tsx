@@ -7,12 +7,11 @@
  * one) and the label from the `statuses` i18n namespace, so the six competing
  * conventions DA-32 catalogued collapse to one.
  *
- * Palette note: the variant classes are deliberately the SAME fixed status hues
- * the app already ships on its hand-rolled pills, so adopting this primitive is a
- * pixel-for-pixel swap at the call site. §1.3's promotion of the status hues to
- * `--c-success/warning/info/neutral-*` channel form (and the alpha-tint
- * refinement) is the DS2-TOKENS slice's job, not this one — doing it here would
- * bury a colour migration inside a primitive migration.
+ * Palette note (W3a): the variants wear the §2.3 end-state — the role hue at
+ * TINT strength (`.tint-*`, globals.css) with the on-tint text channel that
+ * lifts under html.dark. This retires the raw `bg-green-100`-family pills that
+ * stayed light-pinned in dark mode (DA-25's chip class); in light the tints
+ * land within a shade of the old -100 fills.
  */
 
 import * as React from 'react';
@@ -26,12 +25,12 @@ import {
 } from '@/lib/status-vocabulary';
 
 const VARIANT: Record<StatusVariant, string> = {
-  success: 'bg-green-100 text-green-700',
-  warning: 'bg-amber-100 text-amber-700',
-  danger: 'bg-red-100 text-red-700',
-  info: 'bg-blue-100 text-blue-700',
-  neutral: 'bg-gray-100 text-gray-600',
-  brand: 'bg-primary-50 text-primary-700',
+  success: 'tint-success',
+  warning: 'tint-warning',
+  danger: 'tint-danger',
+  info: 'tint-info',
+  neutral: 'tint-neutral',
+  brand: 'tint-brand',
 };
 
 const SIZE = {
