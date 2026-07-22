@@ -9,6 +9,7 @@ import { localizedName, one } from '@/lib/names'
 import { beltRankLabel } from '@/lib/belts/label'
 import { fmtPhone } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
+import { NavChevron } from '@/components/ui/nav-chevron'
 
 // Real schema: coaches has NO name/email/status columns. Names + phone come from
 // the embedded `profiles` row; specialization is `specialization_{ar,en,fr}`;
@@ -58,9 +59,12 @@ export function CoachList({ coaches, locale, isRTL }: CoachListProps) {
                       {localized(coach, 'specialization') || t('no_specialization')}
                     </p>
                   </div>
-                  {/* W3b §2.3: ONE status chip — the member vocabulary picks the hue. */}
-                  <StatusChip domain="member" status={coach.is_active ? 'active' : 'inactive'}
-                    label={coach.is_active ? t('status.active') : t('status.inactive')} />
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    {/* W3b §2.3: ONE status chip — the member vocabulary picks the hue. */}
+                    <StatusChip domain="member" status={coach.is_active ? 'active' : 'inactive'}
+                      label={coach.is_active ? t('status.active') : t('status.inactive')} />
+                    <NavChevron />
+                  </span>
                 </div>
 
                 <div className="space-y-2">

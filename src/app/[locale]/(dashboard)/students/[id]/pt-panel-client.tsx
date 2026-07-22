@@ -14,7 +14,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ModalPortal } from '@/components/shared/modal-portal'
+import { Dialog } from '@/components/ui/dialog'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +23,7 @@ import { toast } from '@/components/ui/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar } from '@/components/shared/avatar'
 import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/shared/pt-package-card'
-import { Loader2, Plus, X, AlarmClock, AlertTriangle, CalendarPlus } from 'lucide-react'
+import { Loader2, Plus, AlarmClock, AlertTriangle, CalendarPlus } from 'lucide-react'
 import { sellPtPackage, extendPtPackage } from './actions'
 import { BookPtModal } from '@/components/shared/book-pt-modal'
 import { useErrorText } from '@/lib/errors/use-error-text';
@@ -180,16 +180,14 @@ export function MemberPtPanel({
       </Button>
 
       {open && (
-        <ModalPortal>
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div data-testid="pt-sell-modal" onClick={(e) => e.stopPropagation()}
-            className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">{t('sellTitle')}</h3>
-              <button type="button" onClick={() => setOpen(false)} aria-label="close" className="rounded p-1 text-gray-400 hover:bg-gray-100">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+        <Dialog
+          open={open}
+          onOpenChange={(o) => { if (!o) setOpen(false) }}
+          title={t('sellTitle')}
+          variant="center"
+          className="max-w-md"
+          data-testid="pt-sell-modal"
+        >
             {types.length === 0 ? (
               <p className="py-3 text-center text-sm text-gray-400">{t('noTypes')}</p>
             ) : (
@@ -241,38 +239,39 @@ export function MemberPtPanel({
                 </Button>
               </div>
             )}
-          </div>
-        </div>
-        </ModalPortal>
+        </Dialog>
       )}
 
       {/* J3 PT-GUARDS: warn-and-allow dialog — coach has no published availability.
           Modern, plain-language: two clear actions (set it now / sell anyway). */}
       {warnCoach && (
-        <ModalPortal>
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setWarnCoach(null)}>
-          <div data-testid="pt-sell-warn-modal" onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <div className={cn('mb-2 flex items-center gap-2', isRTL && 'flex-row-reverse text-right')}>
+        <Dialog
+          open
+          onOpenChange={(o) => { if (!o) setWarnCoach(null) }}
+          title={
+            <span className={cn('flex items-center gap-2', isRTL && 'font-arabic')}>
               <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
-              <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('warnNoAvailTitle')}</h3>
-            </div>
-            <p className={cn('mb-4 text-sm text-gray-600', isRTL && 'font-arabic text-right')}>
-              {t('warnNoAvailBody', { coach: warnCoach.name })}
-            </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Link href={`/${locale}/coaches/${warnCoach.id}#panel-availability`} data-testid="pt-sell-set-availability"
-                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                <CalendarPlus className="h-4 w-4" /> {t('warnSetAvailability')}
-              </Link>
-              <Button data-testid="pt-sell-anyway" onClick={doSell} disabled={pending}
-                className="flex-1 bg-primary-700 hover:bg-primary-800">
-                {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('warnSellAnyway')}
-              </Button>
-            </div>
+              {t('warnNoAvailTitle')}
+            </span>
+          }
+          variant="center"
+          className="max-w-sm"
+          data-testid="pt-sell-warn-modal"
+        >
+          <p className={cn('mb-4 text-sm text-gray-600', isRTL && 'font-arabic')}>
+            {t('warnNoAvailBody', { coach: warnCoach.name })}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link href={`/${locale}/coaches/${warnCoach.id}#panel-availability`} data-testid="pt-sell-set-availability"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <CalendarPlus className="h-4 w-4" /> {t('warnSetAvailability')}
+            </Link>
+            <Button data-testid="pt-sell-anyway" onClick={doSell} disabled={pending}
+              className="flex-1 bg-primary-700 hover:bg-primary-800">
+              {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null} {t('warnSellAnyway')}
+            </Button>
           </div>
-        </div>
-        </ModalPortal>
+        </Dialog>
       )}
     </div>
   )

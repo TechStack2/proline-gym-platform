@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { recordPayment, referenceExists } from '../../invoices/actions'
 import { computeDiscount, type DiscountMode } from '@/lib/billing/discount'
 import { useErrorText } from '@/lib/errors/use-error-text';
@@ -171,13 +172,12 @@ export function PaymentForm({ invoice, locale, canDiscount = false }: { invoice:
         </div>
         <div className="space-y-1">
           <Label htmlFor="pay-method">{t('Method', 'طريقة الدفع', 'Méthode')}</Label>
-          <select id="pay-method" data-testid="pay-method" value={method}
-            onChange={(e) => setMethod(e.target.value as Method)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+          <Select id="pay-method" data-testid="pay-method" value={method}
+            onChange={(e) => setMethod(e.target.value as Method)} className="border-input">
             {METHODS.map((m) => (
               <option key={m.value} value={m.value}>{t(m.en, m.ar, m.fr)}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1">
           <Label htmlFor="pay-date">{t('Date', 'التاريخ', 'Date')}</Label>

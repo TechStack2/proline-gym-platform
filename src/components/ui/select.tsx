@@ -24,6 +24,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             className
           )}
           ref={ref}
+          {...props}
           onChange={handleChange}
         >
           {children}

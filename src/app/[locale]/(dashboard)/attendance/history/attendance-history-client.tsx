@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Filter, CalendarDays } from 'lucide-react'
 import { StatusChip } from '@/components/ui/status-chip'
+import { SearchableFilterDialog } from '@/components/ui/filter-dialog'
+import { cn } from '@/lib/utils'
 
 interface ClassOpt {
   id: string
@@ -59,6 +61,7 @@ export function AttendanceHistoryClient({
   locale,
 }: Props) {
   const t = useTranslations('attendanceHistory')
+  const tc = useTranslations('common')
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -108,33 +111,47 @@ export function AttendanceHistoryClient({
                 onChange={(e) => updateFilter({ dateTo: e.target.value || undefined })}
               />
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="text-sm font-medium mb-1 block">{t('discipline')}</label>
-              <select
-                data-testid="history-discipline"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={selectedDisciplineId || ''}
-                onChange={(e) => updateFilter({ disciplineId: e.target.value || undefined, classId: undefined })}
-              >
-                <option value="">{t('allDisciplines')}</option>
-                {disciplines.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
+              {/* §2.6 (W4): a gym's disciplines are a small enumerable set — apply-on-tap
+                  chips (tap-active-clears); picking a discipline resets the class filter. */}
+              <div className="flex flex-wrap items-center gap-1.5" data-testid="history-discipline">
+                {disciplines.map((d) => {
+                  const active = selectedDisciplineId === d.id
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      data-testid="history-discipline-chip"
+                      data-id={d.id}
+                      data-active={active}
+                      onClick={() => updateFilter({ disciplineId: active ? undefined : d.id, classId: undefined })}
+                      className={cn(
+                        'inline-flex min-h-[36px] items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+                        active
+                          ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
+                      )}
+                    >
+                      {d.name}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">{t('class')}</label>
-              <select
-                data-testid="history-class"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              {/* §2.6 (W4): the class catalog is a LONG list — searchable-Dialog filter. */}
+              <SearchableFilterDialog
+                label={t('class')}
                 value={selectedClassId || ''}
-                onChange={(e) => updateFilter({ classId: e.target.value || undefined })}
-              >
-                <option value="">{t('allClasses')}</option>
-                {visibleClasses.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                options={visibleClasses.map((c) => ({ id: c.id, label: c.name }))}
+                onSelect={(id) => updateFilter({ classId: id || undefined })}
+                searchPlaceholder={tc('search')}
+                clearLabel={t('allClasses')}
+                testid="history-class"
+              />
             </div>
           </div>
         </CardContent>

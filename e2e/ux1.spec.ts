@@ -53,7 +53,9 @@ test('UX-1 · wizard-created class lands in list + timetable; zero page errors; 
     await owner.page.goto('/en/schedule');
     const chips = vis(owner.page, `[data-testid="week-chip"][data-class-en="${CLASS_NAME}"]`);
     await expect(chips, 'chips on Mon, Wed and Fri').toHaveCount(3, { timeout: 15_000 });
-    await expect(vis(owner.page, '[data-testid="week-grid"]').first()).toContainText('17:00–18:00');
+    // W4: the grid's time column rides fmtTimeRange, which wraps each side in
+    // LRI/PDI bidi isolates (DA-7) — regex-match around them, never exact-equality.
+    await expect(vis(owner.page, '[data-testid="week-grid"]').first()).toContainText(/17:00.*–.*18:00/);
 
     // ── No unhandled errors anywhere in the sweep or the wizard flow ──
     expect(pageErrors, `unhandled page errors: ${pageErrors.join(' | ')}`).toHaveLength(0);

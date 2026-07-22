@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { fmtDate as fmtDateLoc, fmtTime as fmtTimeLoc } from '@/lib/fmt'
+import { fmtDate as fmtDateLoc, fmtTime as fmtTimeLoc, fmtTimeRange } from '@/lib/fmt'
 import { categoryAttr } from '@/lib/design/category-color'
 import { StatusChip } from '@/components/ui/status-chip'
 import { localizedName, one } from '@/lib/names'
@@ -21,7 +21,7 @@ import { gymDisplayName } from '@/lib/whatsapp/identity'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import {
   DollarSign, ClipboardList, Dumbbell, CalendarDays,
-  Inbox as InboxIcon, AlarmClock, Phone, ChevronRight, RefreshCw, Tent, Flame, Heart, CalendarClock, PauseCircle,
+  Inbox as InboxIcon, AlarmClock, Phone, RefreshCw, Tent, Flame, Heart, CalendarClock, PauseCircle,
 } from 'lucide-react'
 
 /**
@@ -254,6 +254,9 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
       w.lastOutcome === null
     ))
 
+  // Comparison-only copy: the now/next math compares HH:MM lexicographically —
+  // fmtTime's output would work too, but fmtTimeRange's bidi isolates must never
+  // enter a comparison, so the raw slice stays for math and fmt owns DISPLAY.
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
   const fmtTime = (iso: string) => fmtTimeLoc(iso, locale)
   const fmtDate = (d: string) => fmtDateLoc(d, locale)
@@ -304,7 +307,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                       )}
                     </p>
                     <p className="text-xs text-gray-500" dir="ltr">
-                      <span className="whitespace-nowrap">{hhmm(s.start_time)}–{hhmm(s.end_time)}</span>
+                      <span className="whitespace-nowrap">{fmtTimeRange(s.start_time, s.end_time, locale)}</span>
                       {disc ? <span className="whitespace-nowrap"> · {lname(disc)}</span> : null}
                       <span className="whitespace-nowrap"> · {enrolledBy.get(s.cls.id) ?? 0}/{s.cls.max_capacity}</span>
                     </p>
@@ -324,14 +327,12 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
       <ActionCard icon={InboxIcon} title={t('cards.inbox')} count={inboxCount}
         emptyText={t('cards.inboxZero')} testid="inbox" isRTL={isRTL}>
         {(regRequests ?? 0) > 0 && (
-          <ActionRow href={`/${locale}/inbox`} testid="inbox-card-row"
-            action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
+          <ActionRow href={`/${locale}/inbox`} testid="inbox-card-row">
             <p className="text-sm text-gray-800">{t('cards.regRequests', { count: regRequests ?? 0 })}</p>
           </ActionRow>
         )}
         {(ptRequests ?? 0) > 0 && (
-          <ActionRow href={`/${locale}/inbox`} testid="inbox-card-row"
-            action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
+          <ActionRow href={`/${locale}/inbox`} testid="inbox-card-row">
             <p className="text-sm text-gray-800">{t('cards.ptRequests', { count: ptRequests ?? 0 })}</p>
           </ActionRow>
         )}
@@ -504,8 +505,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
           </ActionRow>
         ))}
         {overdueOpen.length > 0 && (
-          <ActionRow href={`/${locale}/money?tab=invoices&status=pending`} testid="money-overdue-row"
-            action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
+          <ActionRow href={`/${locale}/money?tab=invoices&status=pending`} testid="money-overdue-row">
             <p className="text-sm font-medium text-danger-700">
               {t('cards.overdue', { count: overdueOpen.length })} · ${overdueUsd.toFixed(2)}
             </p>

@@ -10,8 +10,9 @@ import { StatusChip } from '@/components/ui/status-chip'
 import { statusTintClass } from '@/lib/status-vocabulary'
 import {
   User, Phone, Award, CreditCard, CalendarDays, Dumbbell, ClipboardList,
-  DollarSign, ChevronRight, Users, Clock,
+  DollarSign, Users, Clock,
 } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { GuardianPanel, type GuardianRow } from './guardian-panel'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { PromotePanel } from './promote-panel'
@@ -667,7 +668,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
           )}
           <div className="mt-3">
             <Link href={`/${locale}/money?tab=invoices&search=${encodeURIComponent(name)}`} className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline">
-              {t('openMoney')} <ChevronRight className={cn('h-3 w-3', isRTL && 'rotate-180')} />
+              {t('openMoney')} <NavChevron className="h-3 w-3 text-primary-600" />
             </Link>
           </div>
         </Panel>

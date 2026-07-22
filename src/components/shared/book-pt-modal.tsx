@@ -15,9 +15,9 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ModalPortal } from './modal-portal'
+import { Dialog } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/use-toast'
-import { CalendarPlus, X, Loader2, Send, AlertTriangle } from 'lucide-react'
+import { CalendarPlus, Loader2, Send, AlertTriangle } from 'lucide-react'
 import { bookPtSlot, getPtSlots, proposePtTime } from '@/lib/pt/booking-actions'
 import type { SlotDay } from '@/lib/pt/slots'
 import { checkPtScheduleConflicts } from '@/app/[locale]/coach/pt/actions'
@@ -111,19 +111,14 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
       </Button>
 
       {open && (
-        <ModalPortal>
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div data-testid="pt-book-modal" onClick={(e) => e.stopPropagation()}
-            className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">
-                {t('title')}{coachName ? ` · ${coachName}` : ''}
-              </h3>
-              <button type="button" onClick={() => setOpen(false)} aria-label="close" className="rounded p-1 text-gray-400 hover:bg-gray-100">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
+        <Dialog
+          open={open}
+          onOpenChange={(o) => { if (!o) setOpen(false) }}
+          title={`${t('title')}${coachName ? ` · ${coachName}` : ''}`}
+          variant="center"
+          className="max-w-md"
+          data-testid="pt-book-modal"
+        >
             {loading ? (
               <p className="py-6 text-center text-sm text-gray-400">{t('loading')}</p>
             ) : propose ? (
@@ -212,9 +207,7 @@ export function BookPtModal({ assignmentId, locale, staff = false, triggerTestid
                 )}
               </div>
             )}
-          </div>
-        </div>
-        </ModalPortal>
+        </Dialog>
       )}
     </>
   )

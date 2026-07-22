@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { Users, ChevronRight, Search } from 'lucide-react'
+import { Users, Search } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { localizedName, one } from '@/lib/names'
 import { matchingProfileIds } from '@/lib/admin/profile-search'
 import { getFamilySummaries, familyOutstandingTotal } from '@/lib/family/aggregate'
@@ -134,7 +135,7 @@ export default async function GuardiansPage({
                     <StatusChip domain="member" status="none" label={t('settled')} size="sm"
                       data-testid="guardian-row-outstanding" data-amount="0.00" />
                   )}
-                  <ChevronRight className={cn('h-4 w-4 text-gray-300', isRTL && 'rotate-180')} aria-hidden />
+                  <NavChevron className="text-gray-300" />
                 </span>
               </Link>
             </li>

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ModalPortal } from '@/components/shared/modal-portal';
+import { Dialog } from '@/components/ui/dialog';
+import { Select } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -123,18 +124,6 @@ function getCoachName(c: PtCoach): string {
   const u = c.user || {};
   return u.first_name_en || u.first_name_ar || '';
 }
-
-// INTAKE-FOCUS: the shared modal backdrop lives at MODULE SCOPE (stable type ref).
-// Inside the render body it got a new identity each keystroke → React remounted the
-// modal subtree (create/edit-package inputs) and dropped the cursor. Props-only —
-// hoists cleanly. Same class of fix as add-student-wizard's field wrapper.
-const ModalBackdrop = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
-  <ModalPortal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      {children}
-    </div>
-  </ModalPortal>
-);
 
 export function PTPackagesClient({ packages: initialPkgs, students, coaches, assignments: initialAssignments, pendingRequests: initialPending, locale, gymId }: Props) {
   const t = useTranslations('pt');
@@ -574,63 +563,62 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
 
       {/* ── CREATE Form Modal ─────────────────────────────────── */}
       {showCreate && (
-        <form onSubmit={handleSubmit(handleCreate)}>
-          <ModalBackdrop onClose={() => { setShowCreate(false); reset(); }}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-lg font-bold">{t('new_package')}</h3>
-                <button type="button" onClick={() => { setShowCreate(false); reset(); }} className="p-1 hover:bg-gray-100 rounded"><X className="h-5 w-5" /></button>
-              </div>
-              <div className="p-4 space-y-3">
-                {renderFormFields(register, errors)}
-                <Button type="submit" disabled={submitting} className="w-full">{submitting ? '...' : t('create')}</Button>
-              </div>
-            </div>
-          </ModalBackdrop>
-        </form>
+        <Dialog
+          open
+          onOpenChange={(o) => { if (!o) { setShowCreate(false); reset(); } }}
+          title={t('new_package')}
+          variant="center"
+          className="max-w-md"
+        >
+          <form onSubmit={handleSubmit(handleCreate)} className="space-y-3">
+            {renderFormFields(register, errors)}
+            <Button type="submit" disabled={submitting} className="w-full">{submitting ? '...' : t('create')}</Button>
+          </form>
+        </Dialog>
       )}
 
       {/* ── EDIT Form Modal ───────────────────────────────────── */}
       {editTarget && (
-        <form onSubmit={editForm.handleSubmit(handleEdit)}>
-          <ModalBackdrop onClose={() => setEditTarget(null)}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-lg font-bold">{t('edit_package')}</h3>
-                <button type="button" onClick={() => setEditTarget(null)} className="p-1 hover:bg-gray-100 rounded"><X className="h-5 w-5" /></button>
-              </div>
-              <div className="p-4 space-y-3">
-                {renderFormFields(editForm.register, editForm.formState.errors)}
-                <Button type="submit" disabled={submitting} className="w-full">{submitting ? '...' : t('save_changes')}</Button>
-              </div>
-            </div>
-          </ModalBackdrop>
-        </form>
+        <Dialog
+          open
+          onOpenChange={(o) => { if (!o) setEditTarget(null) }}
+          title={t('edit_package')}
+          variant="center"
+          className="max-w-md"
+        >
+          <form onSubmit={editForm.handleSubmit(handleEdit)} className="space-y-3">
+            {renderFormFields(editForm.register, editForm.formState.errors)}
+            <Button type="submit" disabled={submitting} className="w-full">{submitting ? '...' : t('save_changes')}</Button>
+          </form>
+        </Dialog>
       )}
 
       {/* ── DELETE Confirmation Modal ─────────────────────────── */}
       {deleteTarget && (
-        <ModalBackdrop onClose={() => setDeleteTarget(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-danger-500/10 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">{t('delete_confirm_title')}</h3>
-                <p className="text-sm text-gray-500">{t('delete_confirm_body')}</p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
+        <Dialog
+          open
+          onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
+          title={t('delete_confirm_title')}
+          variant="center"
+          className="max-w-sm"
+          footer={
+            <>
               <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)} disabled={submitting}>
                 {t('cancel')}
               </Button>
               <Button variant="destructive" size="sm" onClick={handleDelete} disabled={submitting}>
                 {submitting ? t('deleting') : t('delete')}
               </Button>
+            </>
+          }
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-danger-500/10 flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
+            <p className="text-sm text-gray-500">{t('delete_confirm_body')}</p>
           </div>
-        </ModalBackdrop>
+        </Dialog>
       )}
 
       {/* ── Package Cards ─────────────────────────────────────── */}
@@ -709,22 +697,20 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                 {/* ── Assign to Student ──────────────────────── */}
                 {assignPkg === pkg.id ? (
                   <div className="space-y-2 pt-2 border-t">
-                    <select
-                      className="w-full px-3 py-2 text-sm border rounded-lg"
+                    <Select
                       value={assignStudent}
                       onChange={e => setAssignStudent(e.target.value)}
                     >
                       <option value="">{t('select_student')}</option>
                       {students.map((s) => (<option key={s.id} value={s.id}>{getStudentName(s)}</option>))}
-                    </select>
-                    <select
-                      className="w-full px-3 py-2 text-sm border rounded-lg"
+                    </Select>
+                    <Select
                       value={assignCoach}
                       onChange={e => setAssignCoach(e.target.value)}
                     >
                       <option value="">{t('select_coach')}</option>
                       {coaches.map((c) => (<option key={c.id} value={c.id}>{getCoachName(c)}</option>))}
-                    </select>
+                    </Select>
                     {coaches.length === 0 && (
                       <p className="text-xs text-orange-500">{t('no_coaches_available')}</p>
                     )}

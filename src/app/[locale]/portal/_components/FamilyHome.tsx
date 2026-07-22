@@ -8,7 +8,8 @@ import { StatusChip } from '@/components/ui/status-chip'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/shared/avatar'
 import { DeskGrid, PortalCard } from '@/components/portal/portal-kit'
-import { CalendarDays, CreditCard, ClipboardList, Wallet, ChevronRight } from 'lucide-react'
+import { CalendarDays, CreditCard, ClipboardList, Wallet } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { PageHeader } from '@/components/ui/page-header'
 import { getFamilySummaries, type FamilySummary } from '@/lib/family/aggregate'
 
@@ -95,7 +96,10 @@ export async function FamilyHome({
               <p className={cn('text-xs text-danger-600', isRTL && 'font-arabic')}>{th('outstandingCount', { count: householdOpenCount })}</p>
             </div>
           </div>
-          <Ltr className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]">{fmtUsd(householdOutstanding)}</Ltr>
+          <span className="flex shrink-0 items-center gap-1.5">
+            <Ltr className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]">{fmtUsd(householdOutstanding)}</Ltr>
+            <NavChevron />
+          </span>
         </Link>
       )}
 
@@ -137,7 +141,7 @@ export async function FamilyHome({
                       data-testid="family-child-membership" size="sm" className="mt-0.5 text-[10px]" />
                   </div>
                 </div>
-                <ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-300', isRTL && 'rotate-180')} aria-hidden />
+                <NavChevron className="text-gray-300" />
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-1.5">

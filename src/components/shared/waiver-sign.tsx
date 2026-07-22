@@ -9,14 +9,14 @@
  * as a step. RTL-aware, design-system. Record + surface only — blocks nothing.
  */
 import { useState } from 'react'
-import { ModalPortal } from './modal-portal'
+import { Dialog } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useErrorText } from '@/lib/errors/use-error-text'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { X, Loader2, Check, FileSignature } from 'lucide-react'
+import { Loader2, Check, FileSignature } from 'lucide-react'
 import { SignaturePad } from './signature-pad'
 import { signWaiver } from '@/lib/waivers/actions'
 
@@ -65,15 +65,14 @@ export function WaiverSign({
   const t = useTranslations('waiver')
   const errText = useErrorText()
   const router = useRouter()
-  const isRTL = locale === 'ar'
   const [open, setOpen] = useState(false)
   const [signature, setSignature] = useState('')
   const [typedName, setTypedName] = useState('')
   const [agreed, setAgreed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; version?: number; error?: string } | null>(null)
-  // PORTAL-MODAL: the modal is portaled to <body> via the shared <ModalPortal>
-  // (escapes PageTransition's transform so a fixed modal stays viewport-centered).
+  // PORTAL-MODAL: the modal rides the §2.5 Dialog (portaled via the shared ModalPortal,
+  // escaping PageTransition's transform so a fixed modal stays viewport-centered).
   const canSubmit = !!signature && typedName.trim().length > 0 && agreed && !busy
 
   const submit = async () => {
@@ -102,37 +101,30 @@ export function WaiverSign({
       )}
 
       {open && (
-        <ModalPortal>
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
-          onClick={() => !busy && setOpen(false)}>
-          <div data-testid={`${testidPrefix}-sign-modal`} onClick={(e) => e.stopPropagation()}
-            className={cn('flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl')}>
-            <div className="flex items-center justify-between border-b px-5 py-3">
-              <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('signTitle')}</h3>
-              <button type="button" onClick={() => !busy && setOpen(false)} aria-label="close"
-                className="rounded p-1 text-gray-400 hover:bg-gray-100"><X className="h-4 w-4" /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <WaiverConsentFields
-                title={title} body={body} locale={locale}
-                signature={signature} onSignature={setSignature}
-                typedName={typedName} onTypedName={setTypedName}
-                agreed={agreed} onAgreed={setAgreed}
-              />
-              {result && !result.ok && (
-                <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600" data-testid="waiver-sign-error">{errText(result.error)}</p>
-              )}
-            </div>
-            <div className="flex items-center justify-end border-t px-5 py-3">
-              <Button size="sm" data-testid="waiver-submit" disabled={!canSubmit} onClick={() => void submit()}
-                className="bg-primary-700 hover:bg-primary-800">
-                {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />}
-                {t('submitSign')}
-              </Button>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
+        <Dialog
+          open={open}
+          onOpenChange={(o) => { if (!o && !busy) setOpen(false) }}
+          title={t('signTitle')}
+          variant="responsive"
+          data-testid={`${testidPrefix}-sign-modal`}
+          footer={
+            <Button size="sm" data-testid="waiver-submit" disabled={!canSubmit} onClick={() => void submit()}
+              className="bg-primary-700 hover:bg-primary-800">
+              {busy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />}
+              {t('submitSign')}
+            </Button>
+          }
+        >
+          <WaiverConsentFields
+            title={title} body={body} locale={locale}
+            signature={signature} onSignature={setSignature}
+            typedName={typedName} onTypedName={setTypedName}
+            agreed={agreed} onAgreed={setAgreed}
+          />
+          {result && !result.ok && (
+            <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600" data-testid="waiver-sign-error">{errText(result.error)}</p>
+          )}
+        </Dialog>
       )}
     </>
   )

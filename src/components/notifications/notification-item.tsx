@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { ExternalLink } from 'lucide-react';
+import { NavChevron } from '@/components/ui/nav-chevron';
 
 type NotificationItemProps = {
   title: string;
@@ -34,8 +34,7 @@ export function NotificationItem({
         'w-full text-start px-4 py-3 flex gap-3 items-start transition-all duration-150',
         'hover:bg-gray-50 active:bg-gray-100',
         'animate-in fade-in-0 slide-in-from-top-1 duration-200',
-        !isRead && 'bg-red-50/40 hover:bg-red-50/70',
-        isRTL && 'flex-row-reverse text-right'
+        !isRead && 'bg-red-50/40 hover:bg-red-50/70'
       )}
     >
       {/* Status dot */}
@@ -50,7 +49,7 @@ export function NotificationItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className={cn('flex items-start gap-2', isRTL && 'flex-row-reverse')}>
+        <div className="flex items-start gap-2">
           <p
             className={cn(
               'text-sm font-medium truncate flex-1',
@@ -74,19 +73,16 @@ export function NotificationItem({
           {body}
         </p>
         {actionUrl && (
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 text-xs mt-1 text-primary-600',
-              isRTL && 'flex-row-reverse'
-            )}
-          >
-            <ExternalLink className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 text-xs mt-1 text-primary-600">
             <span>
               {locale === 'ar' ? 'عرض' : locale === 'fr' ? 'Voir' : 'View'}
             </span>
           </span>
         )}
       </div>
+
+      {/* §2.7 (DA-56): the row NAVIGATES when actionUrl is set — trailing NavChevron. */}
+      {actionUrl && <NavChevron className="mt-1.5 self-start" />}
     </button>
   );
 }

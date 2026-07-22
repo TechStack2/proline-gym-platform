@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { PortalCard, PortalCardTitle, PortalEmpty, DeskGrid } from '@/components/portal/portal-kit'
 import { ActionCard } from '@/components/dashboard/action-card'
 import { DrillDetails, type DrillRow } from '@/components/dashboard/drill-details'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { InstallAppCard } from '@/components/pwa/install-app-card'
 import { getUserGymChrome } from '@/lib/theme/user-brand'
 
@@ -268,7 +269,10 @@ export default async function CoachHomePage({ params: { locale } }: Props) {
             <Link key={tr.id} href={`/${locale}/coach/trials`} data-testid="coach-home-trial-row" data-lead-name={tr.lead_name}
               className="flex items-center justify-between rounded-xl border px-3 py-2 hover:bg-gray-50">
               <span className="text-sm font-medium text-gray-800">{tr.lead_name}</span>
-              <Ltr className="text-xs text-gray-500">{tr.scheduled_time ? fmtTime(tr.scheduled_time, locale) : ''}</Ltr>
+              <span className="flex shrink-0 items-center gap-1.5">
+                <Ltr className="text-xs text-gray-500">{tr.scheduled_time ? fmtTime(tr.scheduled_time, locale) : ''}</Ltr>
+                <NavChevron />
+              </span>
             </Link>
           ))}
         </PortalCard>

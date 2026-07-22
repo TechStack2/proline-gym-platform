@@ -16,8 +16,9 @@ import {
 } from '@/lib/finances/horizon-cards'
 import { getFunnel, monthStartISO } from '@/lib/growth/funnel'
 import {
-  BarChart3, ArrowLeftRight, Target, AlertTriangle, Activity, RefreshCw, Sparkles, ChevronRight, ChevronDown, TrendingUp, TrendingDown,
+  BarChart3, ArrowLeftRight, Target, AlertTriangle, Activity, RefreshCw, Sparkles, TrendingUp, TrendingDown,
 } from 'lucide-react'
+import { NavChevron, DisclosureChevron } from '@/components/ui/nav-chevron'
 
 /**
  * This Month — "grow & diagnose" (strategic lens). DRILL-360: every headline
@@ -95,13 +96,13 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
           const d = amt - (last.byProduct[p] ?? 0)
           const rows = revByProduct(p)
           return (
-            <details key={p} className="rounded-xl border bg-gray-50/60" data-testid="revenue-product-row" data-product={p}>
+            <details key={p} className="group rounded-xl border bg-gray-50/60" data-testid="revenue-product-row" data-product={p}>
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
                 <span className="text-sm font-semibold text-gray-900">{t(`month.product.${p}` as any)}</span>
                 <span className="flex items-center gap-1.5 shrink-0 text-xs text-gray-500">
                   <span className="text-sm font-bold text-gray-900" data-testid="revenue-amount" data-v={amt.toFixed(2)}>${amt.toFixed(2)}</span>
                   <span className={cn(d >= 0 ? 'text-emerald-600' : 'text-red-600')}>({d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(0)})</span>
-                  <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden />
+                  <DisclosureChevron />
                 </span>
               </summary>
               <div className="space-y-1 border-t px-2 py-2">
@@ -159,8 +160,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
             href: c.studentId ? stu(c.studentId) : `/${locale}/leads`,
             left: c.name, right: c.source ?? undefined,
           }))} />
-        <ActionRow href={`/${locale}/leads`} testid="conversion-month-row"
-          action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
+        <ActionRow href={`/${locale}/leads`} testid="conversion-month-row">
           <p className="text-sm text-gray-800">{t('month.conversionTrials', { trials: funnel.trials, leads: funnel.totalLeads })}</p>
         </ActionRow>
       </ActionCard>
@@ -222,8 +222,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
           </div>
         ) : undefined}>
         {renewals.rows.map((r, i) => (
-          <ActionRow key={`${r.kind}-${r.studentId}-${i}`} href={stu(r.studentId)} testid="renewals-month-row"
-            action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
+          <ActionRow key={`${r.kind}-${r.studentId}-${i}`} href={stu(r.studentId)} testid="renewals-month-row">
             <p className="truncate text-sm font-semibold text-gray-900" data-kind={r.kind}>{r.name}</p>
             <p className="text-xs text-gray-500">
               {r.kind === 'membership' ? t('week.membershipKind') : t('week.classKind')}
@@ -248,7 +247,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
             <span className="text-lg font-bold text-gray-900" data-testid="growth-utilization">{extras.avgUtilPct}%</span>
             <span className="text-sm text-gray-500">{t('month.utilization')}</span>
           </span>
-          <ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />
+          <NavChevron />
         </Link>
       </ActionCard>
     </div>

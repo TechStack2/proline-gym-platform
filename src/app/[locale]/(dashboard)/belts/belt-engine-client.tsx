@@ -7,6 +7,7 @@ import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { promoteStudent } from './actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { Award, TrendingUp, User, Calendar, Check, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -39,8 +40,6 @@ type Promotion = {
   notes_en: string | null; notes_ar: string | null; notes_fr: string | null;
   created_at: string;
 };
-
-const selectClass = 'w-full px-3 py-2 text-sm border rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500';
 
 // W3b/DA-9+DA-43: the hardcoded 20-entry colour+trilingual-label map died — labels
 // come from the `beltRanks` i18n namespace via beltRankLabel, colours from the ONE
@@ -251,25 +250,25 @@ export function BeltEngineClient({
                 <>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('student_label')}</label>
-                    <select data-testid="be-student" className={selectClass} value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}>
+                    <Select data-testid="be-student" className="rounded-lg" value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}>
                       <option value="">{t('select_student')}</option>
                       {students.map(s => (
                         <option key={s.id} value={s.id}>{getStudentName(s)}</option>
                       ))}
-                    </select>
+                    </Select>
                     {selectedStudentData && (
                       <span data-testid="be-current-rank" data-rank={selectedStudentData.current_belt_rank || ''} className="hidden" />
                     )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('discipline_label')}</label>
-                    <select data-testid="be-discipline" className={selectClass} value={selectedDiscipline}
+                    <Select data-testid="be-discipline" className="rounded-lg" value={selectedDiscipline}
                       onChange={e => { setSelectedDiscipline(e.target.value); setSelectedBelt(''); }}>
                       <option value="">{t('select_discipline')}</option>
                       {disciplines.filter(d => beltHierarchies.some(b => b.discipline_id === d.id)).map(d => (
                         <option key={d.id} value={d.id}>{getDisciplineName(d)}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                 </>
               )}
@@ -279,7 +278,7 @@ export function BeltEngineClient({
                 <>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('new_belt')}</label>
-                    <select data-testid="be-belt" className={selectClass} value={selectedBelt} onChange={e => setSelectedBelt(e.target.value)} disabled={!selectedDiscipline}>
+                    <Select data-testid="be-belt" className="rounded-lg" value={selectedBelt} onChange={e => setSelectedBelt(e.target.value)} disabled={!selectedDiscipline}>
                       <option value="">{t('select_belt')}</option>
                       {filteredBelts.map(b => (
                         <option key={b.id} value={b.id} data-rank={b.rank} data-sort={b.sort_order}>
@@ -287,16 +286,16 @@ export function BeltEngineClient({
                           {b.is_black_belt ? ' 🏆' : ''}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('coach_label')}</label>
-                    <select data-testid="be-coach" className={selectClass} value={selectedCoach} onChange={e => setSelectedCoach(e.target.value)}>
+                    <Select data-testid="be-coach" className="rounded-lg" value={selectedCoach} onChange={e => setSelectedCoach(e.target.value)}>
                       <option value="">{t('select_coach')}</option>
                       {coaches.map(c => (
                         <option key={c.id} value={c.id}>{getCoachName(c)}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">{t('notes_label')}</label>

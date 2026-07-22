@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { issueInvoice } from '../actions'
 import { useErrorText } from '@/lib/errors/use-error-text';
 
@@ -92,20 +93,20 @@ export function IssueInvoiceForm({
     <div data-testid="issue-form" className="max-w-lg space-y-4 rounded-xl border p-4">
       <div className="space-y-1">
         <Label htmlFor="inv-student">{t('Member', 'العضو', 'Membre')}</Label>
-        <select id="inv-student" data-testid="inv-student" value={studentId} onChange={(e) => setStudentId(e.target.value)}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+        <Select id="inv-student" data-testid="inv-student" value={studentId} onChange={(e) => setStudentId(e.target.value)}
+          className="border-input">
           <option value="">{t('Select a member…', 'اختر عضواً…', 'Sélectionner un membre…')}</option>
           {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        </Select>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="inv-type">{t('Type', 'النوع', 'Type')}</Label>
-          <select id="inv-type" data-testid="inv-type" value={invoiceType} onChange={(e) => setInvoiceType(e.target.value as InvoiceType)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+          <Select id="inv-type" data-testid="inv-type" value={invoiceType} onChange={(e) => setInvoiceType(e.target.value as InvoiceType)}
+            className="border-input">
             {TYPES.map((x) => <option key={x.value} value={x.value}>{t(x.en, x.ar, x.fr)}</option>)}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1">
           <Label htmlFor="inv-due">{t('Due date', 'تاريخ الاستحقاق', "Date d'échéance")}</Label>

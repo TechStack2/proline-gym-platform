@@ -19,7 +19,8 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { statusTintClass } from '@/lib/status-vocabulary'
 import { toast } from '@/components/ui/use-toast'
-import { Tent, Plus, Globe, Pencil, Archive, ChevronRight, Users } from 'lucide-react'
+import { Tent, Plus, Globe, Pencil, Archive, Users } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 
 export type CampRow = {
   id: string
@@ -233,7 +234,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
                 )}
                 <Link href={`/${locale}/camps/${c.id}`} data-testid="camp-roster-link"
                   className="ms-auto inline-flex items-center gap-0.5 text-xs font-medium text-primary-600 hover:underline">
-                  {t('roster')} <ChevronRight className={cn('h-3 w-3', isRTL && 'rotate-180')} />
+                  {t('roster')} <NavChevron className="h-3 w-3 text-primary-600" />
                 </Link>
               </div>
             </div>

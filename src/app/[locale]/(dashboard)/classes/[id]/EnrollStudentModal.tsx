@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { X, Search, Loader2, Check, Users } from 'lucide-react'
-import { ModalPortal } from '@/components/shared/modal-portal'
+import { Search, Loader2, Check, Users } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -106,18 +106,14 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
   }
 
   return (
-    <ModalPortal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div
-        data-testid="enroll-modal"
-        className={cn('bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto')}
-      >
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">{t('enrollStudent')}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
-        </div>
-
-        <div className="p-6 space-y-4">
+    <Dialog
+      open
+      onOpenChange={(o) => { if (!o) onClose() }}
+      title={t('enrollStudent')}
+      variant="center"
+      data-testid="enroll-modal"
+    >
+        <div className="space-y-4">
           {error && <div className="tint-danger p-3 rounded-md text-sm">{error}</div>}
 
           <div className="relative">
@@ -187,8 +183,6 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
             </Button>
           </div>
         </div>
-      </div>
-    </div>
-    </ModalPortal>
+    </Dialog>
   )
 }

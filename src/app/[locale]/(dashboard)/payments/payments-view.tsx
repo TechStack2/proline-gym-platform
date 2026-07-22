@@ -50,11 +50,23 @@ export async function PaymentsView({ locale, searchParams }: Props) {
   const fmtDate = (d: string | null) => fmtDateLoc(d, locale)
   const methodLabel = (m: string) => (locale === 'ar' ? METHOD_LABEL[m]?.ar : locale === 'fr' ? METHOD_LABEL[m]?.fr : METHOD_LABEL[m]?.en) || m
 
+  // §2.6 (W4): the method filter's chip links — preserve the date range, toggle the
+  // method (tapping the active chip clears it), same searchParams mechanics as the
+  // W3b schedule chips.
+  const methodHref = (method: string | undefined) => {
+    const p = new URLSearchParams({ tab: 'payments' })
+    if (searchParams.from) p.set('from', searchParams.from)
+    if (searchParams.to) p.set('to', searchParams.to)
+    if (method) p.set('method', method)
+    return `/${locale}/money?${p.toString()}`
+  }
+
   return (
     <div className="space-y-6">
       {/* Filters */}
       <form className="flex flex-wrap items-end gap-3" action={`/${locale}/money`} method="get">
         <input type="hidden" name="tab" value="payments" />
+        {searchParams.method && <input type="hidden" name="method" value={searchParams.method} />}
         <div className="space-y-1">
           <label className="block text-xs text-muted-foreground">{t('From', 'من', 'De')}</label>
           <input type="date" name="from" defaultValue={searchParams.from ?? ''} data-testid="pay-filter-from"
@@ -65,17 +77,30 @@ export async function PaymentsView({ locale, searchParams }: Props) {
           <input type="date" name="to" defaultValue={searchParams.to ?? ''} data-testid="pay-filter-to"
             className="h-9 rounded-md border px-3 text-sm" />
         </div>
-        <div className="space-y-1">
-          <label className="block text-xs text-muted-foreground">{t('Method', 'الطريقة', 'Méthode')}</label>
-          <select name="method" defaultValue={searchParams.method ?? ''} data-testid="pay-filter-method"
-            className="h-9 rounded-md border px-3 text-sm">
-            <option value="">{t('All methods', 'كل الطرق', 'Toutes les méthodes')}</option>
-            {METHODS.map((m) => <option key={m} value={m}>{methodLabel(m)}</option>)}
-          </select>
-        </div>
         <button className="h-9 rounded-md bg-primary-700 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-800">{t('Filter', 'تصفية', 'Filtrer')}</button>
         <Link href={`/${locale}/money?tab=payments`} className="h-9 rounded-md border px-4 text-sm leading-9 hover:bg-muted">{t('Clear', 'مسح', 'Effacer')}</Link>
       </form>
+
+      {/* §2.6 (W4): the ≤8-method filter is apply-on-tap chip LINKS (server-rendered,
+          RTL-safe) — the container keeps the historical testid. */}
+      <div className="flex flex-wrap items-center gap-1.5" data-testid="pay-filter-method">
+        {[{ value: '', label: t('All methods', 'كل الطرق', 'Toutes les méthodes') }, ...METHODS.map((m) => ({ value: m as string, label: methodLabel(m) }))].map((m) => {
+          const active = m.value ? searchParams.method === m.value : !searchParams.method
+          return (
+            <Link key={m.value || 'all'} href={methodHref(!m.value || searchParams.method === m.value ? undefined : m.value)}
+              data-testid="pay-method-chip" data-method={m.value} data-active={active || undefined}
+              className={cn(
+                'inline-flex min-h-[36px] items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+                active
+                  ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
+              )}>
+              {m.label}
+            </Link>
+          )
+        })}
+      </div>
 
       <p className="text-sm text-muted-foreground">
         {t('Total (USD)', 'الإجمالي (دولار)', 'Total (USD)')}: <span className="font-bold text-foreground" data-testid="pay-total">${totalUsd.toFixed(2)}</span> · {rows.length} {t('payments', 'دفعة', 'paiements')}

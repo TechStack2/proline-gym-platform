@@ -6,9 +6,10 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import {
   Building2, Swords, Tag, FileText, MessageSquare, Tent, UserCog, BarChart3, Rocket,
-  ChevronRight, ChevronLeft, ExternalLink, CalendarDays, GraduationCap, Award,
+  ChevronRight, ChevronLeft, CalendarDays, GraduationCap, Award,
   type LucideIcon,
 } from 'lucide-react';
+import { NavChevron } from '@/components/ui/nav-chevron';
 import { GymSettings } from './gym-settings';
 import { LandingPhotosManager } from './landing-photos-manager';
 import { ExchangeRates } from './exchange-rates';
@@ -241,7 +242,7 @@ export function SettingsClient({
                   </span>
                   <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${k}.desc` as Parameters<typeof t>[0])}</span>
                 </span>
-                <Fwd className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
+                <NavChevron className="mt-1 text-gray-300 group-hover:text-gray-400" />
               </button>
             );
           }
@@ -255,7 +256,7 @@ export function SettingsClient({
                 </span>
                 <span className={cn('mt-0.5 block text-xs text-gray-500', isRTL && 'font-arabic')}>{t(`manage.cards.${entry.id}.desc` as Parameters<typeof t>[0])}</span>
               </span>
-              <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
+              <NavChevron className="mt-1 text-gray-300 group-hover:text-gray-400" />
             </Link>
           );
         })}
@@ -269,7 +270,7 @@ function SubLink({ href, icon: Icon, label, isRTL }: { href: string; icon: Lucid
     <Link href={href} className="inline-flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
       <Icon className="h-4 w-4 text-primary-600" />
       <span className={cn('flex-1', isRTL && 'font-arabic')}>{label}</span>
-      <ExternalLink className="h-3.5 w-3.5 text-gray-300" />
+      <NavChevron className="h-3.5 w-3.5 text-gray-300" />
     </Link>
   );
 }

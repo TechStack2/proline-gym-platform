@@ -15,8 +15,8 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { ModalPortal } from './modal-portal'
 import { X, Loader2, Check } from 'lucide-react'
 
 export type WizardStep = {
@@ -50,19 +50,19 @@ export function FormWizard({
   const last = step === steps.length - 1
   const valid = current?.valid !== false
 
+  // DA-30 (W4): the wizard rides the §2.5 Dialog primitive for its MACHINERY
+  // (ModalPortal, overlay, focus trap, Esc, aria, scroll lock) while keeping its
+  // own spec-pinned chrome — the step rail/back/next DOM is a platform
+  // convention in its own right, hence chrome="none".
   return (
-    <ModalPortal>
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
-      onClick={onClose}>
-      <div
-        data-testid={testid}
-        onClick={(e) => e.stopPropagation()}
-        className={cn(
-          'flex max-h-[94vh] w-full flex-col overflow-hidden bg-white shadow-xl',
-          'rounded-t-2xl sm:max-w-lg sm:rounded-2xl', // sheet on mobile, modal on desktop
-          isRTL && 'text-right',
-        )}
-      >
+    <Dialog
+      open={open}
+      onOpenChange={(o) => { if (!o) onClose() }}
+      title={title}
+      variant="responsive"
+      chrome="none"
+      data-testid={testid}
+    >
         <div className="flex items-center justify-between border-b px-5 py-3">
           <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{title}</h3>
           <button type="button" onClick={onClose} aria-label="close"
@@ -106,9 +106,7 @@ export function FormWizard({
             </Button>
           )}
         </div>
-      </div>
-    </div>
-    </ModalPortal>
+    </Dialog>
   )
 }
 
