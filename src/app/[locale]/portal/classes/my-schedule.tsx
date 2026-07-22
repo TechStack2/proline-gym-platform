@@ -2,6 +2,9 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
+import { fmtTimeRange, fmtWeekday } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
+import { categoryAttr } from '@/lib/design/category-color'
 import { CalendarDays, Clock, MapPin, Search } from 'lucide-react'
 
 /**
@@ -44,11 +47,9 @@ export async function MySchedule({ locale }: { locale: string }) {
     .eq('student_id', student?.id)
     .eq('is_active', true)
 
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const daysAr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
-  const daysFr = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
-
-  const dayLabel = (d: number) => isRTL ? daysAr[d] : (locale === 'fr' ? daysFr[d] : days[d])
+  // W3a §2.7: weekday names via the fmt module (Intl) — the three hand-rolled
+  // parallel arrays die.
+  const dayLabel = (d: number) => fmtWeekday(d, locale, isRTL ? 'long' : 'short')
 
   const className = (cls: any) => {
     if (!cls) return 'Unknown'
@@ -90,7 +91,8 @@ export async function MySchedule({ locale }: { locale: string }) {
     .sort((a, b) => ((a - todayDow + 7) % 7) - ((b - todayDow + 7) % 7))
 
   return (
-    <div className={cn('space-y-4', isRTL && 'rtl')} data-testid="my-schedule">
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="space-y-4" data-testid="my-schedule">
       {sortedDays.length === 0 ? (
         <div className="rounded-2xl bg-white p-8 shadow-sm text-center">
           <CalendarDays className="mx-auto h-12 w-12 text-gray-300 mb-3" />
@@ -119,12 +121,23 @@ export async function MySchedule({ locale }: { locale: string }) {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-semibold text-gray-900">{className(enr.classes)}</p>
-                      <p className="text-sm text-primary-700 font-medium">{discipline(enr.classes?.disciplines)}</p>
+                      {/* W3a/DA-38: a discipline is a CATEGORY, not a warning —
+                          the brand-red label becomes its DISC-COLOR tint chip. */}
+                      {discipline(enr.classes?.disciplines) && (
+                        <span
+                          className="cat-tint mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                          data-cat={categoryAttr(enr.classes?.discipline_id)}
+                        >
+                          {discipline(enr.classes?.disciplines)}
+                        </span>
+                      )}
                     </div>
                     <div className="text-end">
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Clock className="h-3.5 w-3.5" />
-                        <span>{enr.schedule?.start_time?.slice(0, 5)} - {enr.schedule?.end_time?.slice(0, 5)}</span>
+                        {/* DA-7: the range is ONE isolated unit — "21:30 - 20:00"
+                            (classes ending before they start) dies here. */}
+                        <Ltr>{fmtTimeRange(enr.schedule?.start_time, enr.schedule?.end_time, locale)}</Ltr>
                       </div>
                       {enr.classes?.room && (
                         <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">

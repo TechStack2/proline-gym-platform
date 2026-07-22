@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { CoachLayoutClient } from './_components/CoachLayoutClient'
 import { BrandThemeStyle } from '@/components/shared/brand-theme-style'
+import { COACH_THEME_COLOR } from '@/lib/theme/brand'
 
 // AX-1 shell identity: per-shell PWA theme-color (coach = black/gold). DS-2: per
 // light/dark — dark status bar = the shared #131317 ground.
@@ -11,8 +12,9 @@ export const viewport: Viewport = {
   // padding actually resolves on standalone iOS (0 without viewport-fit=cover).
   viewportFit: 'cover',
   // W2c/DA-62: ONE light meta — theme-color follows the APP's html.dark state
-  // (boot script + ThemeToggle swap in #131317), not the OS media query.
-  themeColor: '#111111',
+  // (boot script + ThemeToggle swap in the shared dark ground), not the OS
+  // media query. W3a R3: the hue lives in the token file.
+  themeColor: COACH_THEME_COLOR,
 }
 
 type Props = { children: React.ReactNode; params: { locale: string } }

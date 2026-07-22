@@ -7,7 +7,7 @@ import { NativeHeader, PageTransition, DesktopRail, IdentityBar, MoreSheet } fro
 import { TabBar } from '@/components/native/TabBar';
 import { PORTAL_NAV, portalNav, PORTAL_BASE_PATH } from './PortalTabConfig';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut } from 'lucide-react';
+
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { PushPrompt } from '@/components/push/push-prompt';
@@ -86,7 +86,10 @@ export function PortalLayoutClient({ children, locale, gymName, logoUrl }: Props
           onSignOut={handleLogout}
         />
 
-        {/* Mobile chrome (<768): status-zone header per §2.1. */}
+        {/* Mobile chrome (<768): status-zone header per §2.1. W3a (DA-17/18):
+            slim single-row chrome — gym identity + ONE shell badge; the
+            persistent header logout leaves persistent chrome (§1.3) — sign-out
+            lives in the More sheet (confirm-stepped). */}
         <div className="md:hidden">
           <NativeHeader
             title={headerTitle}
@@ -94,18 +97,14 @@ export function PortalLayoutClient({ children, locale, gymName, logoUrl }: Props
             shell="portal"
             variant="large"
             titleMobileOnly
+            slim
+            gymName={gymName}
+            logoUrl={logoUrl}
             rightActions={
               <div className="flex items-center gap-2">
                 <HeaderAvatar />
                 {isDesktop === false && <NotificationBell locale={locale} />}
                 <ThemeToggle />
-                <button
-                  onClick={handleLogout}
-                  className="rounded-full h-10 w-10 inline-flex items-center justify-center hover:bg-red-50 transition-colors"
-                  aria-label="Sign out"
-                >
-                  <LogOut className="h-5 w-5 text-red-500" />
-                </button>
               </div>
             }
           />

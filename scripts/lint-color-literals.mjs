@@ -69,11 +69,8 @@ const ALLOWLIST = {
     'canvas 2D ctx.strokeStyle — the Canvas API takes a color string, not a CSS var.',
 
   // ── Scheduled debt. Real violations, deliberately not fixed in THIS slice.
-  'src/app/[locale]/portal/layout.tsx':
-    'TODO(W2-portal-coach): PWA theme-color for the member shell. Lane A owns portal ' +
-    'layout files during W2a; editing here would collide. Revisit when W2a merges.',
-  'src/app/[locale]/coach/layout.tsx':
-    'TODO(W2-portal-coach): PWA theme-color for the coach shell. Same collision reason.',
+  // (W3a R3 retired the two TODO(W2-portal-coach) entries: the portal/coach
+  // theme-color hexes moved into src/lib/theme/brand.ts as named tokens.)
   'src/app/praxella-landing.css':
     'TODO(W3-landing-brand): the vendor marketing surface ships its own scoped --px-* ' +
     'design system (all literals are token DEFINITIONS inside .px-landing, not escape ' +

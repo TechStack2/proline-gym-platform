@@ -31,6 +31,13 @@ export const DEFAULT_BRAND_COLOR = '#cd1419'
  *  named here (the token file) so consumers import it instead of re-typing the
  *  literal (W2c/DA-62: boot script, ThemeToggle, manifest builder). */
 export const DARK_APP_GROUND = '#131317'
+
+/** The per-role LIGHT theme-color metas (OS status bar; a CSS var is not a legal
+ *  value there — same reason as seo.ts's). W3a R3: named here so the portal/coach
+ *  layouts stop carrying raw hexes under a TODO(W2-portal-coach) allowlist
+ *  exemption. Staff's is per-gym (getUserThemeColor), not a constant. */
+export const PORTAL_THEME_COLOR = '#0e7490' /* member — cool teal */
+export const COACH_THEME_COLOR = '#111111' /* coach — black/gold */
 export function safeBrandColor(c: string | null | undefined): string {
   return c && HEX6.test(c) ? c : DEFAULT_BRAND_COLOR
 }

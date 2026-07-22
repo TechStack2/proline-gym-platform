@@ -1,11 +1,15 @@
 'use client';
 
-import { dateLocale } from '@/lib/utils/locale-format'
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import { createClient } from '@/lib/supabase/client';
+import { fmtDate } from '@/lib/fmt';
+import { Ltr } from '@/components/ui/bdi';
+import { beltRankLabel, beltSwatchClass } from '@/lib/belts/label';
 import { Users, Search, BookOpen, Award, Calendar, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { DeskGrid } from '@/components/portal/portal-kit';
@@ -19,16 +23,6 @@ interface StudentEntry {
   last_attendance: string;
 }
 
-// ─── Localized message lookup ───
-const t = (messages: any, path: string): string => {
-  const keys = path.split('.');
-  let val: any = messages;
-  for (const k of keys) {
-    val = val?.[k];
-  }
-  return typeof val === 'string' ? val : path;
-};
-
 // Type-safe localized field accessor
 function getLocalized(obj: any, locale: string, fieldBase: string): string {
   if (!obj) return '';
@@ -41,14 +35,41 @@ function getLocalized(obj: any, locale: string, fieldBase: string): string {
   return '';
 }
 
+/** §2.6 filter chip — apply on tap, tap again to clear. */
+function FilterChip({
+  active, onClick, children, testid,
+}: { active: boolean; onClick: () => void; children: React.ReactNode; testid?: string }) {
+  return (
+    <button
+      type="button"
+      data-testid={testid}
+      data-active={active || undefined}
+      onClick={onClick}
+      className={cn(
+        'inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+        active
+          ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function CoachStudentsPage({ params }: { params: { locale: string } }) {
   const { locale } = params;
-  const isRTL = locale === 'ar';
   const supabase = createClient();
+  // W3a §2.7: through next-intl like every other page — the old hand-rolled
+  // messages-import + path-walker silently returned the key path on a miss,
+  // which is exactly the DA-5 class the missing-key gate exists to catch.
+  const t = useTranslations('coach.students');
+  const tCommon = useTranslations('common');
+  const tb = useTranslations('beltRanks');
 
   // COACH360-PORTAL: the hub's My Students rows drill here focused via ?q=.
   const searchParams = useSearchParams();
-  const [messages, setMessages] = useState<any>(null);
   const [students, setStudents] = useState<StudentEntry[]>([]);
   const [filtered, setFiltered] = useState<StudentEntry[]>([]);
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
@@ -57,13 +78,6 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
   const [beltFilter, setBeltFilter] = useState('');
   const [disciplines, setDisciplines] = useState<string[]>([]);
   const [belts, setBelts] = useState<string[]>([]);
-
-  // Load i18n messages
-  useEffect(() => {
-    import(`@/i18n/messages/${locale}.json`).then(m => setMessages(m.default));
-  }, [locale]);
-
-  const msg = useCallback((path: string) => (messages ? t(messages, path) : path), [messages]);
 
   // Fetch students
   useEffect(() => {
@@ -195,6 +209,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
     }
 
     loadStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
   // Search + filter
@@ -222,106 +237,85 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
     setFiltered(result);
   }, [search, disciplineFilter, beltFilter, students]);
 
-  // DA-9: localize belt ranks via the bundled beltRanks map (no raw enum / English
-  // belt names in the Arabic UI). `t` returns the path on a miss → readable fallback.
-  const beltLabel = (rank: string): string => {
-    if (!rank) return '';
-    const label = t(messages, `beltRanks.${rank}`);
-    return label === `beltRanks.${rank}`
-      ? rank.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-      : label;
-  };
-
-  if (!messages) {
-    return <div className="p-4 text-gray-400 text-sm">{'Loading...'}</div>;
-  }
+  // DA-9: localize belt ranks via enumLabel's beltRankLabel (no raw enum /
+  // English belt names in the Arabic UI).
+  const beltLabel = (rank: string): string =>
+    rank ? beltRankLabel(rank, (k) => tb(k as never), '') : '';
 
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="p-4 space-y-4">
       {/* W2b R3: the ONE title primitive (testid `page-title`, h1 — was an h2
           with `coach-page-title`); mobile keeps the always-visible subtitle. */}
       <div>
-        <PageHeader title={msg('coach.students.title')} subtitle={msg('coach.students.subtitle')} variant="compact" />
-        <p className="text-sm text-gray-500 md:hidden">{msg('coach.students.subtitle')}</p>
+        <PageHeader title={t('title')} subtitle={t('subtitle')} variant="compact" />
+        <p className="text-sm text-gray-500 md:hidden">{t('subtitle')}</p>
       </div>
 
       {/* W2a §4.2 Rule 1 (asideFirst): search + filters are the coach's controls —
           above the list on mobile, the aside column on desktop; main = states + list. */}
       <DeskGrid asideFirst gap="space-y-4" aside={<>
-      {/* Search Bar */}
+      {/* Search Bar — §4.1: logical-side positioning only (was isRTL ? right : left). */}
       <div className="relative">
-        <Search className={cn(
-          'absolute top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400',
-          isRTL ? 'right-3' : 'left-3'
-        )} />
+        <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder={msg('coach.students.searchPlaceholder')}
+          placeholder={t('searchPlaceholder')}
           className={cn(
-            'w-full rounded-xl border border-gray-200 bg-white py-2.5 text-sm text-gray-700',
+            'w-full rounded-xl border border-gray-200 bg-white py-2.5 ps-9 pe-4 text-sm text-gray-700',
             'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700',
-            'placeholder:text-gray-400 appearance-none',
-            isRTL ? 'pr-9 pl-4' : 'pl-9 pr-4'
+            'placeholder:text-gray-400 appearance-none'
           )}
         />
       </div>
 
-      {/* Filters */}
-      <div className={cn('flex gap-2', isRTL ? 'flex-row-reverse' : '')}>
-        <select
-          value={disciplineFilter}
-          onChange={e => setDisciplineFilter(e.target.value)}
-          className={cn(
-            'flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700'
-          )}
-        >
-          <option value="">{msg('coach.students.allDisciplines')}</option>
+      {/* §2.6 (DA-33): the two native <select>s become chip filters — small
+          option sets apply on tap, clear on re-tap; no white OS control in dark,
+          no LTR dropdown inside RTL pages. */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5" data-testid="coach-students-discipline-filter">
+          <FilterChip active={!disciplineFilter} onClick={() => setDisciplineFilter('')}>
+            {t('allDisciplines')}
+          </FilterChip>
           {disciplines.map(d => (
-            <option key={d} value={d}>{d}</option>
+            <FilterChip key={d} testid="coach-students-discipline-chip" active={disciplineFilter === d}
+              onClick={() => setDisciplineFilter(cur => (cur === d ? '' : d))}>
+              <BookOpen className="h-3 w-3" aria-hidden />{d}
+            </FilterChip>
           ))}
-        </select>
-
-        <select
-          value={beltFilter}
-          onChange={e => setBeltFilter(e.target.value)}
-          className={cn(
-            'flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700',
-            'focus:outline-none focus:ring-2 focus:ring-primary-700/30 focus:border-primary-700'
-          )}
-        >
-          <option value="">{msg('coach.students.allBelts')}</option>
+        </div>
+        <div className="flex flex-wrap gap-1.5" data-testid="coach-students-belt-filter">
+          <FilterChip active={!beltFilter} onClick={() => setBeltFilter('')}>
+            {t('allBelts')}
+          </FilterChip>
           {belts.map(b => (
-            <option key={b} value={b}>{beltLabel(b)}</option>
+            <FilterChip key={b} testid="coach-students-belt-chip" active={beltFilter === b}
+              onClick={() => setBeltFilter(cur => (cur === b ? '' : b))}>
+              <span className={cn('h-2 w-2 rounded-full', beltSwatchClass(b))} aria-hidden />
+              {beltLabel(b)}
+            </FilterChip>
           ))}
-        </select>
+        </div>
       </div>
       </>} main={<>
       {/* Loading */}
       {loading && (
         <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
           <Users className="mx-auto h-10 w-10 mb-3 animate-pulse" />
-          <p>{msg('common.loading')}</p>
+          <p>{tCommon('loading')}</p>
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State — §2.4: the calm primitive. */}
       {!loading && filtered.length === 0 && students.length === 0 && (
-        <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
-          <Users className="mx-auto h-10 w-10 mb-3" />
-          <p className="font-medium">{msg('coach.students.noStudents')}</p>
-          <p className="text-xs mt-1">{msg('coach.students.noStudentsHint')}</p>
-        </div>
+        <EmptyState icon={Users} title={t('noStudents')} hint={t('noStudentsHint')} data-testid="coach-students-empty" />
       )}
 
       {/* No Results After Filter */}
       {!loading && students.length > 0 && filtered.length === 0 && (
-        <div className="rounded-2xl bg-white p-6 shadow-sm text-center text-gray-400">
-          <Search className="mx-auto h-10 w-10 mb-3" />
-          <p>{msg('common.noResults')}</p>
-        </div>
+        <EmptyState icon={Search} title={tCommon('noResults')} />
       )}
 
       {/* Student List */}
@@ -340,10 +334,10 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className={cn('text-sm font-semibold text-gray-900 truncate', isRTL && 'font-arabic')}>
+                <p className="text-sm font-semibold text-gray-900 truncate">
                   {student.first_name} {student.last_name}
                 </p>
-                <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5', isRTL ? 'flex-row-reverse' : '')}>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
                   {student.discipline && (
                     <span className="inline-flex items-center gap-1 text-xs text-gray-500">
                       <BookOpen className="h-3 w-3" />
@@ -352,23 +346,25 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
                   )}
                   {student.belt_rank && (
                     <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                      {/* DA-43: the rank wears its belt colour here too. */}
                       <Award className="h-3 w-3" />
+                      <span className={cn('h-2 w-2 rounded-full', beltSwatchClass(student.belt_rank))} aria-hidden />
                       {beltLabel(student.belt_rank)}
                     </span>
                   )}
+                  {/* DA-54: "Never" gets its label — the last-seen date is
+                      named, not a bare floating date; via fmt (DA-34). */}
                   <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                     <Calendar className="h-3 w-3" />
+                    {t('lastSeen')}:{' '}
                     {student.last_attendance
-                      ? new Date(student.last_attendance).toLocaleDateString(
-                          dateLocale(locale),
-                          { month: 'short', day: 'numeric' }
-                        )
-                      : msg('coach.students.never')}
+                      ? <Ltr>{fmtDate(student.last_attendance, locale, 'dayMonth')}</Ltr>
+                      : t('never')}
                   </span>
                 </div>
               </div>
 
-              <ChevronRight className={cn('h-4 w-4 text-gray-300 flex-shrink-0', isRTL && 'rotate-180')} />
+              <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0 rtl:rotate-180" />
             </Link>
           ))}
         </div>

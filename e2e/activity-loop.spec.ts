@@ -54,7 +54,8 @@ async function coachMark(browser: Browser, classId: string, status: 'present' | 
   const c = await contextFor(browser, 'coach');
   try {
     await c.page.goto('/en/coach/attendance');
-    await c.page.locator('[data-testid="attendance-class-select"]').selectOption(classId);
+    // W3a §2.6: the class <select> became apply-on-tap chips — pick by id.
+    await c.page.locator(`[data-testid="attendance-class-chip"][data-class-id="${classId}"]`).click();
     const row = c.page.locator(`[data-testid="attendance-student"][data-student-name*="${STUDENT_FIRST}"]`).first();
     await expect(row, 'Karim should be on the class roster').toBeVisible({ timeout: 15_000 });
     await row.locator(`[data-testid="att-status-${status}"]`).click();
@@ -76,8 +77,11 @@ test('Activity loop: enroll → attend (transition-guarded) → atomic promote �
     try {
       await c.page.goto('/en/coach/attendance');
       await expect(c.page.locator('[data-testid="attendance-class-select"]')).toBeVisible({ timeout: 15_000 });
-      classId = await optionValueByText(c.page, 'attendance-class-select', 'Muay Thai');
-      expect(classId, 'the demo Muay Thai class should appear in the coach select').toBeTruthy();
+      // W3a §2.6: chips — resolve the id from the chip's data-class-id.
+      const chip = c.page.locator('[data-testid="attendance-class-chip"]', { hasText: 'Muay Thai' }).first();
+      await expect(chip).toBeVisible({ timeout: 15_000 });
+      classId = (await chip.getAttribute('data-class-id')) ?? '';
+      expect(classId, 'the demo Muay Thai class should appear in the coach picker').toBeTruthy();
     } finally {
       await c.ctx.close();
     }

@@ -40,17 +40,19 @@ async function coachMark(browser: Browser, date: string, status: 'present' | 'la
   try {
     await c.page.goto('/en/coach/attendance');
     // Set the date FIRST (drives which weekday's classes + which day's records).
+    // W3a §2.6: the native date input became the 8-day chip strip — pick by data-date.
     const dateInput = c.page.locator('[data-testid="coach-attendance-date"]');
     await expect(dateInput, 'the coach date picker should render').toBeVisible({ timeout: 15_000 });
-    await dateInput.fill(date);
+    await dateInput.locator(`[data-testid="attendance-date-chip"][data-date="${date}"]`).click();
 
+    // W3a §2.6: the class <select> became apply-on-tap chips — pick by text.
     const sel = c.page.locator('[data-testid="attendance-class-select"]');
     await expect(sel).toBeVisible({ timeout: 15_000 });
-    const opt = c.page.locator('[data-testid="attendance-class-select"] option', { hasText: 'Muay Thai' }).first();
-    await expect(opt, 'the seeded Muay Thai class should appear for this weekday').toBeAttached({ timeout: 15_000 });
-    const classId = (await opt.getAttribute('value')) ?? '';
+    const opt = c.page.locator('[data-testid="attendance-class-chip"]', { hasText: 'Muay Thai' }).first();
+    await expect(opt, 'the seeded Muay Thai class should appear for this weekday').toBeVisible({ timeout: 15_000 });
+    const classId = (await opt.getAttribute('data-class-id')) ?? '';
     expect(classId).toBeTruthy();
-    await sel.selectOption(classId);
+    await opt.click();
 
     const row = c.page.locator(`[data-testid="attendance-student"][data-student-name*="${STUDENT_FIRST}"]`).first();
     await expect(row, 'Karim should be on the roster').toBeVisible({ timeout: 15_000 });
@@ -128,11 +130,10 @@ test('REP-1: history + reports render real data + coach marks a past date', asyn
     const c = await contextFor(browser, 'coach');
     try {
       await c.page.goto('/en/coach/attendance');
-      await c.page.locator('[data-testid="coach-attendance-date"]').fill(yesterdayStr);
-      const sel = c.page.locator('[data-testid="attendance-class-select"]');
-      const opt = c.page.locator('[data-testid="attendance-class-select"] option', { hasText: 'Muay Thai' }).first();
-      await expect(opt).toBeAttached({ timeout: 15_000 });
-      await sel.selectOption((await opt.getAttribute('value')) ?? '');
+      await c.page.locator(`[data-testid="attendance-date-chip"][data-date="${yesterdayStr}"]`).click();
+      const opt = c.page.locator('[data-testid="attendance-class-chip"]', { hasText: 'Muay Thai' }).first();
+      await expect(opt).toBeVisible({ timeout: 15_000 });
+      await opt.click();
       const row = c.page.locator(`[data-testid="attendance-student"][data-student-name*="${STUDENT_FIRST}"]`).first();
       await expect(row, 'Karim row should reload for yesterday').toBeVisible({ timeout: 15_000 });
       await expect(

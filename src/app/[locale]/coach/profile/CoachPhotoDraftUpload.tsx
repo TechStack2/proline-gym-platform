@@ -99,7 +99,7 @@ export function CoachPhotoDraftUpload({
       <div className="min-w-0">
         <p className="text-sm font-medium text-gray-900">{t('photoLabel')}</p>
         {hasDraft ? (
-          <span data-testid="coach-photo-pending" className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+          <span data-testid="coach-photo-pending" className="tint-warning mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium">
             <Clock className="h-3 w-3" /> {t('photoPending')}
           </span>
         ) : (

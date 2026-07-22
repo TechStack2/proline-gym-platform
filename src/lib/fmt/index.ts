@@ -12,6 +12,7 @@ export {
   fmtDateRange,
   fmtTime,
   fmtTimeRange,
+  fmtWeekday,
   type DateInput,
   type DateStyle,
 } from './date';

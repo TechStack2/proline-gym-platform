@@ -99,6 +99,27 @@ export function fmtTimeRange(from: DateInput, to: DateInput, locale: string): st
 }
 
 /**
+ * A weekday NAME from a `day_of_week` index (0=Sunday — how `class_schedules`
+ * stores it). W3a extension (§2 "extend, never fork"): the schedule surfaces
+ * hand-rolled three parallel day-name arrays (en/ar/fr) per file; this derives
+ * the name through Intl like every other date value. `style` matches the
+ * Intl option ('short' = "Mon"/"إثنين", 'long' = "Monday").
+ */
+export function fmtWeekday(
+  dayOfWeek: number,
+  locale: string,
+  style: 'short' | 'long' = 'short',
+): string {
+  // 2024-01-07 was a Sunday; day 0..6 lands Sun..Sat. Noon UTC so no timezone
+  // can shift the calendar day (same convention as toDate above).
+  const d = new Date(Date.UTC(2024, 0, 7 + ((dayOfWeek % 7) + 7) % 7, 12));
+  return new Intl.DateTimeFormat(dateLocale(locale), {
+    weekday: style,
+    timeZone: GYM_TIME_ZONE,
+  }).format(d);
+}
+
+/**
  * "6/7/2026 → 6/8/2026" as ONE unit, parts isolated (DA-7: the member-360
  * membership range rendered "72026/8/6 → /2026/7"). The arrow keeps its
  * left-to-right "from → to" reading because the caller isolates the whole run.

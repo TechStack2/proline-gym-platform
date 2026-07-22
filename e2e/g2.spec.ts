@@ -60,15 +60,16 @@ async function coachCtx(browser: Browser): Promise<{ ctx: BrowserContext; page: 
  *  class (scheduled every weekday). Returns the class id. */
 async function openRoster(page: Page): Promise<string> {
   await page.goto('/en/coach/attendance')
+  // W3a §2.6: date input → 8-day chip strip; class <select> → apply-on-tap chips.
   const dateInput = page.locator('[data-testid="coach-attendance-date"]')
   await expect(dateInput).toBeVisible({ timeout: 15_000 })
-  await dateInput.fill(today)
+  await dateInput.locator(`[data-testid="attendance-date-chip"][data-date="${today}"]`).click()
   const sel = page.locator('[data-testid="attendance-class-select"]')
   await expect(sel).toBeVisible({ timeout: 15_000 })
-  const opt = page.locator('[data-testid="attendance-class-select"] option', { hasText: 'Muay Thai' }).first()
-  await expect(opt).toBeAttached({ timeout: 15_000 })
-  const classId = (await opt.getAttribute('value')) ?? ''
-  await sel.selectOption(classId)
+  const opt = page.locator('[data-testid="attendance-class-chip"]', { hasText: 'Muay Thai' }).first()
+  await expect(opt).toBeVisible({ timeout: 15_000 })
+  const classId = (await opt.getAttribute('data-class-id')) ?? ''
+  await opt.click()
   await expect(page.locator(`[data-testid="attendance-student"][data-student-name*="${STUDENT}"]`).first())
     .toBeVisible({ timeout: 15_000 })
   return classId

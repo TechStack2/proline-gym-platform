@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,19 @@ export type NativeHeaderProps = {
    * this is a no-op there). Default keeps the title at all breakpoints.
    */
   titleMobileOnly?: boolean;
+  /**
+   * W3a §2.1 (DA-17) — the slimmed mobile chrome: ONE row of icon-height chrome
+   * instead of three. The separate badge row is not rendered; the shell badge
+   * moves inline into the top row (still `shell-badge` — same role, same testid)
+   * and the duplicated role pill dies (shell badge OR role badge, never both).
+   * The gym identity (DA-40's mobile half) rides the freed start slot: logo
+   * monogram + name, swapped for the collapsed page title on scroll. Portal +
+   * coach opt in here; staff aligns in W3b.
+   */
+  slim?: boolean;
+  /** The USER's gym identity for the slim row (never the Host default's). */
+  gymName?: string | null;
+  logoUrl?: string | null;
 };
 
 // design-system.md "Per-shell accents": staff=brand red, coach=gold-on-black,
@@ -80,6 +94,9 @@ export function NativeHeader({
   onBack,
   variant = 'large',
   titleMobileOnly = false,
+  slim = false,
+  gymName,
+  logoUrl,
 }: NativeHeaderProps) {
   const tCommon = useTranslations('common');
   const isRTL = locale === 'ar';
@@ -137,7 +154,9 @@ export function NativeHeader({
           shell root's shell-{staff,portal,coach} class (globals.css), which is now the
           ONLY definition of the per-shell hue — the var'd class is CSP-safe. */}
       {shellStyle && <div data-testid="shell-accent-stripe" className="h-1 w-full bg-[color:var(--shell-accent)]" aria-hidden />}
-      {/* Top row: back button + right actions + collapsed title */}
+      {/* Top row: back button + right actions + collapsed title.
+          W3a slim: the gym identity + inline shell badge share this row — the
+          separate badge row below is not rendered. */}
       <div className="flex items-center justify-between px-4 h-12">
         <div className="flex items-center gap-2 min-w-0">
           {onBack && (
@@ -155,6 +174,26 @@ export function NativeHeader({
             </button>
           )}
 
+          {/* Slim identity — logo monogram + gym name (DA-40's mobile half),
+              the name yielding to the collapsed page title on scroll. */}
+          {slim && (
+            <div
+              className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary-50 text-xs font-bold text-primary-600"
+              aria-hidden="true"
+            >
+              {logoUrl ? (
+                <Image src={logoUrl} alt="" width={28} height={28} className="h-full w-full object-cover" />
+              ) : (
+                <span>{(gymName || '?').charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+          )}
+          {slim && !(variant === 'large' && isCollapsed) && (
+            <span data-testid="mobile-gym-name" className="min-w-0 truncate text-sm font-semibold text-foreground">
+              {gymName || ''}
+            </span>
+          )}
+
           {/* Collapsed title — shown when scrolled past large title */}
           {variant === 'large' && isCollapsed && (
             <h1
@@ -168,13 +207,27 @@ export function NativeHeader({
               {title}
             </h1>
           )}
+
+          {/* Slim: the ONE badge, inline (shell badge; the role pill dies — DA-17). */}
+          {slim && shellStyle && (
+            <span
+              data-testid="shell-badge"
+              data-shell={shell}
+              className={cn(
+                'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-2xs font-bold uppercase tracking-wider shadow-sm',
+                shellStyle.badge,
+              )}
+            >
+              {tCommon(shellStyle.labelKey as Parameters<typeof tCommon>[0])}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1">{rightActions}</div>
       </div>
 
-      {/* Shell + role badge row */}
-      {(shellStyle || role) && (
+      {/* Shell + role badge row (legacy 3-row chrome — staff until W3b) */}
+      {!slim && (shellStyle || role) && (
         <div className="flex items-center gap-1.5 px-4 pb-2">
           {shellStyle && (
             <span

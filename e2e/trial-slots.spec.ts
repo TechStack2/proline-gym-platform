@@ -143,7 +143,8 @@ test('TRIAL-SLOTS · class occurrence picker (full → overbook) + roster check-
   try {
     await coach.page.goto('/en/coach/attendance')
     await expect(coach.page.getByTestId('attendance-class-select')).toBeVisible({ timeout: 15_000 })
-    await coach.page.getByTestId('attendance-class-select').selectOption(attClassId)
+    // W3a §2.6: the class <select> became apply-on-tap chips — pick by id.
+    await coach.page.locator(`[data-testid="attendance-class-chip"][data-class-id="${attClassId}"]`).click()
     const trialRow = coach.page.locator('[data-testid="attendance-trial-row"]').filter({ hasText: leadLast.att }).first()
     await expect(trialRow, 'the trial rides the roster marked TRIAL').toBeVisible({ timeout: 15_000 })
     await coach.page.screenshot({ path: 'screenshots/trial-slots-roster-en.png' })

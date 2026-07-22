@@ -1,7 +1,8 @@
 import { getTranslations } from 'next-intl/server'
-import { beltRankLabel } from '@/lib/belts/label'
+import { beltRankLabel, beltSwatchClass } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, fmtDateRange, fmtPhone } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 import { cn } from '@/lib/utils'
 import { User, Phone, CalendarDays, Shield, Award, CreditCard, AlertCircle } from 'lucide-react'
 import { AvatarUpload } from '@/components/shared/avatar-upload'
@@ -58,7 +59,8 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
   }
 
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="p-4 space-y-4">
       {/* W2a §4.2 Rule 1: main = identity + status + self-serve (the profile
           flow); aside = device/preferences (push · language) + guardians. */}
       <DeskGrid main={<>
@@ -75,7 +77,8 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
         </div>
         <h2 className="text-lg font-bold text-gray-900">{firstName} {lastName}</h2>
         <p className="text-sm text-gray-500">{t('member')}</p>
-        {profile?.phone && <div className="inline-flex items-center gap-1 mt-2 text-sm text-gray-500"><Phone className="h-3.5 w-3.5" /><span>{profile.phone}</span></div>}
+        {/* §2.7: phones LTR-isolated + grouped (DA-7's trailing-plus class). */}
+        {profile?.phone && <div className="inline-flex items-center gap-1 mt-2 text-sm text-gray-500"><Phone className="h-3.5 w-3.5" /><Ltr>{fmtPhone(profile.phone)}</Ltr></div>}
       </div>
 
       {belt && (
@@ -84,8 +87,12 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-900"><Award className="h-5 w-5 text-yellow-400" /></div>
             <div>
-              <p className="font-semibold text-gray-900">{beltLabelVal}</p>
-              <p className="text-xs text-gray-500">{discObj ? (isRTL ? discObj.name_ar : locale === 'fr' ? discObj.name_fr || discObj.name_en : discObj.name_en) : ''} · {new Date(belt.promotion_date).toLocaleDateString(dateLocale(locale))}</p>
+              <p className="flex items-center gap-2 font-semibold text-gray-900">
+                {beltLabelVal}
+                {/* DA-43: the rank wears its own belt colour. */}
+                <span className={cn('h-2 w-8 rounded-full', beltSwatchClass(belt.to_rank as string))} aria-hidden />
+              </p>
+              <p className="text-xs text-gray-500">{discObj ? (isRTL ? discObj.name_ar : locale === 'fr' ? discObj.name_fr || discObj.name_en : discObj.name_en) : ''} · <Ltr>{fmtDate(belt.promotion_date, locale)}</Ltr></p>
             </div>
           </div>
         </div>
@@ -98,7 +105,9 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
             <CreditCard className="h-5 w-5 text-primary-700" />
             <div>
               <p className="font-semibold text-gray-900">{membershipNameVal}</p>
-              <p className="text-xs text-gray-500">{new Date(membership.start_date).toLocaleDateString(dateLocale(locale))} — {new Date(membership.end_date).toLocaleDateString(dateLocale(locale))}</p>
+              {/* DA-7: the membership range as ONE isolated unit (the member-360
+                  "72026/8/6 → /2026/7" mangle class). */}
+              <p className="text-xs text-gray-500"><Ltr>{fmtDateRange(membership.start_date, membership.end_date, locale)}</Ltr></p>
             </div>
           </div>
         </div>
@@ -106,8 +115,8 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
 
       <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
         <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">{t('memberDetails')}</h3>
-        <DetailRow icon={CalendarDays} label={t('joined')} value={student?.join_date ? new Date(student.join_date).toLocaleDateString(dateLocale(locale)) : '—'} />
-        <DetailRow icon={Shield} label={t('emergency')} value={student?.emergency_contact_name ? `${student.emergency_contact_name} (${student.emergency_contact_phone})` : t('notSet')} />
+        <DetailRow icon={CalendarDays} label={t('joined')} value={<Ltr>{fmtDate(student?.join_date, locale)}</Ltr>} />
+        <DetailRow icon={Shield} label={t('emergency')} value={student?.emergency_contact_name ? <>{student.emergency_contact_name} (<Ltr>{fmtPhone(student.emergency_contact_phone)}</Ltr>)</> : t('notSet')} />
         {student?.medical_notes && <DetailRow icon={AlertCircle} label={t('medical')} value={student.medical_notes} />}
       </div>
 
@@ -136,8 +145,9 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
       {/* PWA-BASICS R1: always-editable INTERFACE-language control for members
           (the portal shell's device switcher wasn't reliably reachable on mobile). */}
       <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
+        {/* W3a: the hardcoded tri-lingual ternary became an i18n key (DA-36 class). */}
         <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
+          {t('interfaceLanguage')}
         </h3>
         <LanguageSwitcher locale={locale} variant="inline" />
       </div>
@@ -161,7 +171,7 @@ export default async function PortalProfilePage({ params: { locale } }: Props) {
   )
 }
 
-function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
       <Icon className="h-4 w-4 text-gray-400 flex-shrink-0" />

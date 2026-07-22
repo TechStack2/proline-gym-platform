@@ -1,8 +1,12 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { PortalCampsSection } from './portal-camps'
 import { createClient } from '@/lib/supabase/server'
+import { fmtDate, fmtTime, fmtWeekday } from '@/lib/fmt'
+import { fmtUsd } from '@/lib/billing/currency'
+import { Ltr, Bdi } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
+import { beltRankLabel } from '@/lib/belts/label'
 import { cn } from '@/lib/utils'
 import { one } from '@/lib/names'
 import { Award, CalendarDays, ClipboardList, CreditCard, Flame, ChevronRight } from 'lucide-react'
@@ -78,7 +82,9 @@ export async function KidDashboard({
   ])
 
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
+  // W3a §2.7: dates via the fmt module; belts via enumLabel's beltRankLabel —
+  // the raw `.replace(/_/g,' ')` enums die (DA-9 remnant).
+  const tb = await getTranslations({ locale, namespace: 'beltRanks' })
 
   // Streak: consecutive calendar weeks (back from this week) with ≥1 attendance.
   const { data: streakRows } = await supabase
@@ -122,19 +128,9 @@ export async function KidDashboard({
   const kidPendFreeze = ((kidPending ?? []) as any[]).some((r) => r.kind === 'freeze')
   const kidPendChange = ((kidPending ?? []) as any[]).some((r) => r.kind === 'profile_change')
 
-  const dayNames = isRTL
-    ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
-    : locale === 'fr'
-      ? ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
-      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-  const regBadge: Record<string, string> = {
-    active: 'bg-green-100 text-green-700', requested: 'bg-yellow-100 text-yellow-700',
-    waitlisted: 'bg-orange-100 text-orange-700',
-  }
-
   return (
-    <div className={cn('p-4 space-y-5', isRTL && 'rtl')} data-testid="kid-dashboard" data-kid-id={kid.id}>
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="p-4 space-y-5" data-testid="kid-dashboard" data-kid-id={kid.id}>
     {/* W2a §4.2 Rule 1: main = balance → switcher → header → membership → regs →
         waiver → schedule → attendance → belt progress (mobile order); aside = the
         trailing camps + profile self-serve + household-billing link (a suffix —
@@ -144,15 +140,15 @@ export async function KidDashboard({
           on the guardian home without a click. Empty (nothing owed) = NO card. */}
       {householdOutstanding > 0.005 && (
         <Link href={`/${locale}/portal/billing`} data-testid="portal-outstanding-balance" data-amount={householdOutstanding.toFixed(2)}
-          className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100">
+          className="flex items-center justify-between rounded-2xl border border-danger-500/25 bg-danger-500/10 p-4 transition-colors hover:bg-danger-500/15">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600"><CreditCard className="h-5 w-5" aria-hidden /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-danger-500/15 text-danger-600"><CreditCard className="h-5 w-5" aria-hidden /></div>
             <div>
-              <p className={cn('text-sm font-semibold text-red-800', isRTL && 'font-arabic')}>{th('outstandingTitle')}</p>
-              <p className={cn('text-xs text-red-600', isRTL && 'font-arabic')}>{th('outstandingCount', { count: householdOpenCount })}</p>
+              <p className={cn('text-sm font-semibold text-[color:rgb(var(--c-danger-tint-fg))]', isRTL && 'font-arabic')}>{th('outstandingTitle')}</p>
+              <p className={cn('text-xs text-danger-600', isRTL && 'font-arabic')}>{th('outstandingCount', { count: householdOpenCount })}</p>
             </div>
           </div>
-          <span className="text-lg font-bold text-red-800" dir="ltr">${householdOutstanding.toFixed(2)}</span>
+          <span className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]" dir="ltr">${householdOutstanding.toFixed(2)}</span>
         </Link>
       )}
       {/* Switcher */}
@@ -191,7 +187,7 @@ export async function KidDashboard({
       <div>
         <h1 className={cn('text-xl font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="kid-name">{kid.name}</h1>
         <p className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-          <span className="inline-flex items-center gap-1 capitalize"><Award className="h-3 w-3" />{(kidStudent?.current_belt_rank || '—').replace(/_/g, ' ')}</span>
+          <span className="inline-flex items-center gap-1"><Award className="h-3 w-3" />{beltRankLabel(kidStudent?.current_belt_rank, (k) => tb(k as never))}</span>
           <span className="inline-flex items-center gap-1"><ClipboardList className="h-3 w-3" />{t('last30', { count: attendance30 ?? 0 })}</span>
           <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3 text-orange-500" />{t('streak', { count: streak })}</span>
         </p>
@@ -204,10 +200,9 @@ export async function KidDashboard({
             <h3 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
               <CreditCard className="h-4 w-4 text-primary-700" /> {t('membership')}
             </h3>
-            <span data-testid="kid-membership-state" className={cn('rounded-full px-2 py-0.5 text-xs font-medium',
-              kidMsState === 'active' ? 'bg-green-100 text-green-700' : kidMsState === 'frozen' ? 'bg-blue-100 text-blue-700' : kidMsState === 'expiring' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700')}>
-              {t(`msState.${kidMsState}`)}
-            </span>
+            <StatusChip data-testid="kid-membership-state" domain="member" status={kidMsState}
+              label={t(`msState.${kidMsState}`)} />
+
           </div>
           <MembershipLifecycleActions
             locale={locale}
@@ -237,10 +232,12 @@ export async function KidDashboard({
               <li key={r.id} className="flex items-center justify-between text-sm" data-testid="kid-reg-row" data-status={r.status}>
                 <span className="font-medium text-gray-800">{lname(one(r.classes))}</span>
                 <span className="text-xs text-gray-500">
-                  {r.monthly_fee_usd != null ? `$${Number(r.monthly_fee_usd).toFixed(0)}/${t('mo')}` : ''}
-                  {r.status === 'waitlisted' && r.waitlist_position ? ` · #${r.waitlist_position}` : ''}
+                  {r.monthly_fee_usd != null ? <><Ltr>{fmtUsd(Number(r.monthly_fee_usd))}</Ltr>/{t('mo')}</> : ''}
+                  {r.status === 'waitlisted' && r.waitlist_position ? <> · <Ltr>{`#${r.waitlist_position}`}</Ltr></> : ''}
                 </span>
-                <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', regBadge[r.status] || 'bg-gray-100 text-gray-500')}>{r.status}</span>
+                {/* §2.3: colour via the registration vocabulary; the raw enum
+                    label ("waitlisted") becomes the statuses.* i18n string. */}
+                <StatusChip domain="registration" status={r.status} size="sm" />
               </li>
             ))}
           </ul>
@@ -293,7 +290,7 @@ export async function KidDashboard({
               {slots.map((sl, i) => (
                 <li key={i} className="flex items-center justify-between text-sm text-gray-700">
                   <span className="font-medium">{sl.name}</span>
-                  <span className="text-xs text-gray-500" dir="ltr">{dayNames[sl.day]} · {sl.start}</span>
+                  <Bdi className="text-xs text-gray-500">{fmtWeekday(sl.day, locale)} · <Ltr>{fmtTime(sl.start, locale)}</Ltr></Bdi>
                 </li>
               ))}
             </ul>
@@ -310,8 +307,9 @@ export async function KidDashboard({
           <ul className="space-y-1.5">
             {(attendance ?? []).map((a: any) => (
               <li key={a.id} className="flex items-center justify-between text-xs text-gray-600">
-                <span>{fmtDate(a.attendance_date)} · {lname(one(a.classes))}</span>
-                <span className="capitalize">{a.status}</span>
+                <span><Ltr>{fmtDate(a.attendance_date, locale)}</Ltr> · {lname(one(a.classes))}</span>
+                {/* §2.3: the raw enum text becomes a vocabulary chip. */}
+                <StatusChip domain="attendance" status={a.status} size="sm" />
               </li>
             ))}
           </ul>
@@ -327,8 +325,8 @@ export async function KidDashboard({
           <ul className="space-y-1.5">
             {(beltPromos ?? []).map((b: any, i: number) => (
               <li key={i} className="flex items-center justify-between text-xs text-gray-600">
-                <span className="capitalize font-medium">{String(b.to_rank).replace(/_/g, ' ')}</span>
-                <span>{fmtDate(b.promotion_date)}</span>
+                <span className="font-medium">{beltRankLabel(b.to_rank, (k) => tb(k as never))}</span>
+                <Ltr>{fmtDate(b.promotion_date, locale)}</Ltr>
               </li>
             ))}
           </ul>

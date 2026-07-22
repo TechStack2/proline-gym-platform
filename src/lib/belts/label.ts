@@ -24,3 +24,37 @@ export function beltRankLabel(
   // Unknown value (schema drift) — degrade to a readable form rather than throw.
   return rank.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
+
+/**
+ * W3a/DA-43 — the belt's own colour swatch (§2.3: "belts: label via enumLabel +
+ * the belt's OWN colour swatch — never a StatusChip"). Static full class strings
+ * so the Tailwind JIT sees them; hues come from the `belt` palette in
+ * tailwind.config.ts (the token file). Two-tone ranks the palette doesn't carry
+ * map to their nearest anchor; white gets a hairline so it exists on white cards.
+ */
+const BELT_SWATCH_CLASS: Record<string, string> = {
+  white: 'bg-belt-white border border-gray-300',
+  white_yellow: 'bg-belt-white_yellow',
+  yellow: 'bg-belt-yellow',
+  yellow_orange: 'bg-belt-yellow_orange',
+  orange: 'bg-belt-orange',
+  orange_green: 'bg-belt-orange_green',
+  green: 'bg-belt-green',
+  green_blue: 'bg-belt-green_blue',
+  blue: 'bg-belt-blue',
+  blue_purple: 'bg-belt-purple',
+  purple: 'bg-belt-purple',
+  purple_brown: 'bg-belt-brown',
+  brown: 'bg-belt-brown',
+  brown_black: 'bg-belt-brown_black',
+  red: 'bg-belt-red',
+  black_1: 'bg-belt-black_1',
+  black_2: 'bg-belt-black_2',
+  black_3: 'bg-belt-black_3',
+  black_4: 'bg-belt-black_4',
+  black_5: 'bg-belt-black_5',
+}
+
+export function beltSwatchClass(rank: string | null | undefined): string {
+  return (rank && BELT_SWATCH_CLASS[rank]) || 'bg-gray-300'
+}

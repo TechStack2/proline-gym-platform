@@ -44,12 +44,13 @@ const SHELLS = {
   portal: {
     role: 'student',
     routes: ['/portal', '/portal/classes', '/portal/classes?view=browse', '/portal/progress', '/portal/billing', '/portal/pt', '/portal/profile'],
-    keyRoutes: ['/portal', '/portal/classes', '/portal/billing'],
+    // W3a: every polished surface joins the capture matrix (§6.3).
+    keyRoutes: ['/portal', '/portal/classes', '/portal/classes?view=browse', '/portal/billing', '/portal/progress', '/portal/profile'],
   },
   coach: {
     role: 'coach',
     routes: ['/coach', '/coach/attendance', '/coach/students', '/coach/trials', '/coach/pt', '/coach/profile'],
-    keyRoutes: ['/coach', '/coach/attendance'],
+    keyRoutes: ['/coach', '/coach/attendance', '/coach/students', '/coach/trials', '/coach/profile'],
   },
   // W2b: the staff shell on the same contract. Its rail carries the historical
   // `desktop-sidebar` testid (testid-stability doctrine).
@@ -127,8 +128,17 @@ async function testids(page, mode /* 'visible' | 'present' */) {
 
 // Slow-host tolerance: prod-build pages on a loaded laptop can exceed the 30s
 // default; navigate on domcontentloaded (settle() below waits for networkidle).
+// W3a: ONE retry on timeout — a single Docker-pressure stall was killing whole
+// runs (an uncaught TimeoutError aborts every remaining shell's evidence).
+const GOTO_TIMEOUT = Number(process.env.W2A_GOTO_TIMEOUT || 60_000)
 async function goto(page, url) {
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: GOTO_TIMEOUT })
+  } catch (e) {
+    if (e?.name !== 'TimeoutError') throw e
+    console.log(`goto retry (${url}) after timeout`)
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: GOTO_TIMEOUT })
+  }
 }
 
 async function settle(page) {

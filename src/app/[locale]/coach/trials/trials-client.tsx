@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { fmtDate, fmtTime, fmtPhone } from '@/lib/fmt';
+import { Ltr } from '@/components/ui/bdi';
+import { StatusChip } from '@/components/ui/status-chip';
 import { PageHeader } from '@/components/ui/page-header';
 import { CheckCircle2, XCircle, Phone } from 'lucide-react';
 import { recordTrialOutcome } from '@/app/[locale]/(dashboard)/leads/actions';
@@ -78,14 +81,15 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-gray-900">{tr.lead_name || tc('unnamed')}</h3>
-                <span className="text-xs text-gray-500">
-                  {tr.scheduled_date}{tr.scheduled_time ? ` · ${tr.scheduled_time.slice(0, 5)}` : ''}
-                </span>
+                {/* DA-34: was the raw ISO dump ("2026-07-19 · 18:00") — via fmt. */}
+                <Ltr className="text-xs text-gray-500">
+                  {`${fmtDate(tr.scheduled_date, locale, 'weekday')}${tr.scheduled_time ? ` · ${fmtTime(tr.scheduled_time, locale)}` : ''}`}
+                </Ltr>
               </div>
               {tr.lead_phone && (
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">
                   <Phone className="h-3.5 w-3.5" />
-                  <span dir="ltr">{tr.lead_phone}</span>
+                  <Ltr>{fmtPhone(tr.lead_phone)}</Ltr>
                 </div>
               )}
 
@@ -106,7 +110,7 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs font-medium',
                       interested[tr.id]
-                        ? 'border-green-600 bg-green-600 text-primary-foreground'
+                        ? 'border-success-600 bg-success-600 text-success-foreground'
                         : 'border-gray-200 bg-white text-gray-600',
                     )}
                   >
@@ -117,7 +121,7 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                     data-testid="coach-trial-show"
                     disabled={busyId === tr.id}
                     onClick={() => record(tr.id, 'completed', true)}
-                    className="flex-1 py-1.5 text-xs bg-green-600 text-primary-foreground rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    className="flex-1 py-1.5 text-xs bg-success-600 text-success-foreground rounded-lg hover:opacity-90 disabled:opacity-50"
                   >
                     <CheckCircle2 className="inline h-3.5 w-3.5 me-1" />
                     {t('mark_show')}
@@ -126,7 +130,7 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                     data-testid="coach-trial-noshow"
                     disabled={busyId === tr.id}
                     onClick={() => record(tr.id, 'no_show', false)}
-                    className="flex-1 py-1.5 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                    className="tint-danger flex-1 py-1.5 text-xs border border-danger-500/30 rounded-lg hover:opacity-90 disabled:opacity-50"
                   >
                     <XCircle className="inline h-3.5 w-3.5 me-1" />
                     {t('mark_no_show')}
@@ -134,15 +138,8 @@ export function CoachTrialsClient({ trials, locale }: { trials: CoachTrial[]; lo
                   </div>
                 </div>
               ) : (
-                <span
-                  className={cn(
-                    'inline-block text-xs px-2 py-0.5 rounded-full font-medium',
-                    tr.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    tr.status === 'no_show' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600',
-                  )}
-                >
-                  {t(`trial_status.${tr.status}` as Parameters<typeof t>[0])}
-                </span>
+                <StatusChip domain="trial" status={tr.status}
+                  label={t(`trial_status.${tr.status}` as Parameters<typeof t>[0])} />
               )}
             </div>
           ))}

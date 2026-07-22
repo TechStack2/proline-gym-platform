@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 import { getTranslations } from 'next-intl/server';
-import { beltRankLabel } from '@/lib/belts/label'
+import { beltRankLabel, beltSwatchClass } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/page-header';
@@ -41,7 +42,7 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
     .single();
   if (!student) {
     return (
-      <div className={cn('p-4', isRTL && 'rtl')}>
+      <div className="p-4">
         <p className="text-sm text-gray-400 text-center py-16">{t('no_student')}</p>
       </div>
     );
@@ -82,7 +83,8 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
   );
 
   return (
-    <div className={cn('p-4 space-y-5', isRTL && 'rtl')} data-testid="portal-progress">
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="p-4 space-y-5" data-testid="portal-progress">
       <div className="pt-2">
         {/* DS 2.0 §2.1 (W2b R3): the ONE title primitive — testid `page-title`
             (was the shell-local `portal-page-title`). Desktop-only, as before;
@@ -94,17 +96,28 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
       {/* W2a §4.2 Rule 1: main = stats + eligibility (the progress flow);
           aside = the promotion-history timeline (the glanceable record). */}
       <DeskGrid gap="space-y-5" main={<>
-      {/* Summary stats */}
+      {/* Summary stats. W3a/DA-12: the pastel-pinned tint cards (murky and
+          unreadable in dark) become token cards — the surface flips, the accent
+          stays an icon hue. DA-43: the member's belt gets its OWN colour — the
+          swatch bar — not just a purple word. */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-purple-50 text-purple-700 p-4 shadow-sm">
-          <Award className="h-5 w-5 mb-2 opacity-70" />
-          <p className="text-xs opacity-70">{t('current_belt')}</p>
-          <p className="text-lg font-bold mt-0.5" data-testid="progress-rank">{rankLabel(student.current_belt_rank)}</p>
+        <div className="rounded-2xl bg-white p-4 shadow-sm">
+          <Award className="h-5 w-5 mb-2 text-cat-5" aria-hidden />
+          <p className="text-xs text-gray-500">{t('current_belt')}</p>
+          <p className="text-lg font-bold text-gray-900 mt-0.5" data-testid="progress-rank">{rankLabel(student.current_belt_rank)}</p>
+          {student.current_belt_rank && (
+            <div
+              data-testid="belt-swatch"
+              data-rank={student.current_belt_rank}
+              className={cn('mt-2 h-2.5 w-16 rounded-full', beltSwatchClass(student.current_belt_rank))}
+              aria-hidden
+            />
+          )}
         </div>
-        <div className="rounded-2xl bg-blue-50 text-blue-700 p-4 shadow-sm">
-          <CalendarCheck className="h-5 w-5 mb-2 opacity-70" />
-          <p className="text-xs opacity-70">{t('classes_since_promotion')}</p>
-          <p className="text-lg font-bold mt-0.5" data-testid="progress-streak">{attendedSince ?? 0}</p>
+        <div className="rounded-2xl bg-white p-4 shadow-sm">
+          <CalendarCheck className="h-5 w-5 mb-2 text-info-500" aria-hidden />
+          <p className="text-xs text-gray-500">{t('classes_since_promotion')}</p>
+          <p className="text-lg font-bold text-gray-900 mt-0.5" data-testid="progress-streak">{attendedSince ?? 0}</p>
         </div>
       </div>
 
@@ -119,7 +132,11 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium text-gray-900">{pick(one(p.disciplines) as Named, locale)}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{rankLabel(p.to_rank)}</span>
+                {/* DA-43: the rank wears its own belt colour. */}
+                <span className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                  <span className={cn('h-2 w-2 rounded-full', beltSwatchClass(p.to_rank))} aria-hidden />
+                  {rankLabel(p.to_rank)}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Target className="h-4 w-4 text-primary-700" />
@@ -148,6 +165,17 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
             </div>
           ))}
         </div>
+      ) : student.current_belt_rank ? (
+        /* W3a/DA-11a: summaries must agree with their page (§2.4). A member whose
+           students row carries a rank but who has no promotion HISTORY used to see
+           "Current belt: Orange" above "No rank recorded yet" — the page calling
+           itself a liar. With a recorded rank, the empty branch states the honest
+           fact instead: the rank stands, the history is what's empty. */
+        <div data-testid="portal-progress-rank-only" className="rounded-2xl bg-white p-6 text-center shadow-sm">
+          <div className={cn('mx-auto mb-3 h-2.5 w-16 rounded-full', beltSwatchClass(student.current_belt_rank))} aria-hidden />
+          <p className="text-sm font-medium text-gray-700">{rankLabel(student.current_belt_rank)}</p>
+          <p className="mt-1 text-xs text-gray-400">{t('no_history')}</p>
+        </div>
       ) : (
         <div data-testid="portal-progress-empty" className="rounded-2xl bg-white p-6 text-center shadow-sm">
           <Target className="mx-auto h-10 w-10 text-primary-300 mb-2" aria-hidden />
@@ -175,11 +203,12 @@ export default async function PortalProgressPage({ params: { locale } }: Props) 
                 className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
               >
                 <div>
+                  {/* DA-55: the from→to arrow follows reading direction. */}
                   <p className="text-sm font-medium text-gray-700">
-                    {rankLabel(p.from_rank)} → {rankLabel(p.to_rank)}
+                    {rankLabel(p.from_rank)} {isRTL ? '←' : '→'} {rankLabel(p.to_rank)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {pick(one(p.disciplines) as Named, locale)} · {new Date(p.promotion_date).toLocaleDateString(dateLocale(locale))}
+                    {pick(one(p.disciplines) as Named, locale)} · <Ltr>{fmtDate(p.promotion_date, locale)}</Ltr>
                   </p>
                 </div>
                 <Award className="h-4 w-4 text-yellow-500" />

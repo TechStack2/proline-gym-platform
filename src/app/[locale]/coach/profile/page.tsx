@@ -1,4 +1,6 @@
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate, fmtPhone } from '@/lib/fmt'
+import { fmtUsd, fmtLbp } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
 import { CoachProfileEditor } from './CoachProfileEditor'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
 import { PushToggle } from '@/components/push/push-toggle'
@@ -24,6 +26,9 @@ type Props = { params: { locale: string } }
 
 export default async function CoachProfilePage({ params: { locale } }: Props) {
   const t = await getTranslations({ locale, namespace: 'coach' })
+  // W3a/DA-36: the page's dozen hardcoded ar/fr/en ternaries became i18n keys —
+  // visible to the missing-key gate, editable by translators.
+  const tp = await getTranslations({ locale, namespace: 'coachProfilePage' })
   const isRTL = locale === 'ar'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -107,7 +112,8 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
   const beltLabel = coach?.belt_rank ? beltRankLabel(coach.belt_rank as string, tb) : null
 
   return (
-    <div className={cn('p-4 space-y-4', isRTL && 'rtl')}>
+    /* W3a R3: the undefined `rtl` class swept (DA-61). */
+    <div className="p-4 space-y-4">
     {/* W2a §4.2 Rule 1: main = identity card → stats → contact & role → hourly
         rate → bio → account details → self-editor; aside = push toggle +
         interface-language (on mobile these two now render AFTER main — intended). */}
@@ -126,7 +132,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
 
         {/* Specialization Badge */}
         {specialization && (
-          <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
+          <span className="tint-brand inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium">
             <Award className="h-3.5 w-3.5" />
             {specialization}
           </span>
@@ -143,7 +149,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
         {profile?.phone && (
           <div className="inline-flex items-center gap-1.5 mt-3 text-sm text-gray-500">
             <Phone className="h-3.5 w-3.5" />
-            <span dir="ltr">{profile.phone}</span>
+            <Ltr>{fmtPhone(profile.phone)}</Ltr>
           </div>
         )}
       </div>
@@ -154,14 +160,14 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           <BookOpen className="h-5 w-5 text-primary-700 mx-auto mb-1.5" />
           <p className="text-2xl font-bold text-gray-900">{classesCount ?? 0}</p>
           <p className="text-xs text-gray-500 mt-0.5">
-            {isRTL ? 'حصة' : locale === 'fr' ? 'Cours' : 'Classes'}
+{tp('classes')}
           </p>
         </div>
         <div className="rounded-2xl bg-white p-4 shadow-sm text-center">
           <Users className="h-5 w-5 text-primary-700 mx-auto mb-1.5" />
           <p className="text-2xl font-bold text-gray-900">{studentsCount}</p>
           <p className="text-xs text-gray-500 mt-0.5">
-            {isRTL ? 'طالب' : locale === 'fr' ? 'Élèves' : 'Students'}
+{tp('students')}
           </p>
         </div>
       </div>
@@ -169,21 +175,21 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
       {/* Contact & Role Info */}
       <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
         <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-1 tracking-wider', isRTL && 'font-arabic')}>
-          {isRTL ? 'معلومات التواصل' : locale === 'fr' ? 'Coordonnées' : 'Contact Info'}
+{tp('contactInfo')}
         </h3>
         <DetailRow
           icon={Mail}
-          label={isRTL ? 'البريد الإلكتروني' : locale === 'fr' ? 'Email' : 'Email'}
-          value={user.email || (isRTL ? 'غير محدد' : locale === 'fr' ? 'Non défini' : 'Not set')}
+          label={tp('email')}
+          value={user.email || tp('notSet')}
         />
         <DetailRow
           icon={Phone}
-          label={isRTL ? 'الهاتف' : locale === 'fr' ? 'Téléphone' : 'Phone'}
-          value={profile?.phone || (isRTL ? 'غير محدد' : locale === 'fr' ? 'Non défini' : 'Not set')}
+          label={tp('phone')}
+          value={profile?.phone ? <Ltr>{fmtPhone(profile.phone)}</Ltr> : tp('notSet')}
         />
         <DetailRow
           icon={Globe}
-          label={isRTL ? 'اللغة المفضلة' : locale === 'fr' ? 'Langue préférée' : 'Preferred Language'}
+          label={tp('preferredLanguage')}
           value={
             profile?.locale === 'ar' ? 'العربية' : profile?.locale === 'fr' ? 'Français' : 'English'
           }
@@ -192,28 +198,14 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           <div className="flex items-center gap-3">
             <ShieldIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-gray-500">
-                {isRTL ? 'الدور' : locale === 'fr' ? 'Rôle' : 'Role'}
-              </p>
+              <p className="text-xs text-gray-500">{tp('role')}</p>
               <div className="flex flex-wrap gap-1 mt-0.5">
                 {roles.map((r: any) => (
                   <span
                     key={r.id}
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                    className="tint-info inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                   >
-                    {r.role === 'head_coach'
-                      ? isRTL
-                        ? 'مدرب رئيسي'
-                        : locale === 'fr'
-                          ? 'Entraîneur en chef'
-                          : 'Head Coach'
-                      : r.role === 'coach'
-                        ? isRTL
-                          ? 'مدرب'
-                          : locale === 'fr'
-                            ? 'Entraîneur'
-                            : 'Coach'
-                        : r.role}
+                    {r.role === 'head_coach' ? tp('headCoach') : r.role === 'coach' ? tp('coach') : r.role}
                   </span>
                 ))}
               </div>
@@ -226,20 +218,20 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
       {(coach?.hourly_rate_usd || coach?.hourly_rate_lbp) && (
         <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
           <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-1 tracking-wider', isRTL && 'font-arabic')}>
-            {isRTL ? 'الأجر بالساعة' : locale === 'fr' ? 'Tarif horaire' : 'Hourly Rate'}
+{tp('hourlyRate')}
           </h3>
           {coach?.hourly_rate_usd && (
             <DetailRow
               icon={DollarSign}
               label="USD"
-              value={`$${Number(coach.hourly_rate_usd).toFixed(2)}/hr`}
+              value={<Ltr>{`${fmtUsd(Number(coach.hourly_rate_usd))}/${tp('hr')}`}</Ltr>}
             />
           )}
           {coach?.hourly_rate_lbp && (
             <DetailRow
               icon={DollarSign}
               label="LBP"
-              value={`${Number(coach.hourly_rate_lbp).toLocaleString()}/hr`}
+              value={<Ltr>{`${fmtLbp(Number(coach.hourly_rate_lbp))}/${tp('hr')}`}</Ltr>}
             />
           )}
         </div>
@@ -249,7 +241,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
       {bio && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
           <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider', isRTL && 'font-arabic')}>
-            {isRTL ? 'نبذة' : locale === 'fr' ? 'Biographie' : 'Bio'}
+{tp('bio')}
           </h3>
           <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{bio}</p>
         </div>
@@ -258,20 +250,12 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
       {/* Joined Date */}
       <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
         <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-1 tracking-wider', isRTL && 'font-arabic')}>
-          {isRTL ? 'تفاصيل الحساب' : locale === 'fr' ? 'Détails du compte' : 'Account Details'}
+{tp('accountDetails')}
         </h3>
         <DetailRow
           icon={CalendarDays}
-          label={isRTL ? 'تاريخ الانضمام' : locale === 'fr' ? "Date d'inscription" : 'Joined'}
-          value={
-            profile?.created_at
-              ? new Date(profile.created_at).toLocaleDateString(dateLocale(locale), {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })
-              : '—'
-          }
+          label={tp('joined')}
+          value={<Ltr>{fmtDate(profile?.created_at, locale, 'medium')}</Ltr>}
         />
       </div>
 
@@ -305,7 +289,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
           preference above), so a coach stuck on the wrong UI language had no way out. */}
       <div className="rounded-2xl bg-white p-4 shadow-sm" data-testid="settings-language">
         <h3 className={cn('text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider', isRTL && 'font-arabic')}>
-          {isRTL ? 'لغة الواجهة' : locale === 'fr' ? "Langue de l'interface" : 'Interface language'}
+{tp('interfaceLanguage')}
         </h3>
         <LanguageSwitcher locale={locale} variant="inline" />
       </div>
@@ -314,7 +298,7 @@ export default async function CoachProfilePage({ params: { locale } }: Props) {
   )
 }
 
-function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
       <Icon className="h-4 w-4 text-gray-400 flex-shrink-0" />
