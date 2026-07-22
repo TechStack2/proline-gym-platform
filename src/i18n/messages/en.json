@@ -2501,6 +2501,7 @@
     "todayTally": "Today's collections (by method)",
     "noPaymentsToday": "No payments today.",
     "tallyUnavailable": "Today's payments couldn't be loaded — the total below is not reliable.",
+    "outstandingUnavailable": "The outstanding total couldn't be loaded — don't rely on the amount shown.",
     "tallyRetry": "Retry",
     "viewPayments": "View payments →",
     "renewalsOutstanding": "Outstanding renewals",
