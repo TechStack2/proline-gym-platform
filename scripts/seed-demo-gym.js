@@ -336,20 +336,22 @@ async function main() {
 
   // 10. classes → 6, varied capacity/fee/coach, published; today's board is busy.
   const cls = {};
-  const mk = async (key, name_en, name_ar, name_fr, discId, coachId, cap, fee, color, room) => {
+  // CLASSES-COLOR-DROP (000111): the `color` column is gone — the landing paints cells
+  // with the gym brand now, so the demo classes carry no per-class colour.
+  const mk = async (key, name_en, name_ar, name_fr, discId, coachId, cap, fee, room) => {
     cls[key] = (await insOne('classes', {
       gym_id: gymId, discipline_id: discId, coach_id: coachId,
-      name_en, name_ar, name_fr, room, max_capacity: cap, color,
+      name_en, name_ar, name_fr, room, max_capacity: cap,
       status: 'scheduled', is_active: true, show_on_landing: true,
       monthly_fee_usd: fee, monthly_fee_lbp: 0,
     })).id;
   };
-  await mk('mtBeg', 'Muay Thai Beginner', 'مواي تاي مبتدئ', 'Muay Thaï Débutant', disc.mt, cSami, 16, 40, '#0E7490', 'Main Floor');
-  await mk('mtPro', 'Muay Thai Pro', 'مواي تاي محترفين', 'Muay Thaï Pro', disc.mt, cSami, 12, 55, '#0891B2', 'Main Floor');
-  await mk('bjjK', 'BJJ Kids', 'جوجيتسو أطفال', 'JJB Enfants', disc.bjj, cMaya, 12, 45, '#155E75', 'Studio B');
-  await mk('bjjA', 'BJJ Adults', 'جوجيتسو كبار', 'JJB Adultes', disc.bjj, cMaya, 20, 50, '#0E7490', 'Studio B');
-  await mk('box', 'Boxing Fundamentals', 'أساسيات الملاكمة', 'Boxe Bases', disc.mt, cRani, 18, 45, '#0891B2', 'Ring');
-  await mk('fit', 'Conditioning', 'لياقة بدنية', 'Conditionnement', disc.fit, cRani, 24, 35, '#155E75', 'Main Floor');
+  await mk('mtBeg', 'Muay Thai Beginner', 'مواي تاي مبتدئ', 'Muay Thaï Débutant', disc.mt, cSami, 16, 40, 'Main Floor');
+  await mk('mtPro', 'Muay Thai Pro', 'مواي تاي محترفين', 'Muay Thaï Pro', disc.mt, cSami, 12, 55, 'Main Floor');
+  await mk('bjjK', 'BJJ Kids', 'جوجيتسو أطفال', 'JJB Enfants', disc.bjj, cMaya, 12, 45, 'Studio B');
+  await mk('bjjA', 'BJJ Adults', 'جوجيتسو كبار', 'JJB Adultes', disc.bjj, cMaya, 20, 50, 'Studio B');
+  await mk('box', 'Boxing Fundamentals', 'أساسيات الملاكمة', 'Boxe Bases', disc.mt, cRani, 18, 45, 'Ring');
+  await mk('fit', 'Conditioning', 'لياقة بدنية', 'Conditionnement', disc.fit, cRani, 24, 35, 'Main Floor');
 
   // schedules — spread across the week; put ≥3 classes on TODAY's weekday so the
   // day / coach board is populated for the capture.
