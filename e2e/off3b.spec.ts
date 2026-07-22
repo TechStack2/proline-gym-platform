@@ -1,7 +1,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
 import { randomUUID } from 'crypto'
 import { ROLES } from './roles'
-import { vis, untilConsistent, runId } from './helpers'
+import { vis, untilConsistent, untilSettled, runId } from './helpers'
 
 /**
  * OFF-3b — offline lead capture: the front desk captures a walk-in lead OFFLINE,
@@ -28,7 +28,32 @@ async function ownerPage(browser: Browser, locale = 'en') {
  *  exactly one row — so retrying the whole evaluate until it survives is safe and
  *  never double-records (the idempotency/conflict proofs are unchanged). */
 async function injectLead(page: Page, opId: string, first: string, disciplineId: string | null) {
-  await expect(async () => {
+  // FLAKE-HEAL-2R: `untilSettled`, not `toPass`. The retry below existed already and
+  // still could not fire, because the attempt it was retrying never SETTLED: an
+  // `indexedDB.open()` whose `onblocked` fires (another connection holds the DB at an
+  // older version) calls neither `onsuccess` nor `onerror`, so one attempt ate the
+  // whole 20s budget. Both unhandled settle paths are now wired — `open.onblocked`
+  // and `tx.onabort`, the latter being how a transaction dies on a version change or
+  // quota abort (`onerror` does NOT fire for an abort) — and the per-attempt bound
+  // catches whatever a browser does that nobody enumerated.
+  //
+  // OBSERVED (union 29850018502, this same helper): the bound fires repeatedly —
+  // "attempt did not settle within 5000ms" four times over — which means the hang is
+  // NOT the `onblocked` path hypothesised above (that now rejects instantly). No IDB
+  // callback fires at all, which is what a plain versionless `indexedDB.open()` does
+  // while another connection sits mid-upgrade: the request simply queues, and
+  // `onblocked` is never one of its outcomes. That wedge lives in the PAGE, so
+  // re-running the same evaluate against the same document can never clear it — only
+  // tearing the document down can. Attempts after the first therefore RE-ANCHOR on a
+  // freshly loaded /desk. The first attempt does not (its caller already anchored), so
+  // the happy path is unchanged and the total budget stays 20s; only the per-attempt
+  // bound grows to cover a navigation.
+  let attempt = 0
+  await untilSettled(async () => {
+    if (attempt++ > 0) {
+      await page.goto('/en/desk')
+      await expect(vis(page, '[data-testid="offline-desk"]').first()).toBeVisible({ timeout: 5_000 })
+    }
     await page.evaluate(({ opId, first, disciplineId }) => new Promise<void>((resolve, reject) => {
       const open = indexedDB.open('proline_offline_db')
       open.onsuccess = () => {
@@ -41,10 +66,12 @@ async function injectLead(page: Page, opId: string, first: string, disciplineId:
         })
         tx.oncomplete = () => { db.close(); resolve() }
         tx.onerror = () => reject(tx.error)
+        tx.onabort = () => reject(tx.error ?? new Error('IDB_TX_ABORTED'))
       }
       open.onerror = () => reject(open.error)
+      open.onblocked = () => reject(new Error('IDB_OPEN_BLOCKED'))
     }), { opId, first, disciplineId })
-  }).toPass({ timeout: 20_000, intervals: [250, 500, 1_000, 2_000] })
+  }, { attemptMs: 8_000 })
 }
 
 const leadCards = (page: Page, fullName: string) =>

@@ -1,7 +1,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test'
 import { randomUUID } from 'crypto'
 import { ROLES } from './roles'
-import { vis, untilConsistent } from './helpers'
+import { vis, untilConsistent, untilSettled } from './helpers'
 
 /**
  * OFF-4 — reconciliation & conflict resolution: makes the offline writes
@@ -57,24 +57,32 @@ async function primeSW(page: Page) {
 
 /** White-box: queue a payment intent straight into the Dexie outbox (the desk DB is
  *  already open at v3 once /desk has mounted). Lets us force a precise conflict. */
+// FLAKE-HEAL-2R: same open, same two unhandled settle paths as off3b's injectLead
+// (`onblocked` on the open, `onabort` on the transaction) — and this one had no retry
+// at all, so a blocked open simply hung until the test timeout. `op_id` is the store's
+// PRIMARY KEY, so the `put` is idempotent and re-attempting can never double-record.
 const inject = (page: Page, invId: string, opId: string, amount: number) =>
-  page.evaluate(({ invId, opId, amount }) => new Promise<void>((resolve, reject) => {
-    const open = indexedDB.open('proline_offline_db')
-    open.onsuccess = () => {
-      const db = open.result
-      const tx = db.transaction('pending_payments', 'readwrite')
-      tx.objectStore('pending_payments').put({
-        op_id: opId, invoice_id: invId, student_id: '', amount_usd: amount, amount_lbp: 0,
-        method: 'cash_usd', reference: null, exchange_rate: null,
-        payment_date: new Date().toISOString().slice(0, 10),
-        client_ts: new Date().toISOString(), status: 'pending',
-        invoice_number: '', member_name: 'Karim',
-      })
-      tx.oncomplete = () => { db.close(); resolve() }
-      tx.onerror = () => reject(tx.error)
-    }
-    open.onerror = () => reject(open.error)
-  }), { invId, opId, amount })
+  untilSettled(async () => {
+    await page.evaluate(({ invId, opId, amount }) => new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('proline_offline_db')
+      open.onsuccess = () => {
+        const db = open.result
+        const tx = db.transaction('pending_payments', 'readwrite')
+        tx.objectStore('pending_payments').put({
+          op_id: opId, invoice_id: invId, student_id: '', amount_usd: amount, amount_lbp: 0,
+          method: 'cash_usd', reference: null, exchange_rate: null,
+          payment_date: new Date().toISOString().slice(0, 10),
+          client_ts: new Date().toISOString(), status: 'pending',
+          invoice_number: '', member_name: 'Karim',
+        })
+        tx.oncomplete = () => { db.close(); resolve() }
+        tx.onerror = () => reject(tx.error)
+        tx.onabort = () => reject(tx.error ?? new Error('IDB_TX_ABORTED'))
+      }
+      open.onerror = () => reject(open.error)
+      open.onblocked = () => reject(new Error('IDB_OPEN_BLOCKED'))
+    }), { invId, opId, amount })
+  })
 
 const paymentRows = (page: Page) => vis(page, '[data-testid="payment-row"]') // :visible — double-shell
 
