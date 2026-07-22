@@ -3,8 +3,9 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { getDailyTally } from '@/lib/billing/daily-tally'
+import { getGymOutstanding } from '@/lib/billing/outstanding'
 import { TallyError } from '@/components/money/tally-error'
-import { balanceUsd, balanceLbp, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { METHOD_LABEL } from '@/lib/billing/reconcile'
 import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import { InvoicesView } from '../invoices/invoices-view'
 import { PaymentsView } from '../payments/payments-view'
@@ -116,56 +117,31 @@ async function MoneyOverview({ locale }: { locale: string }) {
   const gymId = profile?.gym_id as string | undefined
 
   // PERF-2: these four reads are mutually independent — the products flag, the cash
-  // drawer tally, the open-invoice set, and the renewal-invoice set. Fire them as one
-  // wave; only the payments reconciliation (below) depends on the open-invoice ids.
+  // drawer tally, the currency preference, and the outstanding roll-up. Fire them as
+  // one wave.
   //   products — NO-MEMBERSHIP-GAPS: the renewals card + ProcessRenewals are
   //   membership-cycle furniture, hidden for a classes+PT gym.
-  const [products, tallyRes, pref, { data: openInvoices }, { data: renewalRows }] = await Promise.all([
+  //   outstanding — MONEY-OUTSTANDING: one SECURITY DEFINER aggregate
+  //   (get_gym_outstanding, 000109) that scopes to the session gym and sums the
+  //   per-invoice balance COMPLETELY in SQL, replacing the old invoices.limit(500) +
+  //   unbounded payments.in(ids) JS join that could silently truncate either side.
+  const [products, tallyRes, pref, outstandingRes] = await Promise.all([
     getEnabledProducts(supabase, gymId),
     getDailyTally(supabase, { gymId }), // the cash drawer: today's per-method tally (shared D1 logic)
     gymCurrencyPref(supabase, gymId), // MONEY-LBP: order/emphasis of the dual totals
-    supabase
-      .from('invoices')
-      .select('id, total_usd, total_lbp, status')
-      .in('status', ['pending', 'partial', 'overdue'])
-      .limit(500),
-    // ML-1: open renewal invoices (the system-issued ones), reconciled below.
-    supabase
-      .from('renewal_invoices')
-      .select('invoice_id, invoices:invoice_id!inner (id, total_usd, total_lbp, status, gym_id)'),
+    getGymOutstanding(supabase, { gymId }), // both obligation cards, complete + gym-scoped
   ])
   // MONEY-TALLY: unwrap once. `tally` is only meaningful when the read succeeded —
   // the empty Map here is the render fallback for the ERROR branch below, never a
   // claim that nothing was collected.
   const tally = tallyRes.ok ? tallyRes.tally : new Map<string, { usd: number; lbp: number }>()
 
-  // Outstanding obligations: reconcile the open invoices against their payments. USD
-  // is the D1 canon (balance from Σ amount_usd); LBP rides along as recorded
-  // (total_lbp − Σ amount_lbp), never converted (MONEY-LBP).
-  const ids = (openInvoices ?? []).map((i) => i.id)
-  const { data: pays } = ids.length
-    ? await supabase.from('payments').select('invoice_id, amount_usd, amount_lbp').in('invoice_id', ids)
-    : { data: [] as { invoice_id: string; amount_usd: number | null; amount_lbp: number | null }[] }
-  const paidBy = new Map<string, number>()
-  const paidLbpBy = new Map<string, number>()
-  for (const p of pays ?? []) {
-    paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
-    paidLbpBy.set(p.invoice_id, (paidLbpBy.get(p.invoice_id) ?? 0) + Number((p as any).amount_lbp ?? 0))
-  }
-  const outstanding = (openInvoices ?? []).reduce(
-    (s, inv) => s + balanceUsd(inv.total_usd, [{ amount_usd: paidBy.get(inv.id) ?? 0 }]), 0)
-  const outstandingLbp = (openInvoices ?? []).reduce(
-    (s, inv) => s + balanceLbp((inv as any).total_lbp, [{ amount_usd: 0, amount_lbp: paidLbpBy.get(inv.id) ?? 0 }]), 0)
-  const openRenewalInvs = ((renewalRows ?? []) as any[])
-    .map((r) => (Array.isArray(r.invoices) ? r.invoices[0] : r.invoices))
-    .filter((i: any) => i && ['pending', 'partial', 'overdue'].includes(i.status))
-  const renewalOutstanding = openRenewalInvs.reduce(
-    (s2: number, i: any) => s2 + balanceUsd(i.total_usd, [{ amount_usd: paidBy.get(i.id) ?? 0 }]), 0)
-  const renewalOutstandingLbp = openRenewalInvs.reduce(
-    (s2: number, i: any) => s2 + balanceLbp(i.total_lbp, [{ amount_usd: 0, amount_lbp: paidLbpBy.get(i.id) ?? 0 }]), 0)
-
-  const outMoney = fmtMoney(outstanding, outstandingLbp, pref)
-  const renewalMoney = fmtMoney(renewalOutstanding, renewalOutstandingLbp, pref)
+  // MONEY-OUTSTANDING: like the tally, a failed read is NOT a zero balance. When the
+  // roll-up could not be read, `out` is null and BOTH obligation cards render the loud
+  // error state below instead of a falsely-small "$0 owed".
+  const out = outstandingRes.ok ? outstandingRes.totals : null
+  const outMoney = out ? fmtMoney(out.usd, out.lbp, pref) : null
+  const renewalMoney = out ? fmtMoney(out.renewalUsd, out.renewalLbp, pref) : null
 
   return (
     <>
@@ -173,28 +149,54 @@ async function MoneyOverview({ locale }: { locale: string }) {
       {products.membership && (
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1" data-testid="money-renewals">
         <p className="flex items-center gap-1 text-xs text-gray-500"><RefreshCw className="h-3 w-3" /> {t('renewalsOutstanding')}</p>
-        {/* DA-7: money swapped sides within one Arabic page ("$160.95" next to
-            "80.00$") because an amount with no strong character takes the
-            paragraph direction. <Ltr> isolates it; the symbol side is a property
-            of the currency, fixed in both directions. */}
-        <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd"><Ltr>{renewalMoney.primary}</Ltr></p>
-        {renewalMoney.secondary && (
-          <p className="text-sm font-semibold text-amber-500/90" data-testid="money-renewals-lbp"><Ltr>{renewalMoney.secondary}</Ltr></p>
+        {/* MONEY-OUTSTANDING: a failed roll-up read must never wear the clothes of
+            "nothing due" — same doctrine as the tally, on the obligations side. */}
+        {!out || !renewalMoney ? (
+          <TallyError
+            testid="money-renewals-error"
+            message={t('outstandingUnavailable')}
+            retryLabel={t('tallyRetry')}
+            retryHref={`/${locale}/money`}
+            className="mt-1"
+          />
+        ) : (
+          <>
+            {/* DA-7: money swapped sides within one Arabic page ("$160.95" next to
+                "80.00$") because an amount with no strong character takes the
+                paragraph direction. <Ltr> isolates it; the symbol side is a property
+                of the currency, fixed in both directions. */}
+            <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd"><Ltr>{renewalMoney.primary}</Ltr></p>
+            {renewalMoney.secondary && (
+              <p className="text-sm font-semibold text-amber-500/90" data-testid="money-renewals-lbp"><Ltr>{renewalMoney.secondary}</Ltr></p>
+            )}
+            <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: out.renewalCount })}</p>
+            <div className="mt-2"><ProcessRenewalsButton /></div>
+          </>
         )}
-        <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: openRenewalInvs.length })}</p>
-        <div className="mt-2"><ProcessRenewalsButton /></div>
       </div>
       )}
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1">
         <p className="text-xs text-gray-500">{t('outstanding')}</p>
-        <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding"><Ltr>{outMoney.primary}</Ltr></p>
-        {outMoney.secondary && (
-          <p className="text-sm font-semibold text-red-500/90" data-testid="money-outstanding-lbp"><Ltr>{outMoney.secondary}</Ltr></p>
+        {!out || !outMoney ? (
+          <TallyError
+            testid="money-outstanding-error"
+            message={t('outstandingUnavailable')}
+            retryLabel={t('tallyRetry')}
+            retryHref={`/${locale}/money`}
+            className="mt-1"
+          />
+        ) : (
+          <>
+            <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding"><Ltr>{outMoney.primary}</Ltr></p>
+            {outMoney.secondary && (
+              <p className="text-sm font-semibold text-red-500/90" data-testid="money-outstanding-lbp"><Ltr>{outMoney.secondary}</Ltr></p>
+            )}
+            <p className="mt-0.5 text-xs text-gray-400">{t('openInvoices', { count: out.invoiceCount })}</p>
+            <Link href={`/${locale}/money?tab=invoices`} className="mt-2 inline-block text-xs font-medium text-primary-600 hover:underline">
+              {t('viewInvoices')}
+            </Link>
+          </>
         )}
-        <p className="mt-0.5 text-xs text-gray-400">{t('openInvoices', { count: (openInvoices ?? []).length })}</p>
-        <Link href={`/${locale}/money?tab=invoices`} className="mt-2 inline-block text-xs font-medium text-primary-600 hover:underline">
-          {t('viewInvoices')}
-        </Link>
       </div>
       <div className="rounded-2xl border bg-white p-5 shadow-elevation-1 sm:col-span-2">
         <p className="mb-2 text-xs text-gray-500">{t('todayTally')}</p>

@@ -2501,6 +2501,7 @@
     "todayTally": "تحصيلات اليوم (حسب الطريقة)",
     "noPaymentsToday": "لا مدفوعات اليوم.",
     "tallyUnavailable": "تعذّر تحميل مدفوعات اليوم — المجموع أدناه غير موثوق.",
+    "outstandingUnavailable": "تعذّر تحميل إجمالي المستحقات — لا تعتمد على المبلغ المعروض.",
     "tallyRetry": "إعادة المحاولة",
     "viewPayments": "عرض المدفوعات ←",
     "renewalsOutstanding": "تجديدات مستحقة",
