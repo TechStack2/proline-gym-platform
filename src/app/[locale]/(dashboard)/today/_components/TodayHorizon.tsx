@@ -274,7 +274,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
   ) : null
 
   // W3b R4 (DISC-COLOR is the one truth): the stripe wears the class's CATEGORY
-  // hue via data-cat — the dead `classes.color` column is no longer read, and the
+  // hue via data-cat — the `classes.color` column is gone (dropped in 000111), and the
   // per-class nonce'd hex stylesheet (the last CSP-smuggled palette) is gone.
   // Solid `rgb(var(--cat))` (identity marker, not a status); unclassified → slot 8.
 

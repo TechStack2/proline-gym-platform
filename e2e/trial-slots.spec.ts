@@ -71,7 +71,7 @@ test.beforeAll(async () => {
   }
 
   // A FULL class (cap 1, one active reg) scheduled TODAY → overbook hint.
-  fullClassId = (await svcJson('classes', { gym_id: gymId, discipline_id: discId, coach_id: samiCoachId, name_ar: 'ممتلئ', name_en: `TS Full ${RUN}`, name_fr: 'Complet', room: 'R', max_capacity: 1, color: '#111', is_active: true }))[0].id
+  fullClassId = (await svcJson('classes', { gym_id: gymId, discipline_id: discId, coach_id: samiCoachId, name_ar: 'ممتلئ', name_en: `TS Full ${RUN}`, name_fr: 'Complet', room: 'R', max_capacity: 1, is_active: true }))[0].id
   await svcJson('class_schedules', { class_id: fullClassId, day_of_week: todayDow(), start_time: '20:00', end_time: '21:00', is_active: true })
   await svcJson('class_registrations', { class_id: fullClassId, gym_id: gymId, student_id: memberStudentId, status: 'active' })
 
@@ -82,7 +82,7 @@ test.beforeAll(async () => {
   await svc('profiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: coachUserId, gym_id: gymId, first_name_ar: 'مدرب', first_name_en: 'TSCoach', first_name_fr: 'TSCoach', last_name_ar: '.', last_name_en: `${RUN}`, last_name_fr: '.' }) })
   await svc('user_roles', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: coachUserId, gym_id: gymId, role: 'coach' }) })
   const attCoachId = (await svcJson('coaches', { gym_id: gymId, profile_id: coachUserId, specialization_en: 'Trial', specialization_ar: 'تجربة', specialization_fr: 'Essai', is_active: true }))[0].id
-  attClassId = (await svcJson('classes', { gym_id: gymId, discipline_id: discId, coach_id: attCoachId, name_ar: 'حضور', name_en: `TS Att ${RUN}`, name_fr: 'Att', room: 'R', max_capacity: 20, color: '#222', is_active: true }))[0].id
+  attClassId = (await svcJson('classes', { gym_id: gymId, discipline_id: discId, coach_id: attCoachId, name_ar: 'حضور', name_en: `TS Att ${RUN}`, name_fr: 'Att', room: 'R', max_capacity: 20, is_active: true }))[0].id
   await svcJson('class_schedules', { class_id: attClassId, day_of_week: todayDow(), start_time: '19:00', end_time: '20:00', is_active: true })
 
   // Sami availability 09:00–17:00 today → PT slots free of the 18:00 Muay Thai class.
