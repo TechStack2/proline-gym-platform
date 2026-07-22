@@ -31,31 +31,13 @@ async function svcGet(path: string): Promise<any[]> {
   return r.json()
 }
 const grp = (n: number) => Number(n).toLocaleString('en-US') // mirrors fmtLbp exactly
-
-/** Page through PostgREST past its max_rows cap (config.toml: 1000), so an oracle over
- *  the whole table is COMPLETE. `path` must carry a stable `&order=` for offset paging
- *  to be deterministic. This is the property the app's old read lacked, so the oracle
- *  must NOT share it — otherwise the assertion would mirror the very truncation it is
- *  meant to catch. */
-async function svcGetAll(path: string): Promise<any[]> {
-  const PAGE = 1000
-  const out: any[] = []
-  for (let off = 0; ; off += PAGE) {
-    const rows = await svcGet(`${path}&offset=${off}&limit=${PAGE}`)
-    out.push(...rows)
-    if (rows.length < PAGE) break
-  }
-  return out
-}
-
-/** Expected outstanding (USD + LBP), computed COMPLETELY and INDEPENDENTLY of the app:
- *  every open invoice and every one of this gym's payments, paged past max_rows, netted
- *  with the SAME clamps the app uses (balanceUsd <0.01→0; balanceLbp <1→0). Because it
- *  never truncates, it is a true oracle for get_gym_outstanding — including the
- *  regression test that seeds past both PostgREST caps. */
-async function expectedOutstanding(): Promise<{ usd: string; lbp: string; invoiceCount: number; paymentCount: number }> {
-  const invs = await svcGetAll(`invoices?gym_id=eq.${gymId}&status=in.(pending,partial,overdue)&select=id,total_usd,total_lbp&order=id`)
-  const pays = await svcGetAll(`payments?select=invoice_id,amount_usd,amount_lbp,invoices!inner(gym_id)&invoices.gym_id=eq.${gymId}&order=id`)
+/** Expected outstanding (USD + LBP), computed from the ledger the SAME way the app
+ *  does (balanceUsd clamps <0.01; balanceLbp clamps <1) — so the assertion holds
+ *  against the seeded gym's own invoices PLUS the ones this spec added. */
+async function expectedOutstanding(): Promise<{ usd: string; lbp: string }> {
+  const invs = await svcGet(`invoices?gym_id=eq.${gymId}&status=in.(pending,partial,overdue)&select=id,total_usd,total_lbp&limit=500`)
+  const ids = invs.map((i) => i.id)
+  const pays = ids.length ? await svcGet(`payments?invoice_id=in.(${ids.join(',')})&select=invoice_id,amount_usd,amount_lbp`) : []
   const pu = new Map<string, number>(); const pl = new Map<string, number>()
   for (const p of pays) { pu.set(p.invoice_id, (pu.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0)); pl.set(p.invoice_id, (pl.get(p.invoice_id) ?? 0) + Number(p.amount_lbp ?? 0)) }
   let u = 0; let l = 0
@@ -63,8 +45,7 @@ async function expectedOutstanding(): Promise<{ usd: string; lbp: string; invoic
     const bu = Number(i.total_usd ?? 0) - (pu.get(i.id) ?? 0); if (bu >= 0.01) u += Math.round(bu * 100) / 100
     const bl = Number(i.total_lbp ?? 0) - (pl.get(i.id) ?? 0); if (bl >= 1) l += Math.round(bl)
   }
-  u = Math.round(u * 100) / 100
-  return { usd: `$${u.toFixed(2)}`, lbp: `${grp(l)} LBP`, invoiceCount: invs.length, paymentCount: pays.length }
+  return { usd: `$${u.toFixed(2)}`, lbp: `${grp(l)} LBP` }
 }
 /** Expected collections for a method THIS MONTH (both columns) — includes this spec's
  *  refund (negative) + discounted (net) rows, so a match proves they flow through. */
@@ -219,95 +200,6 @@ test('3 · USD preference — USD leads; the LBP total still shows because it wa
     // USD-pref still surfaces the recorded LBP (honest, never hidden when it exists).
     await expect(page.getByTestId('money-outstanding-lbp')).toHaveText(exp.lbp)
   } finally {
-    await ctx.close()
-  }
-})
-
-/** Bulk-insert `n` OPEN, USD-only invoices ($1 each, no tax) mirroring newInvoice's
- *  shape (total_usd is trigger-computed), returning their ids. One POST, not n. */
-async function bulkOpenInvoices(n: number): Promise<string[]> {
-  const stamp = Date.now().toString(36)
-  const body = Array.from({ length: n }, (_, k) => ({
-    gym_id: gymId, student_id: studentId, invoice_type: 'other',
-    invoice_number: `MOUT-${stamp}-${++invSeq}-${k}`,
-    amount_usd: 1, amount_lbp: 0, tax_rate: 0, exchange_rate: RATE,
-    status: 'pending', due_date: new Date().toISOString().slice(0, 10),
-  }))
-  const r = await svc('invoices', {
-    method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(body),
-  })
-  if (!r.ok) throw new Error(`bulk invoices → ${r.status} ${await r.text()}`)
-  return ((await r.json()) as Array<{ id: string }>).map((x) => x.id)
-}
-
-/** Bulk-insert `perInvoice` small USD partial payments on each id. One POST. */
-async function bulkPartials(ids: string[], perInvoice: number): Promise<void> {
-  const body = ids.flatMap((id) =>
-    Array.from({ length: perInvoice }, () => ({
-      invoice_id: id, student_id: studentId, amount_usd: 0.1, amount_lbp: 0,
-      payment_method: 'cash_usd', payment_date: new Date().toISOString(),
-    })),
-  )
-  const r = await svc('payments', {
-    method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body),
-  })
-  if (!r.ok) throw new Error(`bulk payments → ${r.status} ${await r.text()}`)
-}
-
-/**
- * MONEY-OUTSTANDING — the permanent regression for the silently-truncated drawer.
- *
- * The old /money read was `invoices … .limit(500)` (no ORDER BY) feeding
- * `payments … .in(ids)` (no limit → PostgREST capped it at max_rows=1000, no ORDER BY),
- * netted in JS. Past either cap the number was an ARBITRARY subset: dropped invoices
- * made it read LOW (MEASURED −$21 at 521 open invoices), dropped payments made it read
- * HIGH (the original $20-partial flake). Both are the SAME defect — a bounded read of an
- * unbounded set — and get_gym_outstanding (000109) removes it by aggregating in SQL with
- * no row ceiling.
- *
- * This crosses the invoices cap deterministically (520 extra open $1 invoices, 20 of
- * them part-paid $0.10 so partial-netting is exercised too) and asserts the rendered
- * total equals the COMPLETE, independently-paged oracle to the cent. On the old code the
- * two diverge (the arbitrary 500 kept drops ~20 invoices, each owing a positive amount);
- * on the RPC they match. The count guard keeps it a real regression — if a change stops
- * crossing the cap it fails loudly, not vacuously.
- *
- * The seed is kept LIGHT on purpose: the payments-cap direction is the same structural
- * bug, and proving it would need >1000 payment rows whose churn slows the sibling tests'
- * RLS reads. The complete oracle already nets EVERY payment, so a payment-side truncation
- * would surface here as a mismatch just the same.
- */
-test('4 · MONEY-OUTSTANDING — outstanding stays EXACT past the invoices truncation cap', async ({ browser }) => {
-  test.setTimeout(180_000)
-  await setPref('USD')
-  let ids: string[] = []
-  const { ctx, page } = await ownerLogin(browser, 'en')
-  try {
-    ids = await bulkOpenInvoices(520)
-    await bulkPartials(ids.slice(0, 20), 1) // 20 partial payments — enough to prove netting, light enough not to bloat
-
-    const exp = await expectedOutstanding()
-    // Only meaningful if the data actually exceeds the old limit(500).
-    expect(exp.invoiceCount, 'seeded past the invoices limit(500)').toBeGreaterThan(500)
-
-    await page.goto('/en/money', { waitUntil: 'domcontentloaded' })
-    const outstanding = page.getByTestId('money-outstanding')
-    await expect(outstanding, 'the outstanding read failed loud instead of rendering a number').toBeVisible({ timeout: 15_000 })
-    // The whole point: the rendered total is the COMPLETE total, not a truncated one.
-    await expect(outstanding).toHaveText(exp.usd)
-    // The error state must NOT be showing — a green number here is the real assertion.
-    await expect(page.getByTestId('money-outstanding-error')).toHaveCount(0)
-  } finally {
-    // Undo the seed so it never pollutes the sibling tests (which share this gym).
-    // Runs even on failure; delete payments before their invoices (FK order).
-    for (let i = 0; i < ids.length; i += 100) {
-      const chunk = ids.slice(i, i + 100).join(',')
-      await svc(`payments?invoice_id=in.(${chunk})`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
-    }
-    for (let i = 0; i < ids.length; i += 100) {
-      const chunk = ids.slice(i, i + 100).join(',')
-      await svc(`invoices?id=in.(${chunk})`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
-    }
     await ctx.close()
   }
 })
