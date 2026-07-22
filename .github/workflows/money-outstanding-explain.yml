@@ -9,8 +9,15 @@
 # before the slice's final tip.
 name: MONEY-OUTSTANDING explain (temporary diagnostic)
 
+# push-triggered (scoped to this branch + the diagnostic paths): a brand-new
+# workflow_dispatch 404s until it exists on the default branch, so we self-trigger on
+# pushes that touch the diagnostic itself. Deleted before the final tip.
 on:
-  workflow_dispatch:
+  push:
+    branches: [prompt-money-outstanding]
+    paths:
+      - 'scripts/diag/money-outstanding-explain.sql'
+      - '.github/workflows/money-outstanding-explain.yml'
 
 jobs:
   explain:
