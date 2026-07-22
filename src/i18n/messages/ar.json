@@ -2868,8 +2868,9 @@
     "planChanged": "جُدول تغيير الخطة للدورة القادمة",
     "reinstate": "إعادة تفعيل",
     "reinstated": "أُعيد تفعيل الاشتراك",
-    "processNow": "معالجة التجديدات الآن",
-    "tickDone": "اكتملت دورة المعالجة",
+    "processNow": "تشغيل الدورة اليومية",
+    "tickDone": "اكتملت الدورة اليومية",
+    "tickNothingDue": "كل شيء محدَّث — لا شيء مستحق",
     "tickSummary": "{issued} صدرت · {reminded} تذكير · {lapsed} انتهت · {suspended} عُلّقت · {unfrozen} أُلغي تجميدها"
   },
   "wizard": {
