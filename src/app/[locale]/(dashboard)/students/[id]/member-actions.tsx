@@ -16,10 +16,11 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ModalPortal } from '@/components/shared/modal-portal'
+import { Select } from '@/components/ui/select'
+import { Dialog } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
-import { DollarSign, CalendarDays, Dumbbell, X, Loader2, Users, Tent, AlertTriangle } from 'lucide-react'
+import { DollarSign, CalendarDays, Dumbbell, Loader2, Users, Tent, AlertTriangle } from 'lucide-react'
 import { recordPayment } from '../../invoices/actions'
 import { registerMemberToClass } from './actions'
 import { registerToCamp } from '../../camps/actions'
@@ -44,24 +45,17 @@ export type PickableCamp = {
 const METHODS = ['cash_usd', 'cash_lbp', 'omt', 'whish', 'bank_transfer', 'bob_finance'] as const
 type Method = (typeof METHODS)[number]
 
+// DA-30 (W4): the local ModalPortal wrapper becomes the §2.5 Dialog primitive —
+// same title+close shape, plus the focus trap/Esc/aria the hand-rolled version
+// never had. Container testids unchanged in role.
 function Modal({ title, onClose, testid, children }: {
   title: string; onClose: () => void; testid: string; children: React.ReactNode
 }) {
   return (
-    <ModalPortal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div data-testid={testid} onClick={(e) => e.stopPropagation()}
-        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-          <button type="button" onClick={onClose} aria-label="close" className="rounded p-1 text-gray-400 hover:bg-gray-100">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-    </ModalPortal>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }} title={title}
+      variant="responsive" data-testid={testid} className="max-w-md">
+      {children}
+    </Dialog>
   )
 }
 
@@ -302,13 +296,13 @@ export function MemberActions({
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">{t('invoice')}</label>
-                <select data-testid="m360-pay-invoice" value={selected?.id ?? ''} onChange={(e) => pickInvoice(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <Select data-testid="m360-pay-invoice" value={selected?.id ?? ''} onChange={(e) => pickInvoice(e.target.value)}
+                  className="h-9">
                   {openInvoices.map((i) => (
                     /* DA-34: same "$X.XX" text, via the one money formatter. */
                     <option key={i.id} value={i.id}>{i.invoice_number} — {fmtUsd(i.balance_usd)}</option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -318,10 +312,10 @@ export function MemberActions({
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">{t('method')}</label>
-                  <select data-testid="m360-pay-method" value={method} onChange={(e) => setMethod(e.target.value as Method)}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <Select data-testid="m360-pay-method" value={method} onChange={(e) => setMethod(e.target.value as Method)}
+                    className="h-9">
                     {METHODS.map((m) => <option key={m} value={m}>{t(`methods.${m}`)}</option>)}
-                  </select>
+                  </Select>
                 </div>
               </div>
               <div>

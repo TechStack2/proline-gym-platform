@@ -9,6 +9,7 @@ import { PortalCampsSection } from './_components/portal-camps'
 import { MembershipLifecycleActions } from './_components/membership-lifecycle-actions'
 import { cn } from '@/lib/utils'
 import { Users, CreditCard, Award, TrendingUp, CalendarDays, ArrowRight, ClipboardList, Dumbbell, Wallet } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import Link from 'next/link'
 import { Avatar as KidAvatar } from '@/components/shared/avatar'
 import { PortalCard, PortalCardTitle, DeskGrid } from '@/components/portal/portal-kit'
@@ -323,7 +324,10 @@ export default async function PortalHomePage({ params: { locale }, searchParams 
               <p className={cn('text-xs text-danger-600', isRTL && 'font-arabic')}>{t('outstandingCount', { count: openInvoices.length })}</p>
             </div>
           </div>
-          <Ltr className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]">{fmtUsd(balanceDue)}</Ltr>
+          <span className="flex shrink-0 items-center gap-1.5">
+            <Ltr className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]">{fmtUsd(balanceDue)}</Ltr>
+            <NavChevron />
+          </span>
         </Link>
       )}
 

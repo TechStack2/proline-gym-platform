@@ -4,7 +4,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import { useState } from 'react'
+
+const STATUSES = ['active', 'inactive', 'on_leave'] as const
 
 interface CoachFiltersProps {
   locale: string
@@ -43,24 +46,40 @@ export function CoachFilters({ locale, isRTL }: CoachFiltersProps) {
         </div>
       </form>
 
-      <select
-        className="border rounded-md px-3 py-2 text-sm"
-        value={searchParams.get('status') || ''}
-        onChange={(e) => {
-          const params = new URLSearchParams(searchParams.toString())
-          if (e.target.value) {
-            params.set('status', e.target.value)
-          } else {
-            params.delete('status')
+      {/* §2.6 (W4): the 3-value status set is apply-on-tap chips (tap-active-clears);
+          searchParams mechanics unchanged. */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {STATUSES.map((s) => {
+          const status = searchParams.get('status') || ''
+          const setStatus = (value: string) => {
+            const params = new URLSearchParams(searchParams.toString())
+            if (value) {
+              params.set('status', value)
+            } else {
+              params.delete('status')
+            }
+            router.push(`?${params.toString()}`)
           }
-          router.push(`?${params.toString()}`)
-        }}
-      >
-        <option value="">{t('all_statuses')}</option>
-        <option value="active">{t('status.active')}</option>
-        <option value="inactive">{t('status.inactive')}</option>
-        <option value="on_leave">{t('status.on_leave')}</option>
-      </select>
+          return (
+            <button
+              key={s}
+              type="button"
+              data-status={s}
+              data-active={status === s}
+              onClick={() => setStatus(status === s ? '' : s)}
+              className={cn(
+                'inline-flex min-h-[36px] items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+                status === s
+                  ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
+              )}
+            >
+              {t(`status.${s}`)}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 
 /**
  * ActionCard (FD-1) — the Today 2.0 card framework. Today is not a dashboard of
@@ -95,6 +96,8 @@ export function ActionCard({
 /**
  * One drill-down row: the body is the drill link, `action` is the one-tap
  * action rendered beside it (a Link/anchor — NOT nested inside the drill link).
+ * §2.7 (DA-56, W4): every ActionRow navigates, so every ActionRow wears the
+ * trailing NavChevron intrinsically — call sites must not pass their own.
  */
 export function ActionRow({
   href, testid, action, children,
@@ -111,6 +114,7 @@ export function ActionRow({
     >
       <Link href={href} className="min-w-0 flex-1">{children}</Link>
       {action}
+      <NavChevron />
     </div>
   )
 }

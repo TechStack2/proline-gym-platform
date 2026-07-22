@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ModalPortal } from '@/components/shared/modal-portal';
+import { Dialog } from '@/components/ui/dialog';
+import { Select } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -11,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { fmtDate } from '@/lib/fmt';
 import { WhatsAppShare } from '@/components/shared/whatsapp-share';
 import {
-  Phone, Mail, Calendar, CalendarClock, Search, Plus, KeyRound, CheckCircle2, XCircle, X, UserCheck,
+  Phone, Mail, Calendar, CalendarClock, Search, Plus, KeyRound, CheckCircle2, XCircle, UserCheck,
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FormWizard } from '@/components/shared/form-wizard';
@@ -262,18 +263,6 @@ export function LeadsClient({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="px-3 py-2 text-sm border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-        >
-          <option value="all">{t('all_statuses')}</option>
-          {LEAD_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {statusDisplay(s)}
-            </option>
-          ))}
-        </select>
         <button
           type="button"
           data-testid="add-lead-button"
@@ -283,6 +272,28 @@ export function LeadsClient({
           <Plus className="h-4 w-4" />
           {t('add_lead')}
         </button>
+      </div>
+
+      {/* W4 §2.6: the status filter is an enumerable ≤8 set → apply-on-tap chips
+          (tap the active chip to clear back to all). */}
+      <div className="flex flex-wrap gap-2">
+        {LEAD_STATUSES.map((s) => (
+          <button
+            key={s}
+            type="button"
+            data-active={statusFilter === s}
+            onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
+            className={cn(
+              'inline-flex min-h-[36px] items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+              statusFilter === s
+                ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
+            )}
+          >
+            {statusDisplay(s)}
+          </button>
+        ))}
       </div>
 
       {/* LEADS-BOUND: the list is capped at LEADS_LIMIT — surface the gym-wide total so
@@ -350,9 +361,9 @@ export function LeadsClient({
                       {statusDisplay('converted')}
                     </span>
                   ) : (
-                    <select
+                    <Select
                       className={cn(
-                        'text-xs px-2 py-1 rounded-full border font-medium',
+                        'h-auto w-auto rounded-full px-2 py-1 text-xs font-medium',
                         statusColors[lead.status] || 'bg-gray-100',
                       )}
                       value={lead.status}
@@ -363,7 +374,7 @@ export function LeadsClient({
                           {statusDisplay(s)}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   )}
                 </div>
 
@@ -667,15 +678,14 @@ function TrialPanel({
               <p className="text-xs text-gray-500" data-testid="trial-no-occurrences">{t('no_occurrences')}</p>
             ) : (
               <>
-                <select data-testid="trial-occurrence" value={occIdx} onChange={(e) => setOccIdx(e.target.value)}
-                  className="w-full px-2 py-1 text-xs border rounded bg-white text-gray-900">
+                <Select data-testid="trial-occurrence" value={occIdx} onChange={(e) => setOccIdx(e.target.value)}>
                   <option value="">{t('pick_occurrence')}</option>
                   {occurrences.map((o, i) => (
                     <option key={i} value={i}>
                       {dateLbl(o.date)} · {o.startTime} · {o.className}{o.coachName ? ` · ${o.coachName}` : ''} · {o.full ? t('trial_full') : t('trial_spots', { count: o.spotsLeft ?? 0 })}
                     </option>
                   ))}
-                </select>
+                </Select>
                 {selectedOcc?.full && (
                   <p className="text-xs text-amber-600" data-testid="trial-overbook-hint">{t('overbook_hint')}</p>
                 )}
@@ -683,22 +693,20 @@ function TrialPanel({
             )
           ) : (
             <>
-              <select data-testid="trial-pt-coach" value={ptCoachId}
-                onChange={(e) => { setPtCoachId(e.target.value); void loadSlots(e.target.value); }}
-                className="w-full px-2 py-1 text-xs border rounded">
+              <Select data-testid="trial-pt-coach" value={ptCoachId}
+                onChange={(e) => { setPtCoachId(e.target.value); void loadSlots(e.target.value); }}>
                 <option value="">{t('select_coach')}</option>
                 {coaches.map((c) => (<option key={c.id} value={c.id}>{coachName(c)}</option>))}
-              </select>
+              </Select>
               {loadingSlots ? (
                 <p className="text-xs text-gray-500">{t('loading')}</p>
               ) : ptSlots.length === 0 ? (
                 <p className="text-xs text-gray-500" data-testid="trial-no-pt-slots">{t('no_pt_slots')}</p>
               ) : (
-                <select data-testid="trial-pt-slot" value={ptSlotIdx} onChange={(e) => setPtSlotIdx(e.target.value)}
-                  className="w-full px-2 py-1 text-xs border rounded bg-white text-gray-900">
+                <Select data-testid="trial-pt-slot" value={ptSlotIdx} onChange={(e) => setPtSlotIdx(e.target.value)}>
                   <option value="">{t('pick_pt_slot')}</option>
                   {ptSlots.map((s, i) => (<option key={i} value={i}>{dateLbl(s.date)} · {s.time}</option>))}
-                </select>
+                </Select>
               )}
             </>
           )}
@@ -948,24 +956,16 @@ function ConvertModal({
   };
 
   return (
-    <ModalPortal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div
-        data-testid="convert-modal"
-        dir={isRTL ? 'rtl' : 'ltr'}
-        className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-4"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className={cn('text-lg font-bold', isRTL && 'font-arabic')}>
-            {t('convert_title')}
-          </h2>
-          <button onClick={onClose} aria-label="close"><X className="h-5 w-5 text-gray-400" /></button>
-        </div>
-
-        <p className="text-sm text-gray-500">
-          {t('convert_subtitle', { name: `${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() })}
-        </p>
-
+    <Dialog
+      open
+      onOpenChange={(o) => { if (!o) onClose() }}
+      title={t('convert_title')}
+      description={t('convert_subtitle', { name: `${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() })}
+      variant="center"
+      className="max-w-md"
+      data-testid="convert-modal"
+    >
+      <div className="space-y-4">
         {/* MJ-5: the lead's name + normalized phone carry straight into the member —
             no retyping. Or set them up as a family (guardian + kids), pre-filled. */}
         <div data-testid="convert-prefill" className="rounded-xl border bg-gray-50 p-3">
@@ -1009,17 +1009,16 @@ function ConvertModal({
         </div>
 
         <Field label={t('select_plan')}>
-          <select
+          <Select
             data-testid="convert-plan"
             value={planId}
             onChange={(e) => setPlanId(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
           >
             {plans.length === 0 && <option value="">{t('no_plans')}</option>}
             {plans.map((p) => (
               <option key={p.id} value={p.id}>{planLabel(p)}</option>
             ))}
-          </select>
+          </Select>
         </Field>
 
         <p className="text-xs text-gray-400">{t('convert_note')}</p>
@@ -1038,7 +1037,6 @@ function ConvertModal({
           </button>
         </div>
       </div>
-    </div>
-    </ModalPortal>
+    </Dialog>
   );
 }

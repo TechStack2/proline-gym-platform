@@ -17,7 +17,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Mail, Languages, Pencil, ShieldAlert, Clock } from 'lucide-react'
-import { ModalPortal } from '@/components/shared/modal-portal'
+import { Dialog } from '@/components/ui/dialog'
 import { updateContactFields, requestProfileChange, type ProfileChangePayload } from './actions'
 
 type Props = {
@@ -144,14 +144,16 @@ export function ProfileSelfServe({ locale, mode, studentId, credentialed, pendin
 
       {/* ── CHANGE REQUEST modal ── */}
       {open && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !pending && setOpen(false)}>
-            <div data-testid="profile-change-modal" dir={isRTL ? 'rtl' : 'ltr'}
-              className={cn('w-full max-w-md rounded-2xl bg-white p-5 shadow-xl space-y-3 max-h-[90vh] overflow-y-auto', isRTL && 'text-right')}
-              onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-base font-bold text-gray-900">{t('requestChangeTitle')}</h2>
-              <p className="text-xs text-gray-500">{t('requestChangeIntro')}</p>
-
+        <Dialog
+          open={open}
+          onOpenChange={(o) => { if (!o && !pending) setOpen(false) }}
+          title={t('requestChangeTitle')}
+          description={t('requestChangeIntro')}
+          variant="center"
+          className="max-w-md"
+          data-testid="profile-change-modal"
+        >
+            <div className="space-y-3">
               <Field label={t('dob')}>
                 <input data-testid="pc-dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" />
@@ -193,8 +195,7 @@ export function ProfileSelfServe({ locale, mode, studentId, credentialed, pendin
                 </button>
               </div>
             </div>
-          </div>
-        </ModalPortal>
+        </Dialog>
       )}
     </div>
   )

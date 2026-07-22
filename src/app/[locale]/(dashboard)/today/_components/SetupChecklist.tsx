@@ -3,7 +3,8 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { getSetupMilestones } from '@/lib/gym/setup-checklist'
-import { Sparkles, Check, ChevronRight } from 'lucide-react'
+import { Sparkles, Check } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 
 /**
  * ONBOARDING-CHECKLIST → J1 SETUP-HUB summary. The /today card is now a COMPACT,
@@ -64,7 +65,7 @@ export async function SetupChecklist({ locale, gymId }: { locale: string; gymId:
           className={cn('flex flex-shrink-0 items-center gap-0.5 text-xs font-semibold text-primary-600', isRTL && 'font-arabic')}
         >
           {t('cta')}
-          <ChevronRight className={cn('h-4 w-4', isRTL && 'rotate-180')} />
+          <NavChevron className="text-primary-600" />
         </span>
       </div>
     </Link>

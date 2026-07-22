@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ModalPortal } from '@/components/shared/modal-portal'
+import { Dialog } from '@/components/ui/dialog'
 import { InviteResultCard, type InviteResult } from '@/components/shared/invite-button'
 import { AvailabilityEditor, type AvailabilityRow } from '../../../coach/pt/availability-editor'
 
@@ -52,59 +52,51 @@ export function CoachCreatedPanel({
   }
 
   return (
-    <ModalPortal>
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4">
-        <div
-          data-testid="coach-created-panel"
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            'flex max-h-[94vh] w-full flex-col overflow-hidden bg-white shadow-xl',
-            'rounded-t-2xl sm:max-w-lg sm:rounded-2xl',
+    <Dialog
+      open
+      onOpenChange={(o) => { if (!o) done() }}
+      title={
+        <span className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+          {t('createdTitle', { name: coachName })}
+        </span>
+      }
+      variant="responsive"
+      data-testid="coach-created-panel"
+      footer={
+        <Button size="sm" data-testid="coach-created-done" onClick={done} className="bg-primary-700 hover:bg-primary-800">
+          {t('done')}
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        {/* Credentials — only when "app access" was turned on. */}
+        {inviteResult && (
+          <div className="space-y-1.5">
+            <p className={cn('text-xs font-medium text-gray-500', isRTL && 'font-arabic')}>{t('credentialsIntro')}</p>
+            <InviteResultCard result={inviteResult} locale={locale} />
+          </div>
+        )}
+
+        {/* Availability — set it now (skippable). */}
+        <div className="space-y-1.5">
+          <p className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('availabilityTitle')}</p>
+          <p className={cn('text-xs text-gray-500', isRTL && 'font-arabic')}>{t('availabilityHint')}</p>
+          <AvailabilityEditor
+            coachId={coachId}
+            gymId={gymId}
+            windows={windows}
+            overrides={[]}
+            onChanged={refetch}
+            locale={locale}
+          />
+          {windows.length === 0 && (
+            <p data-testid="coach-not-bookable-note" className={cn('text-xs text-amber-600', isRTL && 'font-arabic')}>
+              {t('notBookableYet')}
+            </p>
           )}
-        >
-          <div className="flex items-center gap-2 border-b px-5 py-3">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
-              {t('createdTitle', { name: coachName })}
-            </h3>
-          </div>
-
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-            {/* Credentials — only when "app access" was turned on. */}
-            {inviteResult && (
-              <div className="space-y-1.5">
-                <p className={cn('text-xs font-medium text-gray-500', isRTL && 'font-arabic')}>{t('credentialsIntro')}</p>
-                <InviteResultCard result={inviteResult} locale={locale} />
-              </div>
-            )}
-
-            {/* Availability — set it now (skippable). */}
-            <div className="space-y-1.5">
-              <p className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('availabilityTitle')}</p>
-              <p className={cn('text-xs text-gray-500', isRTL && 'font-arabic')}>{t('availabilityHint')}</p>
-              <AvailabilityEditor
-                coachId={coachId}
-                gymId={gymId}
-                windows={windows}
-                overrides={[]}
-                onChanged={refetch}
-                locale={locale}
-              />
-              {windows.length === 0 && (
-                <p data-testid="coach-not-bookable-note" className={cn('text-xs text-amber-600', isRTL && 'font-arabic')}>
-                  {t('notBookableYet')}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end border-t px-5 py-3">
-            <Button size="sm" data-testid="coach-created-done" onClick={done} className="bg-primary-700 hover:bg-primary-800">
-              {t('done')}
-            </Button>
-          </div>
         </div>
       </div>
-    </ModalPortal>
+    </Dialog>
   )
 }

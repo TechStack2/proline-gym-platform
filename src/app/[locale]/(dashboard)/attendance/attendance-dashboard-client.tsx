@@ -237,8 +237,7 @@ export function AttendanceDashboardClient({
               data-status={currentStatus ?? ''}
               className={cn(
                 "flex items-center justify-between p-3 rounded-lg border",
-                "hover:bg-accent/50 transition-colors",
-                locale === 'ar' && "flex-row-reverse"
+                "hover:bg-accent/50 transition-colors"
               )}
             >
               <div className="flex items-center gap-3">

@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { fmtDate as fmtDateLoc, fmtWeekday } from '@/lib/fmt'
 import { statusTintClass } from '@/lib/status-vocabulary'
-import { Phone, Users, ChevronLeft, Award, CalendarDays, DollarSign, Wallet, ArrowRight, Clock } from 'lucide-react'
+import { Phone, Users, ChevronLeft, Award, CalendarDays, DollarSign, Wallet, Clock } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { localizedName, one } from '@/lib/names'
 import { getFamilySummaries, familyOutstandingTotal, type FamilySummary } from '@/lib/family/aggregate'
 import { Avatar } from '@/components/shared/avatar'
@@ -100,7 +101,7 @@ function ChildCard({ s, self, locale, t, tb, isRTL }: {
         </Link>
         <Link href={`/${locale}/students/${s.studentId}`} data-testid="guardian-child-open"
           className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline">
-          {t('viewMember')}<ArrowRight className={cn('h-3.5 w-3.5', isRTL && 'rotate-180')} />
+          {t('viewMember')}<NavChevron className="h-3.5 w-3.5 text-primary-600" />
         </Link>
       </div>
       {/* Portal invite/access per child — the reused eligibility+invite affordance. */}

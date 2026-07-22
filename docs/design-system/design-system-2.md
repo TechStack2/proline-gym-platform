@@ -115,9 +115,9 @@ One chip primitive + one **status vocabulary module** (`src/lib/status-vocabular
 3. **Public surfaces collapse, never placeholder.** On the landing, an empty section renders nothing — no "coming soon" walls, no interpolated zeros in marketing copy (DA-13/14 class). Dashboard surfaces show EmptyState; public surfaces show absence.
 4. Zero-count filter chips are not rendered (DA-49).
 
-### 2.5 Dialog
+### 2.5 Dialog — ✅ ADOPTED (W4)
 
-One modal primitive: **radix `Dialog` rendered through the existing `ModalPortal`** (escapes the PageTransition `position:fixed` trap the codebase already documents; radix supplies focus trap, `Esc`, `aria-labelledby/describedby`, scroll lock). Variants: `center` (desktop default) and `sheet` (mobile bottom-sheet, subsuming SwipeableSheet's role for content dialogs — SwipeableSheet remains only as the More-sheet/gesture surface and gets portaled). The 17 hand-rolled `fixed inset-0` overlays migrate in W1 adoption; new overlays without Dialog fail review.
+One modal primitive: **radix `Dialog` rendered through the existing `ModalPortal`** (escapes the PageTransition `position:fixed` trap the codebase already documents; radix supplies focus trap, `Esc`, `aria-labelledby/describedby`, scroll lock). Variants: `center`, `sheet`, and **`responsive`** (bottom-sheet below `sm`, centered card above — the shape every product form modal had independently hand-rolled, promoted into the primitive in W4; it is the default choice for form modals). Chrome modes: **`full`** (primitive-rendered header/close/footer — the required shape for new modals and simple confirms) and **`none`** (machinery only — portal, overlay, layering, focus trap, Esc, aria, scroll lock — for the wizard-grade surfaces whose interior chrome is itself a platform convention with spec-pinned DOM, i.e. `FormWizard`). The hand-rolled `fixed inset-0` overlays migrated in W4; new overlays without Dialog fail review. **SwipeableSheet exception (argued, W4):** it remains as the More-sheet/gesture surface only; the "gets portaled" clause is structurally a no-op at its only mount point — all three shell layouts mount `MoreSheet` OUTSIDE `PageTransition`, so `ModalPortal`'s own inline rule (relocate only when a transformed ancestor exists) would render it in place; wrapping a permanently-mounted gesture surface in a mount-time portal decision adds resize-staleness risk for zero positional benefit.
 
 ### 2.6 select→chip completion policy
 
@@ -134,6 +134,10 @@ The J3 select→chip migration completes (DA-33): **interactive filters and pick
 - `enumLabel(domain, value, locale)` — belts, roles, methods, statuses via i18n maps; a raw enum reaching the DOM ("black_1") becomes lint-visible because only `enumLabel` may render enums.
 - **Bidi rule:** every function returns strings wrapped in Unicode isolates (FSI/PDI) — or the JSX helpers `<Ltr>`/`<Bdi>` for composed nodes. Mixed-direction values (dates, times, phones, money, codes, Latin names) are ALWAYS isolated in RTL context.
 - **Missing-key CI gate:** next-intl `onError` throws in CI/e2e builds (a MISSING_MESSAGE fails the run — DA-5 becomes impossible to ship), plus a vitest sweep asserting en/ar/fr key-set parity.
+
+### 2.8 Trailing row affordances — ✅ RULED 2026-07-22 (DA-56 decree, applied W4)
+
+A trailing **chevron appears IFF the row navigates to another surface on tap** (URL change or full surface replacement — the settings section switch counts: it swaps the whole panel and offers Back, which is navigation in behavior regardless of implementation). A row that **expands in place wears a rotating disclosure indicator** (`<details class="group">` + `DisclosureChevron`, rotates open). A **static row wears neither**. `ExternalLink` is reserved for genuinely external targets (different origin / new tab) — internal navigation never wears it. Implementation: `NavChevron`/`DisclosureChevron` in `ui/nav-chevron.tsx`; `NavChevron` flips in RTL (`rtl:rotate-180`) so "forward" always points into the reading direction. `ActionRow` renders the chevron intrinsically (every ActionRow navigates by contract). Dense timetable chips (`week-chip`) and labeled CTA buttons are not rows and stay chevron-free; drill-down child rows revealed by a disclosure inherit the summary's affordance and don't repeat it per row.
 
 ---
 

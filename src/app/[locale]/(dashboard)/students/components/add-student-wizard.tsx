@@ -26,7 +26,7 @@ import { normalizePhone } from '@/lib/utils/phone'
 import { PhoneDuplicateHint } from '@/components/shared/phone-duplicate-hint'
 import { toast } from '@/components/ui/use-toast'
 import { FormWizard, ChipRow } from '@/components/shared/form-wizard'
-import { ModalPortal } from '@/components/shared/modal-portal'
+import { Dialog } from '@/components/ui/dialog'
 import { Search, Plus, X } from 'lucide-react'
 // MJ-2×MJ-1 RECONCILE: LOOKUP is MJ-1's gym-scoped find_profile_by_phone RPC; WRITE
 // stores MY canonical normalizePhone shape; the dup-hint chip complements the flow.
@@ -507,17 +507,23 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
         testid="add-student-wizard"
       />
       {inviteResult && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-md space-y-2" data-testid="fam-invite-done-panel">
-              <InviteResultCard result={inviteResult} locale={locale} />
-              <Button data-testid="fam-invite-done" className="w-full bg-primary-700 hover:bg-primary-800"
-                onClick={() => { router.push(doneHref); router.refresh() }}>
-                {t('family.done')}
-              </Button>
-            </div>
+        <Dialog
+          open
+          onOpenChange={(o) => { if (!o) { router.push(doneHref); router.refresh() } }}
+          title={t('family.done')}
+          chrome="none"
+          variant="center"
+          className="max-w-md"
+          data-testid="fam-invite-done-panel"
+        >
+          <div className="space-y-2 p-4">
+            <InviteResultCard result={inviteResult} locale={locale} />
+            <Button data-testid="fam-invite-done" className="w-full bg-primary-700 hover:bg-primary-800"
+              onClick={() => { router.push(doneHref); router.refresh() }}>
+              {t('family.done')}
+            </Button>
           </div>
-        </ModalPortal>
+        </Dialog>
       )}
     </>
   )

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Calendar, Users, Clock, MapPin, Pencil, RefreshCw } from 'lucide-react'
+import { Search, Plus, Filter, MoreHorizontal, Calendar, Users, Clock, MapPin, Pencil, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,6 +30,7 @@ import { fmtUsd } from '@/lib/billing/currency'
 import { Ltr } from '@/components/ui/bdi'
 import { StatusChip } from '@/components/ui/status-chip'
 import { EmptyState } from '@/components/ui/empty-state'
+import { NavChevron } from '@/components/ui/nav-chevron'
 
 interface ClassesListProps {
   classes: any[]
@@ -107,10 +108,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
         <CardContent>
           <div className="space-y-4">
             {/* Filters */}
-            <div className={cn(
-              "flex flex-wrap gap-4",
-              isRTL && "flex-row-reverse"
-            )}>
+            <div className="flex flex-wrap gap-4">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute top-2.5 start-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -196,17 +194,20 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                        {classItem.show_on_landing && (
-                          /* §2.3: the one status pill — landing 'live', historical label kept. */
-                          <StatusChip domain="landing" status="live" data-testid="class-published-badge"
-                            label={t('wizard.published')} />
-                        )}
-                        {getStatusBadge(classItem.status)}
-                        <Button variant="ghost" size="icon" data-testid="class-edit-row-btn"
-                          className="h-7 w-7" onClick={() => setEditTarget(classItem)}>
-                          <Pencil className="h-3.5 w-3.5 text-gray-400" />
-                        </Button>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          {classItem.show_on_landing && (
+                            /* §2.3: the one status pill — landing 'live', historical label kept. */
+                            <StatusChip domain="landing" status="live" data-testid="class-published-badge"
+                              label={t('wizard.published')} />
+                          )}
+                          {getStatusBadge(classItem.status)}
+                          <Button variant="ghost" size="icon" data-testid="class-edit-row-btn"
+                            className="h-7 w-7" onClick={() => setEditTarget(classItem)}>
+                            <Pencil className="h-3.5 w-3.5 text-gray-400" />
+                          </Button>
+                        </div>
+                        <NavChevron />
                       </div>
                     </div>
 

@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * W2a/W2b evidence harness (slice tooling — no product code).
+ * THE STANDING CERTIFICATION RIG (promoted from the W2a/W2b/W3/W4 evidence
+ * harness in W4 — see docs/design-system/certification-rig.md for the full
+ * operating recipe, deterministic-seed setup, and how to diff two packs).
  *
- * Produces, for ALL FOUR shell surfaces (portal, coach, STAFF — W2b — and the
+ * Produces, for ALL FOUR shell surfaces (portal, coach, staff, and the
  * GUARDIAN portal variant, whose FamilyHome/KidDashboard render only for a
  * multi-kid parent session):
  *  1. §4.3 PARITY GATE — for every routed surface, the set of interactive
@@ -19,10 +21,10 @@
  * resolved per session by following the first matching link from a list surface
  * (`dynamic` config below), then gated like any other route.
  *
- * Usage: node scripts/design-audit/w2a-evidence.mjs [--base http://localhost:3000]
+ * Usage: node scripts/design-audit/certify.mjs [--base http://localhost:3000]
  *          [--shells portal,coach]   (default: all four)
  * Env:   E2E_GYM_SLUG (default proline-gym-local), E2E_PASSWORD
- *        W2A_OUT (default: w2a-artifacts/)
+ *        CERTIFY_OUT (default: certify-artifacts/; legacy W2A_OUT honored)
  *
  * NB: a long-lived local `next start` degrades after a few hundred renders
  * (60s+ pages). For a full four-shell run, prefer two passes against a FRESH
@@ -35,7 +37,7 @@ import { join } from 'node:path'
 
 const arg = (n) => { const i = process.argv.indexOf(`--${n}`); return i >= 0 ? process.argv[i + 1] : undefined }
 const BASE = arg('base') || 'http://localhost:3000'
-const OUT = process.env.W2A_OUT || 'w2a-artifacts'
+const OUT = process.env.CERTIFY_OUT || process.env.W2A_OUT || 'certify-artifacts'
 const SLUG = process.env.E2E_GYM_SLUG || process.env.E2E_GYM_SLUG_BASE || 'proline-gym-local'
 const PWD = process.env.E2E_PASSWORD || 'E2eTestPass!23'
 mkdirSync(join(OUT, 'shots'), { recursive: true })
@@ -254,7 +256,7 @@ for (const [shell, cfg] of selected) {
 }
 
 await browser.close()
-writeFileSync(join(OUT, 'w2a-results.json'), JSON.stringify(results, null, 2))
+writeFileSync(join(OUT, 'certify-results.json'), JSON.stringify(results, null, 2))
 
 const parityFails = results.parity.filter((p) => p.missingAtDesktop.length > 0)
 const xorFails = results.xor.filter((x) => !x.ok)

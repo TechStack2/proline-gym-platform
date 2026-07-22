@@ -12,6 +12,7 @@ import type { MemberInfo, MembershipStatus } from '@/lib/members/enrichment'
 import { fmtPhone , fmtDate } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
 import { StatusChip } from '@/components/ui/status-chip'
+import { NavChevron } from '@/components/ui/nav-chevron'
 
 // Matches the server query in students/page.tsx:
 //   select('*, profiles!inner(first_name_*, last_name_*, phone, avatar_url)')
@@ -107,13 +108,16 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
             data-testid="student-card"
             role="link"
             tabIndex={0}
+            className="h-full"
             onClick={() => router.push(`/${locale}/students/${student.id}`)}
             onKeyDown={(e) => e.key === 'Enter' && router.push(`/${locale}/students/${student.id}`)}
           >
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4">
+            <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="flex h-full flex-col p-4">
                 <div className="flex items-start justify-between mb-3 gap-2">
-                  <h3 className="font-semibold text-lg">
+                  {/* DA-49: min-w-0 + truncate reserves the corner-chip space so a
+                      long name can never collide with the status chips. */}
+                  <h3 className="min-w-0 flex-1 truncate font-semibold text-lg">
                     {name || '—'}
                   </h3>
                   {/* DA-32: the corner pill said "Active" directly above a body pill
@@ -122,7 +126,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                       per status per card, so the corner now speaks only when the
                       account is genuinely INACTIVE (the exception worth flagging);
                       the membership chip below is the status of record. */}
-                  <div className="flex flex-wrap justify-end gap-1">
+                  <div className="flex shrink-0 flex-wrap justify-end gap-1">
                     {status === 'inactive' && (
                       <StatusChip domain="member" status="inactive" label={t('status.inactive')} />
                     )}
@@ -135,6 +139,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                         data-testid="badge-owing" />
                     )}
                   </div>
+                  <NavChevron className="mt-1.5" />
                 </div>
 
                 <div className="space-y-2">
@@ -186,7 +191,10 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
                   </div>
                 )}
 
-                {/* FD-1 row quick-actions: call · open file · record payment */}
+                {/* FD-1 row quick-actions: call · open file · record payment.
+                    DA-49: the flex-1 spacer pins the row to the card foot so the
+                    1280 grid rows align (cards are h-full flex columns). */}
+                <span className="flex-1" />
                 <div className="mt-3 flex gap-2 border-t pt-3" onClick={(e) => e.stopPropagation()}>
                   {p.phone && (
                     <a href={`tel:${p.phone}`} data-testid="row-call" dir="ltr"

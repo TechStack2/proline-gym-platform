@@ -14,6 +14,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { Select } from '@/components/ui/select'
 import { queuePayment } from '@/lib/offline/payments'
 import { queueLead } from '@/lib/offline/leads'
 import type { PendingPaymentIntent, PendingLeadIntent } from '@/lib/db/schema'
@@ -134,10 +135,10 @@ export function RecordPaymentForm({
       </div>
       <label className="block space-y-0.5 text-xs">
         <span className="text-gray-600">{t('method')}</span>
-        <select data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as Method)}
-          className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm">
+        <Select data-testid="pay-method" value={method} onChange={(e) => setMethod(e.target.value as Method)}
+          className="h-auto border-gray-200 bg-white px-2 py-1.5">
           {METHODS.map((m) => <option key={m} value={m}>{t(`methods.${m}`)}</option>)}
-        </select>
+        </Select>
       </label>
       {!online && (
         <p className="inline-flex items-center gap-1.5 text-xs text-amber-700">

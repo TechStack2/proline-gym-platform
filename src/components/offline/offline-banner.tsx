@@ -27,7 +27,7 @@ export function OfflineBanner({ online, pending, locale, testid = 'attendance-of
         isRTL && 'text-right',
       )}
     >
-      <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+      <div className="flex items-center gap-2">
         {offline ? <CloudOff className="h-4 w-4 shrink-0" /> : <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />}
         <span>{offline ? t('offlineNPending', { n: pending }) : t('syncingNPending', { n: pending })}</span>
       </div>

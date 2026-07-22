@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { User, Phone, Mail, Shield, CalendarDays, Clock, Globe, Save, Check } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import { PushToggle } from '@/components/push/push-toggle'
+import { Select } from '@/components/ui/select'
 import { fmtDate, fmtPhone } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
 
@@ -200,15 +201,15 @@ export default async function StaffProfilePage({ params }: Props) {
             <label className="block text-xs font-medium text-gray-600 mb-1">
               {isRTL ? 'اللغة المفضلة' : locale === 'fr' ? 'Langue préférée' : 'Preferred Language'}
             </label>
-            <select
+            <Select
               name="locale"
               defaultValue={profile?.locale || 'ar'}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent bg-white"
+              className="rounded-xl border-gray-200"
             >
               <option value="ar">العربية</option>
               <option value="en">English</option>
               <option value="fr">Français</option>
-            </select>
+            </Select>
           </div>
         </div>
 

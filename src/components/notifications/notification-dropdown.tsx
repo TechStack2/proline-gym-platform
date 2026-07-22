@@ -8,7 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { renderNotification } from '@/lib/notifications/render';
 import { NotificationItem } from './notification-item';
-import { ChevronRight, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
+import { NavChevron } from '@/components/ui/nav-chevron';
 
 type Notification = {
   id: string;
@@ -180,10 +181,7 @@ export function NotificationDropdown({ locale, open, onClose }: NotificationDrop
       )}
     >
       {/* Header */}
-      <div className={cn(
-        'flex items-center justify-between px-4 py-3 border-b border-gray-100',
-        isRTL && 'flex-row-reverse'
-      )}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           {locale === 'ar' ? 'الإشعارات' : locale === 'fr' ? 'Notifications' : 'Notifications'}
         </h3>
@@ -249,14 +247,13 @@ export function NotificationDropdown({ locale, open, onClose }: NotificationDrop
           className={cn(
             'w-full px-4 py-3 border-t border-gray-100 text-sm text-primary-600',
             'hover:bg-primary-50 transition-colors font-medium',
-            'flex items-center justify-center gap-1',
-            isRTL && 'flex-row-reverse'
+            'flex items-center justify-center gap-1'
           )}
         >
           <span>
             {locale === 'ar' ? 'عرض الكل' : locale === 'fr' ? 'Voir tout' : 'View all'}
           </span>
-          <ChevronRight className={cn('h-4 w-4', isRTL && 'rotate-180')} />
+          <NavChevron className="text-primary-600" />
         </button>
       )}
     </div>

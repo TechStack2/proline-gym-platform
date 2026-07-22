@@ -9,7 +9,8 @@ import { StatusChip } from '@/components/ui/status-chip'
 import { beltRankLabel } from '@/lib/belts/label'
 import { cn } from '@/lib/utils'
 import { one } from '@/lib/names'
-import { Award, CalendarDays, ClipboardList, CreditCard, Flame, ChevronRight } from 'lucide-react'
+import { Award, CalendarDays, ClipboardList, CreditCard, Flame } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { Avatar } from '@/components/shared/avatar'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
@@ -148,7 +149,10 @@ export async function KidDashboard({
               <p className={cn('text-xs text-danger-600', isRTL && 'font-arabic')}>{th('outstandingCount', { count: householdOpenCount })}</p>
             </div>
           </div>
-          <span className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]" dir="ltr">${householdOutstanding.toFixed(2)}</span>
+          <span className="flex shrink-0 items-center gap-1.5">
+            <span className="text-lg font-bold text-[color:rgb(var(--c-danger-tint-fg))]" dir="ltr">${householdOutstanding.toFixed(2)}</span>
+            <NavChevron />
+          </span>
         </Link>
       )}
       {/* Switcher */}
@@ -221,7 +225,7 @@ export async function KidDashboard({
           <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('registrations')}</h3>
           <Link href={`/${locale}/portal/classes?kid=${kid.id}`} data-testid="kid-request-class"
             className="inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline">
-            {t('requestClass')} <ChevronRight className={cn('h-3 w-3', isRTL && 'rotate-180')} />
+            {t('requestClass')} <NavChevron className="h-3 w-3 text-primary-700" />
           </Link>
         </div>
         {(registrations ?? []).length === 0 ? (
@@ -360,7 +364,7 @@ export async function KidDashboard({
         <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
           <CreditCard className="h-4 w-4 text-primary-700" /> {t('householdBilling')}
         </span>
-        <ChevronRight className={cn('h-4 w-4 text-gray-400', isRTL && 'rotate-180')} />
+        <NavChevron />
       </Link>
     </>} />
     </div>

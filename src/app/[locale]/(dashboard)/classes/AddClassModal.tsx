@@ -18,7 +18,7 @@
  */
 import { useState } from 'react'
 import Link from 'next/link'
-import { ModalPortal } from '@/components/shared/modal-portal'
+import { Dialog } from '@/components/ui/dialog'
 import { useTranslations } from 'next-intl'
 import { useCaughtErrorText } from '@/lib/errors/use-error-text';
 import { useRouter } from 'next/navigation'
@@ -455,22 +455,26 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
     },
   ]
 
-  // Post-create success (FormWizard has no success state) — its own modal, preserving
+  // Post-create success (FormWizard has no success state) — its own Dialog, preserving
   // the class-wizard + wizard-success testids + the 900ms auto-close (via create()).
   if (created) {
     return (
-      <ModalPortal>
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-          <div data-testid="class-wizard" className="flex w-full flex-col bg-white p-6 sm:max-w-xl sm:rounded-2xl sm:shadow-xl">
-            <div className="flex flex-col items-center gap-3 py-8" data-testid="wizard-success">
-              <span className="tint-success flex h-14 w-14 items-center justify-center rounded-full">
-                <Check className="h-7 w-7" />
-              </span>
-              <p className="text-sm font-semibold text-gray-900">{editClass ? t('successEdit') : t('success')}</p>
-            </div>
-          </div>
+      <Dialog
+        open
+        onOpenChange={(o) => { if (!o) onSuccess() }}
+        title={editClass ? t('successEdit') : t('success')}
+        chrome="none"
+        variant="responsive"
+        className="sm:max-w-xl"
+        data-testid="class-wizard"
+      >
+        <div className="flex flex-col items-center gap-3 px-6 py-8" data-testid="wizard-success">
+          <span className="tint-success flex h-14 w-14 items-center justify-center rounded-full">
+            <Check className="h-7 w-7" />
+          </span>
+          <p className="text-sm font-semibold text-gray-900">{editClass ? t('successEdit') : t('success')}</p>
         </div>
-      </ModalPortal>
+      </Dialog>
     )
   }
 

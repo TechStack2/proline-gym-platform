@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { fmtDate as fmtDateLoc } from '@/lib/fmt'
+import { fmtDate as fmtDateLoc, fmtTime } from '@/lib/fmt'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { horizonEndDate } from '@/lib/finances/horizon'
 import {
@@ -11,7 +11,7 @@ import {
 import { getRenewalsDue } from '@/lib/pt/refill'
 import { getFunnel } from '@/lib/growth/funnel'
 import {
-  CalendarRange, RefreshCw, UserCheck, Dumbbell, Users, ChevronRight, TrendingUp, DollarSign,
+  CalendarRange, RefreshCw, UserCheck, Dumbbell, Users, TrendingUp, DollarSign,
 } from 'lucide-react'
 
 /**
@@ -43,7 +43,6 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
   ])
 
   const fmtDate = (d: string) => fmtDateLoc(d, locale)
-  const hhmm = (v: string | null) => (v || '').slice(0, 5)
   const pct = (n: number) => Math.round(n)
   const underfilledCount = fill.filter((f) => f.underfilled).length
 
@@ -101,11 +100,10 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
       <ActionCard icon={UserCheck} title={t('week.trials')} count={trials.length}
         emptyText={t('week.noneTrials')} testid="trials-week" isRTL={isRTL}>
         {trials.map((tr) => (
-          <ActionRow key={tr.trialId} href={`/${locale}/leads`} testid="trials-week-row"
-            action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
+          <ActionRow key={tr.trialId} href={`/${locale}/leads`} testid="trials-week-row">
             <p className="truncate text-sm font-semibold text-gray-900">{tr.leadName}</p>
             <p className="text-xs text-gray-500" dir={isRTL ? 'rtl' : 'ltr'}>
-              {fmtDate(tr.date)}{tr.time ? ` · ${hhmm(tr.time)}` : ''} ·{' '}
+              {fmtDate(tr.date)}{tr.time ? ` · ${fmtTime(tr.time, locale)}` : ''} ·{' '}
               {tr.coachName ? t('week.trialWith', { coach: tr.coachName }) : t('week.trialNoCoach')}
             </p>
           </ActionRow>
@@ -139,11 +137,8 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
           {coachLoad.map((c) => (
             <ActionRow key={c.coachId} href={`/${locale}/coaches/${c.coachId}`} testid="coach-load-row"
               action={
-                <span className="flex shrink-0 items-center gap-2">
-                  <span className="text-xs text-gray-500" data-total={c.total}>
-                    {t('week.coachLoadStat', { classes: c.classes, pt: c.ptSessions })}
-                  </span>
-                  <ChevronRight className={cn('h-4 w-4 text-gray-400', isRTL && 'rotate-180')} />
+                <span className="shrink-0 text-xs text-gray-500" data-total={c.total}>
+                  {t('week.coachLoadStat', { classes: c.classes, pt: c.ptSessions })}
                 </span>
               }>
               <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
@@ -163,8 +158,7 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
             </span>
           </div>
         }>
-        <ActionRow href={`/${locale}/leads`} testid="leads-week-row"
-          action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
+        <ActionRow href={`/${locale}/leads`} testid="leads-week-row">
           <p className="text-sm text-gray-800">{t('week.newLeads', { count: funnel.totalLeads })}</p>
         </ActionRow>
       </ActionCard>

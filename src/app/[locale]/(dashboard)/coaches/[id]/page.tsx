@@ -7,13 +7,14 @@ import { localizedName, one } from '@/lib/names'
 import { Avatar } from '@/components/shared/avatar'
 import {
   Phone, MessageCircle, Award, CalendarDays, Users, Dumbbell,
-  Gauge, ChevronRight, CalendarCheck,
+  Gauge, CalendarCheck,
 } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { AvailabilityEditor, type AvailabilityRow, type OverrideRow } from '../../../coach/pt/availability-editor'
 import { CoachActions } from './coach-actions'
 import { CoachPublishPanel } from './CoachPublishPanel'
 import type { DiaryAssignment } from '../../schedule/diary-book-pt'
-import { fmtDate, fmtPhone, fmtTime } from '@/lib/fmt'
+import { fmtDate, fmtPhone, fmtTime, fmtTimeRange } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
 import { StatusChip } from '@/components/ui/status-chip'
 import { beltRankLabel } from '@/lib/belts/label'
@@ -23,7 +24,6 @@ export const dynamic = 'force-dynamic'
 type Props = { params: { locale: string; id: string }; searchParams: { sched?: string } }
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
-const hhmm = (v: string | null) => (v || '').slice(0, 5)
 
 // FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
 const Panel = ({ isRTL, icon: Icon, title, testid, id: anchorId, action, children }: { isRTL: boolean; icon: any; title: string; testid: string; id?: string; action?: React.ReactNode; children: React.ReactNode }) => (
@@ -301,7 +301,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
                   <li key={c.id} className="flex items-center justify-between text-sm" data-testid="coach-class-row">
                     <Link href={`/${locale}/classes/${c.id}`} className="font-medium text-gray-800 hover:text-primary-600">{lname(c)}</Link>
                     <span className="text-xs text-gray-500" dir="ltr">
-                      {slots.length === 0 ? '—' : `${[...new Set(slots.map((s: any) => t(`days.${DAY_KEYS[s.day_of_week]}` as any)))].join(', ')} · ${hhmm(slots[0].start_time)}–${hhmm(slots[0].end_time)}`}
+                      {slots.length === 0 ? '—' : `${[...new Set(slots.map((s: any) => t(`days.${DAY_KEYS[s.day_of_week]}` as any)))].join(', ')} · ${fmtTimeRange(slots[0].start_time, slots[0].end_time, locale)}`}
                     </span>
                   </li>
                 )
@@ -374,7 +374,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
                         className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
                         <Avatar url={m.avatarUrl} name={m.name} size="xs" />
                         <span className="flex-1 truncate">{m.name}</span>
-                        <ChevronRight className={cn('h-3.5 w-3.5 text-gray-300', isRTL && 'rotate-180')} />
+                        <NavChevron className="h-3.5 w-3.5 text-gray-300" />
                       </Link>
                     </li>
                   ))}
@@ -392,7 +392,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
                         <Avatar url={c.avatarUrl} name={c.name} size="xs" />
                         <span className="flex-1 truncate">{c.name}</span>
                         <span className="text-xs text-gray-400">{t('sessionsLeft', { n: c.remaining })}</span>
-                        <ChevronRight className={cn('h-3.5 w-3.5 text-gray-300', isRTL && 'rotate-180')} />
+                        <NavChevron className="h-3.5 w-3.5 text-gray-300" />
                       </Link>
                     </li>
                   ))}

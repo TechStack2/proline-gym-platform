@@ -98,7 +98,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
+      <div className="flex items-center justify-between">
         <div>
           <PageHeader segment="notifications" />
           <p className="mt-1 text-sm text-gray-500">
@@ -129,10 +129,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
       {/* Unread section */}
       {unread.length > 0 && (
         <section>
-          <div className={cn(
-            'flex items-center gap-2 mb-2 px-1',
-            isRTL && 'flex-row-reverse'
-          )}>
+          <div className="flex items-center gap-2 mb-2 px-1">
             <h2 className={cn(
               'text-xs font-semibold uppercase tracking-wider text-red-600',
               isRTL && 'font-arabic'
@@ -165,10 +162,7 @@ export function NotificationsClient({ notifications: initialNotifications, local
       {/* Read section */}
       {read.length > 0 && (
         <section>
-          <div className={cn(
-            'flex items-center gap-2 mb-2 px-1',
-            isRTL && 'flex-row-reverse'
-          )}>
+          <div className="flex items-center gap-2 mb-2 px-1">
             <h2 className={cn(
               'text-xs font-semibold uppercase tracking-wider text-gray-400',
               isRTL && 'font-arabic'

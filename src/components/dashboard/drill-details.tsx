@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { ChevronDown } from 'lucide-react'
+import { DisclosureChevron } from '@/components/ui/nav-chevron'
 
 /**
  * DRILL-360 — a server-rendered inline expand (native `<details>`, zero client
@@ -28,10 +28,10 @@ export function DrillDetails({
   emptyText?: string
 }) {
   return (
-    <details className="rounded-xl border bg-gray-50/60" data-testid={testid} data-rows={rows.length}>
+    <details className="group rounded-xl border bg-gray-50/60" data-testid={testid} data-rows={rows.length}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0 flex-1">{summary}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+        <DisclosureChevron />
       </summary>
       <div className={cn('space-y-1 border-t px-2 py-2', isRTL && 'text-right')}>
         {rows.length === 0 ? (

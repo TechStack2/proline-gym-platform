@@ -33,7 +33,8 @@ import { membershipState, type MembershipState } from '@/lib/lifecycle/status'
 import { outstandingUsd } from '@/lib/billing/reconcile'
 import { phoneDigits } from '@/lib/utils/phone'
 import { RecordPaymentForm, PendingSyncBar, CaptureLeadForm, type DeskInvoice } from './desk-payments'
-import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, ExternalLink, WifiOff, Receipt, User, Wallet, Info, ClipboardList } from 'lucide-react'
+import { Search, RefreshCw, Loader2, Phone, Award, Dumbbell, CalendarDays, Users, Clock, WifiOff, Receipt, User, Wallet, Info, ClipboardList } from 'lucide-react'
+import { NavChevron } from '@/components/ui/nav-chevron'
 import { PageHeader } from '@/components/ui/page-header';
 
 type Row = Record<string, any>
@@ -435,7 +436,7 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                 {online ? (
                   <Link href={`/${locale}/students/${basics.id}`} data-testid="desk-open-file"
                     className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary-700 hover:underline">
-                    <ExternalLink className="h-3.5 w-3.5" /> {t('openFile')}
+                    {t('openFile')} <NavChevron className="h-3.5 w-3.5 text-primary-700" />
                   </Link>
                 ) : (
                   <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600" data-testid="needs-connection">

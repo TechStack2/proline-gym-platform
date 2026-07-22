@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select } from '@/components/ui/select'
 import { approveRegistration, rejectRegistration, cancelRegistration, registerWalkIn, setRegistrationAnchor } from './registration-actions'
 import { useErrorText } from '@/lib/errors/use-error-text'
 import { cn } from '@/lib/utils'
@@ -83,11 +84,11 @@ export function RegistrationsPanel({
         <div className="flex flex-wrap items-end gap-2 border-b pb-4">
           <div className="flex-1 min-w-[180px]">
             <label className="mb-1 block text-xs text-muted-foreground">{t('Register a member (walk-in)', 'تسجيل عضو (مباشر)', 'Inscrire un membre (sur place)')}</label>
-            <select data-testid="walkin-student" value={walkInStudent} onChange={(e) => setWalkInStudent(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            <Select data-testid="walkin-student" value={walkInStudent} onChange={(e) => setWalkInStudent(e.target.value)}
+              className="h-9 border-input">
               <option value="">{t('Select a member…', 'اختر عضواً…', 'Sélectionner un membre…')}</option>
               {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            </Select>
           </div>
           <Button data-testid="walkin-register-btn" disabled={pending || !walkInStudent}
             onClick={() => run(() => registerWalkIn(classId, walkInStudent))}>

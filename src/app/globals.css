@@ -393,6 +393,16 @@
     color-scheme: dark;
   }
 
+  /* DA-45 (W4): keyboard-focus baseline for every interactive element — the audit
+     found ~1 of 62 files hand-rolling <button> adds any focus style. ONE zero-
+     specificity rule (:where) covers all of them in the shell's accent; primitives
+     that ship their own focus-visible ring (ui/button, chips, Dialog close)
+     override it at utility specificity. */
+  :where(button, a, summary, [role="button"], [role="link"]):focus-visible {
+    outline: 2px solid var(--shell-accent);
+    outline-offset: 2px;
+  }
+
   /* R2 AUTOFILL: Chrome/WebKit paint -webkit-autofill'd fields with a forced light
      background + near-black text via an internal UA layer that IGNORES color-scheme,
      so a dark-mode autofilled login/trial form reads dark-on-light. Repaint the field

@@ -250,7 +250,7 @@ export function ExchangeRates({ rates, locale }: Props) {
                         </td>
                         <td className="px-4 py-2.5 text-end">
                           {diff !== 0 ? (
-                            <span className={cn('text-xs font-medium flex items-center gap-0.5', diffColor, isRTL && 'flex-row-reverse')}>
+                            <span className={cn('text-xs font-medium flex items-center gap-0.5', diffColor)}>
                               <DiffIcon className="h-3 w-3" />
                               <Ltr>{diff > 0 ? '+' : ''}{diff.toFixed(2)}</Ltr>
                             </span>

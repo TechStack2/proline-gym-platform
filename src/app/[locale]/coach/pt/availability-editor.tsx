@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { fmtTimeRange } from '@/lib/fmt'
 import { toast } from 'sonner'
 import { Plus, Trash2, CalendarOff, CalendarPlus, Loader2 } from 'lucide-react'
 
@@ -44,7 +45,6 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale,
 
   const DAYS = [0, 1, 2, 3, 4, 5, 6]
   const dayLabel = (d: number) => t(`days.${d}` as any)
-  const hhmm = (v: string | null) => (v || '').slice(0, 5)
 
   const run = async (fn: () => Promise<{ error: any }>) => {
     setBusy(true)
@@ -120,7 +120,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale,
               className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 text-sm">
               <span className="text-gray-800">
                 <span className="font-medium">{dayLabel(w.day_of_week)}</span>
-                <span className="ms-2 text-xs text-gray-500" dir="ltr">{hhmm(w.start_time)}–{hhmm(w.end_time)}</span>
+                <span className="ms-2 text-xs text-gray-500" dir="ltr">{fmtTimeRange(w.start_time, w.end_time, locale)}</span>
               </span>
               <button type="button" data-testid="avail-remove" disabled={busy} onClick={() => removeWindow(w.id)}
                 className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
@@ -165,7 +165,7 @@ export function AvailabilityEditor({ coachId, gymId, windows, overrides, locale,
               <li key={o.id} data-testid="ov-row" data-kind={o.kind}
                 className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 text-xs">
                 <span className={cn(o.kind === 'block' ? 'text-red-600' : 'text-green-700')} dir="ltr">
-                  {o.date} · {o.kind === 'block' ? (o.start_time ? `${hhmm(o.start_time)}–${hhmm(o.end_time)}` : t('allDay')) : `${hhmm(o.start_time)}–${hhmm(o.end_time)}`}
+                  {o.date} · {o.kind === 'block' ? (o.start_time ? `${fmtTimeRange(o.start_time, o.end_time, locale)}` : t('allDay')) : `${fmtTimeRange(o.start_time, o.end_time, locale)}`}
                 </span>
                 <button type="button" disabled={busy} onClick={() => removeOverride(o.id)}
                   className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
