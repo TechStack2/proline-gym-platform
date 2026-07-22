@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
 interface CoachFiltersProps {
@@ -33,15 +32,13 @@ export function CoachFilters({ locale, isRTL }: CoachFiltersProps) {
     <div className="flex gap-4">
       <form onSubmit={handleSearch} className="flex-1">
         <div className="relative">
-          <Search className={cn(
-            "absolute top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400",
-            isRTL ? "right-3" : "left-3"
-          )} />
+          {/* DA-61: logical properties — no isRTL side ternaries. */}
+          <Search className="absolute top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 start-3" />
           <Input
             placeholder={t('search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={cn(isRTL ? "pr-10" : "pl-10")}
+            className="ps-10"
           />
         </div>
       </form>

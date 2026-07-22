@@ -77,7 +77,7 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
       data-total={total}
       data-all-done={allDone}
       dir={isRTL ? 'rtl' : 'ltr'}
-      className={cn('mx-auto max-w-3xl space-y-5', isRTL && 'text-right')}
+      className={cn('mx-auto max-w-3xl space-y-5')}
     >
       {/* ── Header: friendly title + derived progress ── */}
       <div>
@@ -109,12 +109,12 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
       {allDone && (
         <div
           data-testid="setup-hub-complete"
-          className="flex items-center gap-3 rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4"
+          className="tint-success flex items-center gap-3 rounded-2xl border border-success-500/30 p-4"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-green-600 text-primary-foreground">
             <PartyPopper className="h-6 w-6" />
           </span>
-          <p className={cn('text-sm font-medium text-green-800', isRTL && 'font-arabic')}>{t('done.banner')}</p>
+          <p className={cn('text-sm font-medium', isRTL && 'font-arabic')}>{t('done.banner')}</p>
         </div>
       )}
 
@@ -243,7 +243,7 @@ export default async function SetupPage({ params: { locale } }: { params: { loca
           data-done={golive.done}
           className={cn(
             'rounded-2xl border p-4 shadow-sm sm:col-span-2',
-            golive.done ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-white',
+            golive.done ? 'border-success-500/25 bg-success-500/5' : 'border-gray-200 bg-white',
           )}
         >
           <div className="flex items-start gap-3">
@@ -344,7 +344,7 @@ function DoneChip({ label }: { label: string }) {
   return (
     <span
       data-testid="milestone-done-chip"
-      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700"
+      className="tint-success inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
     >
       <Check className="h-3 w-3" /> {label}
     </span>
@@ -377,7 +377,7 @@ function MilestoneCard({
       data-done={done}
       className={cn(
         'min-w-0 rounded-2xl border p-4 shadow-sm transition-colors',
-        done ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-white',
+        done ? 'border-success-500/25 bg-success-500/5' : 'border-gray-200 bg-white',
       )}
     >
       <div className="flex items-start gap-3">

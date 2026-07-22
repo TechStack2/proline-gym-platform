@@ -41,7 +41,10 @@ export type StatusDomain =
   | 'registration'
   | 'attendance'
   | 'trial'
-  | 'landing';
+  | 'landing'
+  | 'pt'
+  | 'lead'
+  | 'camp';
 
 const INVOICE: Record<string, StatusEntry> = {
   paid: { variant: 'success', i18nKey: 'paid' },
@@ -73,6 +76,8 @@ const REGISTRATION: Record<string, StatusEntry> = {
   rejected: { variant: 'neutral', i18nKey: 'rejected' },
   expired: { variant: 'neutral', i18nKey: 'expired' },
   suspended: { variant: 'warning', i18nKey: 'suspended' },
+  // W3b: camp_registrations' awaiting-confirmation state.
+  pending: { variant: 'warning', i18nKey: 'pending' },
 };
 
 const ATTENDANCE: Record<string, StatusEntry> = {
@@ -89,8 +94,22 @@ const ATTENDANCE: Record<string, StatusEntry> = {
 // override at the call site — but the color decision still lives here.
 const TRIAL: Record<string, StatusEntry> = {
   scheduled: { variant: 'info', i18nKey: 'scheduled' },
+  // W3b: PT session `proposed` rides this appointment-shaped domain too.
+  proposed: { variant: 'warning', i18nKey: 'pending' },
   completed: { variant: 'success', i18nKey: 'completed' },
   no_show: { variant: 'danger', i18nKey: 'noShow' },
+  cancelled: { variant: 'neutral', i18nKey: 'cancelled' },
+};
+
+// W3b (§2 "extend, never fork") — pt_assignment_status, the PtPackageCard's
+// STATUS_TONE fork folded in. `expired` is danger here (an expired package is
+// the renewal prompt), unlike registration's neutral `expired` (history).
+const PT: Record<string, StatusEntry> = {
+  requested: { variant: 'warning', i18nKey: 'requested' },
+  active: { variant: 'success', i18nKey: 'active' },
+  expired: { variant: 'danger', i18nKey: 'expired' },
+  completed: { variant: 'neutral', i18nKey: 'completed' },
+  rejected: { variant: 'neutral', i18nKey: 'rejected' },
   cancelled: { variant: 'neutral', i18nKey: 'cancelled' },
 };
 
@@ -101,6 +120,28 @@ const LANDING: Record<string, StatusEntry> = {
   hidden: { variant: 'neutral', i18nKey: 'hidden' },
 };
 
+// W3b: camp lifecycle (camps-board's STATUS_TONE fork folded in). `full` is a
+// warning to the desk (no more seats to sell), `completed` is history.
+const CAMP: Record<string, StatusEntry> = {
+  draft: { variant: 'neutral', i18nKey: '' },
+  open: { variant: 'success', i18nKey: '' },
+  full: { variant: 'warning', i18nKey: '' },
+  in_progress: { variant: 'info', i18nKey: '' },
+  completed: { variant: 'neutral', i18nKey: '' },
+  cancelled: { variant: 'neutral', i18nKey: 'cancelled' },
+};
+
+// W3b: the lead pipeline stages (leads-types' STATUS_COLORS fork folded in).
+// `lost` is a fact, not an alarm (§1.3 calm rule).
+const LEAD: Record<string, StatusEntry> = {
+  new: { variant: 'info', i18nKey: '' },
+  contacted: { variant: 'warning', i18nKey: '' },
+  trial_scheduled: { variant: 'info', i18nKey: '' },
+  trial_completed: { variant: 'brand', i18nKey: '' },
+  converted: { variant: 'success', i18nKey: '' },
+  lost: { variant: 'neutral', i18nKey: '' },
+};
+
 const DOMAINS: Record<StatusDomain, Record<string, StatusEntry>> = {
   invoice: INVOICE,
   member: MEMBER,
@@ -108,9 +149,28 @@ const DOMAINS: Record<StatusDomain, Record<string, StatusEntry>> = {
   attendance: ATTENDANCE,
   trial: TRIAL,
   landing: LANDING,
+  pt: PT,
+  lead: LEAD,
+  camp: CAMP,
 };
 
 const UNKNOWN: StatusEntry = { variant: 'neutral', i18nKey: '' };
+
+/** The §2.3 tint utility a variant wears (globals.css `.tint-*`). ONE map —
+ *  StatusChip and every non-chip tinted surface read it from here (W3b). */
+export const VARIANT_TINT: Record<StatusVariant, string> = {
+  success: 'tint-success',
+  warning: 'tint-warning',
+  danger: 'tint-danger',
+  info: 'tint-info',
+  neutral: 'tint-neutral',
+  brand: 'tint-brand',
+};
+
+/** The tint class for a domain status (for surfaces that are not chips). */
+export function statusTintClass(domain: StatusDomain, status: string | null | undefined): string {
+  return VARIANT_TINT[statusEntry(domain, status).variant];
+}
 
 /**
  * The `{variant, i18nKey}` for a domain status. An unmapped value degrades to a

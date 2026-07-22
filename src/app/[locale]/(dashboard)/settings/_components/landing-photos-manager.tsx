@@ -140,7 +140,7 @@ export function LandingPhotosManager({ gymId, locale }: { gymId: string; locale:
       <h3 className={cn('text-sm font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
       <p className={cn('mt-0.5 text-xs text-gray-500', isRTL && 'font-arabic')}>{t('desc')}</p>
 
-      {error && <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && <div className="tint-danger mt-3 rounded-xl p-3 text-sm">{error}</div>}
 
       <div className="mt-4 space-y-5">
         {SECTIONS.map((section) => (
@@ -301,7 +301,7 @@ function ImageRow({
         <button type="button" data-testid="lp-down" aria-label={t('moveDown')} disabled={last || !!busy} onClick={() => onMove(row, 1)} className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30">
           <ArrowDown className="h-4 w-4" />
         </button>
-        <button type="button" data-testid="lp-delete" aria-label={t('delete')} disabled={!!busy} onClick={() => onRemove(row)} className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30">
+        <button type="button" data-testid="lp-delete" aria-label={t('delete')} disabled={!!busy} onClick={() => onRemove(row)} className="rounded-md p-1.5 text-gray-400 hover:bg-danger-500/10 hover:text-red-600 disabled:opacity-30">
           {busyThis ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </button>
       </div>

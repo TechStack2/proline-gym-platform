@@ -93,12 +93,12 @@ export function CoachActions({
       {canDeactivate && (
         isActive ? (
           confirmDeact ? (
-            <span className="flex flex-wrap items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" data-testid="coach-deactivate-warning">
+            <span className="tint-danger flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-sm" data-testid="coach-deactivate-warning">
               {hasObligations
                 ? ta('deactivateWarn', { classes: activeClassCount, pt: activePtCount })
                 : ta('deactivateConfirm')}
               <Button size="sm" variant="outline" data-testid="coach-deactivate-confirm" disabled={busy}
-                className="border-red-300 text-red-700 hover:bg-red-100" onClick={deactivate}>
+                className="border-red-300 text-red-700 hover:bg-danger-500/10" onClick={deactivate}>
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : ta('deactivateYes')}
               </Button>
               <Button size="sm" variant="ghost" data-testid="coach-deactivate-cancel" onClick={() => setConfirmDeact(false)}>
@@ -107,13 +107,13 @@ export function CoachActions({
             </span>
           ) : (
             <Button variant="outline" size="sm" data-testid="coach-deactivate-btn"
-              className="text-red-600 hover:bg-red-50" onClick={() => setConfirmDeact(true)}>
+              className="text-red-600 hover:bg-danger-500/10" onClick={() => setConfirmDeact(true)}>
               <UserX className="me-1 h-4 w-4" /> {ta('deactivate')}
             </Button>
           )
         ) : (
           <Button variant="outline" size="sm" data-testid="coach-reactivate-btn" disabled={busy}
-            className="text-green-700 hover:bg-green-50" onClick={reactivate}>
+            className="text-green-700 hover:bg-success-500/10" onClick={reactivate}>
             {busy ? <Loader2 className="me-1 h-3.5 w-3.5 animate-spin" /> : <UserCheck className="me-1 h-4 w-4" />} {t('actions.reactivate')}
           </Button>
         )

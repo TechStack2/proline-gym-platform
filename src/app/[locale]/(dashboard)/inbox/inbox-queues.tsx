@@ -7,7 +7,7 @@
  * approvePtRequest/rejectPtRequest. No re-implemented business logic here —
  * this component only renders rows and forwards clicks.
  */
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate as fmtDateLoc } from '@/lib/fmt'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -113,11 +113,11 @@ export function InboxQueues({
     return labels.length ? labels.join(' · ') : t('mrKind.profile_change')
   }
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
+  const fmtDate = (d: string) => fmtDateLoc(d, locale)
 
   return (
     <div className="space-y-6">
-      {error && <div data-testid="inbox-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error === 'coach_required' ? t('coachRequired') : error}</div>}
+      {error && <div data-testid="inbox-error" className="tint-danger rounded-md px-3 py-2 text-sm">{error === 'coach_required' ? t('coachRequired') : error}</div>}
 
       {/* ── Class-registration requests (B2) ── */}
       <section>
@@ -142,7 +142,7 @@ export function InboxQueues({
                     <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
                   </Button>
                   <Button size="sm" variant="outline" data-testid="inbox-camp-decline" disabled={pending}
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-danger-600 hover:bg-danger-500/10"
                     onClick={() => run(r.id, async () => { const res = await declineCampRequest(r.id); return res.ok ? { ok: true } : res })}>
                     <XCircle className="me-1 h-4 w-4" /> {t('decline')}
                   </Button>
@@ -190,7 +190,7 @@ export function InboxQueues({
                         <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
                       </Button>
                       <Button size="sm" variant="outline" data-testid="inbox-decline" disabled={pending}
-                        className="text-red-600 hover:bg-red-50"
+                        className="text-danger-600 hover:bg-danger-500/10"
                         onClick={() => run(r.id, () => rejectRegistration(r.id, r.classId))}>
                         <XCircle className="me-1 h-4 w-4" /> {t('decline')}
                       </Button>
@@ -237,7 +237,7 @@ export function InboxQueues({
                       <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
                     </Button>
                     <Button size="sm" variant="outline" data-testid="inbox-pt-decline" disabled={pending}
-                      className="text-red-600 hover:bg-red-50"
+                      className="text-danger-600 hover:bg-danger-500/10"
                       onClick={() => run(r.id, async () => { const res = await rejectPtRequest(r.id, ''); return res.ok ? { ok: true } : res })}>
                       <XCircle className="me-1 h-4 w-4" /> {t('decline')}
                     </Button>
@@ -245,7 +245,7 @@ export function InboxQueues({
                 </div>
                 {/* No preferred coach → pick one (chips) before approving. */}
                 {!r.coachId && (
-                  <div data-testid="inbox-pt-coach-picker" className="rounded-xl bg-amber-50/60 px-3 py-2">
+                  <div data-testid="inbox-pt-coach-picker" className="rounded-xl bg-warning-500/10 px-3 py-2">
                     <p className={cn('mb-1.5 text-xs font-medium text-amber-800', isRTL && 'font-arabic text-right')}>{t('assignCoachToBook')}</p>
                     {coaches.length === 0 ? (
                       <p className="text-xs text-amber-700">{t('noCoachesToAssign')}</p>
@@ -297,7 +297,7 @@ export function InboxQueues({
                       <CheckCircle2 className="me-1 h-4 w-4" /> {t('approve')}
                     </Button>
                     <Button size="sm" variant="outline" data-testid="inbox-member-decline" disabled={pending}
-                      className="text-red-600 hover:bg-red-50"
+                      className="text-danger-600 hover:bg-danger-500/10"
                       onClick={() => run(r.id, () => declineMemberRequest(r.id))}>
                       <XCircle className="me-1 h-4 w-4" /> {t('decline')}
                     </Button>

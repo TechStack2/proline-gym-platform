@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { ptPackageInsertSchema, ptAssignmentInsertSchema } from '@/lib/validators/pt.schema';
 import { getLocalizedName } from '@/lib/i18n/helpers';
+import { fmtLbp } from '@/lib/billing/currency';
+import { Ltr } from '@/components/ui/bdi';
 import { approvePtRequest, rejectPtRequest } from './actions';
 
 // ─── Local form schema (strings for HTML inputs; validated+converted in handler) ───
@@ -519,7 +521,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
               const effectiveCoach = reqCoach[req.id] || req.coach_id || null;
               const preferredCoach = req.coach_id ? coaches.find((c) => c.id === req.coach_id) : null;
               return (
-                <div key={req.id} data-testid="pt-pending-request" data-package={req.package_id} className="flex flex-col gap-2 rounded-xl border bg-amber-50/40 p-3">
+                <div key={req.id} data-testid="pt-pending-request" data-package={req.package_id} className="flex flex-col gap-2 rounded-xl border bg-warning-500/10 p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className={cn('text-sm font-medium text-gray-900 truncate', isRTL && 'font-arabic')}>
@@ -546,7 +548,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                   {/* No preferred coach → pick one (chips) before approving. */}
                   {!req.coach_id && (
                     <div data-testid="pt-req-coach-picker" className="rounded-lg bg-white/70 px-2.5 py-2">
-                      <p className={cn('mb-1.5 text-xs font-medium text-amber-800', isRTL && 'font-arabic text-right')}>{t('assign_coach_to_book')}</p>
+                      <p className={cn('mb-1.5 text-xs font-medium text-amber-800', isRTL && 'font-arabic')}>{t('assign_coach_to_book')}</p>
                       {coaches.length === 0 ? (
                         <p className="text-xs text-amber-700">{t('no_coaches_to_assign')}</p>
                       ) : (
@@ -555,7 +557,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                             <button key={c.id} type="button" data-testid="pt-req-coach-chip" data-id={c.id}
                               onClick={() => setReqCoach((prev) => ({ ...prev, [req.id]: c.id }))}
                               className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
-                                reqCoach[req.id] === c.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
+                                reqCoach[req.id] === c.id ? 'border-primary-700 bg-primary-700/10 text-primary-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}>
                               {getCoachName(c)}
                             </button>
                           ))}
@@ -611,7 +613,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
         <ModalBackdrop onClose={() => setDeleteTarget(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-danger-500/10 flex items-center justify-center">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
               <div>
@@ -641,7 +643,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-10 w-10 rounded-xl bg-primary-100 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl bg-primary-700/10 flex items-center justify-center">
                       <Dumbbell className="h-5 w-5 text-primary-600" />
                     </div>
                     <div>
@@ -654,7 +656,8 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                   <div className="text-end">
                     <span className="text-2xl font-bold text-primary-700">${pkg.price_usd}</span>
                     {pkg.price_lbp && (
-                      <p className="text-xs text-gray-400">{pkg.price_lbp.toLocaleString()} LBP</p>
+                      /* DA-34/7: via fmtLbp (byte-identical), LTR-isolated for /ar. */
+                      <p className="text-xs text-gray-400"><Ltr>{fmtLbp(pkg.price_lbp)}</Ltr></p>
                     )}
                   </div>
                 </div>
@@ -686,7 +689,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                               disabled={processing === a.id || a.sessions_remaining <= 0}
                               onClick={() => handleLogSession(a)}
                               title={t('log_session')}
-                              className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-primary-600 hover:bg-primary-50 disabled:opacity-40"
+                              className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-primary-600 hover:bg-primary-700/10 disabled:opacity-40"
                             >
                               <PlayCircle className="h-3.5 w-3.5" />
                             </button>
@@ -747,7 +750,7 @@ export function PTPackagesClient({ packages: initialPkgs, students, coaches, ass
                         <Pencil className="h-3.5 w-3.5 me-1" />
                         {t('edit')}
                       </Button>
-                      <Button variant="ghost" size="sm" className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteTarget(pkg)}>
+                      <Button variant="ghost" size="sm" className="flex-1 text-red-600 hover:text-red-700 hover:bg-danger-500/10" onClick={() => setDeleteTarget(pkg)}>
                         <Trash2 className="h-3.5 w-3.5 me-1" />
                         {t('delete')}
                       </Button>

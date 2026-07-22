@@ -100,7 +100,7 @@ export function RecordPaymentForm({
     return (
       <p data-testid={done === 'offline' ? 'pay-saved-offline' : 'pay-recorded'}
         className={cn('mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium',
-          done === 'offline' ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800')}>
+          done === 'offline' ? 'tint-warning' : 'tint-success')}>
         {done === 'offline' ? <CloudOff className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
         {done === 'offline' ? t('savedOffline') : t('recorded')}
       </p>
@@ -144,7 +144,7 @@ export function RecordPaymentForm({
           <CloudOff className="h-3.5 w-3.5" /> {t('willQueueOffline')}
         </p>
       )}
-      {error && <p data-testid="pay-error" className="rounded-md bg-red-50 px-2 py-1.5 text-xs text-red-700">{error}</p>}
+      {error && <p data-testid="pay-error" className="tint-danger rounded-md px-2 py-1.5 text-xs">{error}</p>}
       <div className="flex gap-2">
         <button type="button" data-testid="pay-submit" onClick={() => void submit()} disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-800 disabled:opacity-50">
@@ -229,7 +229,7 @@ export function CaptureLeadForm({
       {done ? (
         <p data-testid={done === 'offline' ? 'lead-saved-offline' : 'lead-recorded'}
           className={cn('mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium',
-            done === 'offline' ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800')}>
+            done === 'offline' ? 'tint-warning' : 'tint-success')}>
           {done === 'offline' ? <CloudOff className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
           {done === 'offline' ? t('leadSavedOffline') : t('leadRecorded')}
         </p>
@@ -250,7 +250,7 @@ export function CaptureLeadForm({
               <CloudOff className="h-3.5 w-3.5" /> {t('leadWillQueueOffline')}
             </p>
           )}
-          {error && <p data-testid="lead-error" className="rounded-md bg-red-50 px-2 py-1.5 text-xs text-red-700">{error}</p>}
+          {error && <p data-testid="lead-error" className="tint-danger rounded-md px-2 py-1.5 text-xs">{error}</p>}
           <div className="flex gap-2">
             <button type="button" data-testid="lead-submit" onClick={() => void submit()} disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-800 disabled:opacity-50">
@@ -295,13 +295,13 @@ export function PendingSyncBar({
   return (
     <div data-testid="desk-pending-bar" dir={isRTL ? 'rtl' : 'ltr'}
       className={cn('rounded-2xl border p-3 shadow-sm',
-        stats.conflicts > 0 ? 'border-amber-200 bg-amber-50' : 'border-blue-100 bg-blue-50')}>
+        stats.conflicts > 0 ? 'border-warning-500/30 bg-warning-500/10' : 'border-info-500/20 bg-info-500/10')}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
           <CloudOff className="h-4 w-4 text-blue-600" />
           <span data-testid="desk-pending-count">{t('pendingSync', { n: stats.total })}</span>
           {stats.conflicts > 0 && (
-            <span data-testid="desk-conflict-count" className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+            <span data-testid="desk-conflict-count" className="tint-warning inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold">
               <AlertTriangle className="h-3 w-3" /> {t('needsReview', { n: stats.conflicts })}
             </span>
           )}
@@ -395,7 +395,7 @@ function LeadConflictRow({
               placeholder={t('discardReasonPlaceholder')} disabled={!online || busy}
               className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1" />
             <button type="button" data-testid="desk-lead-discard-btn" onClick={() => void discard()} disabled={!online || busy}
-              className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 font-medium text-red-700 hover:bg-red-50 disabled:opacity-50">
+              className="inline-flex items-center gap-1 rounded-md border border-danger-500/30 px-2 py-1 font-medium text-danger-700 hover:bg-danger-500/10 disabled:opacity-50">
               <Trash2 className="h-3 w-3" /> {t('discard')}
             </button>
           </div>
@@ -503,7 +503,7 @@ function ConflictRow({
               placeholder={t('discardReasonPlaceholder')} disabled={!online || busy}
               className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1" />
             <button type="button" data-testid="desk-discard-btn" onClick={() => void discard()} disabled={!online || busy}
-              className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 font-medium text-red-700 hover:bg-red-50 disabled:opacity-50">
+              className="inline-flex items-center gap-1 rounded-md border border-danger-500/30 px-2 py-1 font-medium text-danger-700 hover:bg-danger-500/10 disabled:opacity-50">
               <Trash2 className="h-3 w-3" /> {t('discard')}
             </button>
           </div>

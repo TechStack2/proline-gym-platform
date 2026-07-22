@@ -303,7 +303,7 @@ export function GymSettings({ gym, locale }: Props) {
   const saveBar = (section: SectionKey) => (
     <div className="space-y-1.5 border-t pt-3">
       {sectionError?.section === section && (
-        <div data-testid={`gym-save-error-${section}`} className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{sectionError.msg}</div>
+        <div data-testid={`gym-save-error-${section}`} className="tint-danger rounded-lg px-3 py-2 text-sm">{sectionError.msg}</div>
       )}
       <div className="flex items-center gap-2">
         <Button data-testid={`gym-save-${section}`} onClick={() => void saveSection(section)} disabled={savingSec === section} size="sm" className="rounded-lg">
@@ -378,7 +378,7 @@ export function GymSettings({ gym, locale }: Props) {
         </h2>
       </div>
       {uploadError && (
-        <div data-testid="gym-upload-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{uploadError}</div>
+        <div data-testid="gym-upload-error" className="tint-danger rounded-lg px-3 py-2 text-sm">{uploadError}</div>
       )}
 
       {/* ── Identity ── */}
@@ -524,7 +524,7 @@ export function GymSettings({ gym, locale }: Props) {
 
         {/* R4: the consequence of switching, stated honestly. Enforced by construction —
             anchors are stored per-registration at activation and nothing recomputes them. */}
-        <p data-testid="gym-billing-switch-note" className={cn('rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900', isRTL && 'font-arabic')}>
+        <p data-testid="gym-billing-switch-note" className={cn('tint-warning rounded-lg p-2.5 text-xs', isRTL && 'font-arabic')}>
           {t('gym.switchNote')}
         </p>
 

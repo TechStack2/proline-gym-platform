@@ -6,7 +6,8 @@
  * toggle + archive (status→cancelled, never delete) with a confirmed-
  * registrations warning. Writes go through the gym-scoped staff RLS.
  */
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate } from '@/lib/fmt'
+import { fmtLbp } from '@/lib/billing/currency'
 import { useState } from 'react'
 import Link from 'next/link'
 import { FormWizard, type WizardStep } from '@/components/shared/form-wizard'
@@ -16,6 +17,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { statusTintClass } from '@/lib/status-vocabulary'
 import { toast } from '@/components/ui/use-toast'
 import { Tent, Plus, Globe, Pencil, Archive, ChevronRight, Users } from 'lucide-react'
 
@@ -30,14 +32,10 @@ export type CampRow = {
   show_on_landing: boolean
 }
 
-const STATUS_TONE: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  open: 'bg-green-100 text-green-700',
-  full: 'bg-amber-100 text-amber-700',
-  in_progress: 'bg-blue-100 text-blue-700',
-  completed: 'bg-gray-100 text-gray-500',
-  cancelled: 'bg-red-50 text-red-500',
-}
+// W3b §2.3/DA-25: camp statuses have no entry in the status vocabulary (a camp
+// domain is a vocabulary change, out of this display-only pass), so the local
+// map stays — but its fills wear the dark-correct role TINTS, not -100/-50 pins.
+// W3b: colour is the status vocabulary's call (`camp` domain) — no local map.
 
 // FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was defined during render.
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -67,7 +65,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
   })
 
   const lname = (c: CampRow) => ((isRTL ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en)
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' })
+  const fmtD = (d: string) => fmtDate(d, locale, 'dayMonth')
 
   const openCreate = () => {
     setEditing(null)
@@ -175,7 +173,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
           <p className="font-semibold text-gray-900">{f.en}</p>
           <p dir="ltr">{f.start} → {f.end}</p>
           <p>{t('ages', { min: f.minAge || '—', max: f.maxAge || '—' })} · {t('capacity')}: {f.capacity}</p>
-          <p>${f.priceUsd}{f.priceLbp ? ` · ${Number(f.priceLbp).toLocaleString()} LBP` : ''}</p>
+          <p>${f.priceUsd}{f.priceLbp ? ` · ${fmtLbp(Number(f.priceLbp))}` : ''}</p>
           {!editing && <p className="text-xs text-gray-400">{t('stagedNote')}</p>}
         </div>
       ),
@@ -205,7 +203,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
                     <span className="block text-xs text-gray-500" dir="ltr">{fmtD(c.start_date)} – {fmtD(c.end_date)}</span>
                   </span>
                 </Link>
-                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize', STATUS_TONE[c.status] || 'bg-gray-100')}>
+                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize', statusTintClass('camp', c.status))}>
                   {t(`status.${c.status}` as any)}
                 </span>
               </div>
@@ -221,7 +219,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
                 <button type="button" data-testid="camp-publish-toggle" data-on={c.show_on_landing} disabled={busy}
                   onClick={() => togglePublish(c)}
                   className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium',
-                    c.show_on_landing ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400')}>
+                    c.show_on_landing ? 'tint-success border-success-500/40' : 'border-gray-200 text-gray-400')}>
                   <Globe className="h-3 w-3" /> {c.show_on_landing ? t('onLanding') : t('staged')}
                 </button>
                 <Button size="sm" variant="ghost" data-testid="camp-edit-btn" disabled={busy} onClick={() => openEdit(c)}>
@@ -229,7 +227,7 @@ export function CampsBoard({ camps, confirmed, pending, gymId, locale }: {
                 </Button>
                 {c.status !== 'cancelled' && (
                   <Button size="sm" variant="ghost" data-testid="camp-archive-btn" disabled={busy}
-                    className="text-red-500 hover:bg-red-50" onClick={() => archive(c)}>
+                    className="text-red-500 hover:bg-danger-500/10" onClick={() => archive(c)}>
                     <Archive className="h-3.5 w-3.5" />
                   </Button>
                 )}

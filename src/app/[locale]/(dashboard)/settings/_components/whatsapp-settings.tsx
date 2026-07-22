@@ -15,10 +15,12 @@ import { Button } from '@/components/ui/button'
 import { MessageCircle, Check, Loader2, ShieldCheck } from 'lucide-react'
 import { saveWhatsAppConfig, sendWhatsAppTest, type WhatsAppStatus } from './whatsapp-actions'
 
+// W3b §2.3: role-hue tints (dark-correct) — the status vocabulary has no whatsapp
+// domain, so the pill keeps its span but wears the tint utilities.
 const TONE: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  pending: 'bg-amber-100 text-amber-700',
-  not_configured: 'bg-gray-100 text-gray-500',
+  active: 'tint-success',
+  pending: 'tint-warning',
+  not_configured: 'tint-neutral',
 }
 
 // FORM-FOCUS-SWEEP: hoisted to module scope (stable type) — was remounting its subtree each render.
@@ -59,7 +61,7 @@ export function WhatsAppSettings({ initial, locale }: { initial: WhatsAppStatus;
   }
 
   return (
-    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'text-right')} data-testid="whatsapp-settings">
+    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3')} data-testid="whatsapp-settings">
       <div className="flex items-center justify-between">
         <h3 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <MessageCircle className="h-4 w-4 text-whatsapp" /> {t('title')}

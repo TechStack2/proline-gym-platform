@@ -1,10 +1,12 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Plus, FileText } from 'lucide-react'
-import { balanceUsd, balanceLbp, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { fmtDate } from '@/lib/fmt'
+import { fmtUsd } from '@/lib/billing/currency'
+import { StatusChip } from '@/components/ui/status-chip'
+import { balanceUsd, balanceLbp, localizedName, statusLabel, displayInvoiceStatus, METHOD_LABEL, INVOICE_TYPE_CAT, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 import { dualMoney, normalizeCurrencyPref } from '@/lib/billing/currency'
 import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
 import { composeInvoiceWa, one, asLoc } from './[id]/wa-message'
@@ -29,7 +31,6 @@ function agingBucket(dueDate: string | null, today: string): string {
  * (the cash drawer: USD/LBP/OMT/Whish/…).
  */
 export async function InvoicesView({ locale, searchParams }: Props) {
-  const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
@@ -146,10 +147,8 @@ export async function InvoicesView({ locale, searchParams }: Props) {
     return matchSearch && matchStatus && matchAging
   })
 
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
-
   return (
-    <div className={cn('space-y-6', isRTL && 'text-right')}>
+    <div className="space-y-6">
       <div className="flex items-center justify-end">
         <Link href={`/${locale}/invoices/new`} data-testid="new-invoice-btn"
           className="inline-flex items-center rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-800">
@@ -161,9 +160,10 @@ export async function InvoicesView({ locale, searchParams }: Props) {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border bg-white p-4 shadow-sm">
           <p className="text-xs text-muted-foreground">{t('Outstanding balance', 'الرصيد المستحق', 'Solde impayé')}</p>
-          <p className="mt-1 text-2xl font-bold text-red-600" data-testid="outstanding-total">{outMoney.primary}</p>
+          {/* W3b zero doctrine: a settled book is a calm fact, not an alarm. */}
+          <p className={cn('mt-1 text-2xl font-bold', outstanding > 0 || outstandingLbp > 0 ? 'text-danger-600' : 'text-gray-500')} data-testid="outstanding-total">{outMoney.primary}</p>
           {outMoney.secondary && (
-            <p className="text-sm font-semibold text-red-500/90" data-testid="outstanding-total-lbp">{outMoney.secondary}</p>
+            <p className={cn('text-sm font-semibold', outstandingLbp > 0 || outstanding > 0 ? 'text-danger-500/90' : 'text-gray-400')} data-testid="outstanding-total-lbp">{outMoney.secondary}</p>
           )}
         </div>
         <div className="rounded-2xl border bg-white p-4 shadow-sm sm:col-span-2">
@@ -217,7 +217,8 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                       <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono font-medium text-primary-700 hover:underline">{inv.invoice_number}</Link>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <span data-testid="invoice-type-badge" data-type={inv.invoice_type || 'other'}
-                          className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
+                          data-cat={INVOICE_TYPE_CAT[inv.invoice_type] || INVOICE_TYPE_CAT.other}
+                          className="cat-tint inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">
                           {invoiceTypeLabel(inv.invoice_type, locale)}
                         </span>
                         {invoiceNote(inv, locale) && (
@@ -245,10 +246,11 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                         />
                       )}
                     </td>
-                    <td className="p-3 font-medium">${Number(inv.total_usd).toFixed(2)}</td>
-                    <td className={cn('p-3 font-medium', bal > 0 ? 'text-red-600' : 'text-green-600')}>${bal.toFixed(2)}</td>
-                    <td className="p-3 text-muted-foreground">{fmtDate(inv.due_date)}</td>
-                    <td className="p-3"><span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[displayInvoiceStatus(inv.status, inv.voided_at)])}>{statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)}</span></td>
+                    <td className="p-3 font-medium">{fmtUsd(Number(inv.total_usd))}</td>
+                    {/* W3b zero doctrine: settled = calm neutral, never celebration green. */}
+                    <td className={cn('p-3 font-medium', bal > 0 ? 'text-danger-600' : 'text-gray-500')}>{fmtUsd(bal)}</td>
+                    <td className="p-3 text-muted-foreground">{fmtDate(inv.due_date, locale)}</td>
+                    <td className="p-3"><StatusChip domain="invoice" status={displayInvoiceStatus(inv.status, inv.voided_at)} label={statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)} /></td>
                   </tr>
                 )
               })}

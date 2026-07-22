@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/page-header';
 import { localizedName, one } from '@/lib/names';
-import { STATUS_BADGE, statusLabel } from '@/lib/billing/reconcile';
+import { statusLabel } from '@/lib/billing/reconcile';
 import { PtPackageCard, computePtStatus, type PtCardData } from '@/components/shared/pt-package-card';
 import { PtRequestClient } from './pt-request-client';
 import { BookPtModal } from '@/components/shared/book-pt-modal';
@@ -111,7 +111,7 @@ export default async function PortalPtPage({ params }: Props) {
       invoiceHref: inv ? `/${locale}/portal/billing` : null,
       invoiceNumber: inv?.invoice_number ?? null,
       invoiceStatusLabel: inv ? statusLabel(inv.status, locale) : null,
-      invoiceStatusClass: inv ? STATUS_BADGE[inv.status] : null,
+      invoiceStatus: inv?.status ?? null,
       sessions: (sessionsBy.get(a.id) ?? []).map((sRow: any) => ({
         id: sRow.id, scheduledAt: sRow.scheduled_at, status: sRow.status,
         // PT-2 nested actions: cancel a future booking; answer a counter.

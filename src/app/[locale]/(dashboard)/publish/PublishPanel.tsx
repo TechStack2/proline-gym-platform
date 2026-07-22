@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { setCoachLanding } from '../coaches/[id]/actions'
 import { ShareableLink } from '@/components/shared/shareable-link'
+import { EmptyState } from '@/components/ui/empty-state'
 import { cn } from '@/lib/utils'
 import { CalendarClock, Users, CreditCard, Dumbbell, Tent, ExternalLink, Loader2 } from 'lucide-react'
 
@@ -137,7 +138,8 @@ export function PublishPanel({
         <p className={cn('mt-0.5 text-xs text-gray-500', isRTL && 'font-arabic')}>{t('classesHint')}</p>
         <div className="mt-3 divide-y divide-gray-100" data-testid="publish-classes">
           {classes.length === 0 ? (
-            <p className="py-2 text-sm text-gray-400">{t('noClasses')}</p>
+            /* DA-31: the one empty-state primitive (bare — inside this card). */
+            <EmptyState variant="bare" title={t('noClasses')} />
           ) : (
             classes.map((c) => (
               <ToggleRow
@@ -166,7 +168,7 @@ export function PublishPanel({
         <p className={cn('mt-0.5 text-xs text-gray-500', isRTL && 'font-arabic')}>{t('coachesHint')}</p>
         <div className="mt-3 divide-y divide-gray-100" data-testid="publish-coaches">
           {coaches.length === 0 ? (
-            <p className="py-2 text-sm text-gray-400">{t('noCoaches')}</p>
+            <EmptyState variant="bare" title={t('noCoaches')} />
           ) : (
             coaches.map((c) => (
               <ToggleRow
@@ -195,7 +197,7 @@ export function PublishPanel({
         <p className={cn('mt-0.5 text-xs text-gray-500', isRTL && 'font-arabic')}>{t('campsHint')}</p>
         <div className="mt-3 divide-y divide-gray-100" data-testid="publish-camps">
           {camps.length === 0 ? (
-            <p className="py-2 text-sm text-gray-400">{t('noCamps')}</p>
+            <EmptyState variant="bare" title={t('noCamps')} />
           ) : (
             camps.map((c) => (
               <ToggleRow
@@ -319,7 +321,8 @@ function ToggleRow({
             <span
               className={cn(
                 'absolute top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-all',
-                on ? (isRTL ? 'right-5' : 'left-5') : (isRTL ? 'right-0.5' : 'left-0.5'),
+                /* DA-61: logical inset — dir mirrors the knob travel for free. */
+                on ? 'start-5' : 'start-0.5',
               )}
             >
               {loading && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { NativeHeader, PageTransition, DesktopRail, IdentityBar, MoreSheet } from '@/components/native';
 import { TabBar } from '@/components/native/TabBar';
-import { Search, LogOut } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { staffNav, DASHBOARD_BASE_PATH } from './DashboardTabConfig';
 import type { DashboardRole } from './DashboardTabConfig';
 import { createClient } from '@/lib/supabase/client';
@@ -89,6 +89,12 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
   const seg = pathname.split('/')[2] || 'today'; // [1] = locale, [2] = route segment
   const headerTitle = t(pageTitleKey(seg) as never);
 
+  // DA-8 (W3b): detail/sub-pages get a back affordance in the mobile chrome —
+  // one segment up (member file → members, receipt → invoice, history → attendance).
+  // Two-segment paths (/en/money) are workspaces: no back.
+  const parts = pathname.split('/').filter(Boolean);
+  const backHref = parts.length > 2 ? `/${parts.slice(0, -1).join('/')}` : null;
+
   const roleLabel = ROLE_LABELS[role]?.[locale as 'en' | 'ar' | 'fr'] ?? role.replace('_', ' ');
 
   return (
@@ -133,24 +139,24 @@ export function DashboardLayoutClient({ children, locale, role, gymName, logoUrl
 
         {/* Mobile chrome (<768): status-zone header per §2.1. */}
         <div className="md:hidden">
+          {/* W3b (DA-17/18): the staff shell adopts the slim ONE-row chrome the
+              member shells got in W3a — gym identity + one shell badge; the
+              role pill and the 3-row stack die. Sign-out leaves persistent
+              chrome (§1.3): the More sheet owns it, confirm-stepped. */}
           <NativeHeader
             title={headerTitle}
             locale={locale}
-            role={role}
             shell="staff"
             variant="large"
             titleMobileOnly
+            slim
+            gymName={gymName}
+            logoUrl={logoUrl}
+            onBack={backHref ? () => router.push(backHref) : undefined}
             rightActions={
               <div className="flex items-center gap-2">
                 {isDesktop === false && <NotificationBell locale={locale} />}
                 <ThemeToggle />
-                <button
-                  onClick={handleLogout}
-                  className="rounded-full h-10 w-10 inline-flex items-center justify-center hover:bg-red-50 transition-colors"
-                  aria-label="Sign out"
-                >
-                  <LogOut className="h-5 w-5 text-red-500" />
-                </button>
               </div>
             }
           />

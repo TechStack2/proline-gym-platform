@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate as fmtDateLoc, fmtUsdCompact, fmtLbpCompact } from '@/lib/fmt'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { DrillDetails } from '@/components/dashboard/drill-details'
 import { horizonEndDate } from '@/lib/finances/horizon'
@@ -47,7 +47,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
   const products = await getEnabledProducts(supabase, gymId)
   const pref = await gymCurrencyPref(supabase, gymId) // MONEY-LBP: dual headline badges
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
+  const fmtDate = (d: string) => fmtDateLoc(d, locale)
   const pct = (n: number) => Math.round(n)
   const zero = () => ({ membership: 0, class: 0, pt: 0, camp: 0, other: 0 })
   const blank = { byProduct: zero(), total: 0, byProductLbp: zero(), totalLbp: 0, month: '' }
@@ -61,8 +61,8 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
   // drill360/ml1 USD reconcile untouched) and appends/leads LBP per preference otherwise.
   const dualBadge = (u: number, l: number, usdExact: string): string => {
     if (pref === 'USD') return usdExact
-    const usd = `$${Math.round(u).toLocaleString()}`
-    const lbp = `${Math.round(l).toLocaleString()} LBP`
+    const usd = fmtUsdCompact(u)
+    const lbp = fmtLbpCompact(l)
     return pref === 'LBP' ? `${lbp} · ${usd}` : `${usd} · ${lbp}`
   }
   const agingOpen = aging.filter((b) => b.count > 0)

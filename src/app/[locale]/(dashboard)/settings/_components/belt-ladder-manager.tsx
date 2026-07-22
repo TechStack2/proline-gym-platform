@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { beltRankLabel } from '@/lib/belts/label'
 import { cn } from '@/lib/utils'
 import { FormWizard } from '@/components/shared/form-wizard'
 import { Plus, Pencil, Archive, ArchiveRestore, ChevronUp, ChevronDown } from 'lucide-react'
@@ -57,6 +58,8 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
 export function BeltLadderManager({ disciplines, locale }: { disciplines: DisciplineRow[]; locale: string }) {
   const t = useTranslations('settings.beltLadder')
   const tc = useTranslations('common')
+  // DA-9: the one belt vocabulary — raw enum values never reach the DOM.
+  const tb = useTranslations('beltRanks')
   const router = useRouter()
   const isRTL = locale === 'ar'
 
@@ -165,7 +168,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
                 }}
                 className={cn('rounded-full border px-3 py-1.5 text-xs font-medium',
                   rank === r ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700')}>
-                {r.replace(/_/g, ' ')}
+                {beltRankLabel(r, tb)}
               </button>
             ))}
           </div>
@@ -191,14 +194,14 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
       content: (
         <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-700" data-testid="belt-review">
           <p className="font-semibold text-gray-900">{nameEn}</p>
-          {!editing?.id && <p className="text-xs text-gray-500">{rank.replace(/_/g, ' ')}</p>}
+          {!editing?.id && <p className="text-xs text-gray-500">{beltRankLabel(rank, tb)}</p>}
         </div>
       ),
     },
   ]
 
   return (
-    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'text-right')} data-testid="belt-ladder-manager">
+    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm')} data-testid="belt-ladder-manager">
       <div className="flex items-center justify-between">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
         <Button size="sm" data-testid="belt-add-btn" disabled={busy || !discId || unusedRanks.length === 0}
@@ -206,7 +209,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
           <Plus className="me-1 h-4 w-4" /> {t('addRank')}
         </Button>
       </div>
-      {error && <p data-testid="belt-ladder-error" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+      {error && <p data-testid="belt-ladder-error" className="tint-danger rounded-md px-3 py-2 text-xs">{error}</p>}
 
       {/* Discipline selector — chips, the no-dropdown convention */}
       <div className="flex flex-wrap gap-1.5">
@@ -226,7 +229,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
             <span className="flex items-center gap-2 text-sm font-medium text-gray-800">
               <span className="w-5 text-xs text-gray-400">{idx + 1}</span>
               {lname(b)}
-              <span className="text-2xs text-gray-400">{b.rank?.replace(/_/g, ' ')}</span>
+              <span className="text-2xs text-gray-400">{beltRankLabel(b.rank, tb, '')}</span>
             </span>
             <span className="flex items-center gap-0.5">
               <Button size="sm" variant="ghost" data-testid="belt-up-btn" disabled={busy || idx === 0} onClick={() => move(b, -1)}>
@@ -239,7 +242,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
                 <Pencil className="h-3.5 w-3.5 text-gray-400" />
               </Button>
               <Button size="sm" variant="ghost" data-testid="belt-archive-btn" disabled={busy}
-                className="text-red-500 hover:bg-red-50" onClick={() => setActive_(b.id!, false)}>
+                className="text-red-500 hover:bg-danger-500/10" onClick={() => setActive_(b.id!, false)}>
                 <Archive className="h-3.5 w-3.5" />
               </Button>
             </span>
@@ -254,7 +257,7 @@ export function BeltLadderManager({ disciplines, locale }: { disciplines: Discip
             <li key={b.id} className="flex items-center justify-between gap-2 py-1.5" data-testid="belt-row-archived" data-rank={b.rank}>
               <span className="text-sm text-gray-400 line-through">{lname(b)}</span>
               <Button size="sm" variant="ghost" data-testid="belt-restore-btn" disabled={busy}
-                className="text-green-600 hover:bg-green-50" onClick={() => setActive_(b.id!, true)}>
+                className="text-green-600 hover:bg-success-500/10" onClick={() => setActive_(b.id!, true)}>
                 <ArchiveRestore className="h-3.5 w-3.5" />
               </Button>
             </li>

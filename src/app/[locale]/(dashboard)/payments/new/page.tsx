@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { balanceUsd, localizedName, statusLabel, STATUS_BADGE } from '@/lib/billing/reconcile'
+import { balanceUsd, localizedName, statusLabel } from '@/lib/billing/reconcile'
+import { StatusChip } from '@/components/ui/status-chip'
 import { PaymentForm } from '../components/payment-form'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,6 @@ type Props = { params: { locale: string }; searchParams: { invoice?: string } }
  * the form directly (the invoice detail's "Record payment" deep-links here too).
  */
 export default async function NewPaymentPage({ params: { locale }, searchParams }: Props) {
-  const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
@@ -33,7 +33,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
     const { data: pays } = await supabase.from('payments').select('amount_usd').eq('invoice_id', searchParams.invoice)
     if (inv) {
       return (
-        <div className={`space-y-6 p-6 ${isRTL ? 'text-right' : ''}`}>
+        <div className="space-y-6 p-6">
           <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة', 'Enregistrer le paiement')} · {inv.invoice_number}</h1>
           <PaymentForm
             locale={locale}
@@ -67,7 +67,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
   for (const p of pays ?? []) paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + Number(p.amount_usd ?? 0))
 
   return (
-    <div className={`space-y-6 p-6 ${isRTL ? 'text-right' : ''}`}>
+    <div className="space-y-6 p-6">
       <h1 className="text-3xl font-bold tracking-tight">{t('Record payment', 'تسجيل دفعة', 'Enregistrer le paiement')}</h1>
       <p className="text-muted-foreground">{t('Pick an open invoice to settle.', 'اختر فاتورة مفتوحة للتسوية.', 'Choisissez une facture ouverte à régler.')}</p>
       {list.length === 0 ? (
@@ -87,7 +87,7 @@ export default async function NewPaymentPage({ params: { locale }, searchParams 
                     </td>
                     <td className="p-3">{localizedName(profile, locale)}</td>
                     <td className="p-3 font-medium text-red-600">${bal.toFixed(2)}</td>
-                    <td className="p-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[inv.status]}`}>{statusLabel(inv.status, locale)}</span></td>
+                    <td className="p-3"><StatusChip domain="invoice" status={inv.status} label={statusLabel(inv.status, locale)} /></td>
                   </tr>
                 )
               })}

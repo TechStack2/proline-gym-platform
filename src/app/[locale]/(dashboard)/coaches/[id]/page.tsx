@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { Avatar } from '@/components/shared/avatar'
-import { dateLocale } from '@/lib/utils/locale-format'
 import {
   Phone, MessageCircle, Award, CalendarDays, Users, Dumbbell,
   Gauge, ChevronRight, CalendarCheck,
@@ -14,8 +13,10 @@ import { AvailabilityEditor, type AvailabilityRow, type OverrideRow } from '../.
 import { CoachActions } from './coach-actions'
 import { CoachPublishPanel } from './CoachPublishPanel'
 import type { DiaryAssignment } from '../../schedule/diary-book-pt'
-import { fmtPhone } from '@/lib/fmt'
+import { fmtDate, fmtPhone, fmtTime } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
+import { beltRankLabel } from '@/lib/belts/label'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +52,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
   const isRTL = locale === 'ar'
   const t = await getTranslations('coach360')
   const tc = await getTranslations('coaches')
+  const tb = await getTranslations('beltRanks')
   const supabase = await createClient()
 
   const { data: coach } = await supabase
@@ -184,11 +186,9 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
   const name = localizedName((coach as any).profiles, locale)
   const specialization = (isRTL ? (coach as any).specialization_ar : locale === 'fr' ? (coach as any).specialization_fr : (coach as any).specialization_en) || (coach as any).specialization_en
   const waPhone = (prof?.phone || '').replace(/[^0-9]/g, '')
-  const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(dateLocale(locale), { hour: '2-digit', minute: '2-digit' })
-  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(dateLocale(locale), { weekday: 'short', day: 'numeric', month: 'short' })
 
   return (
-    <div className={cn('space-y-4', isRTL && 'text-right')} data-testid="coach-360">
+    <div className="space-y-4" data-testid="coach-360">
       {/* ── Header: identity + specialties + contact ── */}
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -198,24 +198,26 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
               <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')} data-testid="coach-name">{name}</h1>
               <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                 {specialization && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 font-medium text-primary-700" data-testid="coach-specialty-chip">
+                  <span className="tint-brand inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium" data-testid="coach-specialty-chip">
                     <Award className="h-3 w-3" />{specialization}
                   </span>
                 )}
                 {(coach as any).belt_rank && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600 capitalize">
-                    {String((coach as any).belt_rank).replace(/_/g, ' ')}
+                  /* DA-9: the localized belt label, never the raw enum. */
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600">
+                    {beltRankLabel(String((coach as any).belt_rank), (k) => tb(k as never))}
                   </span>
                 )}
-                <span className={cn('rounded-full px-2 py-0.5 font-medium', (coach as any).is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')} data-testid="coach-active-badge">
-                  {(coach as any).is_active ? tc('status.active') : tc('status.inactive')}
-                </span>
+                {/* W3b §2.3: the member vocabulary picks the hue; labels stay tc's strings. */}
+                <StatusChip domain="member" status={(coach as any).is_active ? 'active' : 'inactive'}
+                  label={(coach as any).is_active ? tc('status.active') : tc('status.inactive')}
+                  data-testid="coach-active-badge" />
                 {/* J3 PT-GUARDS: at-a-glance PT bookability — derived from published
                     availability windows; links straight to the availability panel. */}
                 <Link href={`/${locale}/coaches/${id}#panel-availability`} data-testid="coach-bookable-chip"
                   data-bookable={(availWindows ?? []).length > 0 ? 'yes' : 'no'}
                   className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium',
-                    (availWindows ?? []).length > 0 ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200')}>
+                    (availWindows ?? []).length > 0 ? 'tint-success hover:opacity-80' : 'tint-warning hover:opacity-80')}>
                   <CalendarCheck className="h-3 w-3" />
                   {(availWindows ?? []).length > 0 ? t('bookableChip') : t('noAvailabilityChip')}
                 </Link>
@@ -318,7 +320,7 @@ export default async function Coach360Page({ params: { locale, id }, searchParam
                 {((ptSchedule ?? []) as any[]).map((s) => (
                   <li key={s.id} className="flex items-center justify-between text-xs text-gray-600" data-testid="coach-pt-session" data-status={s.status}>
                     <span>{localizedName(one(one(s.students)?.profiles), locale)}</span>
-                    <span dir="ltr">{fmtDate(s.scheduled_at)} · {fmtTime(s.scheduled_at)}</span>
+                    <span dir="ltr">{fmtDate(s.scheduled_at, locale, 'weekday')} · {fmtTime(s.scheduled_at, locale)}</span>
                   </li>
                 ))}
               </ul>

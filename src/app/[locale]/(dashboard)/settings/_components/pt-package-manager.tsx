@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FormWizard, type WizardStep } from '@/components/shared/form-wizard'
 import { cn } from '@/lib/utils'
+import { fmtUsd } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
 import { Plus, Pencil, Archive, ArchiveRestore, Globe } from 'lucide-react'
 
 export type PtTypeRow = {
@@ -147,7 +149,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
   ]
 
   return (
-    <div className={cn('space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'text-right')} data-testid="ptpkg-manager">
+    <div className={cn('space-y-3 rounded-2xl border bg-white p-4 shadow-sm')} data-testid="ptpkg-manager">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
@@ -157,7 +159,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
           <Plus className="me-1 h-4 w-4" /> {t('add')}
         </Button>
       </div>
-      {error && <p data-testid="ptpkg-error" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+      {error && <p data-testid="ptpkg-error" className="tint-danger rounded-md px-3 py-2 text-xs">{error}</p>}
 
       {/* Rows */}
       <ul className="divide-y">
@@ -169,7 +171,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
                 {lname(p)}
               </span>
               <span className="ms-2 text-xs text-gray-500">
-                {p.session_count} {t('sessionsShort')} · ${Number(p.price_usd ?? 0).toFixed(0)}
+                {p.session_count} {t('sessionsShort')} · <Ltr>{fmtUsd(p.price_usd)}</Ltr>
                 {p.validity_days ? ` · ${p.validity_days}${t('daysShort')}` : ''}
                 {p.discipline_id ? ` · ${lname(disciplines.find((d) => d.id === p.discipline_id) ?? {})}` : ''}
               </span>
@@ -179,7 +181,7 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
               <button type="button" data-testid="ptpkg-landing-toggle" data-on={!!p.show_on_landing} disabled={busy}
                 onClick={() => patch(p.id!, { show_on_landing: !p.show_on_landing })}
                 className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium',
-                  p.show_on_landing ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400')}>
+                  p.show_on_landing ? 'tint-success border-success-500/30' : 'border-gray-200 text-gray-400')}>
                 <Globe className="h-3 w-3" /> {p.show_on_landing ? t('onLanding') : t('staged')}
               </button>
               <Button size="sm" variant="ghost" data-testid="ptpkg-edit-btn" disabled={busy} onClick={() => openEdit(p)}>
@@ -187,12 +189,12 @@ export function PtPackageManager({ types, disciplines, gymId, locale }: {
               </Button>
               {p.is_active !== false ? (
                 <Button size="sm" variant="ghost" data-testid="ptpkg-archive-btn" disabled={busy}
-                  className="text-red-500 hover:bg-red-50" onClick={() => patch(p.id!, { is_active: false, show_on_landing: false })}>
+                  className="text-red-500 hover:bg-danger-500/10" onClick={() => patch(p.id!, { is_active: false, show_on_landing: false })}>
                   <Archive className="h-3.5 w-3.5" />
                 </Button>
               ) : (
                 <Button size="sm" variant="ghost" data-testid="ptpkg-restore-btn" disabled={busy}
-                  className="text-green-600 hover:bg-green-50" onClick={() => patch(p.id!, { is_active: true })}>
+                  className="text-green-600 hover:bg-success-500/10" onClick={() => patch(p.id!, { is_active: true })}>
                   <ArchiveRestore className="h-3.5 w-3.5" />
                 </Button>
               )}

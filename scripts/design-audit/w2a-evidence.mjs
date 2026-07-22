@@ -57,8 +57,11 @@ const SHELLS = {
   staff: {
     role: 'owner',
     railSelector: '[data-testid="desktop-sidebar"]',
-    routes: ['/today', '/inbox', '/students', '/schedule', '/money', '/coaches', '/settings', '/profile'],
-    keyRoutes: ['/today', '/students', '/money', '/schedule'],
+    // W3b DA-22: a param-less /schedule is Day view below md BY DESIGN, so the
+    // 390↔1280 parity check pins the explicit week view (like-for-like).
+    routes: ['/today', '/inbox', '/students', '/schedule?view=week', '/money', '/coaches', '/settings', '/profile'],
+    // W3b: every staff surface this slice polished joins the §6.3 matrix.
+    keyRoutes: ['/today', '/inbox', '/students', '/students/guardians', '/money', '/money?tab=invoices', '/schedule', '/schedule?view=day', '/attendance', '/desk', '/reports', '/leads', '/setup', '/settings', '/profile'],
     // Member-360: the roster card navigates via onClick (role="link", no href) —
     // click the first card and take the landed URL.
     dynamic: [{ label: 'member-360', from: '/students', clickSelector: '[data-testid="student-card"]' }],

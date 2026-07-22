@@ -94,7 +94,7 @@ export default async function GuardiansPage({
         <input
           type="search" name="q" defaultValue={q} data-testid="guardian-search"
           placeholder={t('searchPlaceholder')}
-          className={cn('w-full rounded-xl border border-gray-200 bg-white py-2 text-sm outline-none focus:border-primary-400 ltr:pl-9 ltr:pr-3 rtl:pr-9 rtl:pl-3', isRTL && 'text-right font-arabic')}
+          className={cn('w-full rounded-xl border border-gray-200 bg-white ps-9 pe-3 py-2 text-sm outline-none focus:border-primary-400', isRTL && 'font-arabic')}
         />
       </form>
 
@@ -127,11 +127,11 @@ export default async function GuardiansPage({
                       (it is a value, not a status) and gets DA-7 isolation. */}
                   {r.outstanding > 0.005 ? (
                     <span data-testid="guardian-row-outstanding" data-amount={r.outstanding.toFixed(2)}
-                      className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                      className="tint-danger rounded-full px-2.5 py-1 text-xs font-semibold">
                       <Ltr>${r.outstanding.toFixed(2)}</Ltr>
                     </span>
                   ) : (
-                    <StatusChip domain="member" status="active" label={t('settled')} size="sm"
+                    <StatusChip domain="member" status="none" label={t('settled')} size="sm"
                       data-testid="guardian-row-outstanding" data-amount="0.00" />
                   )}
                   <ChevronRight className={cn('h-4 w-4 text-gray-300', isRTL && 'rotate-180')} aria-hidden />

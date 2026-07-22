@@ -124,7 +124,7 @@ export default async function PublishPage({ params: { locale } }: { params: { lo
     <div
       data-testid="publish-page"
       dir={isRTL ? 'rtl' : 'ltr'}
-      className={cn('mx-auto max-w-3xl space-y-5', isRTL && 'text-right')}
+      className="mx-auto max-w-3xl space-y-5"
     >
       {/* ── Back to the guided setup hub ── */}
       <Link

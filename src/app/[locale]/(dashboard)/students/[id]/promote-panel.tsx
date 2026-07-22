@@ -111,7 +111,7 @@ export function PromotePanel({
 
           {disciplineId && (
             choices.length === 0 ? (
-              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700" data-testid="promote-no-ladder">
+              <p className="tint-warning rounded-lg px-3 py-2 text-xs" data-testid="promote-no-ladder">
                 {ladder.length === 0 ? t('noLadder') : t('topRank')}
               </p>
             ) : (

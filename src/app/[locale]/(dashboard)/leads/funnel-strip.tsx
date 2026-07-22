@@ -43,7 +43,7 @@ export async function FunnelStrip({ funnel, locale }: { funnel: Funnel; locale: 
   const pct = (funnel.conversionRate * 100).toFixed(funnel.conversionRate === 0 ? 0 : 1)
 
   return (
-    <div className={cn('space-y-3', isRTL && 'text-right')} data-testid="funnel-strip">
+    <div className="space-y-3" data-testid="funnel-strip">
       {/* Conversion headline (this month) */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">

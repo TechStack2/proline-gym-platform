@@ -24,6 +24,9 @@ import { recordPayment } from '../../invoices/actions'
 import { registerMemberToClass } from './actions'
 import { registerToCamp } from '../../camps/actions'
 import { useErrorText } from '@/lib/errors/use-error-text';
+import { fmtUsd } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export type PickableClass = {
   id: string; name_ar: string | null; name_en: string | null; name_fr: string | null
@@ -197,7 +200,7 @@ export function MemberActions({
       {regOpen && (
         <Modal title={t('registerTitle', { name: memberName })} onClose={() => setRegOpen(false)} testid="m360-register-modal">
           {classes.length === 0 ? (
-            <p className="py-3 text-center text-sm text-gray-400">{t('noClasses')}</p>
+            <EmptyState variant="bare" className="py-3" title={t('noClasses')} />
           ) : (
             <div className="space-y-3">
               <div className="max-h-60 space-y-1.5 overflow-y-auto">
@@ -208,7 +211,7 @@ export function MemberActions({
                       classId === c.id ? 'border-primary-700 bg-primary-50' : 'border-gray-200 hover:border-gray-300')}>
                     <span className="font-medium text-gray-900">{lname(c)}</span>
                     <span className="text-xs text-gray-500">
-                      {c.monthly_fee_usd != null ? `$${Number(c.monthly_fee_usd).toFixed(0)}/${t('mo')}` : '—'}
+                      {c.monthly_fee_usd != null ? <><Ltr>{`$${Number(c.monthly_fee_usd).toFixed(0)}`}</Ltr>/{t('mo')}</> : '—'}
                       {c.max_capacity != null && (
                         <span className="ms-1.5 inline-flex items-center gap-0.5"><Users className="h-3 w-3" />{c.max_capacity}</span>
                       )}
@@ -219,7 +222,7 @@ export function MemberActions({
               {/* BILL-GUARDS R3: registration honesty — a free class says so; silence
                   is impossible (the fee preview is shown per class option above). */}
               {classId && classes.find((c) => c.id === classId)?.monthly_fee_usd === 0 && (
-                <p data-testid="m360-free-notice" className="rounded-lg bg-green-50 px-3 py-2 text-xs font-medium text-green-700">{t('freeNoInvoice')}</p>
+                <p data-testid="m360-free-notice" className="tint-success rounded-lg px-3 py-2 text-xs font-medium">{t('freeNoInvoice')}</p>
               )}
               <div className="flex flex-wrap items-end gap-3">
                 <div>
@@ -253,7 +256,7 @@ export function MemberActions({
       {campOpen && (
         <Modal title={t('campTitle', { name: memberName })} onClose={() => setCampOpen(false)} testid="m360-camp-modal">
           {camps.length === 0 ? (
-            <p className="py-3 text-center text-sm text-gray-400">{t('noCamps')}</p>
+            <EmptyState variant="bare" className="py-3" title={t('noCamps')} />
           ) : (
             <div className="space-y-3">
               <div className="space-y-1.5">
@@ -269,7 +272,7 @@ export function MemberActions({
                       <span className="shrink-0 text-xs text-gray-500" dir="ltr">
                         ${Number(c.price_usd).toFixed(0)}
                         {full
-                          ? <span className="ms-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{t('campFull')}</span>
+                          ? <span className="tint-warning ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold">{t('campFull')}</span>
                           : <span className="ms-1.5">{t('spotsLeft', { count: c.spots })}</span>}
                       </span>
                     </button>
@@ -277,7 +280,7 @@ export function MemberActions({
                 })}
               </div>
               {ageWarning && (
-                <p data-testid="m360-camp-age-warning" className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <p data-testid="m360-camp-age-warning" className="tint-warning flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                   {t('ageWarning', { min: selectedCamp?.min_age ?? '—', max: selectedCamp?.max_age ?? '—' })}
                 </p>
@@ -294,7 +297,7 @@ export function MemberActions({
       {payOpen && (
         <Modal title={t('payTitle', { name: memberName })} onClose={() => setPayOpen(false)} testid="m360-pay-modal">
           {openInvoices.length === 0 ? (
-            <p className="py-3 text-center text-sm text-gray-400" data-testid="m360-no-open-invoices">{t('noOpenInvoices')}</p>
+            <EmptyState variant="bare" className="py-3" data-testid="m360-no-open-invoices" title={t('noOpenInvoices')} />
           ) : (
             <div className="space-y-3">
               <div>
@@ -302,7 +305,8 @@ export function MemberActions({
                 <select data-testid="m360-pay-invoice" value={selected?.id ?? ''} onChange={(e) => pickInvoice(e.target.value)}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
                   {openInvoices.map((i) => (
-                    <option key={i.id} value={i.id}>{i.invoice_number} — ${i.balance_usd.toFixed(2)}</option>
+                    /* DA-34: same "$X.XX" text, via the one money formatter. */
+                    <option key={i.id} value={i.id}>{i.invoice_number} — {fmtUsd(i.balance_usd)}</option>
                   ))}
                 </select>
               </div>

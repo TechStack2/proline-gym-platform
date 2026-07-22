@@ -1,6 +1,6 @@
 'use client';
 
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate } from '@/lib/fmt'
 import { useState, useCallback } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { renderNotification } from '@/lib/notifications/render';
 import { NotificationItem } from '@/components/notifications/notification-item';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Bell, CheckCheck } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 
@@ -45,7 +46,7 @@ function timeAgo(date: string, locale: string, justNowLabel: string): string {
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
-  return new Date(date).toLocaleDateString(dateLocale(locale));
+  return fmtDate(date, locale);
 }
 
 export function NotificationsClient({ notifications: initialNotifications, locale }: NotificationsClientProps) {
@@ -120,19 +121,9 @@ export function NotificationsClient({ notifications: initialNotifications, local
         )}
       </div>
 
-      {/* Empty state */}
+      {/* Empty state — DA-31: the one primitive (calm zero). */}
       {notifications.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <Bell className="h-8 w-8" />
-          </div>
-          <p className={cn('text-lg font-medium text-gray-500', isRTL && 'font-arabic')}>
-            {t('empty')}
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            {t('emptyHint')}
-          </p>
-        </div>
+        <EmptyState variant="bare" icon={Bell} title={t('empty')} hint={t('emptyHint')} className="py-20" />
       )}
 
       {/* Unread section */}

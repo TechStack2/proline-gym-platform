@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FormWizard } from '@/components/shared/form-wizard'
+import { StatusChip } from '@/components/ui/status-chip'
 import { FileSignature, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { saveWaiverTemplate, type WaiverTemplate } from './waiver-actions'
@@ -86,7 +87,7 @@ export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; l
             {t('activeLabel')}
           </label>
           {bodyChanged && (
-            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700" data-testid="wv-bump-note">{t('bumpNote')}</p>
+            <p className="tint-warning rounded-lg px-3 py-2 text-xs" data-testid="wv-bump-note">{t('bumpNote')}</p>
           )}
         </div>
       ),
@@ -94,16 +95,17 @@ export function WaiverSettings({ initial, locale }: { initial: WaiverTemplate; l
   ]
 
   return (
-    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3', isRTL && 'text-right')} data-testid="waiver-settings">
+    <div className={cn('rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3')} data-testid="waiver-settings">
       <div className="flex items-center justify-between">
         <h3 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <FileSignature className="h-4 w-4 text-primary-700" /> {t('title')}
         </h3>
         {tpl && (
-          <span data-testid="waiver-template-version"
-            className={cn('rounded-full px-2.5 py-1 text-xs font-medium', tpl.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-            {t('versionBadge', { v: tpl.version })}{tpl.isActive ? '' : ` · ${t('inactive')}`}
-          </span>
+          /* §2.3: the one status pill — active=success / inactive=neutral via the
+             member vocabulary; the historical "v N · inactive" text rides `label`. */
+          <StatusChip domain="member" status={tpl.isActive ? 'active' : 'inactive'}
+            data-testid="waiver-template-version"
+            label={`${t('versionBadge', { v: tpl.version })}${tpl.isActive ? '' : ` · ${t('inactive')}`}`} />
         )}
       </div>
 

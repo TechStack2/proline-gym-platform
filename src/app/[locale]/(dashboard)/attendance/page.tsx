@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar, Users, TrendingUp, AlertTriangle } from 'lucide-react'
 import { AttendanceDashboardClient } from './attendance-dashboard-client'
-import { cn } from '@/lib/utils'
+import { fmtDate } from '@/lib/fmt'
 import { PageHeader } from '@/components/ui/page-header';
 
 interface AttendancePageProps {
@@ -268,10 +268,9 @@ export default async function AttendancePage({ params: { locale }, searchParams 
                 <ul data-testid="starting-soon" className="mt-3 space-y-1 border-t pt-2 text-xs text-blue-700">
                   {classSchedule.starting_soon.map((s: any) => (
                     <li key={s.id} data-testid="starts-soon-row">
+                      {/* DA-34: via fmt — the raw 'ar' locale leaked Arabic-Indic digits. */}
                       {s.name} · {isRTL ? 'يبدأ' : locale === 'fr' ? 'Débute' : 'Starts'}{' '}
-                      {new Date(String(s.startDate).slice(0, 10) + 'T00:00:00Z').toLocaleDateString(
-                        locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en',
-                        { month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                      {fmtDate(String(s.startDate).slice(0, 10), locale, 'dayMonth')}
                     </li>
                   ))}
                 </ul>

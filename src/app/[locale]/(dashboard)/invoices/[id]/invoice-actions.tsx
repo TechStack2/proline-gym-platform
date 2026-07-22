@@ -42,7 +42,7 @@ export function InvoiceActions({ invoiceId, status, locale }: { invoiceId: strin
     <div className="flex items-center gap-3 border-t pt-4">
       {hasPayments ? (
         <Button data-testid="refund-btn" variant="outline" disabled={pending} onClick={() => setOpen(true)}
-          className="text-blue-700 hover:bg-blue-50">
+          className="text-info-700 hover:bg-info-500/10">
           {t('Refund', 'استرجاع', 'Remboursement')}
         </Button>
       ) : (

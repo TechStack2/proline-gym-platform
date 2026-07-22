@@ -13,6 +13,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { fmtDate, fmtTime } from '@/lib/fmt'
+import { StatusChip } from '@/components/ui/status-chip'
 import { beltRankLabel } from '@/lib/belts/label'
 import { getOfflineDB } from '@/lib/db/schema'
 import type { PendingPaymentIntent, PendingLeadIntent } from '@/lib/db/schema'
@@ -25,7 +27,6 @@ import { listPendingLeads, resubmitLead, discardLead, type CreateLead } from '@/
 import { saveAttendance } from '@/app/[locale]/coach/attendance/actions'
 import { recordPayment, getInvoiceState, discardOfflinePayment } from '../invoices/actions'
 import { addLead, discardOfflineLead } from '../leads/actions'
-import { dateLocale } from '@/lib/utils/locale-format'
 // OFF-5: reuse the read-time status + reconcile libs against the MIRRORED rows, and
 // the MJ-2 canonical phone normalizer — so offline lookups match the online surfaces.
 import { membershipState, type MembershipState } from '@/lib/lifecycle/status'
@@ -77,15 +78,8 @@ const phoneMatches = (stored: string | null | undefined, query: string): boolean
 }
 
 
-// OFF-5: membership-state badge colours (matches the lifecycle.state labels).
-const STATUS_BADGE_CLS: Record<MembershipState, string> = {
-  active: 'bg-green-100 text-green-800',
-  expiring: 'bg-amber-100 text-amber-800',
-  overdue: 'bg-red-100 text-red-700',
-  lapsed: 'bg-red-100 text-red-700',
-  frozen: 'bg-blue-100 text-blue-700',
-  none: 'bg-gray-100 text-gray-600',
-}
+// OFF-5: membership-state badge colours — W3b (DA-25/32): colour comes from the
+// status vocabulary via StatusChip; the local light-pinned map is dead.
 
 // OFF-2/OFF-4: the mirror prime (CORE_TABLES + primeDeskMirror) now lives in the
 // shared @/lib/offline/prime module so the FrontDeskOfflineLayer (login-level,
@@ -332,13 +326,13 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
   }, [data, selectedClass, memberName])
 
   const cachedLabel = data?.cachedAt
-    ? t('cachedAt', { time: new Date(data.cachedAt).toLocaleString(dateLocale(locale)) })
+    ? t('cachedAt', { time: `${fmtDate(data.cachedAt, locale)} ${fmtTime(data.cachedAt, locale)}` })
     : t('noCache')
 
   const card = 'rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'
 
   return (
-    <div className={cn('space-y-4', isRTL && 'text-right')} data-testid="offline-desk" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-4" data-testid="offline-desk" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <PageHeader segment="desk" />
@@ -371,10 +365,10 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
           <section className={card}>
             <h2 className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-gray-800"><Search className="h-4 w-4" /> {t('findMember')}</h2>
             <div className="relative">
-              <Search className={cn('absolute top-2.5 h-4 w-4 text-gray-400', isRTL ? 'right-3' : 'left-3')} />
+              <Search className="absolute start-3 top-2.5 h-4 w-4 text-gray-400" />
               <input data-testid="desk-search" value={q} onChange={(e) => { setQ(e.target.value); setSelectedStudent(null) }}
                 placeholder={t('searchPlaceholder')} dir={isRTL ? 'rtl' : 'ltr'}
-                className={cn('w-full rounded-lg border border-gray-200 py-2 text-sm focus:border-primary-700 focus:outline-none focus:ring-1 focus:ring-primary-700', isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3')} />
+                className="w-full rounded-lg border border-gray-200 ps-9 pe-3 py-2 text-sm focus:border-primary-700 focus:outline-none focus:ring-1 focus:ring-primary-700" />
             </div>
 
             {q.trim() && !selectedStudent && (
@@ -401,10 +395,8 @@ export function OfflineDesk({ locale, showMembership = true }: { locale: string;
                     {/* OFF-5: honest read-time membership STATE (active/expiring/overdue/
                         lapsed/frozen). NO-MEMBERSHIP-GAPS: a classes+PT gym has none to badge. */}
                     {showMembership && (
-                    <span data-testid="desk-basic-membership" data-status={basics.status}
-                      className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLS[basics.status])}>
-                      {tState(basics.status)}
-                    </span>
+                    <StatusChip domain="member" status={basics.status} label={tState(basics.status)}
+                      data-testid="desk-basic-membership" className="gap-1" />
                     )}
                     <span data-testid="desk-basic-pt" className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
                       <Dumbbell className="h-3 w-3" /> {t('ptRemaining', { n: basics.ptRemaining })}

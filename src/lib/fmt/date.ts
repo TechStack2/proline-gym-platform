@@ -25,7 +25,7 @@ import { ltrIsolate } from './bidi';
 /** The gym's timezone. Matches `timeZone` in src/i18n/request.ts. */
 export const GYM_TIME_ZONE = 'Asia/Beirut';
 
-export type DateStyle = 'short' | 'medium' | 'dayMonth' | 'monthYear' | 'weekday';
+export type DateStyle = 'short' | 'medium' | 'dayMonth' | 'monthYear' | 'weekday' | 'full';
 
 const DATE_OPTS: Record<DateStyle, Intl.DateTimeFormatOptions> = {
   // `short` is the numeric form the app already renders everywhere
@@ -38,6 +38,8 @@ const DATE_OPTS: Record<DateStyle, Intl.DateTimeFormatOptions> = {
   dayMonth: { month: 'short', day: 'numeric' },
   monthYear: { month: 'short', year: '2-digit' },
   weekday: { weekday: 'short', month: 'short', day: 'numeric' },
+  // W3b extension: the spelled-out single-day headline ("Tuesday, July 22").
+  full: { weekday: 'long', day: 'numeric', month: 'long' },
 };
 
 export type DateInput = Date | string | number | null | undefined;

@@ -202,7 +202,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
       content: (
         <div className="space-y-3">
           {error && (
-            <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            <div data-testid="coach-form-error" className="tint-danger rounded-lg px-3 py-2 text-sm">{error}</div>
           )}
           <div className="flex items-center gap-3">
             {initialData ? (
@@ -269,7 +269,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
           content: (
             <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-700" data-testid="coach-review">
               {error && (
-                <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+                <div data-testid="coach-form-error" className="tint-danger rounded-lg px-3 py-2 text-sm">{error}</div>
               )}
               <p className="font-semibold text-gray-900">{firstEn} {lastEn}</p>
               {phone && <p dir="ltr">{phone}</p>}
@@ -287,7 +287,7 @@ export function CoachForm({ disciplines, locale, initialData }: CoachFormProps) 
           content: (
             <div className="space-y-3">
               {error && (
-                <div data-testid="coach-form-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+                <div data-testid="coach-form-error" className="tint-danger rounded-lg px-3 py-2 text-sm">{error}</div>
               )}
               <div className="rounded-xl border border-gray-200 p-3">
                 <p className={cn('text-sm font-medium text-gray-900', isRTL && 'font-arabic')}>

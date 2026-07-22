@@ -1,4 +1,4 @@
-import { BELT_SORT_ORDER } from '@/lib/validators/belts.schema'
+import { BELT_SORT_ORDER } from '@/lib/belts/ranks'
 
 /**
  * DA-9 — a next-intl translator bound to the `beltRanks` namespace (works for both

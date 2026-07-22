@@ -11,6 +11,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { fmtDate } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
 import { Clock, Loader2, Rocket, Pencil, Eye, EyeOff, ArrowRight, ImageIcon } from 'lucide-react'
 import { Avatar } from '@/components/shared/avatar'
 import { publishCoachProfile, setCoachLanding, saveCoachDraftStaff } from './actions'
@@ -76,7 +78,9 @@ export function CoachPublishPanel({
         <h3 className={cn('text-base font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
         <span data-testid="coach360-landing-status" data-visible={landingVisible} data-status={landingStatus}
           className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
-            landingVisible ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600')}>
+            /* W3b DA-25: role tints, not light-pinned -100 fills. e2e asserts the
+               data-visible/data-status attrs, so the span (not StatusChip) stays. */
+            landingVisible ? 'tint-success' : 'tint-neutral')}>
           {landingVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
           {landingVisible ? t(landingStatus === 'coming_soon' ? 'liveComingSoon' : 'liveActive') : t('notVisible')}
         </span>
@@ -84,7 +88,7 @@ export function CoachPublishPanel({
 
       {/* Pending draft → diff vs live */}
       {hasPending ? (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4" data-testid="coach360-pending-diff">
+        <div className="tint-warning mt-4 rounded-xl border border-warning-500/30 p-4" data-testid="coach360-pending-diff">
           <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-800">
             <Clock className="h-3.5 w-3.5" /> {t('pendingTitle')}
           </p>
@@ -184,7 +188,8 @@ export function CoachPublishPanel({
       </div>
 
       {error && <p data-testid="coach-publish-error" className="mt-3 text-sm text-red-600">{error}</p>}
-      {lastPublishedAt && <p className="mt-3 text-xs text-gray-400">{t('lastPublished')}: {new Date(lastPublishedAt).toLocaleDateString(locale)}</p>}
+      {/* DA-34: via fmt (the raw `locale` arg leaked Arabic-Indic digits on /ar). */}
+      {lastPublishedAt && <p className="mt-3 text-xs text-gray-400">{t('lastPublished')}: <Ltr>{fmtDate(lastPublishedAt, locale)}</Ltr></p>}
     </section>
   )
 }

@@ -20,6 +20,7 @@
  * route through composeInvoiceWa, so the rendered href and the logged body match.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { fmtLbpCompact } from '@/lib/fmt'
 import { getTranslations } from 'next-intl/server'
 import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
 import { gymDisplayName, type MessagingGym } from '@/lib/whatsapp/identity'
@@ -45,7 +46,7 @@ function firstName(p: ProfileRow | null, l: Loc): string {
 export function invoiceDueParts(balanceUsdVal: number, exchangeRate: number | null | undefined) {
   const usd = balanceUsdVal.toFixed(2)
   const rate = exchangeRate != null ? Number(exchangeRate) : 0
-  const lbp = rate > 0 ? ` / ${Math.round(balanceUsdVal * rate).toLocaleString('en-US')} LBP` : ''
+  const lbp = rate > 0 ? ` / ${fmtLbpCompact(balanceUsdVal * rate)}` : ''
   return { usd, lbp }
 }
 

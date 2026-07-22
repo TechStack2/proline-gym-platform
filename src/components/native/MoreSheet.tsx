@@ -112,7 +112,8 @@ export function MoreSheet({ isOpen, onClose, locale, items, onSignOut }: Props) 
           }}
           className={cn(
             'flex w-full items-center gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition-colors',
-            confirmingSignOut ? 'bg-red-50 text-red-700' : 'text-red-600 hover:bg-red-50',
+            // W3b (DA-25): role tint, not a light-pinned red-50 — legible both themes.
+            confirmingSignOut ? 'tint-danger' : 'text-danger-600 hover:bg-danger-500/10',
           )}
         >
           <LogOut className="h-5 w-5 flex-shrink-0" aria-hidden />

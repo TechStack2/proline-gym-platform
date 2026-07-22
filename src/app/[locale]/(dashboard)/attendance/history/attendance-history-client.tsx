@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Filter, CalendarDays } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { StatusChip } from '@/components/ui/status-chip'
 
 interface ClassOpt {
   id: string
@@ -47,13 +47,6 @@ interface Props {
   locale: string
 }
 
-const STATUS_STYLE: Record<string, string> = {
-  present: 'bg-green-100 text-green-700',
-  absent: 'bg-red-100 text-red-700',
-  late: 'bg-yellow-100 text-yellow-700',
-  excused: 'bg-blue-100 text-blue-700',
-}
-
 export function AttendanceHistoryClient({
   classes,
   disciplines,
@@ -68,7 +61,6 @@ export function AttendanceHistoryClient({
   const t = useTranslations('attendanceHistory')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const isRTL = locale === 'ar'
 
   const updateFilter = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -164,11 +156,12 @@ export function AttendanceHistoryClient({
               {daySummary.map((d) => (
                 <div key={d.date} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3" data-testid="history-day-row" data-date={d.date}>
                   <span className="font-medium">{d.date}</span>
+                  {/* W3b DA-25: the attendance role TINTS (dark-correct), not -100 pins. */}
                   <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-700">{t('present')}: {d.present}</span>
-                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">{t('absent')}: {d.absent}</span>
-                    <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-700">{t('late')}: {d.late}</span>
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700">{t('excused')}: {d.excused}</span>
+                    <span className="tint-success rounded-full px-2 py-0.5">{t('present')}: {d.present}</span>
+                    <span className="tint-danger rounded-full px-2 py-0.5">{t('absent')}: {d.absent}</span>
+                    <span className="tint-warning rounded-full px-2 py-0.5">{t('late')}: {d.late}</span>
+                    <span className="tint-info rounded-full px-2 py-0.5">{t('excused')}: {d.excused}</span>
                   </div>
                 </div>
               ))}
@@ -189,11 +182,12 @@ export function AttendanceHistoryClient({
           <div className="overflow-x-auto">
             <table className="w-full text-sm" data-testid="history-table">
               <thead>
+                {/* DA-61: logical text-start — dir owns the side. */}
                 <tr className="border-b">
-                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('date')}</th>
-                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('student')}</th>
-                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('class')}</th>
-                  <th className={cn('py-3 px-4 font-medium', isRTL ? 'text-right' : 'text-left')}>{t('status')}</th>
+                  <th className="py-3 px-4 font-medium text-start">{t('date')}</th>
+                  <th className="py-3 px-4 font-medium text-start">{t('student')}</th>
+                  <th className="py-3 px-4 font-medium text-start">{t('class')}</th>
+                  <th className="py-3 px-4 font-medium text-start">{t('status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,9 +197,8 @@ export function AttendanceHistoryClient({
                     <td className="py-3 px-4">{r.studentName}</td>
                     <td className="py-3 px-4">{r.className}</td>
                     <td className="py-3 px-4">
-                      <span className={cn('inline-block rounded-full px-2 py-0.5 text-xs font-medium', STATUS_STYLE[r.status] || 'bg-gray-100 text-gray-600')}>
-                        {t(r.status as any)}
-                      </span>
+                      {/* W3b §2.3: ONE status chip — hue from the attendance vocabulary. */}
+                      <StatusChip domain="attendance" status={r.status} label={t(r.status as any)} />
                     </td>
                   </tr>
                 ))}

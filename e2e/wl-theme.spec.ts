@@ -38,15 +38,6 @@ async function teardown(gymId: string) {
   await fetch(`${URL}/rest/v1/gyms?id=eq.${gymId}`, { method: 'DELETE', headers: H }).catch(() => {})
 }
 
-// WL-THEME-R2: the base seed gives its class an explicit per-class colour (#E53E3E), which
-// the class-row left-edge bar preserves (categorical, not brand). To exercise the R2 fix —
-// an UNCOLOURED class's bar follows the gym BRAND — null the colour so the bar hits the
-// `data-chipbg="brand"` → `rgb(var(--c-brand-700))` fallback.
-async function nullClassColor(gymId: string) {
-  await fetch(`${URL}/rest/v1/classes?gym_id=eq.${gymId}`, {
-    method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ color: null }),
-  }).catch(() => {})
-}
 
 let blueGymId = ''
 let redGymId = ''
@@ -55,8 +46,6 @@ test.beforeAll(async () => {
   if (!URL || !KEY) throw new Error('WL-THEME needs SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL')
   blueGymId = await seed(SLUG_BLUE, '#1d4ed8')
   redGymId = await seed(SLUG_RED, null)
-  await nullClassColor(blueGymId)
-  await nullClassColor(redGymId)
 })
 test.afterAll(async () => { await teardown(blueGymId); await teardown(redGymId) })
 
@@ -77,10 +66,10 @@ const rootBrand = (page: import('@playwright/test').Page) =>
   page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--c-brand-700').trim())
 const activeTabColor = (page: import('@playwright/test').Page) =>
   page.locator('[data-testid="horizon-today"]').first().evaluate((el) => getComputedStyle(el).color)
-// R2: the /today class-row left-edge bar for an uncoloured class (data-chipbg="brand").
-const classBarColor = (page: import('@playwright/test').Page) =>
-  page.locator('[data-testid="today-class-row"] span[data-chipbg="brand"]').first()
-    .evaluate((el) => getComputedStyle(el).backgroundColor)
+// W3b R4 (premise update): the class-row left-edge bar now wears the class's
+// DISC-COLOR category hue (data-cat) — the per-class `classes.color` read and its
+// brand fallback are retired, so the old data-chipbg="brand" selector matches
+// nothing. The stripe's contract is now "carries a category slot attr".
 // WL-CHROME: the light <meta name="theme-color"> content (the PWA/status-bar colour).
 // W2c §5/DA-62: ONE meta now (app-state-driven; no media attribute) — with no
 // stored theme the app boots light, so the content IS the light identity colour.
@@ -100,8 +89,10 @@ test('WL-THEME · a branded gym paints the app product with its colour', async (
     expect(await rootBrand(page), '--c-brand-700 is the gym blue (29 78 216)').toBe('29 78 216')
     // A real primary-* utility resolves to it: the active horizon tab is text-primary-700.
     expect(await activeTabColor(page), 'a primary-* accent computes to the gym blue').toBe('rgb(29, 78, 216)')
-    // R2: an uncoloured class's left-edge bar follows the gym brand (not a hardcoded crimson).
-    expect(await classBarColor(page), 'the class-row indicator fallback computes to the gym blue').toBe('rgb(29, 78, 216)')
+    // W3b R4: the class-row indicator is a DISC-COLOR category stripe (data-cat),
+    // never the dead per-class colour column (and never a raw hex).
+    await expect(page.locator('[data-testid="today-class-row"] span[data-cat]').first(),
+      'the class-row indicator carries a category slot').toBeVisible()
     // WL-CHROME: the staff PWA / status-bar theme-color is the gym brand.
     expect(await lightThemeColor(page), 'the light theme-color meta is the gym brand').toBe('#1d4ed8')
   } finally {
@@ -116,8 +107,9 @@ test('WL-THEME · an unset brand_color renders the Proline red EXACTLY (byte-ide
     await expect(page.locator('[data-testid="brand-theme"]'), 'no override emitted when brand_color is null').toHaveCount(0)
     expect(await rootBrand(page), '--c-brand-700 is the default crimson (205 20 25)').toBe('205 20 25')
     expect(await activeTabColor(page), 'a primary-* accent computes to the default crimson').toBe('rgb(205, 20, 25)')
-    // R2: the class-row indicator fallback is byte-identical to the old hardcoded #cd1419.
-    expect(await classBarColor(page), 'the class-row indicator fallback is the default crimson').toBe('rgb(205, 20, 25)')
+    // W3b R4: the indicator is a DISC-COLOR category stripe now (see the branded
+    // test above) — brand-independence of the stripe is the premise, so nothing
+    // brand-coloured is asserted here anymore.
     // WL-CHROME: the theme-color meta is the exact former static #cd1419 (byte-identical).
     expect(await lightThemeColor(page), 'the light theme-color meta is the default crimson').toBe('#cd1419')
   } finally {

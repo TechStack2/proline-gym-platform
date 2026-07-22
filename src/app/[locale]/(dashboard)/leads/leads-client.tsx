@@ -1,6 +1,5 @@
 'use client';
 
-import { dateLocale } from '@/lib/utils/locale-format'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ModalPortal } from '@/components/shared/modal-portal';
 import { useRouter } from 'next/navigation';
@@ -8,7 +7,8 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
+import { fmtDate } from '@/lib/fmt';
 import { WhatsAppShare } from '@/components/shared/whatsapp-share';
 import {
   Phone, Mail, Calendar, CalendarClock, Search, Plus, KeyRound, CheckCircle2, XCircle, X, UserCheck,
@@ -248,14 +248,14 @@ export function LeadsClient({
           <Search
             className={cn(
               'absolute top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400',
-              isRTL ? 'right-3' : 'left-3',
+              'start-3',
             )}
           />
           <input
             type="text"
             className={cn(
               'w-full py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary-500',
-              isRTL ? 'pr-9 pl-4 text-right' : 'pl-9 pr-4',
+              'ps-9 pe-4',
             )}
             placeholder={t('search_placeholder')}
             value={search}
@@ -376,10 +376,10 @@ export function LeadsClient({
                       data-testid="lead-next-action"
                       data-overdue={overdue}
                       className={cn('flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium',
-                        overdue ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-500')}
+                        overdue ? 'tint-danger' : 'bg-gray-50 text-gray-500')}
                     >
                       <CalendarClock className="h-3.5 w-3.5" />
-                      {na.label} · {na.due.toLocaleDateString(dateLocale(locale))}
+                      {na.label} · {fmtDate(na.due, locale)}
                       {overdue && <span className="font-bold uppercase">· {t('nextAction.overdue')}</span>}
                     </p>
                   );
@@ -442,7 +442,7 @@ export function LeadsClient({
                 {lead.status === 'converted' && (invite || result) && (
                   <div
                     data-testid="invite-badge"
-                    className="text-xs flex items-center gap-1.5 bg-green-50 text-green-700 p-2 rounded"
+                    className="tint-success text-xs flex items-center gap-1.5 p-2 rounded"
                   >
                     <KeyRound className="h-3.5 w-3.5" />
                     {t('invite_simulated')}
@@ -467,7 +467,7 @@ export function LeadsClient({
                     <button
                       data-testid="convert-open"
                       onClick={() => setConvertLeadId(lead.id)}
-                      className="flex-1 h-8 text-xs bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 font-medium"
+                      className="tint-success flex-1 h-8 text-xs border border-success-500/30 rounded-lg hover:bg-success-500/20 font-medium"
                     >
                       {t('convert')}
                     </button>
@@ -570,7 +570,7 @@ function TrialPanel({
 
   const coachName = (c: GymCoach) => (isRTL ? c.first_name_ar : c.first_name_en);
   const dateLbl = (iso: string) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString(dateLocale(locale), { weekday: 'short', month: 'short', day: 'numeric' });
+    fmtDate(iso, locale, 'weekday');
   const selectedOcc = occIdx !== '' ? occurrences[Number(occIdx)] : undefined;
 
   const loadSlots = useCallback(async (coachId: string) => {
@@ -642,7 +642,7 @@ function TrialPanel({
               data-testid="trial-noshow"
               disabled={busy}
               onClick={() => handleOutcome('no_show', false)}
-              className="flex-1 py-1.5 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50"
+              className="tint-danger flex-1 py-1.5 text-xs border border-danger-500/30 rounded-lg hover:bg-danger-500/20 disabled:opacity-50"
             >
               <XCircle className="inline h-3.5 w-3.5 me-1" />
               {t('mark_no_show')}
@@ -756,8 +756,7 @@ function AddLeadModal({
 
   // UX-2: the prototype modal became the FormWizard (contact → interest+source
   // chips → review with the DERIVED next action — 23R write path unchanged).
-  const firstContactDue = new Date(Date.now() + 2 * 864e5)
-    .toLocaleDateString(dateLocale(locale));
+  const firstContactDue = fmtDate(new Date(Date.now() + 2 * 864e5), locale);
 
   const steps = [
     {
@@ -984,7 +983,7 @@ function ConvertModal({
         </div>
 
         {dupWarning && (
-          <div data-testid="dup-phone-warning" className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg p-2">
+          <div data-testid="dup-phone-warning" className="tint-warning text-xs border border-warning-500/30 rounded-lg p-2">
             ⚠️ {t('dup_phone_warning')}
           </div>
         )}

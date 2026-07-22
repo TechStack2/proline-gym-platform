@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { cn } from '@/lib/utils'
+import { segmentedItemCls, segmentedTrayCls } from '@/components/ui/segmented'
 
 /**
  * The Members-workspace tab strip (Active | Prospects | Guardians). Extracted so
@@ -18,13 +18,12 @@ export async function MembersTabs({
   const t = await getTranslations('students')
   const item = (href: string, testid: string, label: string, on: boolean) => (
     <Link href={href} data-testid={testid}
-      className={cn('rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
-        on ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+      className={segmentedItemCls(on)}>
       {label}
     </Link>
   )
   return (
-    <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="members-tabs">
+    <div className={segmentedTrayCls} data-testid="members-tabs">
       {item(`/${locale}/students`, 'tab-active', t('tabs_active'), active === 'active')}
       {item(`/${locale}/students?tab=prospects`, 'tab-prospects', t('tabs_prospects'), active === 'prospects')}
       {item(`/${locale}/students/guardians`, 'tab-guardians', t('tabs_guardians'), active === 'guardians')}

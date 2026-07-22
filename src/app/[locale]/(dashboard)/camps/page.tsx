@@ -44,7 +44,7 @@ export default async function CampsPage({ params: { locale } }: Props) {
   }
 
   return (
-    <div className={cn('space-y-6', isRTL && 'text-right')}>
+    <div className="space-y-6">
       <div>
         <PageHeader segment="camps" />
         <p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>

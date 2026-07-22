@@ -9,11 +9,11 @@
  * G1 docks a wa.me share action into the row-action slot later.
  */
 import { useState } from 'react'
+import { fmtDate } from '@/lib/fmt'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-import { dateLocale } from '@/lib/utils/locale-format'
 import { Phone, RotateCcw, PhoneOff, MessageSquarePlus, Check, UserX } from 'lucide-react'
 import { logWinbackFollowup } from './winback-actions'
 import type { WinbackRow } from '@/lib/finances/winback'
@@ -25,7 +25,7 @@ type Outcome = typeof OUTCOMES[number]
 export function WinbackView({ rows, locale, gymName }: { rows: WinbackRow[]; locale: string; gymName: string }) {
   const t = useTranslations('winback')
   const isRTL = locale === 'ar'
-  const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
+  const fmt = (d: string | null) => fmtDate(d, locale)
 
   if (rows.length === 0) {
     return (
@@ -83,11 +83,11 @@ function WinbackCard({
           <div className="flex items-center gap-2">
             <p className="truncate text-sm font-semibold text-gray-900">{row.name || t('unnamed')}</p>
             {row.reactivated ? (
-              <span data-testid="winback-reactivated" className="rounded-full bg-green-50 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-green-700">
+              <span data-testid="winback-reactivated" className="tint-success rounded-full px-2 py-0.5 text-2xs font-bold uppercase tracking-wider">
                 {t('reactivated')}
               </span>
             ) : (
-              <span data-testid="winback-churn" data-kind={row.churnKind} className="rounded-full bg-red-50 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-red-700">
+              <span data-testid="winback-churn" data-kind={row.churnKind} className="tint-danger rounded-full px-2 py-0.5 text-2xs font-bold uppercase tracking-wider">
                 {t(`kind.${row.churnKind}` as Parameters<typeof t>[0])}
               </span>
             )}
@@ -138,7 +138,7 @@ function WinbackCard({
             ))}
           </div>
           <input data-testid="winback-note" value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder={t('notePlaceholder')} className={cn('h-9 w-full rounded-lg border px-3 text-sm', isRTL && 'text-right')} />
+            placeholder={t('notePlaceholder')} className="h-9 w-full rounded-lg border px-3 text-sm" />
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">{t('nextActionDate')}</label>
             <input type="date" data-testid="winback-next-date" value={nextDate} onChange={(e) => setNextDate(e.target.value)}
