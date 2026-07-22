@@ -274,16 +274,17 @@ async function bulkPartials(ids: string[], perInvoice: number): Promise<void> {
 test('4 · MONEY-OUTSTANDING — outstanding stays EXACT past both truncation caps', async ({ browser }) => {
   test.setTimeout(180_000)
   await setPref('USD')
-  const ids = await bulkOpenInvoices(520)
-  await bulkPartials(ids, 2)
-
-  const exp = await expectedOutstanding()
-  // This test is only meaningful if the data actually exceeds the old caps.
-  expect(exp.invoiceCount, 'seeded past the invoices limit(500)').toBeGreaterThan(500)
-  expect(exp.paymentCount, 'seeded past the payments max_rows(1000)').toBeGreaterThan(1000)
-
+  let ids: string[] = []
   const { ctx, page } = await ownerLogin(browser, 'en')
   try {
+    ids = await bulkOpenInvoices(520)
+    await bulkPartials(ids, 2)
+
+    const exp = await expectedOutstanding()
+    // This test is only meaningful if the data actually exceeds the old caps.
+    expect(exp.invoiceCount, 'seeded past the invoices limit(500)').toBeGreaterThan(500)
+    expect(exp.paymentCount, 'seeded past the payments max_rows(1000)').toBeGreaterThan(1000)
+
     await page.goto('/en/money', { waitUntil: 'domcontentloaded' })
     const outstanding = page.getByTestId('money-outstanding')
     await expect(outstanding, 'the outstanding read failed loud instead of rendering a number').toBeVisible({ timeout: 15_000 })
@@ -292,6 +293,17 @@ test('4 · MONEY-OUTSTANDING — outstanding stays EXACT past both truncation ca
     // The error state must NOT be showing — a green number here is the real assertion.
     await expect(page.getByTestId('money-outstanding-error')).toHaveCount(0)
   } finally {
+    // Undo the heavy seed so it never pollutes the sibling tests (which share this gym)
+    // — the tally + collections-by-method reads would otherwise see 1040 extra
+    // payments. Runs even on failure; delete payments before their invoices (FK).
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100).join(',')
+      await svc(`payments?invoice_id=in.(${chunk})`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
+    }
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100).join(',')
+      await svc(`invoices?id=in.(${chunk})`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
+    }
     await ctx.close()
   }
 })
