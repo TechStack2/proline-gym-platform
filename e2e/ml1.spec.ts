@@ -253,9 +253,12 @@ test('ML-1 · lapse → chase + check-in warning + reinstate; suspended seat fre
     await expect(frozenCard.getByTestId('membership-period'), 'end date extended by the frozen days')
       .not.toContainText(endBefore);
 
-    // Frozen members are excluded: a tick now issues nothing anywhere.
+    // Frozen members are excluded: a tick now issues nothing anywhere — which
+    // reads as either "0 issued" in the summary or the all-caught-up copy when
+    // nothing at all was due (LIFECYCLE-CRON R3).
     const after = await runTick(owner.page);
-    expect(after, 'tick is silent with the membership frozen').toMatch(/0 issued/);
+    expect(after, 'tick is silent with the membership frozen')
+      .toMatch(/0 issued|caught up|nothing was due/i);
 
     // Early unfreeze (same day) → the unused days come back off the end date.
     await openFile(owner.page, 'Karim');
