@@ -23,7 +23,8 @@ const WEEK = [
   { dow: 0, key: 'sun' },
 ] as const;
 
-type Cell = { name: string; color: string | null };
+// CLASSES-COLOR-DROP: per-class colours are gone; cells use the gym brand (var(--brand)).
+type Cell = { name: string };
 type Row = { start: string; end: string; cells: Record<number, Cell[]> };
 
 function hhmm(t: string | null): string {
@@ -60,7 +61,7 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
         row = { start: s.start_time, end: s.end_time, cells: {} };
         slotMap.set(key, row);
       }
-      (row.cells[s.day_of_week] ??= []).push({ name: localizedName(s, locale), color: s.color ?? null });
+      (row.cells[s.day_of_week] ??= []).push({ name: localizedName(s, locale) });
     }
     rows.push(...[...slotMap.values()].sort((a, b) => a.start.localeCompare(b.start)));
   }
@@ -123,7 +124,7 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
                                   key={i}
                                   className="rounded-lg px-3 py-2.5 text-sm font-medium text-white ring-1 ring-white/10"
                                   style={{
-                                    backgroundColor: cell.color || 'var(--brand)',
+                                    backgroundColor: 'var(--brand)',
                                   }}
                                 >
                                   {cell.name}

@@ -973,6 +973,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // OUTSTANDING-AGING: completeness regression for get_gym_outstanding_aging
+      // (000110) — its OWN hermetic gym seeded PAST the invoices limit(2000), isolated
+      // from the other money specs. Needs SUPABASE_SERVICE_ROLE_KEY.
+      name: 'outstanding-aging',
+      dependencies: ['setup'],
+      testMatch: /outstanding-aging\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ON-1 portal invites: adopts login-less profiles into auth users.
       name: 'on1',
       dependencies: ['setup'],

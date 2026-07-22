@@ -14,7 +14,8 @@ import { InvoiceRowWa } from './invoice-row-wa'
 
 type Props = { locale: string; searchParams: { search?: string; status?: string; aging?: string } }
 
-// FIN-1: days-past-due → aging bucket (matches getOutstandingAging).
+// FIN-1: days-past-due → aging bucket (matches get_gym_outstanding_aging, 000110:
+// due≥today→current, else ≤30 / ≤60 / 60+, same boundaries).
 function agingBucket(dueDate: string | null, today: string): string {
   if (!dueDate) return 'current'
   if (dueDate >= today) return 'current'

@@ -811,11 +811,14 @@ export type Database = {
           },
         ]
       }
+      // CLASSES-COLOR-DROP (000111): `color` was HAND-REMOVED here (Row/Insert/Update +
+      // the get_landing_schedule Returns) to match the dropped column — a generated type
+      // that still claims a dropped column is worse than a hand-edit. Regenerate to
+      // reconcile fully; see the TYPES-REGEN slice (regen database.ts without Docker).
       classes: {
         Row: {
           belt_requirement: Database["public"]["Enums"]["belt_rank_enum"] | null
           coach_id: string
-          color: string | null
           created_at: string
           deleted_at: string | null
           description_ar: string | null
@@ -843,7 +846,6 @@ export type Database = {
             | Database["public"]["Enums"]["belt_rank_enum"]
             | null
           coach_id: string
-          color?: string | null
           created_at?: string
           deleted_at?: string | null
           description_ar?: string | null
@@ -871,7 +873,6 @@ export type Database = {
             | Database["public"]["Enums"]["belt_rank_enum"]
             | null
           coach_id?: string
-          color?: string | null
           created_at?: string
           deleted_at?: string | null
           description_ar?: string | null
@@ -4199,7 +4200,6 @@ export type Database = {
         Args: { p_gym_id: string }
         Returns: {
           class_id: string
-          color: string
           day_of_week: number
           end_time: string
           name_ar: string
