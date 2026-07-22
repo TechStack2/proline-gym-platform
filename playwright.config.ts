@@ -964,6 +964,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MONEY-OUTSTANDING: completeness regression for get_gym_outstanding (000109) —
+      // its OWN hermetic gym seeded PAST the invoices limit(500), so the heavy seed
+      // never perturbs money-lbp. Needs SUPABASE_SERVICE_ROLE_KEY.
+      name: 'money-outstanding',
+      dependencies: ['setup'],
+      testMatch: /money-outstanding\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ON-1 portal invites: adopts login-less profiles into auth users.
       name: 'on1',
       dependencies: ['setup'],
