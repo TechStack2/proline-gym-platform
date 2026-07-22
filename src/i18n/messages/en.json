@@ -2330,6 +2330,8 @@
       "aging": "Outstanding / aging",
       "noneAging": "nothing outstanding",
       "agingTotal": "Total outstanding",
+      "agingUnavailable": "The aging breakdown couldn't be loaded — don't rely on the buckets shown.",
+      "agingRetry": "Retry",
       "agingBucket": {
         "current": "Current",
         "d1_30": "1–30 days",
@@ -3126,6 +3128,8 @@
     "methodTitle": "Collections this month",
     "noCollections": "No collections this month yet.",
     "agingTitle": "Outstanding aging",
+    "agingUnavailable": "The aging breakdown couldn't be loaded — the buckets below are not reliable.",
+    "agingRetry": "Retry",
     "aging": {
       "current": "Current",
       "d1_30": "1–30 days",

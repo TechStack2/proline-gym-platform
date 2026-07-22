@@ -2330,6 +2330,8 @@
       "aging": "Impayés / ancienneté",
       "noneAging": "aucun impayé",
       "agingTotal": "Total impayé",
+      "agingUnavailable": "La répartition par ancienneté n'a pas pu être chargée — ne vous fiez pas aux tranches affichées.",
+      "agingRetry": "Réessayer",
       "agingBucket": {
         "current": "Courant",
         "d1_30": "1–30 jours",
@@ -3126,6 +3128,8 @@
     "methodTitle": "Encaissements ce mois",
     "noCollections": "Aucun encaissement ce mois.",
     "agingTitle": "Ancienneté des impayés",
+    "agingUnavailable": "La répartition par ancienneté n'a pas pu être chargée — les tranches ci-dessous ne sont pas fiables.",
+    "agingRetry": "Réessayer",
     "aging": {
       "current": "À jour",
       "d1_30": "1–30 jours",

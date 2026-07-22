@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils'
 import { fmtUsdCompact, fmtLbpCompact } from '@/lib/fmt'
 import { METHOD_LABEL } from '@/lib/billing/reconcile'
 import { type CurrencyPref } from '@/lib/billing/currency'
-import { getRevenueByMonth, getCollectionsByMethod, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
+import { getRevenueByMonth, getCollectionsByMethod, PRODUCTS, type Product } from '@/lib/finances/owner'
+import { getGymOutstandingAging } from '@/lib/finances/aging'
+import { TallyError } from '@/components/money/tally-error'
 import { getChurnByMonth } from '@/lib/finances/winback'
 import { getEnabledProducts } from '@/lib/gym/products'
 import { fmtDate, fmtMoney } from '@/lib/fmt'
@@ -22,13 +24,17 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
   const t = await getTranslations('ownerFinances')
   const supabase = await createClient()
 
-  const [revenue, methods, aging, churn, products] = await Promise.all([
+  const [revenue, methods, agingRes, churn, products] = await Promise.all([
     getRevenueByMonth(supabase, gymId, 6),
     getCollectionsByMethod(supabase, gymId),
-    getOutstandingAging(supabase, gymId),
+    getGymOutstandingAging(supabase, { gymId }),
     getChurnByMonth(supabase, gymId, 6),
     getEnabledProducts(supabase, gymId),
   ])
+  // OUTSTANDING-AGING: like the tally + the outstanding total, a failed read is NOT an
+  // empty aging grid. `aging` is null on failure → the section renders the loud error
+  // state below instead of four calm $0 buckets.
+  const aging = agingRes.ok ? agingRes.buckets : null
   // NO-MEMBERSHIP: drop the membership revenue column + the membership-churn
   // (lapsed) column when the gym doesn't sell membership.
   const revProducts = products.membership ? PRODUCTS : PRODUCTS.filter((p) => p !== 'membership')
@@ -118,6 +124,16 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
         {/* ── Outstanding aging (drill-down) ── */}
         <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <h2 className={cn('mb-3 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('agingTitle')}</h2>
+          {/* OUTSTANDING-AGING: a failed roll-up read must never wear the clothes of
+              "nothing is overdue" — same doctrine as the tally + the outstanding total. */}
+          {!aging ? (
+            <TallyError
+              testid="aging-error"
+              message={t('agingUnavailable')}
+              retryLabel={t('agingRetry')}
+              retryHref={`/${locale}/money`}
+            />
+          ) : (
           <div className="grid grid-cols-2 gap-2" data-testid="aging-grid">
             {aging.map((b) => {
               const dm = fmtMoney(b.usd, b.lbp, pref)
@@ -133,6 +149,7 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
               )
             })}
           </div>
+          )}
         </section>
       </div>
 

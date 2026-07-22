@@ -6,7 +6,9 @@ import { fmtDate as fmtDateLoc, fmtUsdCompact, fmtLbpCompact } from '@/lib/fmt'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { DrillDetails } from '@/components/dashboard/drill-details'
 import { horizonEndDate } from '@/lib/finances/horizon'
-import { getRevenueByMonth, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
+import { getRevenueByMonth, PRODUCTS, type Product } from '@/lib/finances/owner'
+import { getGymOutstandingAging } from '@/lib/finances/aging'
+import { TallyError } from '@/components/money/tally-error'
 import { getEnabledProducts } from '@/lib/gym/products'
 import { gymCurrencyPref } from '@/lib/billing/gym-currency'
 import {
@@ -33,13 +35,13 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
   const dayStart = now.toISOString().slice(0, 10)
   const monthEnd = horizonEndDate('month', now) // +30d (forward renewals window)
 
-  const [revenue, revenueRows, movement, funnel, converted, aging, renewals, extras] = await Promise.all([
+  const [revenue, revenueRows, movement, funnel, converted, agingRes, renewals, extras] = await Promise.all([
     getRevenueByMonth(supabase, gymId, 2), // [current, last]
     getRevenueRowsThisMonth(supabase, gymId, locale, now),
     getMemberMovement(supabase, gymId, locale, now),
     getFunnel(supabase, gymId, monthStartISO(now)),
     getConvertedLeadsThisMonth(supabase, gymId, now),
-    getOutstandingAging(supabase, gymId, now),
+    getGymOutstandingAging(supabase, { gymId }), // OUTSTANDING-AGING: complete + gym-scoped
     getRenewalsInWindow(supabase, gymId, locale, dayStart, monthEnd),
     getMonthExtras(supabase, gymId, locale, now),
   ])
@@ -55,8 +57,12 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
   const last = revenue[1] ?? blank
   const revProducts = PRODUCTS.filter((p) => (cur.byProduct[p] ?? 0) > 0 && (products.membership || p !== 'membership'))
   const revDelta = cur.total - last.total
-  const agingTotal = aging.reduce((s, b) => s + b.usd, 0)
-  const agingTotalLbp = aging.reduce((s, b) => s + b.lbp, 0)
+  // OUTSTANDING-AGING: a failed read is NOT an empty aging card. `aging` is null on
+  // failure → the card below renders the loud error state instead of "nothing outstanding".
+  const aging = agingRes.ok ? agingRes.buckets : null
+  const agingList = aging ?? []
+  const agingTotal = agingList.reduce((s, b) => s + b.usd, 0)
+  const agingTotalLbp = agingList.reduce((s, b) => s + b.lbp, 0)
   // MONEY-LBP — a dual headline badge that is BYTE-IDENTICAL for a USD gym (keeps the
   // drill360/ml1 USD reconcile untouched) and appends/leads LBP per preference otherwise.
   const dualBadge = (u: number, l: number, usdExact: string): string => {
@@ -65,7 +71,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
     const lbp = fmtLbpCompact(l)
     return pref === 'LBP' ? `${lbp} · ${usd}` : `${usd} · ${lbp}`
   }
-  const agingOpen = aging.filter((b) => b.count > 0)
+  const agingOpen = agingList.filter((b) => b.count > 0)
   const Trend = movement.net > 0 ? TrendingUp : movement.net < 0 ? TrendingDown : Activity
   const stu = (id: string) => `/${locale}/students/${id}`
   const revByProduct = (p: Product) => revenueRows.filter((r) => r.product === p)
@@ -160,6 +166,14 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
       </ActionCard>
 
       {/* ── Outstanding / aging — each bucket drills to its overdue invoices ── */}
+      {!aging ? (
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm" data-testid="aging-month">
+          <div className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+            <AlertTriangle className="h-4 w-4" /> {t('month.aging')}
+          </div>
+          <TallyError testid="aging-month-error" message={t('month.agingUnavailable')} retryLabel={t('month.agingRetry')} retryHref={`/${locale}/today`} />
+        </div>
+      ) : (
       <ActionCard icon={AlertTriangle} title={t('month.aging')} count={agingOpen.reduce((s, b) => s + b.count, 0)}
         badge={dualBadge(agingTotal, agingTotalLbp, `$${agingTotal.toFixed(0)}`)} emptyText={t('month.noneAging')} testid="aging-month" isRTL={isRTL}
         footer={
@@ -176,6 +190,7 @@ export async function MonthHorizon({ locale, gymId }: { locale: string; gymId: s
           </ActionRow>
         ))}
       </ActionCard>
+      )}
 
       {/* ── Active-member trend — expands to the active members (RECONCILES) ── */}
       <ActionCard icon={Activity} title={t('month.activeTrend')} count={movement.activeNow}
