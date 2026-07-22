@@ -8,7 +8,7 @@ import { StatusChip } from '@/components/ui/status-chip'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { FileText, DollarSign, CheckCircle, Clock, AlertCircle, Printer } from 'lucide-react'
-import { balanceUsd, outstandingUsd, paidByInvoice, INVOICE_TYPE_BADGE, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
+import { balanceUsd, outstandingUsd, paidByInvoice, INVOICE_TYPE_CAT, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 import { DeskGrid } from '@/components/portal/portal-kit'
 
 type Props = { params: { locale: string } }
@@ -144,7 +144,8 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono text-gray-600">{inv.invoice_number}</span>
                             <span data-testid="household-invoice-type" data-type={inv.invoice_type || 'other'}
-                              className={cn('inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
+                              data-cat={INVOICE_TYPE_CAT[inv.invoice_type] || INVOICE_TYPE_CAT.other}
+                              className="cat-tint inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-medium">
                               {invoiceTypeLabel(inv.invoice_type, locale)}
                             </span>
                           </div>
@@ -195,7 +196,8 @@ export default async function PortalBillingPage({ params: { locale } }: Props) {
                       <p className="text-sm font-medium text-gray-700"><Ltr>#{inv.invoice_number?.slice(-8)}</Ltr></p>
                       <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                         <span data-testid="portal-invoice-type" data-type={inv.invoice_type || 'other'}
-                          className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium', INVOICE_TYPE_BADGE[inv.invoice_type] || INVOICE_TYPE_BADGE.other)}>
+                          data-cat={INVOICE_TYPE_CAT[inv.invoice_type] || INVOICE_TYPE_CAT.other}
+                          className="cat-tint inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">
                           {invoiceTypeLabel(inv.invoice_type, locale)}
                         </span>
                         {invoiceNote(inv, locale) && (

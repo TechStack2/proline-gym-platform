@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
+import { fmtUsdCompact, fmtLbpCompact } from '@/lib/fmt'
 import { METHOD_LABEL } from '@/lib/billing/reconcile'
 import { type CurrencyPref } from '@/lib/billing/currency'
 import { getRevenueByMonth, getCollectionsByMethod, getOutstandingAging, PRODUCTS, type Product } from '@/lib/finances/owner'
@@ -39,8 +40,8 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
   // NOTE: MonthHorizon carries a byte-identical copy of this helper. Folding both
   // into a `fmtMoney` compact mode is Wave-3 work — W1 only isolates the renders.
   const compact = (u: number, l: number): { primary: string; secondary: string | null } => {
-    const usdC = `$${Math.round(u).toLocaleString()}`
-    const lbpC = `${Math.round(l).toLocaleString()} LBP`
+    const usdC = fmtUsdCompact(u)
+    const lbpC = fmtLbpCompact(l)
     if (pref === 'LBP') return { primary: lbpC, secondary: usdC }
     if (pref === 'BOTH') return { primary: usdC, secondary: lbpC }
     return { primary: usdC, secondary: l !== 0 ? lbpC : null }
@@ -51,7 +52,7 @@ export async function OwnerFinances({ locale, gymId, pref = 'USD' }: { locale: s
   }
 
   return (
-    <div className={cn('mt-6 space-y-6', isRTL && 'text-right')} data-testid="owner-finances">
+    <div className="mt-6 space-y-6" data-testid="owner-finances">
       {/* ── Revenue by month × product ── */}
       <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
         <h2 className={cn('mb-3 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('revenueTitle')}</h2>

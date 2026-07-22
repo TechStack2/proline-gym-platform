@@ -54,9 +54,11 @@ test('IA-3 · timetable + coach diary show both species; overlap warns but never
     await expect(vis(owner.page, '[data-testid="week-grid"]').first()).toBeVisible({ timeout: 15_000 });
     await expect(chip, 'seeded class renders in the week grid').toBeVisible();
     await expect(vis(owner.page, '[data-testid="week-grid"]').first()).toContainText('18:00');
-    // Discipline filter: Boxing has no classes → the Muay Thai chip disappears.
-    await vis(owner.page, '[data-testid="filter-discipline"]').selectOption({ label: 'Boxing' });
-    await vis(owner.page, 'form button').last().click();
+    // Discipline filter (W3b DA-33: the native select+Apply became apply-on-tap
+    // chip links — container keeps the testid): Boxing has no classes → the Muay
+    // Thai chip disappears.
+    await vis(owner.page, '[data-testid="filter-discipline"] [data-testid="schedule-discipline-chip"]')
+      .filter({ hasText: 'Boxing' }).first().click();
     await expect(vis(owner.page, `[data-testid="week-chip"][data-class-en="${SEEDED_CLASS}"]`)).toHaveCount(0, { timeout: 15_000 });
     await owner.page.goto('/en/schedule');
     await chip.click();

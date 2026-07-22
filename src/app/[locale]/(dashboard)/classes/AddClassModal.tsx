@@ -252,8 +252,8 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
             {coaches.length === 0 ? (
               // J4 CLASS-SURFACE: a class REQUIRES a coach — a fresh gym has none, so guide
               // the owner to add one first instead of a blank required field.
-              <div data-testid="wizard-no-coaches" className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-                <p className={cn('text-sm text-amber-800', isRTL && 'font-arabic text-right')}>{t('noCoachesHint')}</p>
+              <div data-testid="wizard-no-coaches" className="tint-warning rounded-xl border border-warning-500/30 p-3">
+                <p className={cn('text-sm', isRTL && 'font-arabic')}>{t('noCoachesHint')}</p>
                 <Link href={`/${locale}/coaches/add`} data-testid="wizard-add-coach-cta"
                   className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-800">
                   <Plus className="h-4 w-4" /> {t('addCoachCta')}
@@ -413,7 +413,8 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
               <span className="block text-xs text-gray-400">{t('showOnLandingHint')}</span>
             </span>
             <span className={cn('relative h-6 w-11 rounded-full transition-colors', showOnLanding ? 'bg-primary-700' : 'bg-gray-200')}>
-              <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', showOnLanding ? (isRTL ? 'right-5' : 'left-5') : (isRTL ? 'right-0.5' : 'left-0.5'))} />
+              {/* DA-61: logical inset — the knob's ON side is `start` in both directions. */}
+              <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', showOnLanding ? 'start-5' : 'start-0.5')} />
             </span>
           </button>
         </div>
@@ -424,13 +425,13 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
       content: (
         <div className="space-y-3" data-testid="wizard-review">
           {error && (
-            <div data-testid="wizard-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            <div data-testid="wizard-error" className="tint-danger rounded-lg px-3 py-2 text-sm">{error}</div>
           )}
           {/* COMPLETENESS R2: J3 warn-and-allow — an honest heads-up that a class with
               no schedule slot won't show on the timetable. Submit is NOT blocked. */}
           {days.length === 0 && (
-            <div data-testid="wizard-completeness-warn" className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-              <p className={cn('text-sm font-medium text-amber-800', isRTL && 'font-arabic text-right')}>{t('scheduleGapWarn')}</p>
+            <div data-testid="wizard-completeness-warn" className="tint-warning rounded-xl border border-warning-500/30 p-3">
+              <p className={cn('text-sm font-medium', isRTL && 'font-arabic')}>{t('scheduleGapWarn')}</p>
             </div>
           )}
           <div className="rounded-2xl border bg-gray-50 p-4">
@@ -460,10 +461,10 @@ export default function AddClassModal({ disciplines, coaches, locale, onClose, o
     return (
       <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-          <div data-testid="class-wizard" className={cn('flex w-full flex-col bg-white p-6 sm:max-w-xl sm:rounded-2xl sm:shadow-xl', isRTL && 'text-right')}>
+          <div data-testid="class-wizard" className="flex w-full flex-col bg-white p-6 sm:max-w-xl sm:rounded-2xl sm:shadow-xl">
             <div className="flex flex-col items-center gap-3 py-8" data-testid="wizard-success">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-                <Check className="h-7 w-7 text-green-600" />
+              <span className="tint-success flex h-14 w-14 items-center justify-center rounded-full">
+                <Check className="h-7 w-7" />
               </span>
               <p className="text-sm font-semibold text-gray-900">{editClass ? t('successEdit') : t('success')}</p>
             </div>

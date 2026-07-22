@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { UserCheck, UserX, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/shared/avatar'
+import { StatusChip } from '@/components/ui/status-chip'
 import { setStaffActive } from '../staff-actions'
 import { useErrorText } from '@/lib/errors/use-error-text';
 
@@ -67,7 +68,7 @@ export function StaffAccessList({
           'كل من لديه دخول موظف. عطّل الوصول للمتقاعدين دون حذف السجل.',
           "Toute personne avec un accès staff. Désactivez pour retirer l'accès sans supprimer l'historique.")}
       </p>
-      {error && <div data-testid="staff-error" className="mb-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+      {error && <div data-testid="staff-error" className="tint-danger mb-2 rounded-md px-3 py-2 text-sm">{error}</div>}
       <ul className="divide-y divide-gray-100">
         {staff.map((m) => (
           <li key={m.userId} data-testid="staff-row" data-user-id={m.userId} data-active={m.isActive ? '1' : '0'}
@@ -83,11 +84,11 @@ export function StaffAccessList({
                       {roleLabel(r)}
                     </span>
                   ))}
-                  <span data-testid="staff-status"
-                    className={cn('inline-flex rounded-full px-2 py-0.5 text-2xs font-medium',
-                      m.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500')}>
-                    {m.isActive ? t('Active', 'نشط', 'Actif') : t('Inactive', 'معطّل', 'Inactif')}
-                  </span>
+                  {/* W3b §2.3: ONE status chip — hue from the member vocabulary; the
+                      historical trilingual labels stay via the override. */}
+                  <StatusChip domain="member" status={m.isActive ? 'active' : 'inactive'} size="sm"
+                    label={m.isActive ? t('Active', 'نشط', 'Actif') : t('Inactive', 'معطّل', 'Inactif')}
+                    data-testid="staff-status" />
                 </div>
               </div>
             </div>
@@ -95,7 +96,7 @@ export function StaffAccessList({
               <button type="button" data-testid="staff-toggle" disabled={pending && busyId === m.userId}
                 onClick={() => toggle(m)}
                 className={cn('inline-flex shrink-0 items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium disabled:opacity-50',
-                  m.isActive ? 'border-red-200 text-red-700 hover:bg-red-50' : 'border-green-200 text-green-700 hover:bg-green-50')}>
+                  m.isActive ? 'border-red-200 text-red-700 hover:bg-danger-500/10' : 'border-green-200 text-green-700 hover:bg-success-500/10')}>
                 {m.isActive ? <><UserX className="h-3.5 w-3.5" /> {t('Deactivate', 'تعطيل', 'Désactiver')}</>
                   : <><UserCheck className="h-3.5 w-3.5" /> {t('Reactivate', 'إعادة تفعيل', 'Réactiver')}</>}
               </button>

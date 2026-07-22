@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import QRCode from 'qrcode'
 import { cn } from '@/lib/utils'
 import { FormWizard, ChipRow } from '@/components/shared/form-wizard'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Plus, Copy, Check, Archive, ArchiveRestore, QrCode } from 'lucide-react'
 import { createCampaign, setCampaignActive } from './actions'
 import { PageHeader } from '@/components/ui/page-header';
@@ -66,7 +67,7 @@ export function CampaignsClient({ rows, locale, shareOrigin }: { rows: CampaignR
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">{t('nameLabel')}</label>
             <input data-testid="campaign-name" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder={t('namePh')} className={cn('h-9 w-full rounded-lg border px-3 text-sm', isRTL && 'text-right')} />
+              placeholder={t('namePh')} className={cn('h-9 w-full rounded-lg border px-3 text-sm')} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">{t('sourceLabel')}</label>
@@ -91,7 +92,7 @@ export function CampaignsClient({ rows, locale, shareOrigin }: { rows: CampaignR
   ]
 
   return (
-    <div className={cn('space-y-4', isRTL && 'text-right')}>
+    <div className={cn('space-y-4')}>
       <div className="flex items-center justify-between">
         <div>
           <PageHeader segment="campaigns" />
@@ -104,10 +105,8 @@ export function CampaignsClient({ rows, locale, shareOrigin }: { rows: CampaignR
       </div>
 
       {active.length === 0 && archived.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center" data-testid="campaigns-empty">
-          <QrCode className="mb-2 h-10 w-10 text-gray-300" />
-          <p className="text-sm text-gray-400">{t('empty')}</p>
-        </div>
+        /* DA-31: the one empty-state primitive (calm zero). */
+        <EmptyState variant="bare" icon={QrCode} title={t('empty')} data-testid="campaigns-empty" className="py-12" />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2" data-testid="campaigns-list">
           {active.map((c) => (
@@ -124,7 +123,7 @@ export function CampaignsClient({ rows, locale, shareOrigin }: { rows: CampaignR
             <div key={c.id} className="flex items-center justify-between rounded-xl border bg-white px-3 py-2" data-testid="campaign-archived-row" data-code={c.code}>
               <span className="text-sm text-gray-400 line-through">{c.name}</span>
               <button type="button" data-testid="campaign-restore" onClick={async () => { await setCampaignActive(c.id, true); router.refresh() }}
-                className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:bg-green-50 rounded-full px-2 py-1">
+                className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:bg-success-500/10 rounded-full px-2 py-1">
                 <ArchiveRestore className="h-3.5 w-3.5" /> {t('restore')}
               </button>
             </div>
@@ -168,7 +167,7 @@ function CampaignCard({
           </span>
         </div>
         <button type="button" data-testid="campaign-archive" onClick={onArchive}
-          className="rounded-full p-1.5 text-red-500 hover:bg-red-50" aria-label={t('archive')}>
+          className="rounded-full p-1.5 text-red-500 hover:bg-danger-500/10" aria-label={t('archive')}>
           <Archive className="h-3.5 w-3.5" />
         </button>
       </div>

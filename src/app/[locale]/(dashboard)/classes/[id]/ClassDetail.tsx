@@ -14,6 +14,9 @@ import { createClient } from '@/lib/supabase/client'
 import { localizedName } from '@/lib/names'
 import { RegistrationsPanel } from './RegistrationsPanel'
 import { DEFAULT_CYCLE_POLICY, type GymCyclePolicy } from '@/lib/billing/proration'
+import { fmtWeekday } from '@/lib/fmt'
+import { beltRankLabel, beltSwatchClass } from '@/lib/belts/label'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface ClassDetailProps {
   classData: any
@@ -38,8 +41,6 @@ interface ClassDetailProps {
   cyclePolicy?: GymCyclePolicy
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
 export default function ClassDetail({ classData, locale, registrations = [], students = [], disciplines = [], coaches = [], activeRegCount = 0, memberInfo = {}, rate = null, today, cyclePolicy = DEFAULT_CYCLE_POLICY }: ClassDetailProps) {
   const t = useTranslations('classes')
   const router = useRouter()
@@ -48,9 +49,10 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [adminBusy, setAdminBusy] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
-  const isRTL = locale === 'ar'
   const tw = useTranslations('classes.wizard')
   const ta = useTranslations('classes.admin')
+  // DA-9: belt ranks reach the DOM only via the one belt vocabulary.
+  const tb = useTranslations('beltRanks')
 
   // ── ADM-1 catalog actions (archive-not-delete; publish gates the anon landing) ──
   const togglePublish = async () => {
@@ -70,21 +72,6 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
       .eq('id', classData.id)
     setAdminBusy(false)
     if (!error) router.push(`/${locale}/classes`)
-  }
-
-  const getBeltColor = (belt: string) => {
-    const colors: { [key: string]: string } = {
-      white: 'bg-gray-100 text-gray-800',
-      yellow: 'bg-yellow-100 text-yellow-800',
-      orange: 'bg-orange-100 text-orange-800',
-      green: 'bg-green-100 text-green-800',
-      blue: 'bg-blue-100 text-blue-800',
-      purple: 'bg-purple-100 text-purple-800',
-      brown: 'bg-amber-100 text-amber-800',
-      red: 'bg-red-100 text-red-800',
-      black: 'bg-gray-900 text-white',
-    }
-    return colors[belt.toLowerCase()] || 'bg-gray-100 text-gray-800'
   }
 
   const handleRemoveEnrollment = async (enrollmentId: string) => {
@@ -132,7 +119,8 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
           onClick={togglePublish}
           className="flex items-center gap-2 rounded-xl border px-3 py-2 disabled:opacity-50">
           <span className={cn('relative h-6 w-11 rounded-full transition-colors', classData.show_on_landing ? 'bg-primary-700' : 'bg-gray-200')}>
-            <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', classData.show_on_landing ? (isRTL ? 'right-5' : 'left-5') : (isRTL ? 'right-0.5' : 'left-0.5'))} />
+            {/* DA-61: logical inset — the knob's ON side is `start` in both directions. */}
+            <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', classData.show_on_landing ? 'start-5' : 'start-0.5')} />
           </span>
           <span className="text-sm font-medium text-gray-800">
             {classData.show_on_landing ? tw('published') : tw('showOnLanding')}
@@ -144,10 +132,10 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
         </Button>
         {classData.is_active && (
           confirmArchive ? (
-            <span className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" data-testid="archive-confirm-box">
+            <span className="tint-danger flex items-center gap-2 rounded-xl px-3 py-2 text-sm" data-testid="archive-confirm-box">
               {activeRegCount > 0 ? ta('archiveWarnRegs', { count: activeRegCount }) : ta('archiveConfirm')}
               <Button size="sm" variant="outline" data-testid="class-archive-confirm" disabled={adminBusy}
-                className="border-red-300 text-red-700 hover:bg-red-100" onClick={archiveClass}>
+                className="border-danger-500/40 text-danger-700 hover:bg-danger-500/10" onClick={archiveClass}>
                 {ta('archiveYes')}
               </Button>
               <Button size="sm" variant="ghost" data-testid="class-archive-cancel" onClick={() => setConfirmArchive(false)}>
@@ -156,7 +144,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
             </span>
           ) : (
             <Button variant="outline" size="sm" data-testid="class-archive-btn" disabled={adminBusy}
-              className="text-red-600 hover:bg-red-50" onClick={() => setConfirmArchive(true)}>
+              className="text-danger-600 hover:bg-danger-500/10" onClick={() => setConfirmArchive(true)}>
               <Trash2 className="me-1 h-4 w-4" /> {ta('archive')}
             </Button>
           )
@@ -225,7 +213,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
                   <div className="space-y-2">
                     {classData.schedules.map((schedule: any) => (
                       <div key={schedule.id} className="flex items-center gap-4 text-sm p-2 bg-gray-50 rounded">
-                        <span className="font-medium">{DAYS[schedule.day_of_week]}</span>
+                        <span className="font-medium">{fmtWeekday(schedule.day_of_week, locale, 'long')}</span>
                         <span className="text-muted-foreground">
                           {schedule.start_time} - {schedule.end_time}
                         </span>
@@ -254,9 +242,7 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
             </CardHeader>
             <CardContent>
               {classData.enrollments.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  {t('noEnrollments')}
-                </p>
+                <EmptyState variant="bare" title={t('noEnrollments')} />
               ) : (
                 <div className="space-y-3">
                   {classData.enrollments.map((enrollment: any) => (
@@ -276,8 +262,11 @@ export default function ClassDetail({ classData, locale, registrations = [], stu
                               the floor view is informative. EXTENSION POINT: more
                               per-student chips drop in here from `memberInfo`. */}
                           <div className="flex flex-wrap items-center gap-1.5 mt-1" data-testid="roster-info">
-                            <Badge data-testid="roster-belt" className={getBeltColor(enrollment.student?.current_belt_rank || 'white')}>
-                              {enrollment.student?.current_belt_rank}
+                            {/* DA-9/DA-43: label via the belt vocabulary + the belt's OWN
+                                colour swatch — never a hue-pinned pill. */}
+                            <Badge data-testid="roster-belt" variant="outline" className="gap-1">
+                              <span className={cn('h-2 w-2 rounded-full', beltSwatchClass(enrollment.student?.current_belt_rank))} aria-hidden />
+                              {beltRankLabel(enrollment.student?.current_belt_rank, (k) => tb(k as never), '')}
                             </Badge>
                             {(memberInfo[enrollment.student?.id]?.disciplines ?? []).map((d: string) => (
                               <span key={d} data-testid="roster-discipline"

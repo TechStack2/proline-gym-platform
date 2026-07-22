@@ -89,7 +89,7 @@ export function IssueInvoiceForm({
   }
 
   return (
-    <div data-testid="issue-form" className={`max-w-lg space-y-4 rounded-xl border p-4 ${isRTL ? 'text-right' : ''}`}>
+    <div data-testid="issue-form" className="max-w-lg space-y-4 rounded-xl border p-4">
       <div className="space-y-1">
         <Label htmlFor="inv-student">{t('Member', 'العضو', 'Membre')}</Label>
         <select id="inv-student" data-testid="inv-student" value={studentId} onChange={(e) => setStudentId(e.target.value)}
@@ -131,7 +131,7 @@ export function IssueInvoiceForm({
         <Input id="inv-notes" data-testid="inv-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('optional', 'اختياري', 'facultatif')} />
       </div>
 
-      {error && <div data-testid="issue-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+      {error && <div data-testid="issue-error" className="tint-danger rounded-md px-3 py-2 text-sm">{error}</div>}
 
       <Button data-testid="issue-submit" onClick={submit} disabled={pending} className="bg-primary-700 hover:bg-primary-800">
         {pending ? t('Issuing…', 'جارٍ الإصدار…', 'Émission…') : t('Issue invoice', 'إصدار الفاتورة', 'Émettre la facture')}

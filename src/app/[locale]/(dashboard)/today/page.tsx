@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate as fmtDateLoc } from '@/lib/fmt'
 import { parseHorizon, horizonEndDate, HORIZONS, type Horizon } from '@/lib/finances/horizon'
 import { TodayHorizon } from './_components/TodayHorizon'
 import { WeekHorizon } from './_components/WeekHorizon'
@@ -50,11 +50,10 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
   const horizon: Horizon = parseHorizon(searchParams?.h)
 
   // Period-correct subtitle: the day for Today; the window for Week/Month.
-  const fmtDate = (d: Date | string) =>
-    new Date(d).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' })
+  const fmtDate = (d: Date | string) => fmtDateLoc(d, locale, 'dayMonth')
   let subtitle: string
   if (horizon === 'today') {
-    subtitle = now.toLocaleDateString(dateLocale(locale), { weekday: 'long', day: 'numeric', month: 'long' })
+    subtitle = fmtDateLoc(now, locale, 'full')
   } else {
     const end = horizonEndDate(horizon, now)
     subtitle = `${t(`period.${horizon}`)} · ${fmtDate(now)} – ${fmtDate(end)}`
@@ -67,7 +66,7 @@ export default async function TodayPage({ params: { locale }, searchParams }: Pr
   ] as const
 
   return (
-    <div className={cn('space-y-4', isRTL && 'text-right')}>
+    <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           {/* SHELL-IA: mobile shows the NativeHeader large title; the date subtitle

@@ -171,7 +171,7 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
               </Button>
               {iconUrl && (
                 <Button type="button" size="sm" variant="ghost" data-testid="discipline-icon-remove" disabled={iconBusy}
-                  className="text-red-500 hover:bg-red-50" onClick={() => setIconUrl(null)}>
+                  className="text-red-500 hover:bg-danger-500/10" onClick={() => setIconUrl(null)}>
                   <X className="h-3.5 w-3.5" />
                 </Button>
               )}
@@ -184,14 +184,14 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
   ]
 
   return (
-    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'text-right')} data-testid="discipline-manager">
+    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm')} data-testid="discipline-manager">
       <div className="flex items-center justify-between">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('manageTitle')}</h3>
         <Button size="sm" data-testid="discipline-add-btn" disabled={busy} onClick={openCreate} className="bg-primary-700 hover:bg-primary-800">
           <Plus className="me-1 h-4 w-4" /> {t('add')}
         </Button>
       </div>
-      {error && <p data-testid="discipline-error" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+      {error && <p data-testid="discipline-error" className="tint-danger rounded-md px-3 py-2 text-xs">{error}</p>}
 
       {/* Rows */}
       <ul className="divide-y">
@@ -209,12 +209,12 @@ export function DisciplineManager({ disciplines, gymId, locale }: { disciplines:
               </Button>
               {d.is_active !== false ? (
                 <Button size="sm" variant="ghost" data-testid="discipline-archive-btn" disabled={busy}
-                  className="text-red-500 hover:bg-red-50" onClick={() => setActive(d.id!, false)}>
+                  className="text-red-500 hover:bg-danger-500/10" onClick={() => setActive(d.id!, false)}>
                   <Archive className="h-3.5 w-3.5" />
                 </Button>
               ) : (
                 <Button size="sm" variant="ghost" data-testid="discipline-restore-btn" disabled={busy}
-                  className="text-green-600 hover:bg-green-50" onClick={() => setActive(d.id!, true)}>
+                  className="text-green-600 hover:bg-success-500/10" onClick={() => setActive(d.id!, true)}>
                   <ArchiveRestore className="h-3.5 w-3.5" />
                 </Button>
               )}

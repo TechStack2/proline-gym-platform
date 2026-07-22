@@ -11,7 +11,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { Award, TrendingUp, User, Calendar, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import { beltPromotionSchema, isValidBeltPromotion } from '@/lib/validators/belts.schema';
-import { getLocalizedName, getDateLocale } from '@/lib/i18n/helpers';
+import { getLocalizedName } from '@/lib/i18n/helpers';
+import { beltRankLabel, beltSwatchClass } from '@/lib/belts/label';
+import { fmtDate } from '@/lib/fmt';
+import { Ltr } from '@/components/ui/bdi';
 
 type UserName = {
   first_name_ar?: string | null;
@@ -37,31 +40,18 @@ type Promotion = {
   created_at: string;
 };
 
-// ─── Belt Display Map: all 20 belt_rank_enum values ───
-const BELT_DISPLAY: Record<string, { color: string; label: { ar: string; en: string; fr: string } }> = {
-  white:        { color: 'bg-white border-2 border-gray-300 text-gray-700', label: { ar: 'أبيض', en: 'White', fr: 'Blanche' } },
-  white_yellow: { color: 'bg-gradient-to-r from-white to-yellow-300 border border-gray-300 text-gray-700', label: { ar: 'أبيض/أصفر', en: 'White/Yellow', fr: 'Blanc/Jaune' } },
-  yellow:       { color: 'bg-yellow-400 text-primary-foreground', label: { ar: 'أصفر', en: 'Yellow', fr: 'Jaune' } },
-  yellow_orange:{ color: 'bg-gradient-to-r from-yellow-400 to-orange-400 text-primary-foreground', label: { ar: 'أصفر/برتقالي', en: 'Yellow/Orange', fr: 'Jaune/Orange' } },
-  orange:       { color: 'bg-orange-500 text-primary-foreground', label: { ar: 'برتقالي', en: 'Orange', fr: 'Orange' } },
-  orange_green: { color: 'bg-gradient-to-r from-orange-400 to-green-400 text-primary-foreground', label: { ar: 'برتقالي/أخضر', en: 'Orange/Green', fr: 'Orange/Vert' } },
-  green:        { color: 'bg-green-500 text-primary-foreground', label: { ar: 'أخضر', en: 'Green', fr: 'Verte' } },
-  green_blue:   { color: 'bg-gradient-to-r from-green-400 to-blue-400 text-primary-foreground', label: { ar: 'أخضر/أزرق', en: 'Green/Blue', fr: 'Vert/Bleu' } },
-  blue:         { color: 'bg-blue-500 text-primary-foreground', label: { ar: 'أزرق', en: 'Blue', fr: 'Bleue' } },
-  blue_purple:  { color: 'bg-gradient-to-r from-blue-400 to-purple-400 text-primary-foreground', label: { ar: 'أزرق/أرجواني', en: 'Blue/Purple', fr: 'Bleu/Violet' } },
-  purple:       { color: 'bg-purple-500 text-primary-foreground', label: { ar: 'أرجواني', en: 'Purple', fr: 'Violette' } },
-  purple_brown: { color: 'bg-gradient-to-r from-purple-400 to-amber-600 text-primary-foreground', label: { ar: 'أرجواني/بني', en: 'Purple/Brown', fr: 'Violet/Marron' } },
-  brown:        { color: 'bg-amber-700 text-primary-foreground', label: { ar: 'بني', en: 'Brown', fr: 'Marron' } },
-  brown_black:  { color: 'bg-gradient-to-r from-amber-700 to-black text-primary-foreground', label: { ar: 'بني/أسود', en: 'Brown/Black', fr: 'Marron/Noir' } },
-  red:          { color: 'bg-red-600 text-primary-foreground', label: { ar: 'أحمر', en: 'Red', fr: 'Rouge' } },
-  black_1:      { color: 'bg-black text-primary-foreground ring-1 ring-red-500', label: { ar: 'أسود °1', en: 'Black 1°', fr: 'Noir 1°' } },
-  black_2:      { color: 'bg-black text-primary-foreground ring-1 ring-white/50', label: { ar: 'أسود °2', en: 'Black 2°', fr: 'Noir 2°' } },
-  black_3:      { color: 'bg-black text-primary-foreground ring-1 ring-yellow-500', label: { ar: 'أسود °3', en: 'Black 3°', fr: 'Noir 3°' } },
-  black_4:      { color: 'bg-black text-primary-foreground ring-1 ring-blue-500', label: { ar: 'أسود °4', en: 'Black 4°', fr: 'Noir 4°' } },
-  black_5:      { color: 'bg-black text-primary-foreground ring-1 ring-red-500 ring-offset-1', label: { ar: 'أسود °5', en: 'Black 5°', fr: 'Noir 5°' } },
-};
-
 const selectClass = 'w-full px-3 py-2 text-sm border rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500';
+
+// W3b/DA-9+DA-43: the hardcoded 20-entry colour+trilingual-label map died — labels
+// come from the `beltRanks` i18n namespace via beltRankLabel, colours from the ONE
+// swatch source (beltSwatchClass, the belt palette in tailwind.config.ts). Belts
+// render as label + their OWN colour swatch dot — never a coloured pill (§2.3).
+const BeltTag = ({ rank, label }: { rank: string; label: React.ReactNode }) => (
+  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-900">
+    <span className={cn('h-2 w-2 shrink-0 rounded-full', beltSwatchClass(rank))} aria-hidden />
+    {label}
+  </span>
+);
 
 export function BeltEngineClient({
   students, disciplines, coaches, beltHierarchies, promotions, locale,
@@ -70,6 +60,7 @@ export function BeltEngineClient({
   beltHierarchies: BeltHierarchy[]; promotions: Promotion[]; locale: string;
 }) {
   const t = useTranslations('belts');
+  const tb = useTranslations('beltRanks');
   const errCaught = useCaughtErrorText();
   const { toast } = useToast();
   const router = useRouter();
@@ -103,15 +94,8 @@ export function BeltEngineClient({
       ? [u.first_name_en || u.first_name_ar, u.last_name_en || u.last_name_ar].filter(Boolean).join(' ') || ''
       : [u.first_name_ar, u.last_name_ar].filter(Boolean).join(' ') || u.first_name_en || '';
   };
-  const getBeltColor = (rank: string) => BELT_DISPLAY[rank]?.color || 'bg-gray-100 text-gray-700';
-  const getBeltLabel = (rank: string) => {
-    if (!rank) return t('no_belt');
-    const lbl = BELT_DISPLAY[rank]?.label;
-    if (!lbl) return rank;
-    if (locale === 'ar') return lbl.ar;
-    if (locale === 'fr') return lbl.fr;
-    return lbl.en;
-  };
+  // DA-9: localized belt labels through the ONE helper (raw enums never render).
+  const getBeltLabel = (rank: string) => beltRankLabel(rank, (k) => tb(k as never), t('no_belt'));
   const getDisciplineName = (d: Discipline) => getLocalizedName(d, locale);
   const getCoachName = (c: Coach) => {
     const u = c.user || {};
@@ -229,11 +213,11 @@ export function BeltEngineClient({
       {/* ─── Tab Navigation ─── */}
       <div className="flex gap-2 border-b pb-2">
         <button onClick={() => { setActiveTab('promote'); resetPromotion(); }}
-          className={cn('px-4 py-2 text-sm font-medium rounded-t-lg', activeTab === 'promote' ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-600' : 'text-gray-500')}>
+          className={cn('px-4 py-2 text-sm font-medium rounded-t-lg', activeTab === 'promote' ? 'bg-primary-700/10 text-primary-700 border-b-2 border-primary-600' : 'text-gray-500')}>
           <TrendingUp className="inline h-4 w-4 me-1" />{t('promote')}
         </button>
         <button onClick={() => { setActiveTab('history'); }}
-          className={cn('px-4 py-2 text-sm font-medium rounded-t-lg', activeTab === 'history' ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-600' : 'text-gray-500')}>
+          className={cn('px-4 py-2 text-sm font-medium rounded-t-lg', activeTab === 'history' ? 'bg-primary-700/10 text-primary-700 border-b-2 border-primary-600' : 'text-gray-500')}>
           <Award className="inline h-4 w-4 me-1" />{t('history')}
         </button>
       </div>
@@ -249,14 +233,14 @@ export function BeltEngineClient({
                   <div key={i} className="flex items-center gap-1">
                     <div className={cn(
                       'h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold',
-                      step === i ? 'bg-primary-600 text-primary-foreground' : step > i ? 'bg-green-500 text-primary-foreground' : 'bg-gray-200 text-gray-500'
+                      step === i ? 'bg-primary-600 text-primary-foreground' : step > i ? 'bg-success-600 text-success-foreground' : 'bg-gray-200 text-gray-500'
                     )}>
                       {step > i ? <Check className="h-3.5 w-3.5" /> : i + 1}
                     </div>
                     <span className={cn('text-xs', step === i ? 'text-primary-700 font-medium' : 'text-gray-400')}>
                       {i === 0 ? t('step_student_discipline') : i === 1 ? t('step_belt_coach') : t('step_review')}
                     </span>
-                    {i < 2 && <div className={cn('h-px w-4', step > i ? 'bg-green-400' : 'bg-gray-200')} />}
+                    {i < 2 && <div className={cn('h-px w-4', step > i ? 'bg-success-500' : 'bg-gray-200')} />}
                   </div>
                 ))}
               </div>
@@ -336,15 +320,13 @@ export function BeltEngineClient({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">{t('current_belt_label')}</span>
-                      <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', getBeltColor(selectedStudentData?.current_belt_rank || ''))}>
-                        {getBeltLabel(selectedStudentData?.current_belt_rank || '')}
-                      </span>
+                      <BeltTag rank={selectedStudentData?.current_belt_rank || ''}
+                        label={getBeltLabel(selectedStudentData?.current_belt_rank || '')} />
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500">{t('new_belt')}</span>
-                      <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', getBeltColor(selectedBeltData?.rank || ''))}>
-                        {selectedBeltData ? getLocalizedName(selectedBeltData, locale) : '—'}
-                      </span>
+                      <BeltTag rank={selectedBeltData?.rank || ''}
+                        label={selectedBeltData ? getLocalizedName(selectedBeltData, locale) : '—'} />
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">{t('coach_label')}</span>
@@ -358,7 +340,7 @@ export function BeltEngineClient({
                     )}
                     <div className="flex justify-between border-t pt-2 mt-2">
                       <span className="text-gray-500">{t('promotion_date_label')}</span>
-                      <span className="font-medium text-gray-900">{new Date().toLocaleDateString(getDateLocale(locale))}</span>
+                      <span className="font-medium text-gray-900">{fmtDate(new Date(), locale)}</span>
                     </div>
                   </div>
                 </div>
@@ -394,22 +376,20 @@ export function BeltEngineClient({
                 ) : students.map(s => (
                   <div key={s.id}
                     className={cn('flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-gray-50',
-                      selectedStudent === s.id && 'ring-2 ring-primary-500 bg-primary-50')}
+                      selectedStudent === s.id && 'ring-2 ring-primary-500 bg-primary-700/10')}
                     onClick={() => { setSelectedStudent(s.id); if (step !== 0) { setStep(0); } }}>
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-full bg-primary-700/10 flex items-center justify-center">
                         <User className="h-5 w-5 text-primary-600" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">{getStudentName(s)}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', getBeltColor(s.current_belt_rank))}>
-                            {getBeltLabel(s.current_belt_rank)}
-                          </span>
+                          <BeltTag rank={s.current_belt_rank} label={getBeltLabel(s.current_belt_rank)} />
                           {s.belt_promotion_date && (
                             <span className="text-xs text-gray-400">
                               <Calendar className="inline h-3 w-3 me-1" />
-                              {new Date(s.belt_promotion_date).toLocaleDateString(getDateLocale(locale))}
+                              {fmtDate(s.belt_promotion_date, locale)}
                             </span>
                           )}
                         </div>
@@ -439,18 +419,17 @@ export function BeltEngineClient({
                     <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border">
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col items-center gap-0.5">
-                          {p.from_rank && <span className={cn('text-xs px-1.5 py-0.5 rounded-full', getBeltColor(p.from_rank))}>{getBeltLabel(p.from_rank)}</span>}
+                          {p.from_rank && <BeltTag rank={p.from_rank} label={getBeltLabel(p.from_rank)} />}
                           <span className="text-gray-300 text-xs">↓</span>
-                          <span className={cn('text-xs px-1.5 py-0.5 rounded-full', getBeltColor(p.to_rank))}>
-                            {belt ? getLocalizedName(belt, locale) : p.to_rank}
-                          </span>
+                          <BeltTag rank={p.to_rank}
+                            label={belt ? getLocalizedName(belt, locale) : getBeltLabel(p.to_rank)} />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900">{stu ? getStudentName(stu) : p.student_id}</p>
                           <p className="text-xs text-gray-500">
                             {disc ? getDisciplineName(disc) : ''}
                             <span className="mx-1">·</span>
-                            {new Date(p.promotion_date).toLocaleDateString(getDateLocale(locale))}
+                            <Ltr>{fmtDate(p.promotion_date, locale)}</Ltr>
                           </p>
                         </div>
                       </div>

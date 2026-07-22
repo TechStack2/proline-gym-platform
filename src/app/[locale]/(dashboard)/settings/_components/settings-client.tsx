@@ -70,9 +70,10 @@ type Props = {
 
 type ChipTone = 'ready' | 'todo' | 'neutral';
 function Chip({ tone, children, testid = 'settings-card-chip' }: { tone: ChipTone; children: React.ReactNode; testid?: string }) {
+  // W3b §2.3: role-hue tints (dark-correct) instead of light-pinned -50 fills.
   const styles: Record<ChipTone, string> = {
-    ready: 'bg-green-50 text-green-700 border-green-200',
-    todo: 'bg-amber-50 text-amber-700 border-amber-200',
+    ready: 'tint-success border-success-500/30',
+    todo: 'tint-warning border-warning-500/30',
     neutral: 'bg-gray-100 text-gray-600 border-gray-200',
   };
   return (

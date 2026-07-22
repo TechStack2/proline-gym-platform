@@ -1,9 +1,10 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
+import { fmtDate as fmtDateLoc, fmtTime as fmtTimeLoc } from '@/lib/fmt'
+import { categoryAttr } from '@/lib/design/category-color'
+import { StatusChip } from '@/components/ui/status-chip'
 import { localizedName, one } from '@/lib/names'
 import { getDailyTally } from '@/lib/billing/daily-tally'
 import { TallyError } from '@/components/money/tally-error'
@@ -68,7 +69,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     supabase
       .from('class_schedules')
       .select(`id, day_of_week, start_time, end_time, is_active,
-        classes:class_id (id, gym_id, is_active, name_ar, name_en, name_fr, max_capacity, color,
+        classes:class_id (id, gym_id, is_active, name_ar, name_en, name_fr, max_capacity, discipline_id,
           disciplines:discipline_id (name_ar, name_en, name_fr))`)
       .eq('day_of_week', dow)
       .eq('is_active', true)
@@ -254,9 +255,8 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     ))
 
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
-  const fmtTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString(dateLocale(locale), { hour: '2-digit', minute: '2-digit' })
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
+  const fmtTime = (iso: string) => fmtTimeLoc(iso, locale)
+  const fmtDate = (d: string) => fmtDateLoc(d, locale)
   const clsName = (c: any) => (isRTL ? c.name_ar : locale === 'fr' ? c.name_fr : c.name_en) || c.name_en
   const lname = (row: any) => ((isRTL ? row?.name_ar : locale === 'fr' ? row?.name_fr : row?.name_en) || row?.name_en || '')
   const localName = (rel: any) => localizedName(one(rel)?.profiles, locale)
@@ -273,27 +273,13 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
     </a>
   ) : null
 
-  // BUG 3: per-class color chips as a NONCE'D <style> + data-attr, NOT inline
-  // style={{}} (SSR'd → stripped by the prod strict style-src CSP). Server component.
-  const chipNonce = headers().get('X-CSP-Nonce') ?? ''
-  // WL-THEME-R2: a class with a real per-class colour keeps it (categorical, not brand);
-  // an UNCOLOURED class's left bar falls back to the gym BRAND — `rgb(var(--c-brand-700))`
-  // — not a hardcoded crimson, so the row follows the tenant (the gym blue for a branded
-  // gym; Proline stays crimson because --c-brand-700 defaults to 205 20 25 = #cd1419,
-  // byte-identical). The brand fallback rides the same nonce'd stylesheet (CSP-safe).
-  const chipNorm = (c: string | null | undefined): string | null =>
-    c && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : null
-  const chipBgToken = (c: string | null | undefined): string => {
-    const n = chipNorm(c)
-    return n ? 's' + n.slice(1) : 'brand'
-  }
-  const chipBgCss = [...new Set<string>((todayClasses as any[]).map((s) => chipNorm(s.cls?.color)).filter(Boolean) as string[])]
-    .map((c) => `[data-chipbg="s${c.slice(1)}"]{background-color:${c}}`)
-    .join('') + '[data-chipbg="brand"]{background-color:rgb(var(--c-brand-700))}'
+  // W3b R4 (DISC-COLOR is the one truth): the stripe wears the class's CATEGORY
+  // hue via data-cat — the dead `classes.color` column is no longer read, and the
+  // per-class nonce'd hex stylesheet (the last CSP-smuggled palette) is gone.
+  // Solid `rgb(var(--cat))` (identity marker, not a status); unclassified → slot 8.
 
   return (
     <div className="space-y-4">
-      <style nonce={chipNonce} dangerouslySetInnerHTML={{ __html: chipBgCss }} />
       {/* ── Card 1: Now / Next ── */}
       <ActionCard icon={CalendarDays} title={t('classes')} count={todayClasses.length}
         emptyText={t('cards.noneToday')} testid="classes" isRTL={isRTL}>
@@ -306,7 +292,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                 className={cn('flex items-center justify-between gap-3 rounded-xl border bg-gray-50/60 px-3 py-2.5 hover:bg-gray-50',
                   phase === 'now' && 'border-primary-700/40 ring-1 ring-primary-700/30')}>
                 <Link href={`/${locale}/attendance`} className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="h-9 w-1.5 shrink-0 rounded-full" data-chipbg={chipBgToken(s.cls.color)} />
+                  <span className="h-9 w-1.5 shrink-0 rounded-full bg-[color:rgb(var(--cat,var(--c-cat-8)))]" data-cat={categoryAttr(s.cls.discipline_id)} />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-gray-900">
                       {clsName(s.cls)}
@@ -318,9 +304,9 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
                       )}
                     </p>
                     <p className="text-xs text-gray-500" dir="ltr">
-                      {hhmm(s.start_time)}–{hhmm(s.end_time)}
-                      {disc ? ` · ${lname(disc)}` : ''}
-                      {` · ${enrolledBy.get(s.cls.id) ?? 0}/${s.cls.max_capacity}`}
+                      <span className="whitespace-nowrap">{hhmm(s.start_time)}–{hhmm(s.end_time)}</span>
+                      {disc ? <span className="whitespace-nowrap"> · {lname(disc)}</span> : null}
+                      <span className="whitespace-nowrap"> · {enrolledBy.get(s.cls.id) ?? 0}/{s.cls.max_capacity}</span>
                     </p>
                   </div>
                 </Link>
@@ -404,7 +390,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
               }>
               <p className="truncate text-sm font-semibold text-gray-900">{localizedName(prof2, locale)}</p>
               <p className="text-xs text-gray-500">
-                <span className={cn('font-medium', m.state === 'lapsed' ? 'text-red-600' : 'text-orange-600')} data-state={m.state}>
+                <span className={cn('font-medium', m.state === 'lapsed' ? 'text-danger-600' : 'text-warning-600')} data-state={m.state}>
                   {t(`cards.${m.state}` as any)}
                 </span>
                 {' · '}{fmtDate(m.end_date)}
@@ -431,7 +417,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
               <p className="truncate text-sm font-semibold text-gray-900">{localizedName(profP, locale)}</p>
               <p className="text-xs text-gray-500">
                 {m.pause_end_date && (
-                  <span className="font-medium text-amber-600" data-testid="paused-resumes">
+                  <span className="font-medium text-warning-600" data-testid="paused-resumes">
                     {t('cards.resumesOn', { date: fmtDate(m.pause_end_date) })}
                   </span>
                 )}
@@ -520,7 +506,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
         {overdueOpen.length > 0 && (
           <ActionRow href={`/${locale}/money?tab=invoices&status=pending`} testid="money-overdue-row"
             action={<ChevronRight className={cn('h-4 w-4 shrink-0 text-gray-400', isRTL && 'rotate-180')} />}>
-            <p className="text-sm font-medium text-red-700">
+            <p className="text-sm font-medium text-danger-700">
               {t('cards.overdue', { count: overdueOpen.length })} · ${overdueUsd.toFixed(2)}
             </p>
           </ActionRow>
@@ -533,7 +519,7 @@ export async function TodayHorizon({ locale, gymId }: { locale: string; gymId: s
         <div data-testid="today-pt" className="space-y-2">
           {todayPt.map((s: any) => (
             <ActionRow key={s.id} href={`/${locale}/pt`} testid="today-pt-row"
-              action={<span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium capitalize text-gray-600">{s.status}</span>}>
+              action={<StatusChip domain="trial" status={s.status} className="shrink-0" />}>
               <p className="text-sm font-semibold text-gray-900">{localName(s.students)}</p>
               <p className="text-xs text-gray-500">{fmtTime(s.scheduled_at)} · {localName(s.coaches)}</p>
             </ActionRow>

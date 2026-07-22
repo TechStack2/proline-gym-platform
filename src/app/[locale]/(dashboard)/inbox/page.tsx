@@ -184,7 +184,7 @@ export default async function InboxPage({ params: { locale } }: Props) {
   const actionable = regRequests.length + ptRequests.length + memberRequests.length + campRequests.length
 
   return (
-    <div className={cn('space-y-6', isRTL && 'text-right')}>
+    <div className="space-y-6">
       <div>
         {/* SHELL-IA: mobile shows the NativeHeader large title; the status line
             below leads on mobile. Desktop keeps this H1 (its only title). */}

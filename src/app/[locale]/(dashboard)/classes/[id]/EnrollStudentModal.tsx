@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { enrollStudent } from './actions'
 import { useErrorText } from '@/lib/errors/use-error-text';
+import { beltRankLabel, beltSwatchClass } from '@/lib/belts/label'
 
 interface EnrollStudentModalProps {
   classId: string
@@ -39,6 +40,8 @@ function nameOf(s: StudentRow, locale: string): string {
 
 export default function EnrollStudentModal({ classId, locale, onClose, onSuccess }: EnrollStudentModalProps) {
   const t = useTranslations('classes')
+  // DA-9: belt ranks reach the DOM only via the one belt vocabulary.
+  const tb = useTranslations('beltRanks')
   const errText = useErrorText();
   const [search, setSearch] = useState('')
   const [allStudents, setAllStudents] = useState<StudentRow[]>([])
@@ -46,7 +49,6 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
   const [enrolling, setEnrolling] = useState(false)
   const [error, setError] = useState('')
   const [selectedStudent, setSelectedStudent] = useState<StudentRow | null>(null)
-  const isRTL = locale === 'ar'
 
   // Students are normalized via profiles; the legacy embedded-column .or() search
   // does not filter through PostgREST, so fetch the gym's students once and
@@ -90,16 +92,6 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
       .slice(0, 12)
   }, [search, allStudents, locale])
 
-  const getBeltColor = (belt: string | null) => {
-    const colors: { [key: string]: string } = {
-      white: 'bg-gray-100 text-gray-800', yellow: 'bg-yellow-100 text-yellow-800',
-      orange: 'bg-orange-100 text-orange-800', green: 'bg-green-100 text-green-800',
-      blue: 'bg-blue-100 text-blue-800', purple: 'bg-purple-100 text-purple-800',
-      brown: 'bg-amber-100 text-amber-800', red: 'bg-red-100 text-red-800',
-    }
-    return colors[(belt || '').toLowerCase()] || 'bg-gray-100 text-gray-800'
-  }
-
   const handleEnroll = async () => {
     if (!selectedStudent) return
     setEnrolling(true)
@@ -126,16 +118,16 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
         </div>
 
         <div className="p-6 space-y-4">
-          {error && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">{error}</div>}
+          {error && <div className="tint-danger p-3 rounded-md text-sm">{error}</div>}
 
           <div className="relative">
-            <Search className={cn('absolute top-2.5 h-4 w-4 text-muted-foreground', isRTL ? 'right-3' : 'left-3')} />
+            <Search className="absolute top-2.5 start-3 h-4 w-4 text-muted-foreground" />
             <Input
               data-testid="enroll-search"
               placeholder={t('searchStudents')}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setSelectedStudent(null) }}
-              className={cn(isRTL ? 'pr-10' : 'pl-10')}
+              className="ps-10"
               autoFocus
             />
           </div>
@@ -168,8 +160,10 @@ export default function EnrollStudentModal({ classId, locale, onClose, onSuccess
                       <div>
                         <p className="font-medium">{name || '—'}</p>
                         {student.current_belt_rank && (
-                          <Badge className={getBeltColor(student.current_belt_rank)}>
-                            {student.current_belt_rank}
+                          /* DA-9/DA-43: belt label via the vocabulary + the belt's OWN swatch. */
+                          <Badge variant="outline" className="gap-1">
+                            <span className={cn('h-2 w-2 rounded-full', beltSwatchClass(student.current_belt_rank))} aria-hidden />
+                            {beltRankLabel(student.current_belt_rank, (k) => tb(k as never), '')}
                           </Badge>
                         )}
                       </div>

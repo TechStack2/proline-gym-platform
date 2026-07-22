@@ -1,15 +1,15 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
-import { STATUS_BADGE, statusLabel } from '@/lib/billing/reconcile'
+import { statusLabel } from '@/lib/billing/reconcile'
 import { Tent, Users, Phone, ClipboardList, FileText } from 'lucide-react'
 import { CampAttendance } from './camp-attendance'
-import { fmtPhone } from '@/lib/fmt'
+import { fmtDate, fmtPhone } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
 
 type Props = { params: { locale: string; id: string }; searchParams: { tab?: string; date?: string } }
 
@@ -47,7 +47,7 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
 
   const confirmed = (regs ?? []).filter((r: any) => r.status === 'confirmed')
   const lname = (c: any) => ((isRTL ? c?.name_ar : locale === 'fr' ? c?.name_fr : c?.name_en) || c?.name_en || '')
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' })
+  const fmtD = (d: string) => fmtDate(d, locale, 'dayMonth')
   const tab = searchParams.tab === 'attendance' ? 'attendance' : 'roster'
 
   // Attendance data for the selected day (default: today clamped into range).
@@ -68,7 +68,7 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
   }
 
   return (
-    <div className={cn('space-y-4', isRTL && 'text-right')} data-testid="camp-detail">
+    <div className="space-y-4" data-testid="camp-detail">
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -141,11 +141,16 @@ export default async function CampDetailPage({ params: { locale, id }, searchPar
                     </div>
                     <div className="flex items-center gap-2">
                       {r.status === 'pending' ? (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">{t('regPending')}</span>
+                        /* W3b DA-25: a warning TINT, not the light-pinned amber-100 —
+                           camp-reg 'pending' has no vocabulary entry, so no StatusChip. */
+                        <StatusChip domain="registration" status="pending" label={t('regPending')} />
                       ) : inv ? (
+                        /* W3b §2.3: the invoice vocabulary picks the hue; the label stays
+                           reconcile's statusLabel. The chip rides inside the invoice Link. */
                         <Link href={`/${locale}/invoices/${inv.id}`} data-testid="camp-pay-badge" data-paystate={inv.status}
-                          className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium hover:underline', STATUS_BADGE[inv.status])}>
-                          <FileText className="h-3 w-3" /> {statusLabel(inv.status, locale)}
+                          className="inline-flex hover:underline">
+                          <StatusChip domain="invoice" status={inv.status} label={statusLabel(inv.status, locale)}
+                            icon={<FileText className="h-3 w-3" />} />
                         </Link>
                       ) : (
                         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">—</span>

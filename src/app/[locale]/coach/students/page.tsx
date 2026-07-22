@@ -10,8 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fmtDate } from '@/lib/fmt';
 import { Ltr } from '@/components/ui/bdi';
 import { beltRankLabel, beltSwatchClass } from '@/lib/belts/label';
-import { Users, Search, BookOpen, Award, Calendar, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { Users, Search, BookOpen, Award, Calendar } from 'lucide-react';
 import { DeskGrid } from '@/components/portal/portal-kit';
 
 interface StudentEntry {
@@ -321,11 +320,19 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
       {/* Student List */}
       {!loading && filtered.length > 0 && (
         <div className="space-y-2">
+          {/* W3b R5 (decree: SHELLS NEVER CROSS-LINK): the row linked a coach into
+              /dashboard/students/:id — a STAFF surface (and a dead path at that:
+              the (dashboard) group adds no /dashboard segment). The roster row
+              already shows everything the coach-readable dataset carries
+              (name · discipline · belt · last seen), so an in-shell detail sheet
+              would duplicate the row; the link is removed rather than faked.
+              A real coach student-detail surface (attendance history, contact)
+              needs its own RLS review — hoppered as COACH-STUDENT-360. */}
           {filtered.map(student => (
-            <Link
+            <div
               key={student.id}
-              href={`/${locale}/dashboard/students/${student.id}`}
-              className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors"
+              data-testid="coach-roster-row"
+              className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm border border-gray-100"
             >
               {/* Avatar */}
               <div className="h-10 w-10 rounded-full bg-primary-700/10 text-primary-700 inline-flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -364,8 +371,7 @@ export default function CoachStudentsPage({ params }: { params: { locale: string
                 </div>
               </div>
 
-              <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0 rtl:rotate-180" />
-            </Link>
+            </div>
           ))}
         </div>
       )}

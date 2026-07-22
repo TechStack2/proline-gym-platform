@@ -22,6 +22,7 @@ import { findProfileByPhone } from '@/lib/provisioning/guardian-lookup'
 import { InviteButton } from '@/components/shared/invite-button'
 import { fmtPhone } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export type GuardianRow = {
   linkId: string
@@ -136,7 +137,7 @@ export function GuardianPanel({
       </div>
 
       {guardians.length === 0 ? (
-        <p className="py-2 text-center text-sm text-gray-400" data-testid="no-guardian-hint">{t('noGuardian')}</p>
+        <EmptyState variant="bare" className="py-2" data-testid="no-guardian-hint" title={t('noGuardian')} />
       ) : (
         <ul className="space-y-2">
           {guardians.map((g) => (
@@ -154,7 +155,7 @@ export function GuardianPanel({
                     guardian is the family's door — this is the one credential the household needs. */}
                 <InviteButton kind="parent" id={g.profileId} name={g.name} locale={locale} phone={g.phone} />
                 <Button size="sm" variant="ghost" data-testid="guardian-unlink-btn" disabled={busy}
-                  className="text-red-500 hover:bg-red-50" onClick={() => unlink(g.linkId)}>
+                  className="text-red-500 hover:bg-danger-500/10" onClick={() => unlink(g.linkId)}>
                   <X className="h-3.5 w-3.5" /> {t('unlink')}
                 </Button>
               </div>
@@ -165,7 +166,7 @@ export function GuardianPanel({
 
       {open && (
         <div className="mt-3 space-y-2 rounded-xl border bg-gray-50 p-3">
-          {error && <p data-testid="guardian-error" className="rounded bg-red-50 px-2 py-1 text-xs text-red-700">{error}</p>}
+          {error && <p data-testid="guardian-error" className="tint-danger rounded px-2 py-1 text-xs">{error}</p>}
           <div className="flex items-center gap-2">
             <Input data-testid="guardian-phone-input" dir="ltr" placeholder="+961…" value={phone}
               onChange={(e) => { setPhone(e.target.value); setSearched(false); setMatch(null) }} className="h-9" />

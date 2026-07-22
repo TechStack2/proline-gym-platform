@@ -4,7 +4,8 @@ import { beltRankLabel } from '@/lib/belts/label'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate as fmtDateLoc, fmtWeekday } from '@/lib/fmt'
+import { statusTintClass } from '@/lib/status-vocabulary'
 import { Phone, Users, ChevronLeft, Award, CalendarDays, DollarSign, Wallet, ArrowRight, Clock } from 'lucide-react'
 import { localizedName, one } from '@/lib/names'
 import { getFamilySummaries, familyOutstandingTotal, type FamilySummary } from '@/lib/family/aggregate'
@@ -25,21 +26,15 @@ export const dynamic = 'force-dynamic'
 
 type Tr = (key: string, values?: Record<string, string | number>) => string
 
-const STATE_CHIP: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  expiring: 'bg-amber-100 text-amber-700',
-  overdue: 'bg-orange-100 text-orange-700',
-  lapsed: 'bg-red-100 text-red-700',
-  frozen: 'bg-blue-100 text-blue-700',
-  none: 'bg-gray-100 text-gray-500',
-}
+// W3b (DA-25/32): colour comes from the status vocabulary (member domain) via
+// statusTintClass — the local light-pinned STATE_CHIP map is dead.
 
 // Hoisted (stable identity) — a per-dependent card with the reused action flows.
 function ChildCard({ s, self, locale, t, tb, isRTL }: {
   s: FamilySummary; self?: boolean; locale: string; t: Tr; tb: Tr; isRTL: boolean
 }) {
-  const fmtDate = (d: string | null) => (d ? new Date(String(d).slice(0, 10) + 'T00:00:00Z').toLocaleDateString(dateLocale(locale), { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '—')
-  const weekday = (diff: number) => diff === 0 ? t('today') : new Date(Date.now() + diff * 864e5).toLocaleDateString(dateLocale(locale), { weekday: 'long' })
+  const fmtDate = (d: string | null) => fmtDateLoc(d, locale, 'medium')
+  const weekday = (diff: number) => diff === 0 ? t('today') : fmtWeekday(new Date(Date.now() + diff * 864e5).getDay(), locale, 'long')
   const nextClassLabel = s.nextClass ? `${weekday(s.nextClass.dayDiff)} ${s.nextClass.start} · ${s.nextClass.className}` : t('noNextClass')
   const beltLabel = s.beltRank ? beltRankLabel(s.beltRank, tb) : null
   return (
@@ -55,7 +50,7 @@ function ChildCard({ s, self, locale, t, tb, isRTL }: {
             </span>
             <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
               {beltLabel && <span className="inline-flex items-center gap-1 capitalize"><Award className="h-3 w-3" />{beltLabel}</span>}
-              <span data-testid="guardian-child-membership" className={cn('rounded-full px-2 py-0.5 font-medium', STATE_CHIP[s.membershipStateValue])}>
+              <span data-testid="guardian-child-membership" className={cn('rounded-full px-2 py-0.5 font-medium', statusTintClass('member', s.membershipStateValue))}>
                 {t(`state.${s.membershipStateValue}`)}
               </span>
             </span>
@@ -63,15 +58,15 @@ function ChildCard({ s, self, locale, t, tb, isRTL }: {
         </Link>
         {s.outstanding > 0.005 ? (
           <span data-testid="guardian-child-outstanding" data-amount={s.outstanding.toFixed(2)}
-            className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700" dir="ltr">${s.outstanding.toFixed(2)}</span>
+            className="tint-danger shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold" dir="ltr">${s.outstanding.toFixed(2)}</span>
         ) : (
-          <span data-testid="guardian-child-outstanding" data-amount="0.00" className="shrink-0 text-xs text-emerald-600">{t('settled')}</span>
+          <span data-testid="guardian-child-outstanding" data-amount="0.00" className="shrink-0 text-xs text-gray-500">{t('settled')}</span>
         )}
       </div>
 
       {/* Win-back context (R3) — only when lapsed/inactive. */}
       {s.lapsed && (
-        <p data-testid="guardian-child-lastseen" className="mt-2 flex flex-wrap items-center gap-x-3 rounded-lg bg-red-50/60 px-3 py-1.5 text-xs text-red-700">
+        <p data-testid="guardian-child-lastseen" className="mt-2 flex flex-wrap items-center gap-x-3 rounded-lg bg-danger-500/10 px-3 py-1.5 text-xs text-danger-700">
           <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{s.lastSeen ? t('lastSeen', { date: fmtDate(s.lastSeen) }) : t('neverSeen')}</span>
           <span>· {t('joined', { date: fmtDate(s.joinDate) })}</span>
         </p>
@@ -161,7 +156,7 @@ export default async function GuardianDetailPage({
   const familyOutstanding = familyOutstandingTotal(kidSummaries)
 
   return (
-    <div className={cn('space-y-5', isRTL && 'text-right')} data-testid="guardian-detail" data-guardian-id={id}>
+    <div className="space-y-5" data-testid="guardian-detail" data-guardian-id={id}>
       <Link href={`/${locale}/students/guardians`} data-testid="guardian-back"
         className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800">
         <ChevronLeft className={cn('h-4 w-4', isRTL && 'rotate-180')} />{t('backToList')}
@@ -184,9 +179,9 @@ export default async function GuardianDetailPage({
           <div className="flex flex-col items-end gap-2">
             {/* Family balance — the combined outstanding across all dependents. */}
             <div data-testid="guardian-family-outstanding" data-amount={familyOutstanding.toFixed(2)}
-              className={cn('rounded-xl px-4 py-2 text-right', familyOutstanding > 0.005 ? 'bg-red-50' : 'bg-emerald-50')}>
-              <p className={cn('text-[11px] font-medium', familyOutstanding > 0.005 ? 'text-red-600' : 'text-emerald-600')}>{t('familyOutstanding')}</p>
-              <p className={cn('text-lg font-bold', familyOutstanding > 0.005 ? 'text-red-800' : 'text-emerald-700')} dir="ltr">
+              className={cn('rounded-xl px-4 py-2 text-end', familyOutstanding > 0.005 ? 'bg-danger-500/10' : 'bg-gray-50')}>
+              <p className={cn('text-[11px] font-medium', familyOutstanding > 0.005 ? 'text-danger-600' : 'text-gray-500')}>{t('familyOutstanding')}</p>
+              <p className={cn('text-lg font-bold', familyOutstanding > 0.005 ? 'text-danger-800' : 'text-gray-600')} dir="ltr">
                 {familyOutstanding > 0.005 ? `$${familyOutstanding.toFixed(2)}` : t('settled')}
               </p>
             </div>

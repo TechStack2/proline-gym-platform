@@ -15,6 +15,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { fmtUsd, fmtLbp } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
 import { FormWizard } from '@/components/shared/form-wizard'
 import { Plus, Pencil, Archive, ArchiveRestore } from 'lucide-react'
 
@@ -138,7 +140,8 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
       content: (
         <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-700" data-testid="plan-review">
           <p className="font-semibold text-gray-900">{nameEn}</p>
-          <p>${Number(priceUsd || 0).toLocaleString()}{priceLbp ? ` · ${Number(priceLbp).toLocaleString()} L.L.` : ''}</p>
+          {/* §2.7: money through the shared formatters, each amount LTR-isolated. */}
+          <p><Ltr>{fmtUsd(Number(priceUsd || 0))}</Ltr>{priceLbp ? <> · <Ltr>{fmtLbp(Number(priceLbp))}</Ltr></> : null}</p>
           <p>{t('reviewDuration', { days: duration })}</p>
         </div>
       ),
@@ -146,7 +149,7 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
   ]
 
   return (
-    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm', isRTL && 'text-right')} data-testid="plan-manager">
+    <div className={cn('mb-5 space-y-3 rounded-2xl border bg-white p-4 shadow-sm')} data-testid="plan-manager">
       <div className="flex items-center justify-between">
         <h3 className={cn('text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h3>
         <Button size="sm" data-testid="plan-add-btn" disabled={busy} onClick={() => openWizard(null)} className="bg-primary-700 hover:bg-primary-800">
@@ -158,7 +161,7 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
         {plans.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-2 py-2" data-testid="plan-row" data-name-en={p.name_en} data-active={p.is_active !== false}>
             <span className={cn('flex items-center gap-1.5 text-sm font-medium', p.is_active === false ? 'text-gray-400' : 'text-gray-800')}>
-              {lname(p)} <span className="text-xs font-normal text-gray-400">· ${p.price_usd?.toLocaleString()} · {p.duration_days}d</span>
+              {lname(p)} <span className="text-xs font-normal text-gray-400">· <Ltr>{fmtUsd(p.price_usd)}</Ltr> · {p.duration_days}d</span>
               {p.is_active === false && (
                 <span className="rounded-full bg-gray-100 px-2 py-0.5 text-2xs font-medium text-gray-500">{t('archived')}</span>
               )}
@@ -169,12 +172,12 @@ export function PlanManager({ plans, gymId, locale }: { plans: PlanRow[]; gymId:
               </Button>
               {p.is_active !== false ? (
                 <Button size="sm" variant="ghost" data-testid="plan-archive-btn" disabled={busy}
-                  className="text-red-500 hover:bg-red-50" onClick={() => setActive(p.id!, false)}>
+                  className="text-red-500 hover:bg-danger-500/10" onClick={() => setActive(p.id!, false)}>
                   <Archive className="h-3.5 w-3.5" />
                 </Button>
               ) : (
                 <Button size="sm" variant="ghost" data-testid="plan-restore-btn" disabled={busy}
-                  className="text-green-600 hover:bg-green-50" onClick={() => setActive(p.id!, true)}>
+                  className="text-green-600 hover:bg-success-500/10" onClick={() => setActive(p.id!, true)}>
                   <ArchiveRestore className="h-3.5 w-3.5" />
                 </Button>
               )}

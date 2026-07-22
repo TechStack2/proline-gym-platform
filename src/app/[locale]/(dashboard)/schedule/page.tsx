@@ -1,10 +1,12 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { categoryAttr } from '@/lib/design/category-color'
 import { WorkspaceSegments } from '@/components/layout/WorkspaceSegments'
 import { cn } from '@/lib/utils'
+import { fmtDate } from '@/lib/fmt'
+import { MobileDayDefault } from './mobile-day-default'
+import { segmentedItemCls, segmentedTrayCls } from '@/components/ui/segmented'
 import { localizedName, one } from '@/lib/names'
 import { Avatar } from '@/components/shared/avatar'
 import { DiaryBookPt, type DiaryAssignment } from './diary-book-pt'
@@ -62,7 +64,10 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   const tTeam = await getTranslations('team')
   const supabase = await createClient()
 
-  const view = searchParams.view === 'day' ? 'day' : 'week'
+  // DA-22: track whether the view was EXPLICIT — a param-less URL means "default",
+  // which is Week on desktop and (via <MobileDayDefault/>) Day on phones.
+  const explicitView = searchParams.view === 'day' ? 'day' : searchParams.view === 'week' ? 'week' : null
+  const view = explicitView ?? 'week'
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -218,13 +223,11 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
 
   const qs = (overrides: Record<string, string | undefined>) => {
     const p = new URLSearchParams()
-    const merged: Record<string, string | undefined> = { view, date: view === 'day' ? dateStr : undefined, discipline: fDiscipline || undefined, coach: fCoach || undefined, ...overrides }
-    for (const [k, v] of Object.entries(merged)) if (v && v !== 'week') p.set(k, v)
+    const merged: Record<string, string | undefined> = { view: explicitView ?? undefined, date: view === 'day' ? dateStr : undefined, discipline: fDiscipline || undefined, coach: fCoach || undefined, ...overrides }
+    for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v)
     const s = p.toString()
     return s ? `?${s}` : ''
   }
-
-  const fmtDay = new Date(`${dateStr}T12:00:00`)
 
     // PT-2: active assignments per coach for the diary Book-PT picker.
   const { data: diaryAssignRows } = await supabase
@@ -244,7 +247,8 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
   }
 
   return (
-    <div className={cn('space-y-6', isRTL && 'text-right')}>
+    <div className="space-y-6">
+      {!explicitView && <MobileDayDefault dayUrl={`/${locale}/schedule${qs({ view: 'day', date: dateStr })}`} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader segment="schedule" />
         <WorkspaceSegments
@@ -259,37 +263,67 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
 
       {/* View switcher + filters (GET — server-rendered, RTL-safe) */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-xl border bg-gray-50 p-1" data-testid="schedule-views">
-          <Link href={`/${locale}/schedule${qs({ view: undefined, date: undefined })}`} data-testid="view-week"
-            className={cn('inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium',
-              view === 'week' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+        <div className={segmentedTrayCls} data-testid="schedule-views">
+          <Link href={`/${locale}/schedule${qs({ view: 'week', date: undefined })}`} data-testid="view-week"
+            className={segmentedItemCls(view === 'week')}>
             <CalendarRange className="h-4 w-4" /> {t('weekView')}
           </Link>
           <Link href={`/${locale}/schedule${qs({ view: 'day', date: dateStr })}`} data-testid="view-day"
-            className={cn('inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium',
-              view === 'day' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+            className={segmentedItemCls(view === 'day')}>
             <CalendarClock className="h-4 w-4" /> {t('dayView')}
           </Link>
         </div>
 
-        <form method="get" action={`/${locale}/schedule`} className="flex flex-wrap items-center gap-2">
-          {view === 'day' && <input type="hidden" name="view" value="day" />}
-          {view === 'day' && (
+        {view === 'day' && (
+          <form method="get" action={`/${locale}/schedule`} className="flex items-center gap-2">
+            <input type="hidden" name="view" value="day" />
+            {fDiscipline && <input type="hidden" name="discipline" value={fDiscipline} />}
+            {fCoach && <input type="hidden" name="coach" value={fCoach} />}
             <input type="date" name="date" defaultValue={dateStr} data-testid="diary-date"
               className="h-9 rounded-lg border px-3 text-sm" />
-          )}
-          <select name="discipline" defaultValue={fDiscipline} data-testid="filter-discipline"
-            className="h-9 rounded-lg border bg-white px-3 text-sm">
-            <option value="">{t('allDisciplines')}</option>
-            {(disciplines ?? []).map((d: any) => <option key={d.id} value={d.id}>{lname(d)}</option>)}
-          </select>
-          <select name="coach" defaultValue={fCoach} data-testid="filter-coach"
-            className="h-9 rounded-lg border bg-white px-3 text-sm">
-            <option value="">{t('allCoaches')}</option>
-            {(coaches ?? []).map((c: any) => <option key={c.id} value={c.id}>{localizedName(one(c.profiles), locale)}</option>)}
-          </select>
-          <button className="h-9 rounded-lg bg-primary-700 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-800">{t('apply')}</button>
-        </form>
+            <button className="h-9 rounded-lg bg-primary-700 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-800">{t('apply')}</button>
+          </form>
+        )}
+      </div>
+
+      {/* DA-33 (W3b): the native discipline/coach <select>+Apply pair becomes
+          apply-on-tap chip LINKS (server-rendered, RTL-safe, dark-correct) —
+          the W3a §2.6 chip contract. Containers keep the historical testids;
+          chips are addressable via data-discipline-id / data-coach-id.
+          Tapping the active chip clears it. */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-1.5" data-testid="filter-discipline">
+          {[{ id: '', label: t('allDisciplines') }, ...(disciplines ?? []).map((d: any) => ({ id: d.id as string, label: lname(d) }))].map((d) => (
+            <Link key={d.id || 'all'} href={`/${locale}/schedule${qs({ discipline: !d.id || fDiscipline === d.id ? undefined : d.id })}`}
+              data-testid="schedule-discipline-chip" data-discipline-id={d.id}
+              data-active={(d.id ? fDiscipline === d.id : !fDiscipline) || undefined}
+              className={cn(
+                'inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+                (d.id ? fDiscipline === d.id : !fDiscipline)
+                  ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300',
+              )}>
+              {d.label}
+            </Link>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5" data-testid="filter-coach">
+          {[{ id: '', label: t('allCoaches') }, ...(coaches ?? []).map((c: any) => ({ id: c.id as string, label: localizedName(one(c.profiles), locale) }))].map((c) => (
+            <Link key={c.id || 'all'} href={`/${locale}/schedule${qs({ coach: !c.id || fCoach === c.id ? undefined : c.id })}`}
+              data-testid="schedule-coach-chip" data-coach-id={c.id}
+              data-active={(c.id ? fCoach === c.id : !fCoach) || undefined}
+              className={cn(
+                'inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]',
+                (c.id ? fCoach === c.id : !fCoach)
+                  ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300',
+              )}>
+              {c.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {view === 'week' ? (
@@ -348,9 +382,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
       ) : (
         /* ── Day · Coach diary ── */
         <div>
-          <p className="mb-3 text-sm text-gray-500">
-            {fmtDay.toLocaleDateString(dateLocale(locale), { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+          <p className="mb-3 text-sm text-gray-500">{fmtDate(dateStr, locale, 'full')}</p>
           {diary.length === 0 ? (
             <ScheduleEmpty locale={locale} canCreate={canCreateClass} label={t('noClassesYet')} cta={t('createFirstClass')} />
           ) : (
@@ -395,7 +427,7 @@ export default async function SchedulePage({ params: { locale }, searchParams }:
                       {/* TEAM-1: PUBLISHED-but-unbooked windows — the PT-upsell signal. */}
                       {col.gaps.map((g, i) => (
                         <div key={`gap-${i}`} data-testid="diary-availability-gap"
-                          className="rounded-lg border border-dashed border-emerald-300 bg-emerald-50 px-2.5 py-2 text-xs font-medium text-emerald-700">
+                          className="tint-success rounded-lg border border-dashed border-success-500/40 px-2.5 py-2 text-xs font-medium">
                           <span className="flex items-center gap-1 font-semibold"><Clock className="h-3 w-3" /> {tTeam('diary.openGap')}</span>
                           <span className="block opacity-80" dir="ltr">{g.start}–{g.end}</span>
                         </div>

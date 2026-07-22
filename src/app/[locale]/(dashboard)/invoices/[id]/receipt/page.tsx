@@ -1,4 +1,3 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
@@ -6,7 +5,8 @@ import { paidUsd, balanceUsd, localizedName, statusLabel, displayInvoiceStatus, 
 import { getTranslations } from 'next-intl/server'
 import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 import { PrintButton } from './print-button'
-import { normalizeCurrencyPref, orderedMoney, fmtUsd } from '@/lib/billing/currency'
+import { normalizeCurrencyPref, orderedMoney, fmtUsd, fmtLbp } from '@/lib/billing/currency'
+import { fmtDate as fmtDateLoc } from '@/lib/fmt'
 import { storagePublicUrl } from '@/lib/storage/public-url'
 import type { ReactNode } from 'react'
 
@@ -74,7 +74,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   const balance = balanceUsd(inv.total_usd, payments)
   const settled = balance <= 0.005
   const voided = !!(inv as any).voided_at // CANCEL-FLOW: VOID overrides the Paid/Due stamp
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
+  const fmtDate = (d: string | null) => fmtDateLoc(d, locale)
   // INVOICE-POLISH 6a/6b: the customer-facing "what it's for" label lives in notes_*
   // (composed at creation by the billing RPCs). Rendered on the receipt (receipt-note)
   // + passed into the WhatsApp share below.
@@ -93,7 +93,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
   meta.push({ k: t('Type', 'النوع', 'Type'), v: <span data-testid="receipt-invoice-type" data-type={inv.invoice_type || 'other'}>{invoiceTypeLabel(inv.invoice_type, locale)}</span> })
 
   return (
-    <div className={cn('mx-auto max-w-md p-4 sm:p-6', isRTL && 'text-right')}>
+    <div className="mx-auto max-w-md p-4 sm:p-6">
       {/* Scoped @page: 80mm thermal roll, zero margins → no browser URL header/footer.
           Injected here (not globals) so only the receipt route resizes the sheet.
           Inline <style> is CSP-safe: prod style-src is 'self' 'unsafe-inline'. */}
@@ -107,7 +107,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
             message={tw('tmpl.receipt', { name: studentName, number: inv.invoice_number, gym: gymName,
               label: label || invoiceTypeLabel(inv.invoice_type, locale),
               usd: Number(inv.total_usd ?? 0).toFixed(2),
-              lbp: inv.total_lbp ? ` / ${Number(inv.total_lbp).toLocaleString()} LBP` : '',
+              lbp: inv.total_lbp ? ` / ${fmtLbp(Number(inv.total_lbp))}` : '',
               date: fmtDate((inv as any).paid_at || inv.created_at),
               balance: balance.toFixed(2) })}
             label={tw('share.sendReceipt')} />
@@ -183,7 +183,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
                 {(payments ?? []).map((p: any) => (
                   <tr key={p.id} className="border-b border-dashed border-gray-200">
                     <td className="py-0.5">{fmtDate(p.payment_date)} · {(locale === 'ar' ? METHOD_LABEL[p.payment_method]?.ar : locale === 'fr' ? METHOD_LABEL[p.payment_method]?.fr : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}{p.reference_number ? ` · ${p.reference_number}` : ''}</td>
-                    <td className="py-0.5 text-end tabular-nums">${Number(p.amount_usd).toFixed(2)}{p.amount_lbp ? ` · ${Number(p.amount_lbp).toLocaleString()}` : ''}</td>
+                    <td className="py-0.5 text-end tabular-nums">{fmtUsd(Number(p.amount_usd))}{p.amount_lbp ? ` · ${fmtLbp(Number(p.amount_lbp))}` : ''}</td>
                   </tr>
                 ))}
               </tbody>
@@ -213,7 +213,7 @@ export default async function ReceiptPage({ params: { locale, id } }: Props) {
 
         {inv.exchange_rate ? (
           <p className="mt-3 text-center text-[10px] text-gray-500" data-testid="receipt-rate">
-            {t('Rate', 'سعر الصرف', 'Taux')}: 1 USD = {Number(inv.exchange_rate).toLocaleString()} LBP{inv.rate_date ? ` · ${fmtDate(inv.rate_date)}` : ''}
+            {t('Rate', 'سعر الصرف', 'Taux')}: 1 USD = {fmtLbp(Number(inv.exchange_rate))}{inv.rate_date ? ` · ${fmtDate(inv.rate_date)}` : ''}
           </p>
         ) : null}
         <p className="mt-1 text-center text-[10px] text-gray-500">{t('Thank you', 'شكراً لكم', 'Merci')}</p>

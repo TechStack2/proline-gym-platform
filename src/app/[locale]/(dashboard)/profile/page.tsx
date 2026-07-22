@@ -1,10 +1,9 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { User, Phone, Mail, Shield, CalendarDays, Clock, Globe, Save, Check } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import { PushToggle } from '@/components/push/push-toggle'
-import { fmtPhone } from '@/lib/fmt'
+import { fmtDate, fmtPhone } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
 
 type Props = { params: { locale: string } }
@@ -89,9 +88,10 @@ export default async function StaffProfilePage({ params }: Props) {
                   : labels.en
               : r.role
             return (
+              /* DA-25: the brand tint (dark-correct) instead of the light-pinned -50 fill. */
               <span
                 key={r.id}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium tint-brand"
               >
                 <Shield className="h-3 w-3" />
                 {label}
@@ -130,26 +130,14 @@ export default async function StaffProfilePage({ params }: Props) {
         <DetailRow
           icon={CalendarDays}
           label={isRTL ? 'تاريخ الانضمام' : locale === 'fr' ? "Date d'inscription" : 'Joined'}
-          value={
-            profile?.created_at
-              ? new Date(profile.created_at).toLocaleDateString(dateLocale(locale), {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })
-              : '—'
-          }
+          value={fmtDate(profile?.created_at, locale, 'medium')}
         />
         <DetailRow
           icon={Clock}
           label={isRTL ? 'آخر تسجيل دخول' : locale === 'fr' ? 'Dernière connexion' : 'Last Login'}
           value={
             profile?.last_login_at
-              ? new Date(profile.last_login_at).toLocaleDateString(dateLocale(locale), {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })
+              ? fmtDate(profile.last_login_at, locale, 'medium')
               : isRTL
                 ? 'غير متوفر'
                 : locale === 'fr'

@@ -9,6 +9,8 @@
  */
 import { fmtDate, ltrIsolate } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -16,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
-import { membershipState, type MembershipState } from '@/lib/lifecycle/status'
+import { membershipState } from '@/lib/lifecycle/status'
 import {
   freezeMembership, unfreezeMembership, changeMembershipPlan,
   renewMembershipNow, reinstateMembership,
@@ -36,15 +38,6 @@ export type MembershipCardData = {
 }
 export type PlanOption = { id: string; name: string; price: number; durationDays: number }
 
-const TONE: Record<MembershipState, string> = {
-  active: 'bg-green-100 text-green-700',
-  expiring: 'bg-amber-100 text-amber-700',
-  overdue: 'bg-orange-100 text-orange-700',
-  lapsed: 'bg-red-100 text-red-700',
-  frozen: 'bg-blue-100 text-blue-700',
-  none: 'bg-gray-100 text-gray-500',
-}
-
 export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId, locale }: {
   data: MembershipCardData | null
   plans: PlanOption[]
@@ -62,7 +55,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
   const [planOpen, setPlanOpen] = useState(false)
   const [planId, setPlanId] = useState('')
 
-  if (!data) return <p className="py-3 text-center text-sm text-gray-400">{t('noMembership')}</p>
+  if (!data) return <EmptyState variant="bare" className="py-3" title={t('noMembership')} />
 
   const state = membershipState(data, policy)
   // DS2-FMT §2.7 — one date layer. `fmtDate` applies the same noon-UTC anchoring
@@ -101,13 +94,14 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
             </p>
           )}
         </div>
-        <span className={cn('rounded-full px-2.5 py-1 text-xs font-medium', TONE[state])} data-testid="membership-state">
-          {t(`state.${state}` as any)}
-        </span>
+        {/* §2.3 (DA-32): the one status pill — the member vocabulary picks the hue
+            (lapsed reads calm, not alarm); the historical lifecycle label is kept. */}
+        <StatusChip domain="member" status={state} data-testid="membership-state"
+          className="px-2.5 py-1" label={t(`state.${state}` as any)} />
       </div>
 
       {data.renewalOpen && (
-        <p className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs text-amber-700" data-testid="membership-renewal-open">
+        <p className="tint-warning rounded-lg px-3 py-1.5 text-xs" data-testid="membership-renewal-open">
           {t('renewalOpen')}
         </p>
       )}
@@ -145,7 +139,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
       </div>
 
       {freezeOpen && (
-        <div className="rounded-xl border bg-blue-50/40 p-3 space-y-2" data-testid="ms-freeze-panel">
+        <div className="rounded-xl border bg-info-500/10 p-3 space-y-2" data-testid="ms-freeze-panel">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-gray-700">{t('freezeTitle')}</p>
             <button type="button" onClick={() => setFreezeOpen(false)} className="rounded p-0.5 text-gray-400 hover:bg-gray-100"><X className="h-3.5 w-3.5" /></button>
@@ -182,7 +176,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
                 onClick={() => setPlanId(p.id)}
                 className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
                   planId === p.id ? 'border-primary-700 bg-primary-50 text-primary-700' : 'border-gray-200 bg-white text-gray-700')}>
-                {p.name} · ${p.price.toFixed(0)}
+                {p.name} · <Ltr>{`$${p.price.toFixed(0)}`}</Ltr>
               </button>
             ))}
           </div>

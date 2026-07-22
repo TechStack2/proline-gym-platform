@@ -116,16 +116,10 @@ export function displayInvoiceStatus(status: string, voidedAt: string | null | u
   return voidedAt ? 'void' : status
 }
 
-export const STATUS_BADGE: Record<string, string> = {
-  paid: 'bg-green-100 text-green-700',
-  pending: 'bg-yellow-100 text-yellow-700',
-  partial: 'bg-orange-100 text-orange-700',
-  overdue: 'bg-red-100 text-red-700',
-  cancelled: 'bg-gray-100 text-gray-500',
-  refunded: 'bg-blue-100 text-blue-700',
-  void: 'bg-gray-200 text-gray-600 line-through decoration-2',
-}
-
+// W3b (DA-25/32): the STATUS_BADGE colour map is DEAD — invoice status colour is
+// the status vocabulary's call (`statusEntry('invoice', …)` via StatusChip); the
+// light-pinned -100 pills it carried were the dark-mode breakage class. Labels
+// below stay: callers pass them to StatusChip as the historical-text override.
 export function statusLabel(status: string, locale: string): string {
   const ar: Record<string, string> = { paid: 'مدفوع', pending: 'معلق', partial: 'جزئي', overdue: 'متأخر', cancelled: 'ملغي', refunded: 'مسترجع', void: 'ملغاة' }
   const en: Record<string, string> = { paid: 'Paid', pending: 'Pending', partial: 'Partial', overdue: 'Overdue', cancelled: 'Cancelled', refunded: 'Refunded', void: 'Void' }
@@ -135,15 +129,18 @@ export function statusLabel(status: string, locale: string): string {
 
 // INV-LABEL — the invoice's product type, localized + pill-styled (display only;
 // the type is written by the issuing RPCs). Same locale-param shape as statusLabel.
-export const INVOICE_TYPE_BADGE: Record<string, string> = {
-  membership: 'bg-indigo-100 text-indigo-700',
-  class_registration: 'bg-sky-100 text-sky-700',
-  pt_package: 'bg-purple-100 text-purple-700',
-  pt_session: 'bg-fuchsia-100 text-fuchsia-700',
-  camp: 'bg-amber-100 text-amber-700',
-  rental: 'bg-teal-100 text-teal-700',
-  event: 'bg-pink-100 text-pink-700',
-  other: 'bg-gray-100 text-gray-600',
+// W3b (DA-25): a product type is a CATEGORY, not a status — the pill wears the
+// DISC-COLOR `cat-tint` layer (`.cat-tint` + `data-cat`, dark-correct by
+// construction) instead of the light-pinned per-hue -100 map it had.
+export const INVOICE_TYPE_CAT: Record<string, string> = {
+  membership: '1',
+  class_registration: '2',
+  camp: '3',
+  rental: '4',
+  pt_package: '5',
+  pt_session: '6',
+  event: '7',
+  other: '8',
 }
 
 export function invoiceTypeLabel(type: string | null | undefined, locale: string): string {

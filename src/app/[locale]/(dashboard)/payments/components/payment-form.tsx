@@ -122,7 +122,7 @@ export function PaymentForm({ invoice, locale, canDiscount = false }: { invoice:
   }
 
   return (
-    <div data-testid="payment-form" className={`space-y-4 rounded-xl border p-4 ${isRTL ? 'text-right' : ''}`}>
+    <div data-testid="payment-form" className="space-y-4 rounded-xl border p-4">
       {/* DISCOUNT (owner/reception only) — %|value toggle; the other value + the new
           amount due compute live and the collected amount defaults to the new due. */}
       {canDiscount && (
@@ -191,7 +191,7 @@ export function PaymentForm({ invoice, locale, canDiscount = false }: { invoice:
       </div>
 
       {error && (
-        <div data-testid="pay-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div data-testid="pay-error" className="tint-danger rounded-md px-3 py-2 text-sm">{error}</div>
       )}
 
       <Button data-testid="pay-submit" onClick={submit} disabled={pending || discountBlocks}

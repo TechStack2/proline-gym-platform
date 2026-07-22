@@ -5,7 +5,7 @@
  * absent per confirmed kid — UPSERT on camp_attendance's natural key
  * (camp_id, student_id, attendance_date), gym-scoped staff RLS (000043).
  */
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate } from '@/lib/fmt'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
@@ -41,8 +41,7 @@ export function CampAttendance({ campId, day, days, kids, locale }: {
     else router.refresh()
   }
 
-  const fmtPill = (d: string) =>
-    new Date(d).toLocaleDateString(dateLocale(locale), { weekday: 'short', day: 'numeric' })
+  const fmtPill = (d: string) => fmtDate(d, locale, 'weekday')
 
   return (
     <section className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="camp-attendance">
@@ -67,13 +66,14 @@ export function CampAttendance({ campId, day, days, kids, locale }: {
                 <button type="button" data-testid="camp-att-present" disabled={busy !== null}
                   onClick={() => mark(k.studentId, 'present')}
                   className={cn('inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium',
-                    k.status === 'present' ? 'bg-green-600 text-primary-foreground' : 'border text-gray-600 hover:bg-green-50')}>
+                    /* W3a §2.3/DA-25 pattern: active states wear the role TINTS. */
+                    k.status === 'present' ? 'tint-success border border-success-500/40' : 'border text-gray-600 hover:bg-success-500/10')}>
                   <Check className="h-3.5 w-3.5" /> {t('present')}
                 </button>
                 <button type="button" data-testid="camp-att-absent" disabled={busy !== null}
                   onClick={() => mark(k.studentId, 'absent')}
                   className={cn('inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium',
-                    k.status === 'absent' ? 'bg-red-600 text-primary-foreground' : 'border text-gray-600 hover:bg-red-50')}>
+                    k.status === 'absent' ? 'tint-danger border border-danger-500/40' : 'border text-gray-600 hover:bg-danger-500/10')}>
                   <X className="h-3.5 w-3.5" /> {t('absent')}
                 </button>
               </span>

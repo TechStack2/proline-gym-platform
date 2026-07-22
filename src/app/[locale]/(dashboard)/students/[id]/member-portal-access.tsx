@@ -89,11 +89,11 @@ export function MemberPortalAccess({
       {eligible ? (
         <InviteButton kind="student" id={studentId} name={name} locale={locale} phone={phone} />
       ) : (
-        <div className="flex w-full flex-col items-end gap-1 rounded-lg bg-amber-50 px-3 py-2 text-right" data-testid="invite-blocked-guardian">
-          <span className="text-xs font-medium text-amber-800">{t('blockedTitle')}</span>
-          <span className="text-[11px] text-amber-700">{t('blockedBody')}</span>
+        <div className="tint-warning flex w-full flex-col items-end gap-1 rounded-lg px-3 py-2 text-right" data-testid="invite-blocked-guardian">
+          <span className="text-xs font-medium">{t('blockedTitle')}</span>
+          <span className="text-[11px]">{t('blockedBody')}</span>
           <a href="#panel-guardians" data-testid="invite-blocked-to-guardians"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-amber-900 underline">
+            className="inline-flex items-center gap-1 text-xs font-semibold underline">
             <Users className="h-3 w-3" /> {t('toGuardians')}
           </a>
         </div>

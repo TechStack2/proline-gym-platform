@@ -20,18 +20,9 @@ import { cn } from '@/lib/utils';
 import { humanizeEnum } from '@/lib/fmt';
 import {
   statusEntry,
+  VARIANT_TINT,
   type StatusDomain,
-  type StatusVariant,
 } from '@/lib/status-vocabulary';
-
-const VARIANT: Record<StatusVariant, string> = {
-  success: 'tint-success',
-  warning: 'tint-warning',
-  danger: 'tint-danger',
-  info: 'tint-info',
-  neutral: 'tint-neutral',
-  brand: 'tint-brand',
-};
 
 const SIZE = {
   sm: 'px-2 py-0.5 text-2xs',
@@ -79,7 +70,7 @@ export function StatusChip({
       className={cn(
         'inline-flex items-center gap-1 whitespace-nowrap rounded-full font-medium',
         SIZE[size],
-        VARIANT[entry.variant],
+        VARIANT_TINT[entry.variant],
         entry.strikethrough && 'line-through decoration-2',
         className,
       )}

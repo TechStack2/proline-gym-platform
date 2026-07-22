@@ -1,4 +1,5 @@
 // ── Shared types & constants for the Leads module ──
+import { statusTintClass } from '@/lib/status-vocabulary'
 // Extracted from page.tsx so Next.js type generation doesn't fail on extra exports.
 
 export type LeadStatus =
@@ -114,13 +115,15 @@ export const COUNTABLE_STATUSES = [
 // "Showing N of TOTAL". A real load-more/pagination is a later polish.
 export const LEADS_LIMIT = 50;
 
+// W3b (DA-25/32): colour is the status vocabulary's call — these are the §2.3
+// role tints (dark-correct), derived from the `lead` domain, not a local palette.
 export const STATUS_COLORS: Record<LeadStatus, string> = {
-  new: 'bg-blue-100 text-blue-700',
-  contacted: 'bg-yellow-100 text-yellow-700',
-  trial_scheduled: 'bg-purple-100 text-purple-700',
-  trial_completed: 'bg-indigo-100 text-indigo-700',
-  converted: 'bg-green-100 text-green-700',
-  lost: 'bg-red-100 text-red-700',
+  new: statusTintClass('lead', 'new'),
+  contacted: statusTintClass('lead', 'contacted'),
+  trial_scheduled: statusTintClass('lead', 'trial_scheduled'),
+  trial_completed: statusTintClass('lead', 'trial_completed'),
+  converted: statusTintClass('lead', 'converted'),
+  lost: statusTintClass('lead', 'lost'),
 };
 
 export const SOURCE_ICONS: Record<string, string> = {

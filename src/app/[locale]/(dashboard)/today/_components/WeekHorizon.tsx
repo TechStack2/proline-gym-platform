@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate as fmtDateLoc } from '@/lib/fmt'
 import { ActionCard, ActionRow } from '@/components/dashboard/action-card'
 import { horizonEndDate } from '@/lib/finances/horizon'
 import {
@@ -42,7 +42,7 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
     getFunnel(supabase, gymId, weekAgoISO),
   ])
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString(dateLocale(locale))
+  const fmtDate = (d: string) => fmtDateLoc(d, locale)
   const hhmm = (v: string | null) => (v || '').slice(0, 5)
   const pct = (n: number) => Math.round(n)
   const underfilledCount = fill.filter((f) => f.underfilled).length
@@ -57,7 +57,7 @@ export async function WeekHorizon({ locale, gymId }: { locale: string; gymId: st
           <ActionRow key={f.classId} href={`/${locale}/classes/${f.classId}`} testid="schedule-fill-row"
             action={
               <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
-                f.underfilled ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')}
+                f.underfilled ? 'tint-warning' : 'tint-success')}
                 data-underfilled={f.underfilled}>
                 {f.fillPct}%
               </span>

@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 export type NativeHeaderProps = {
   title: string;
   locale: string;
-  role?: string;
   /** AX-1 per-shell identity — accent bar + labeled badge (per-ROLE platform tokens). */
   shell?: 'staff' | 'coach' | 'portal';
   rightActions?: React.ReactNode;
@@ -30,8 +29,8 @@ export type NativeHeaderProps = {
    * moves inline into the top row (still `shell-badge` — same role, same testid)
    * and the duplicated role pill dies (shell badge OR role badge, never both).
    * The gym identity (DA-40's mobile half) rides the freed start slot: logo
-   * monogram + name, swapped for the collapsed page title on scroll. Portal +
-   * coach opt in here; staff aligns in W3b.
+   * monogram + name, swapped for the collapsed page title on scroll. All three
+   * shells ride it since W3b (the staff flip); the legacy 3-row branch is gone.
    */
   slim?: boolean;
   /** The USER's gym identity for the slim row (never the Host default's). */
@@ -61,34 +60,9 @@ const SHELL_STYLE: Record<'staff' | 'coach' | 'portal', { badge: string; labelKe
   portal: { badge: 'bg-[color:var(--surface)] text-white', labelKey: 'shellMember' },
 };
 
-const roleLabels: Record<string, { en: string; ar: string; fr: string }> = {
-  owner: { en: 'Owner', ar: 'مالك', fr: 'Propriétaire' },
-  head_coach: { en: 'Head Coach', ar: 'مدرب رئيسي', fr: 'Entraîneur en chef' },
-  coach: { en: 'Coach', ar: 'مدرب', fr: 'Entraîneur' },
-  receptionist: { en: 'Reception', ar: 'استقبال', fr: 'Réception' },
-  student: { en: 'Member', ar: 'عضو', fr: 'Membre' },
-  parent: { en: 'Parent', ar: 'ولي أمر', fr: 'Parent' },
-  external_coach: { en: 'Ext. Coach', ar: 'مدرب خارجي', fr: 'Entraîneur ext.' },
-};
-
-// DS2-TOKENS §1.4: the role dot is an IDENTITY marker, not a status — it says "who is
-// signed in", never "something is wrong". Its four raw hexes were exactly the named
-// tokens spelled out longhand (#eab308 = gold-500, #3b82f6 = info-500, #22c55e =
-// success-500, #a855f7 = purple-500), so naming them repaints nothing.
-const roleBadgeColors: Record<string, string> = {
-  owner: 'bg-gold-500',
-  head_coach: 'bg-info-500',
-  receptionist: 'bg-success-500',
-  coach: 'bg-purple-500',
-  student: 'bg-gray-400',
-  parent: 'bg-orange-400',
-  external_coach: 'bg-teal-400',
-};
-
 export function NativeHeader({
   title,
   locale,
-  role,
   shell,
   rightActions,
   onBack,
@@ -133,11 +107,7 @@ export function NativeHeader({
   }, [variant]);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
-  const roleLabel = role
-    ? (roleLabels[role]?.[locale as 'en' | 'ar' | 'fr'] ?? roleLabels[role]?.en ?? role)
-    : null;
   const shellStyle = shell ? SHELL_STYLE[shell] : null;
-  const roleDotColor = role ? roleBadgeColors[role] ?? 'bg-gray-400' : null;
 
   return (
     <header
@@ -226,29 +196,18 @@ export function NativeHeader({
         <div className="flex items-center gap-1">{rightActions}</div>
       </div>
 
-      {/* Shell + role badge row (legacy 3-row chrome — staff until W3b) */}
-      {!slim && (shellStyle || role) && (
+      {/* W3b: the legacy 3-row badge branch (shell + role pill row) is deleted —
+          every shell passes `slim`; the ONE inline shell badge above is the
+          only badge (DA-17). */}
+      {!slim && shellStyle && (
         <div className="flex items-center gap-1.5 px-4 pb-2">
-          {shellStyle && (
-            <span
-              data-testid="shell-badge"
-              data-shell={shell}
-              className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-2xs font-bold uppercase tracking-wider shadow-sm', shellStyle.badge)}
-            >
-              {tCommon(shellStyle.labelKey as Parameters<typeof tCommon>[0])}
-            </span>
-          )}
-          {role && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow-sm',
-                roleDotColor ?? 'bg-gray-400', // pre-AX-1 this class was computed but never APPLIED
-              )}
-            >
-              <span className="h-2 w-2 rounded-full bg-white/60" aria-hidden="true" />
-              <span className="leading-none">{roleLabel}</span>
-            </span>
-          )}
+          <span
+            data-testid="shell-badge"
+            data-shell={shell}
+            className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-2xs font-bold uppercase tracking-wider shadow-sm', shellStyle.badge)}
+          >
+            {tCommon(shellStyle.labelKey as Parameters<typeof tCommon>[0])}
+          </span>
         </div>
       )}
 

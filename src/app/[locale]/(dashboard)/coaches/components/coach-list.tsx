@@ -4,8 +4,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Phone, Award, User } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { StatusChip } from '@/components/ui/status-chip'
 import { localizedName, one } from '@/lib/names'
 import { beltRankLabel } from '@/lib/belts/label'
 import { fmtPhone } from '@/lib/fmt'
@@ -52,16 +51,16 @@ export function CoachList({ coaches, locale, isRTL }: CoachListProps) {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className={cn('font-semibold text-lg', isRTL && 'text-right')} data-testid="coach-name">
+                    <h3 className="font-semibold text-lg" data-testid="coach-name">
                       {localizedName(coach.profiles, locale) || <span className="text-gray-400"><User className="inline h-4 w-4" /></span>}
                     </h3>
                     <p className="text-sm text-gray-500">
                       {localized(coach, 'specialization') || t('no_specialization')}
                     </p>
                   </div>
-                  <Badge className={coach.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                    {coach.is_active ? t('status.active') : t('status.inactive')}
-                  </Badge>
+                  {/* W3b §2.3: ONE status chip — the member vocabulary picks the hue. */}
+                  <StatusChip domain="member" status={coach.is_active ? 'active' : 'inactive'}
+                    label={coach.is_active ? t('status.active') : t('status.inactive')} />
                 </div>
 
                 <div className="space-y-2">

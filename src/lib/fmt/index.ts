@@ -19,6 +19,8 @@ export {
 export {
   fmtMoney,
   fmtMoneyPair,
+  fmtUsdCompact,
+  fmtLbpCompact,
   type CurrencyPref,
   type MoneyMode,
   type MoneyParts,

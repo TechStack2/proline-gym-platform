@@ -49,6 +49,9 @@ test('RESPONSIVE-CSP · schedule day view survives mobile-resize (no freeze) + c
     // static `cat-tint` + data-cat rule, which nothing dynamic has to smuggle past the
     // CSP at all. The assertion below is unchanged and still the right one — a cell
     // that fails to paint is the visible symptom in every one of those mechanisms.
+    // W3b DA-22: a param-less /schedule on a <768 viewport now redirects to the
+    // Day diary — restore a desktop width first; the week grid is what's under test.
+    await page.setViewportSize({ width: 1024, height: 860 })
     await page.goto('/en/schedule')
     const chip = page.getByTestId('week-chip').first()
     await expect(chip, 'the week grid renders colored class chips').toBeVisible({ timeout: 15_000 })

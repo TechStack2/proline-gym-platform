@@ -24,6 +24,16 @@ import {
 } from '@/lib/billing/currency';
 import { ltrIsolate } from './bidi';
 
+/** Grouping pinned to en-US (Latin digits, identical on server + client) — the
+ *  behaviour the dense money tables already had via default-locale toLocaleString
+ *  on an en-US server, now stated instead of inherited (W3b, DA-34). */
+const GROUPER = new Intl.NumberFormat('en-US');
+
+/** Whole-figure compact money for dense tables/badges: "$1,234". */
+export const fmtUsdCompact = (n: number): string => `$${GROUPER.format(Math.round(n))}`;
+/** Whole-figure compact LBP: "1,234,000 LBP". */
+export const fmtLbpCompact = (n: number): string => `${GROUPER.format(Math.round(n))} LBP`;
+
 export type { CurrencyPref };
 
 /** `ordered` = invoice/receipt semantics; `dual` = aggregation semantics. */

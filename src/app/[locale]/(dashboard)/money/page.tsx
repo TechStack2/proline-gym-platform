@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
+import { segmentedItemCls, segmentedTrayCls } from '@/components/ui/segmented'
 import { getDailyTally } from '@/lib/billing/daily-tally'
 import { getGymOutstanding } from '@/lib/billing/outstanding'
 import { TallyError } from '@/components/money/tally-error'
@@ -34,10 +35,7 @@ const TabLink = ({ locale, tab, k, label, icon: Icon }: { locale: string; tab: s
   <Link
     href={`/${locale}/money${k === 'overview' ? '' : `?tab=${k}`}`}
     data-testid={`money-tab-${k}`}
-    className={cn(
-      'inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
-      tab === k ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-    )}
+    className={segmentedItemCls(tab === k)}
   >
     <Icon className="h-4 w-4" /> {label}
   </Link>
@@ -67,7 +65,7 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
   const tab = validTabs.includes(searchParams.tab ?? '') ? searchParams.tab! : 'overview'
 
   return (
-    <div className={cn('space-y-6', isRTL && 'text-right')}>
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <PageHeader segment="money" />
@@ -75,7 +73,7 @@ export default async function MoneyPage({ params: { locale }, searchParams }: Pr
         </div>
         {/* DA-20: scrollable at 390 — the 4th tab (Win-back) was fully offscreen with
             no affordance. flex + overflow-x-auto lets it scroll into view. */}
-        <div className="flex max-w-full gap-0 overflow-x-auto rounded-xl border bg-gray-50 p-1 [&>*]:shrink-0" data-testid="money-tabs">
+        <div className={segmentedTrayCls} data-testid="money-tabs">
           <TabLink locale={locale} tab={tab} k="overview" label={t('overview')} icon={DollarSign} />
           <TabLink locale={locale} tab={tab} k="invoices" label={t('invoices')} icon={FileText} />
           <TabLink locale={locale} tab={tab} k="payments" label={t('payments')} icon={Banknote} />
@@ -165,9 +163,11 @@ async function MoneyOverview({ locale }: { locale: string }) {
                 "80.00$") because an amount with no strong character takes the
                 paragraph direction. <Ltr> isolates it; the symbol side is a property
                 of the currency, fixed in both directions. */}
-            <p className="mt-1 text-2xl font-bold text-amber-600" data-testid="money-renewals-usd"><Ltr>{renewalMoney.primary}</Ltr></p>
+            {/* W3b zero doctrine (DA-38): a $0 renewals figure is a calm fact, not an
+                amber alarm; the hue returns only when there is money to collect. */}
+            <p className={cn('mt-1 text-2xl font-bold', out.renewalUsd > 0 || out.renewalLbp > 0 ? 'text-warning-600' : 'text-gray-500')} data-testid="money-renewals-usd"><Ltr>{renewalMoney.primary}</Ltr></p>
             {renewalMoney.secondary && (
-              <p className="text-sm font-semibold text-amber-500/90" data-testid="money-renewals-lbp"><Ltr>{renewalMoney.secondary}</Ltr></p>
+              <p className={cn('text-sm font-semibold', out.renewalUsd > 0 || out.renewalLbp > 0 ? 'text-warning-500/90' : 'text-gray-400')} data-testid="money-renewals-lbp"><Ltr>{renewalMoney.secondary}</Ltr></p>
             )}
             <p className="mt-0.5 text-xs text-gray-400">{t('renewalsOpen', { count: out.renewalCount })}</p>
             <div className="mt-2"><ProcessRenewalsButton /></div>
@@ -187,9 +187,10 @@ async function MoneyOverview({ locale }: { locale: string }) {
           />
         ) : (
           <>
-            <p className="mt-1 text-2xl font-bold text-red-600" data-testid="money-outstanding"><Ltr>{outMoney.primary}</Ltr></p>
+            {/* W3b zero doctrine (DA-38): zero owed is calm, not an alarm. */}
+            <p className={cn('mt-1 text-2xl font-bold', out.usd > 0 || out.lbp > 0 ? 'text-danger-600' : 'text-gray-500')} data-testid="money-outstanding"><Ltr>{outMoney.primary}</Ltr></p>
             {outMoney.secondary && (
-              <p className="text-sm font-semibold text-red-500/90" data-testid="money-outstanding-lbp"><Ltr>{outMoney.secondary}</Ltr></p>
+              <p className={cn('text-sm font-semibold', out.usd > 0 || out.lbp > 0 ? 'text-danger-500/90' : 'text-gray-400')} data-testid="money-outstanding-lbp"><Ltr>{outMoney.secondary}</Ltr></p>
             )}
             <p className="mt-0.5 text-xs text-gray-400">{t('openInvoices', { count: out.invoiceCount })}</p>
             <Link href={`/${locale}/money?tab=invoices`} className="mt-2 inline-block text-xs font-medium text-primary-600 hover:underline">

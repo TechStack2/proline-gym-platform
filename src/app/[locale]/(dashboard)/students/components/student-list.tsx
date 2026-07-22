@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { beltRankLabel } from '@/lib/belts/label'
 import type { MemberInfo, MembershipStatus } from '@/lib/members/enrichment'
-import { fmtPhone } from '@/lib/fmt'
+import { fmtPhone , fmtDate } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
 import { StatusChip } from '@/components/ui/status-chip'
 
@@ -113,7 +113,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3 gap-2">
-                  <h3 className={cn('font-semibold text-lg', isRTL && 'text-right')}>
+                  <h3 className="font-semibold text-lg">
                     {name || '—'}
                   </h3>
                   {/* DA-32: the corner pill said "Active" directly above a body pill
@@ -158,7 +158,7 @@ export function StudentList({ students, locale, isRTL, expiringBy = {}, owing = 
 
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
-                    <span>{new Date(student.join_date).toLocaleDateString()}</span>
+                    <span>{fmtDate(student.join_date, locale)}</span>
                   </div>
                 </div>
 

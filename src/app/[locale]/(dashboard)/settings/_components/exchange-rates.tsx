@@ -1,4 +1,6 @@
-import { dateLocale } from '@/lib/utils/locale-format'
+import { fmtDate } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -80,9 +82,10 @@ export function ExchangeRates({ rates, locale }: Props) {
 
   const direction = getDirection();
 
+  // W3b §2.3: role-hue tints (dark-correct) instead of light-pinned -50 fills.
   const directionStyles = {
-    up: 'bg-green-50 text-green-700 border-green-200',
-    down: 'bg-red-50 text-red-700 border-red-200',
+    up: 'tint-success border-success-500/30',
+    down: 'tint-danger border-danger-500/30',
     flat: 'bg-gray-50 text-gray-600 border-gray-200',
   };
 
@@ -108,7 +111,7 @@ export function ExchangeRates({ rates, locale }: Props) {
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                 <span className="inline-flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {new Date(currentRate.rate_date).toLocaleDateString(dateLocale(locale))}
+                  {fmtDate(currentRate.rate_date, locale)}
                 </span>
                 {currentRate.source && (
                   <Badge variant="outline" size="sm" className="text-2xs">{currentRate.source}</Badge>
@@ -119,7 +122,8 @@ export function ExchangeRates({ rates, locale }: Props) {
           {currentRate && rateDiff !== 0 && (
             <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium', directionStyles[direction])}>
               <DirectionIcon className="h-3.5 w-3.5" />
-              {rateDiff > 0 ? '+' : ''}{rateDiff.toFixed(2)} ({rateDiffPercent}%)
+              {/* DA-7: a signed delta is a composed LTR value — isolate it. */}
+              <Ltr>{rateDiff > 0 ? '+' : ''}{rateDiff.toFixed(2)} ({rateDiffPercent}%)</Ltr>
             </span>
           )}
         </CardContent>
@@ -175,7 +179,7 @@ export function ExchangeRates({ rates, locale }: Props) {
             />
           </div>
           {saveError && (
-            <div data-testid="rate-save-error" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</div>
+            <div data-testid="rate-save-error" className="tint-danger rounded-lg px-3 py-2 text-sm">{saveError}</div>
           )}
           <Button data-testid="rate-save" onClick={() => void saveRate()} disabled={saving} className="rounded-lg">
             {saving ? t('exchange.saving') : t('exchange.saveRate')}
@@ -197,27 +201,23 @@ export function ExchangeRates({ rates, locale }: Props) {
         </CardHeader>
         <CardContent className="p-0">
           {sortedRates.length === 0 ? (
-            <div className="flex flex-col items-center py-8 text-gray-400">
-              <CircleDollarSign className="h-8 w-8 mb-2" />
-              <p className={cn('text-sm', isRTL && 'font-arabic')}>
-                {t('exchange.noRates')}
-              </p>
-            </div>
+            /* DA-31: the one empty-state primitive (calm zero, bare — inside this card). */
+            <EmptyState variant="bare" icon={CircleDollarSign} title={t('exchange.noRates')} className="py-8" />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-gray-50">
-                    <th className={cn('text-left px-4 py-2.5 text-xs font-medium text-gray-500', isRTL && 'text-right')}>
+                    <th className="text-start px-4 py-2.5 text-xs font-medium text-gray-500">
                       {t('exchange.rate')}
                     </th>
-                    <th className={cn('text-left px-4 py-2.5 text-xs font-medium text-gray-500', isRTL && 'text-right')}>
+                    <th className="text-start px-4 py-2.5 text-xs font-medium text-gray-500">
                       {t('exchange.date')}
                     </th>
-                    <th className={cn('text-left px-4 py-2.5 text-xs font-medium text-gray-500', isRTL && 'text-right')}>
+                    <th className="text-start px-4 py-2.5 text-xs font-medium text-gray-500">
                       {t('exchange.source')}
                     </th>
-                    <th className={cn('text-right px-4 py-2.5 text-xs font-medium text-gray-500', isRTL && 'text-left')}>
+                    <th className="text-end px-4 py-2.5 text-xs font-medium text-gray-500">
                       {t('exchange.change')}
                     </th>
                   </tr>
@@ -240,7 +240,7 @@ export function ExchangeRates({ rates, locale }: Props) {
                         </td>
                         <td className="px-4 py-2.5">
                           <span className={cn('text-xs text-gray-600', isRTL && 'font-arabic')}>
-                            {new Date(r.rate_date).toLocaleDateString(dateLocale(locale))}
+                            {fmtDate(r.rate_date, locale)}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
@@ -248,11 +248,11 @@ export function ExchangeRates({ rates, locale }: Props) {
                             {r.source || 'manual'}
                           </Badge>
                         </td>
-                        <td className={cn('px-4 py-2.5 text-right', isRTL && 'text-left')}>
+                        <td className="px-4 py-2.5 text-end">
                           {diff !== 0 ? (
                             <span className={cn('text-xs font-medium flex items-center gap-0.5', diffColor, isRTL && 'flex-row-reverse')}>
                               <DiffIcon className="h-3 w-3" />
-                              {diff > 0 ? '+' : ''}{diff.toFixed(2)}
+                              <Ltr>{diff > 0 ? '+' : ''}{diff.toFixed(2)}</Ltr>
                             </span>
                           ) : (
                             <span className="text-xs text-gray-400">—</span>

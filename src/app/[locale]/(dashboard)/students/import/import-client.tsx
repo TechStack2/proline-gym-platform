@@ -16,12 +16,13 @@ import { getImportContext, importMembers, type ImportSummary } from './actions'
 
 type Props = { locale: string }
 
+// W3b §2.3: role-hue tints (dark-correct) instead of light-pinned -50/-100 fills.
 const DISPOSITION_TONE: Record<string, string> = {
-  create: 'bg-green-50 text-green-700 border-green-200',
-  create_link_guardian: 'bg-blue-50 text-blue-700 border-blue-200',
-  duplicate_skip: 'bg-gray-100 text-gray-500 border-gray-200',
-  error: 'bg-red-50 text-red-700 border-red-200',
-  example: 'bg-amber-50 text-amber-600 border-amber-200',
+  create: 'tint-success border-success-500/30',
+  create_link_guardian: 'tint-info border-info-500/30',
+  duplicate_skip: 'tint-neutral border-neutral-500/30',
+  error: 'tint-danger border-danger-500/30',
+  example: 'tint-warning border-warning-500/30',
 }
 
 export function ImportClient({ locale }: Props) {
@@ -120,8 +121,8 @@ export function ImportClient({ locale }: Props) {
         <Link href={`/${locale}/students`} data-testid="import-back" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
           <ArrowLeft className={cn('h-4 w-4', isRTL && 'rotate-180')} /> {t('back')}
         </Link>
-        <h1 className={cn('mt-2 text-2xl font-bold text-gray-900', isRTL && 'font-arabic text-right')}>{t('title')}</h1>
-        <p className={cn('mt-1 text-sm text-gray-500', isRTL && 'font-arabic text-right')}>{t('subtitle')}</p>
+        <h1 className={cn('mt-2 text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('title')}</h1>
+        <p className={cn('mt-1 text-sm text-gray-500', isRTL && 'font-arabic')}>{t('subtitle')}</p>
       </div>
 
       {/* ── Step 1: template + format docs ── */}
@@ -135,7 +136,7 @@ export function ImportClient({ locale }: Props) {
         {/* On-screen format documentation (R1) */}
         <ul className="mt-4 grid grid-cols-1 gap-1.5 sm:grid-cols-2" data-testid="import-format-docs">
           {IMPORT_COLUMNS.map((col) => (
-            <li key={col} className={cn('text-xs text-gray-600', isRTL && 'font-arabic text-right')}>
+            <li key={col} className={cn('text-xs text-gray-600', isRTL && 'font-arabic')}>
               <span className="font-medium text-gray-900">{t(`columns.${col}` as never)}</span> — {t(`colhelp.${col}` as never)}
             </li>
           ))}
@@ -171,7 +172,7 @@ export function ImportClient({ locale }: Props) {
             </Button>
           </div>
           {blocked && (
-            <p data-testid="import-blocked" className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{t('blocked_by_errors')}</p>
+            <p data-testid="import-blocked" className="tint-danger mt-2 rounded-lg px-3 py-2 text-xs">{t('blocked_by_errors')}</p>
           )}
 
           <div className="mt-4 overflow-x-auto">
@@ -214,12 +215,12 @@ export function ImportClient({ locale }: Props) {
 
       {/* ── Import result ── */}
       {summary && (
-        <div className="rounded-2xl border border-green-200 bg-green-50 p-5" data-testid="import-result">
-          <div className="flex items-center gap-2 text-green-800">
+        <div className="tint-success rounded-2xl border border-success-500/30 p-5" data-testid="import-result">
+          <div className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5" />
             <h2 className={cn('text-sm font-semibold', isRTL && 'font-arabic')}>{t('done_title')}</h2>
           </div>
-          <p className={cn('mt-1 text-sm text-green-700', isRTL && 'font-arabic')} data-testid="import-result-summary">
+          <p className={cn('mt-1 text-sm', isRTL && 'font-arabic')} data-testid="import-result-summary">
             {t('done_summary', { created: summary.created, linked: summary.guardiansLinked, skipped: summary.skipped, failed: summary.failed })}
           </p>
           <Link href={`/${locale}/students?chip=lapsed`} className="mt-3 inline-block">
@@ -232,8 +233,9 @@ export function ImportClient({ locale }: Props) {
 }
 
 function Stat({ icon, label, n, tone, testid }: { icon: React.ReactNode; label: string; n: number; tone: string; testid: string }) {
+  // W3b §2.3: role-hue tints (dark-correct) instead of light-pinned -50/-100 fills.
   const tones: Record<string, string> = {
-    green: 'bg-green-50 text-green-700', blue: 'bg-blue-50 text-blue-700', gray: 'bg-gray-100 text-gray-600', red: 'bg-red-50 text-red-700',
+    green: 'tint-success', blue: 'tint-info', gray: 'tint-neutral', red: 'tint-danger',
   }
   return (
     <span data-testid={testid} data-count={n} className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium', tones[tone])}>

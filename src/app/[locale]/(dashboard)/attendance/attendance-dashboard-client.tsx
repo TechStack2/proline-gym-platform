@@ -260,7 +260,7 @@ export function AttendanceDashboardClient({
               <div className="flex items-center gap-2">
                 {warnStudentIds.includes(enrollment.student_id) && (
                   <span data-testid="checkin-warning"
-                    className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600 ring-1 ring-red-200">
+                    className="tint-danger rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-danger-500/30">
                     {t('dashboard.lapsedWarning')}
                   </span>
                 )}

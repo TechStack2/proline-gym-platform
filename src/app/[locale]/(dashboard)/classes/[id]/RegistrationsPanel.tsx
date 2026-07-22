@@ -11,6 +11,9 @@ import { useErrorText } from '@/lib/errors/use-error-text'
 import { cn } from '@/lib/utils'
 import { computeProration, defaultBillingAnchor, prorateDefaultFor, DEFAULT_CYCLE_POLICY, type GymCyclePolicy } from '@/lib/billing/proration'
 import { fmtUsd, fmtLbp } from '@/lib/billing/currency'
+import { fmtDate } from '@/lib/fmt'
+import { Ltr } from '@/components/ui/bdi'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ReasonDialog } from '@/components/billing/reason-dialog'
 
 type Reg = {
@@ -74,7 +77,7 @@ export function RegistrationsPanel({
     <Card data-testid="registrations-panel">
       <CardHeader><CardTitle>{t('Registrations', 'التسجيلات', 'Inscriptions')}</CardTitle></CardHeader>
       <CardContent className="space-y-5">
-        {error && <div data-testid="reg-error" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {error && <div data-testid="reg-error" className="tint-danger rounded-md px-3 py-2 text-sm">{error}</div>}
 
         {/* Walk-in register */}
         <div className="flex flex-wrap items-end gap-2 border-b pb-4">
@@ -96,7 +99,7 @@ export function RegistrationsPanel({
         <div>
           <h3 className="mb-2 text-sm font-semibold">{t('Pending requests', 'طلبات معلّقة', 'Demandes en attente')} ({requested.length})</h3>
           {requested.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('No pending requests.', 'لا طلبات معلّقة.', 'Aucune demande en attente.')}</p>
+            <EmptyState variant="bare" title={t('No pending requests.', 'لا طلبات معلّقة.', 'Aucune demande en attente.')} />
           ) : (
             <div className="space-y-2">
               {requested.map((r) => (
@@ -113,7 +116,7 @@ export function RegistrationsPanel({
         <div>
           <h3 className="mb-2 text-sm font-semibold">{t('Active', 'النشطون', 'Actifs')} ({active.length})</h3>
           {active.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('No active registrations.', 'لا تسجيلات نشطة.', 'Aucune inscription active.')}</p>
+            <EmptyState variant="bare" title={t('No active registrations.', 'لا تسجيلات نشطة.', 'Aucune inscription active.')} />
           ) : (
             <div className="space-y-2" data-testid="active-list">
               {active.map((r) => (
@@ -129,7 +132,7 @@ export function RegistrationsPanel({
         <div>
           <h3 className="mb-2 text-sm font-semibold">{t('Waitlist', 'قائمة الانتظار', "Liste d'attente")} ({waitlisted.length})</h3>
           {waitlisted.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('Waitlist is empty.', 'قائمة الانتظار فارغة.', "La liste d'attente est vide.")}</p>
+            <EmptyState variant="bare" title={t('Waitlist is empty.', 'قائمة الانتظار فارغة.', "La liste d'attente est vide.")} />
           ) : (
             <div className="space-y-2" data-testid="waitlist">
               {waitlisted.map((r) => (
@@ -171,11 +174,9 @@ export function RegistrationsPanel({
   )
 }
 
-function fmtDate(iso: string | null | undefined, locale: string): string {
-  if (!iso) return ''
-  const l = locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'
-  return new Date(iso.slice(0, 10) + 'T00:00:00Z').toLocaleDateString(l, { month: 'short', day: 'numeric', timeZone: 'UTC' })
-}
+// DS2-FMT §2.7 (DA-34): the local toLocaleDateString twin died — dates go through
+// `fmtDate(…, 'dayMonth')`, which renders the same year-less "Aug 6" form (and
+// Latin digits in Arabic, per the AX-1 rule the raw 'ar' locale here violated).
 
 /** One pending request: fee + discount + BILL-CYCLES start/anchor/prorate + live preview. */
 function PendingRegRow({
@@ -220,7 +221,7 @@ function PendingRegRow({
           <span className="text-xs font-medium" data-testid="reg-fee">
             {isFree
               ? <span className="text-green-700">{t('Free — no invoice', 'مجاناً — لا فاتورة', 'Gratuit — sans facture')}</span>
-              : <span className="text-gray-500">{monthlyFeeUsd != null ? `$${Number(fee).toFixed(0)}` : '—'}</span>}
+              : <span className="text-gray-500">{monthlyFeeUsd != null ? <Ltr>{`$${Number(fee).toFixed(0)}`}</Ltr> : '—'}</span>}
           </span>
           <Input type="number" min="0" max="100" placeholder={t('disc %', 'خصم %', 'remise %')} data-testid="discount-pct"
             className="h-8 w-20 text-xs" value={discount} onChange={(e) => setDiscount(e.target.value)} />
@@ -262,22 +263,22 @@ function PendingRegRow({
             {!preview.billsNow ? (
               <>
                 <span className="block text-blue-700" data-testid="reg-charge-now">
-                  {t('Starts', 'يبدأ', 'Débute')} {fmtDate(startDate, locale)} · {t('nothing charged now', 'لا رسوم الآن', 'aucun frais maintenant')}
+                  {t('Starts', 'يبدأ', 'Débute')} <Ltr>{fmtDate(startDate, locale, 'dayMonth')}</Ltr> · {t('nothing charged now', 'لا رسوم الآن', 'aucun frais maintenant')}
                 </span>
                 <span className="block text-gray-600" data-testid="reg-next-bill">
-                  {t('first bill', 'أول فاتورة', 'première facture')} {fmtDate(preview.cycleStart, locale)}: <b>{fmtUsd(preview.firstInvoiceUsd)}</b>{showLbp ? ` · ${fmtLbp(preview.firstInvoiceLbp)}` : ''}
+                  {t('first bill', 'أول فاتورة', 'première facture')} <Ltr>{fmtDate(preview.cycleStart, locale, 'dayMonth')}</Ltr>: <b><Ltr>{fmtUsd(preview.firstInvoiceUsd)}</Ltr></b>{showLbp ? <> · <Ltr>{fmtLbp(preview.firstInvoiceLbp)}</Ltr></> : ''}
                 </span>
               </>
             ) : (
               <>
                 <span className={cn('block', preview.prorated ? 'text-amber-700' : 'text-gray-600')} data-testid="reg-charge-now">
-                  {t('Charged now', 'المبلغ الآن', 'Facturé maintenant')}: <b>{fmtUsd(preview.firstInvoiceUsd)}</b>{showLbp ? ` · ${fmtLbp(preview.firstInvoiceLbp)}` : ''}
+                  {t('Charged now', 'المبلغ الآن', 'Facturé maintenant')}: <b><Ltr>{fmtUsd(preview.firstInvoiceUsd)}</Ltr></b>{showLbp ? <> · <Ltr>{fmtLbp(preview.firstInvoiceLbp)}</Ltr></> : ''}
                   {preview.prorated
                     ? ` (${preview.sessionsRemaining}/${preview.sessionsInCycle} ${t('sessions', 'حصص', 'séances')})`
                     : ''}
                 </span>
                 <span className="block text-gray-600" data-testid="reg-next-bill">
-                  {t('Next bill', 'الفاتورة التالية', 'Prochaine facture')} {fmtDate(preview.cycleEnd, locale)}: {fmtUsd(preview.fullMonthUsd)}/{t('mo', 'شهر', 'mois')}
+                  {t('Next bill', 'الفاتورة التالية', 'Prochaine facture')} <Ltr>{fmtDate(preview.cycleEnd, locale, 'dayMonth')}</Ltr>: <Ltr>{fmtUsd(preview.fullMonthUsd)}</Ltr>/{t('mo', 'شهر', 'mois')}
                 </span>
               </>
             )}
@@ -307,14 +308,14 @@ function ActiveRegRow({
         <span className="text-sm font-medium" data-testid="reg-student">{r.studentName}</span>
         <div className="text-xs text-muted-foreground" data-testid="reg-cycle">
           {isFuture
-            ? <span className="text-blue-700">{t('Starts', 'يبدأ', 'Débute')} {fmtDate(r.start_date, locale)}</span>
-            : renewsOn ? <>{t('Renews', 'يتجدّد', 'Renouvelle')} {fmtDate(renewsOn, locale)}</> : null}
+            ? <span className="text-blue-700">{t('Starts', 'يبدأ', 'Débute')} <Ltr>{fmtDate(r.start_date, locale, 'dayMonth')}</Ltr></span>
+            : renewsOn ? <>{t('Renews', 'يتجدّد', 'Renouvelle')} <Ltr>{fmtDate(renewsOn, locale, 'dayMonth')}</Ltr></> : null}
           {r.first_cycle_prorated ? <span className="ms-1">· {t('prorated 1st cycle', 'الدورة الأولى بالتناسب', '1er cycle proratisé')}</span> : null}
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {isFuture && <Badge data-testid="reg-starts" className="bg-blue-100 text-blue-700">{t('Starts', 'يبدأ', 'Débute')} {fmtDate(r.start_date, locale)}</Badge>}
-        {r.invoice_id && <Badge className="bg-green-100 text-green-700">{t('Invoiced', 'مفوترة', 'Facturé')}</Badge>}
+        {isFuture && <Badge data-testid="reg-starts" variant="info">{t('Starts', 'يبدأ', 'Débute')} <Ltr>{fmtDate(r.start_date, locale, 'dayMonth')}</Ltr></Badge>}
+        {r.invoice_id && <Badge variant="success">{t('Invoiced', 'مفوترة', 'Facturé')}</Badge>}
         <Button size="sm" variant="ghost" data-testid="cycle-edit-btn" disabled={pending}
           onClick={() => setEditing((v) => !v)}>{t('Billing date', 'تاريخ الفوترة', 'Date de facturation')}</Button>
         <Button size="sm" variant="outline" data-testid="cancel-reg-btn" disabled={pending}

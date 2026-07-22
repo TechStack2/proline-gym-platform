@@ -343,7 +343,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
             </Button>
           </div>
           {gFound && (
-            <p data-testid="sw-guardian-found" className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700">
+            <p data-testid="sw-guardian-found" className="tint-success rounded-lg px-3 py-2 text-xs">
               {t('found', { name: gFound.name })}
             </p>
           )}
@@ -403,7 +403,7 @@ export function AddStudentWizard({ gymId, plans, locale, membershipEnabled = tru
           </div>
           <PhoneDuplicateHint gymId={gymId} phone={fgPhone} locale={locale} />
           {fgFound && (
-            <p data-testid="fam-guardian-found" className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700">
+            <p data-testid="fam-guardian-found" className="tint-success rounded-lg px-3 py-2 text-xs">
               {t('family.foundGuardian', { name: fgFound.name, count: fgFound.kidCount })}
             </p>
           )}

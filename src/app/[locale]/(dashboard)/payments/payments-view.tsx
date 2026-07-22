@@ -1,10 +1,11 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { Banknote, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { localizedName } from '@/lib/names'
 import { METHOD_LABEL } from '@/lib/billing/reconcile'
+import { fmtDate as fmtDateLoc } from '@/lib/fmt'
+import { fmtUsd, fmtLbp } from '@/lib/billing/currency'
 
 type Props = {
   locale: string
@@ -25,7 +26,6 @@ const METHODS = ['cash_usd', 'cash_lbp', 'omt', 'whish', 'bank_transfer', 'bob_f
  * per-method daily tally on /invoices). Arabic-RTL.
  */
 export async function PaymentsView({ locale, searchParams }: Props) {
-  const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
@@ -47,11 +47,11 @@ export async function PaymentsView({ locale, searchParams }: Props) {
   const rows = payments ?? []
 
   const totalUsd = rows.reduce((s, p: any) => s + Number(p.amount_usd ?? 0), 0)
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
+  const fmtDate = (d: string | null) => fmtDateLoc(d, locale)
   const methodLabel = (m: string) => (locale === 'ar' ? METHOD_LABEL[m]?.ar : locale === 'fr' ? METHOD_LABEL[m]?.fr : METHOD_LABEL[m]?.en) || m
 
   return (
-    <div className={cn('space-y-6', isRTL && 'text-right')}>
+    <div className="space-y-6">
       {/* Filters */}
       <form className="flex flex-wrap items-end gap-3" action={`/${locale}/money`} method="get">
         <input type="hidden" name="tab" value="payments" />
@@ -120,7 +120,7 @@ export async function PaymentsView({ locale, searchParams }: Props) {
                     </td>
                     <td className="p-3">{methodLabel(p.payment_method)}</td>
                     <td className="p-3 text-muted-foreground">{p.reference_number || '—'}</td>
-                    <td className="p-3 font-medium">${Number(p.amount_usd).toFixed(2)}{p.amount_lbp ? ` · ${Number(p.amount_lbp).toLocaleString()} LBP` : ''}</td>
+                    <td className="p-3 font-medium">{fmtUsd(Number(p.amount_usd))}{p.amount_lbp ? ` · ${fmtLbp(Number(p.amount_lbp))}` : ''}</td>
                   </tr>
                 )
               })}

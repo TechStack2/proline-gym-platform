@@ -1,4 +1,3 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
@@ -9,15 +8,16 @@ import { PaymentForm } from '../../payments/components/payment-form'
 import { InvoiceActions } from './invoice-actions'
 import { InvoiceWhatsApp } from './invoice-whatsapp'
 import { buildInvoiceWaPayload } from './wa-message'
-import { balanceUsd, paidUsd, localizedName, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
-import { normalizeCurrencyPref, orderedMoney, fmtUsd } from '@/lib/billing/currency'
+import { balanceUsd, paidUsd, localizedName, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { normalizeCurrencyPref, orderedMoney, fmtUsd, fmtLbp } from '@/lib/billing/currency'
+import { fmtDate as fmtDateLoc } from '@/lib/fmt'
+import { StatusChip } from '@/components/ui/status-chip'
 
 export const dynamic = 'force-dynamic'
 
 type Props = { params: { locale: string; id: string } }
 
 export default async function InvoiceDetailPage({ params: { locale, id } }: Props) {
-  const isRTL = locale === 'ar'
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
   const supabase = await createClient()
 
@@ -67,7 +67,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   const studentName = localizedName(profile, locale)
   const paid = paidUsd(payments)
   const balance = balanceUsd(inv.total_usd, payments)
-  const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString(dateLocale(locale)) : '—')
+  const fmtDate = (d: string | null) => fmtDateLoc(d, locale)
 
   // WA-INVOICE (finding 4): prefilled WhatsApp "Send invoice" / "Send reminder"
   // actions for a still-collectible invoice — owner+reception only (same gate as
@@ -98,7 +98,7 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
   }
 
   return (
-    <div className={cn('space-y-6 p-6', isRTL && 'text-right')}>
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <Link href={`/${locale}/invoices`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> {t('Invoices', 'الفواتير', 'Factures')}
@@ -122,10 +122,13 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
             )}
             <p className="text-xs text-muted-foreground">{t('Due', 'الاستحقاق', 'Échéance')}: {fmtDate(inv.due_date)}</p>
           </div>
-          <span data-testid="invoice-status"
-            className={cn('inline-flex rounded-full px-3 py-1 text-sm font-semibold', STATUS_BADGE[displayInvoiceStatus(inv.status, inv.voided_at)])}>
-            {statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)}
-          </span>
+          <StatusChip
+            domain="invoice"
+            status={displayInvoiceStatus(inv.status, inv.voided_at)}
+            label={statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)}
+            data-testid="invoice-status"
+            className="px-3 py-1 text-sm font-semibold"
+          />
         </div>
         {/* CANCEL-FLOW: the VOID reason, recorded when the invoice was nullified. */}
         {inv.voided_at && inv.void_reason && (
@@ -145,7 +148,8 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
             </div>
           )}
           <div><dt className="text-muted-foreground">{t('Total', 'الإجمالي', 'Total')}</dt><dd className="font-bold" data-testid="invoice-total">{totalMoney.primary}</dd></div>
-          <div><dt className="text-muted-foreground">{t('Balance', 'الرصيد', 'Solde')}</dt><dd className={cn('font-bold', balance > 0 ? 'text-red-600' : 'text-green-600')} data-testid="invoice-balance">{fmtUsd(balance)}</dd></div>
+          {/* W3b zero doctrine: settled = calm neutral, never celebration green. */}
+          <div><dt className="text-muted-foreground">{t('Balance', 'الرصيد', 'Solde')}</dt><dd className={cn('font-bold', balance > 0 ? 'text-danger-600' : 'text-gray-500')} data-testid="invoice-balance">{fmtUsd(balance)}</dd></div>
         </dl>
         {totalMoney.secondary ? (
           <p className="mt-1 text-xs text-muted-foreground" data-testid="invoice-total-secondary">{t('Also', 'أيضاً', 'Aussi')}: {totalMoney.secondary}</p>
@@ -205,8 +209,8 @@ export default async function InvoiceDetailPage({ params: { locale, id } }: Prop
                   <tr key={p.id} className="border-b" data-testid="payment-row">
                     <td className="p-2">{fmtDate(p.payment_date)}</td>
                     <td className="p-2">{(locale === 'ar' ? METHOD_LABEL[p.payment_method]?.ar : locale === 'fr' ? METHOD_LABEL[p.payment_method]?.fr : METHOD_LABEL[p.payment_method]?.en) || p.payment_method}</td>
-                    <td className="p-2">${Number(p.amount_usd).toFixed(2)}</td>
-                    <td className="p-2">{p.amount_lbp ? Number(p.amount_lbp).toLocaleString() : '—'}</td>
+                    <td className="p-2">{fmtUsd(Number(p.amount_usd))}</td>
+                    <td className="p-2">{p.amount_lbp ? fmtLbp(Number(p.amount_lbp)) : '—'}</td>
                     <td className="p-2 text-muted-foreground">{p.reference_number || '—'}</td>
                   </tr>
                 ))}

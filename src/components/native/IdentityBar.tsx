@@ -84,7 +84,7 @@ export function IdentityBar({
         {onSignOut && (
           <button
             onClick={onSignOut}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-red-50"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-danger-500/10"
             aria-label={tCommon('signOut')}
             title={tCommon('signOut')}
           >

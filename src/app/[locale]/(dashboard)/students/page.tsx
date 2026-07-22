@@ -221,7 +221,13 @@ export default async function StudentsPage({
             data-testid={`chip-${k}`}
             data-count={chipCounts[k]}
             className={cn('rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-              chip === k ? 'border-primary-700 bg-primary-700 text-primary-foreground' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}
+              chip === k
+                ? 'border-primary-700 bg-primary-700 text-primary-foreground'
+                // DA-49 / zero doctrine: a zero-count chip is a calm fact, not a
+                // live-looking filter — de-emphasized but still honest + tappable.
+                : chipCounts[k] === 0
+                  ? 'border-gray-100 bg-white text-gray-400'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')}
           >
             {t(`chips.${k}`)} · {chipCounts[k]}
           </Link>

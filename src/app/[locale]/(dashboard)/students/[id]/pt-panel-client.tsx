@@ -134,7 +134,7 @@ export function MemberPtPanel({
   return (
     <div className="space-y-2.5">
       {unlinkedCount > 0 && (
-        <p data-testid="pt-unlinked-notice" className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <p data-testid="pt-unlinked-notice" className="tint-warning flex items-center gap-2 rounded-lg px-3 py-2 text-xs">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {t('unlinked', { count: unlinkedCount })}
         </p>
       )}
@@ -159,7 +159,7 @@ export function MemberPtPanel({
             actions={computePtStatus(d) === 'expired' ? (
               <div className="mt-2">
                 <Button size="sm" variant="outline" data-testid="pt-extend-btn" disabled={pending}
-                  onClick={() => extend(d.id)} className="h-7 border-red-200 text-xs text-red-700 hover:bg-red-50">
+                  onClick={() => extend(d.id)} className="h-7 border-danger-500/30 text-xs text-danger-700 hover:bg-danger-500/10">
                   <AlarmClock className="me-1 h-3.5 w-3.5" /> {t('extend30')}
                 </Button>
               </div>

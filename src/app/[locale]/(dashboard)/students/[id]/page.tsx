@@ -5,7 +5,9 @@ import { beltRankLabel } from '@/lib/belts/label'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
-import { balanceUsd, STATUS_BADGE, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { balanceUsd, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
+import { StatusChip } from '@/components/ui/status-chip'
+import { statusTintClass } from '@/lib/status-vocabulary'
 import {
   User, Phone, Award, CreditCard, CalendarDays, Dumbbell, ClipboardList,
   DollarSign, ChevronRight, Users, Clock,
@@ -19,11 +21,10 @@ import { MemberPtPanel, type SellableCoach, type SellableType } from './pt-panel
 import { MembershipCard, type MembershipCardData, type PlanOption } from './membership-card'
 import { getEnabledProducts } from '@/lib/gym/products'
 import { registrationState, membershipState } from '@/lib/lifecycle/status'
-import { STATUS_BADGE as INV_BADGE } from '@/lib/billing/reconcile'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
-import { fmtDate as fmtIntlDate, fmtPhone } from '@/lib/fmt'
+import { fmtDate as fmtIntlDate, fmtPhone, humanizeEnum } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
 
 export const dynamic = 'force-dynamic'
@@ -378,7 +379,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       invoiceHref: inv ? `/${locale}/invoices/${inv.id}` : null,
       invoiceNumber: inv?.invoice_number ?? null,
       invoiceStatusLabel: inv ? statusLabel(inv.status, locale) : null,
-      invoiceStatusClass: inv ? INV_BADGE[inv.status] : null,
+      invoiceStatus: inv?.status ?? null,
       sessions: (ptSessionsByAssignment.get(a.id) ?? []).map((sRow: any) => ({
         id: sRow.id, scheduledAt: sRow.scheduled_at, status: sRow.status,
       })),
@@ -407,12 +408,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     freeze_min_chunk_days: (gymPolicy as any)?.freeze_min_chunk_days ?? 7,
   }
 
-  const regBadge: Record<string, string> = {
-    active: 'bg-green-100 text-green-700', requested: 'bg-yellow-100 text-yellow-700',
-    waitlisted: 'bg-orange-100 text-orange-700', cancelled: 'bg-gray-100 text-gray-500',
-    rejected: 'bg-red-100 text-red-600', expired: 'bg-gray-100 text-gray-500',
-    suspended: 'bg-red-50 text-red-600',
-  }
+  // W3b (DA-25/32): colour is the registration vocabulary's call — no local map.
+  const regBadge = (status: string) => statusTintClass('registration', status)
 
   // R3 win-back: a lapsed/inactive member's last-seen + join date give the staff
   // context for the outreach call (display only). Lapsed = deactivated OR any
@@ -422,7 +419,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const lastSeenDate = ((attendance ?? []) as any[])[0]?.attendance_date ?? null
 
   return (
-    <div className={cn('space-y-4', isRTL && 'text-right')} data-testid="member-360">
+    <div className="space-y-4" data-testid="member-360">
       {/* ── Header: identity + belt + guardians ── */}
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -443,9 +440,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                 {prof?.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /><Ltr>{fmtPhone(prof.phone)}</Ltr></span>}
                 {age != null && <span>{t('age', { age })}</span>}
                 <span className="inline-flex items-center gap-1 capitalize"><Award className="h-3 w-3" />{beltLabel(student.current_belt_rank)}</span>
-                <span className={cn('rounded-full px-2 py-0.5 font-medium', student.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-                  {student.is_active ? t('active') : t('inactive')}
-                </span>
+                <StatusChip domain="member" status={student.is_active ? 'active' : 'inactive'}
+                  label={student.is_active ? t('active') : t('inactive')} className="capitalize" />
                 {/* F3: waiver status chip */}
                 <WaiverChip state={waiver.state} version={waiver.signedVersion} />
               </p>
@@ -594,18 +590,18 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                     })()}
                   </div>
                   {r.status === 'requested' ? (
-                    <Link href={`/${locale}/inbox`} className={cn('rounded-full px-2 py-0.5 text-xs font-medium underline-offset-2 hover:underline', regBadge[r.status])}>
+                    <Link href={`/${locale}/inbox`} className={cn('rounded-full px-2 py-0.5 text-xs font-medium underline-offset-2 hover:underline', regBadge(r.status))}>
                       {t('pendingInbox')}
                     </Link>
                   ) : (
                     <span className="flex items-center gap-1">
                       {r.status === 'active' && ['expiring', 'overdue'].includes(registrationState(r, lcPolicy)) && (
                         <span data-testid="reg-renewal-state" className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                          registrationState(r, lcPolicy) === 'overdue' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700')}>
+                          registrationState(r, lcPolicy) === 'overdue' ? statusTintClass('member', 'overdue') : statusTintClass('member', 'expiring'))}>
                           {registrationState(r, lcPolicy) === 'overdue' ? t('regOverdue') : t('regExpiring')}
                         </span>
                       )}
-                      <span data-testid="reg-status-badge" className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', regBadge[r.status] || 'bg-gray-100 text-gray-500')}>{r.status}</span>
+                      <span data-testid="reg-status-badge" className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', regBadge(r.status))}>{humanizeEnum(r.status)}</span>
                     </span>
                   )}
                 </li>
@@ -650,7 +646,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                       )}
                     </span>
                     <span className="text-xs text-gray-500">${Number(inv.total_usd).toFixed(2)}{bal > 0 ? ` · ${t('due')} $${bal.toFixed(2)}` : ''}</span>
-                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[displayInvoiceStatus(inv.status, inv.voided_at)])}>{statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)}</span>
+                    <StatusChip domain="invoice" status={displayInvoiceStatus(inv.status, inv.voided_at)} label={statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)} />
                   </li>
                 )
               })}
@@ -736,7 +732,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                   <li key={inv.id} className="flex items-center justify-between text-xs" data-testid="household-payer-row">
                     <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-primary-700 hover:underline">{inv.invoice_number}</Link>
                     <span className="text-gray-500">{localizedName(one(one(inv.students)?.profiles), locale)}</span>
-                    <span className={cn('rounded-full px-2 py-0.5 font-medium', STATUS_BADGE[inv.status])}>{statusLabel(inv.status, locale)}</span>
+                    <StatusChip domain="invoice" status={inv.status} label={statusLabel(inv.status, locale)} size="sm" />
                   </li>
                 ))}
               </ul>

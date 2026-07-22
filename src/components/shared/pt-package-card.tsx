@@ -1,6 +1,7 @@
-import { dateLocale } from '@/lib/utils/locale-format'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { fmtDate, fmtTime } from '@/lib/fmt'
+import { StatusChip } from '@/components/ui/status-chip'
 import { Avatar } from './avatar'
 import { Dumbbell, Clock, FileText } from 'lucide-react'
 
@@ -25,7 +26,8 @@ export type PtCardData = {
   invoiceHref?: string | null
   invoiceNumber?: string | null
   invoiceStatusLabel?: string | null
-  invoiceStatusClass?: string | null
+  /** Raw invoice status — colour is the vocabulary's call (W3b, DA-32). */
+  invoiceStatus?: string | null
   sessions: PtCardSession[]
 }
 
@@ -34,21 +36,8 @@ export function computePtStatus(d: { status: string; expiresAt: string | null })
   return d.status
 }
 
-const STATUS_TONE: Record<string, string> = {
-  requested: 'bg-amber-100 text-amber-700',
-  active: 'bg-green-100 text-green-700',
-  expired: 'bg-red-100 text-red-700',
-  completed: 'bg-gray-100 text-gray-600',
-  rejected: 'bg-red-50 text-red-600',
-  cancelled: 'bg-gray-100 text-gray-500',
-}
-const SESSION_TONE: Record<string, string> = {
-  scheduled: 'bg-blue-100 text-blue-700',
-  proposed: 'bg-amber-100 text-amber-700',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-100 text-gray-600',
-  no_show: 'bg-red-100 text-red-700',
-}
+// W3b (DA-25/32): the local STATUS_TONE/SESSION_TONE forks are dead — colour
+// comes from the status vocabulary (`pt` + `trial` domains) via StatusChip.
 
 export function PtPackageCard({
   data, locale, labels, testid = 'pt-pkg-card', sessionTestid = 'pt-pkg-session', actions,
@@ -77,7 +66,7 @@ export function PtPackageCard({
       data-testid={testid}
       data-status={status}
       data-assignment-id={data.id}
-      className={cn('rounded-2xl border bg-white p-3.5 shadow-sm', status === 'expired' && 'border-red-200 bg-red-50/40')}
+      className={cn('rounded-2xl border bg-white p-3.5 shadow-sm', status === 'expired' && 'border-danger-500/30 bg-danger-500/[0.06]')}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -96,9 +85,7 @@ export function PtPackageCard({
             )}
           </div>
         </div>
-        <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium', STATUS_TONE[status] || 'bg-gray-100 text-gray-600')}>
-          {labels.status}
-        </span>
+        <StatusChip domain="pt" status={status} label={labels.status} size="sm" className="shrink-0" />
       </div>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600">
@@ -106,7 +93,7 @@ export function PtPackageCard({
           {labels.remainingText}
         </span>
         {labels.validity && (
-          <span className={cn('inline-flex items-center gap-1', status === 'expired' && 'font-medium text-red-600')}>
+          <span className={cn('inline-flex items-center gap-1', status === 'expired' && 'font-medium text-danger-600')}>
             <Clock className="h-3 w-3" /> {labels.validity}
           </span>
         )}
@@ -115,9 +102,7 @@ export function PtPackageCard({
             <FileText className="h-3 w-3" />
             <span className="font-mono">{data.invoiceNumber}</span>
             {data.invoiceStatusLabel && (
-              <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-medium', data.invoiceStatusClass || 'bg-gray-100 text-gray-600')}>
-                {data.invoiceStatusLabel}
-              </span>
+              <StatusChip domain="invoice" status={data.invoiceStatus ?? undefined} label={data.invoiceStatusLabel} size="sm" />
             )}
           </Link>
         )}
@@ -132,12 +117,10 @@ export function PtPackageCard({
             {data.sessions.map((s) => (
               <li key={s.id} data-testid={sessionTestid} data-status={s.status}
                 className="flex items-center justify-between gap-2 text-xs text-gray-600">
-                <span dir="ltr">{new Date(s.scheduledAt).toLocaleString(dateLocale(locale), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                <span dir="ltr">{fmtDate(s.scheduledAt, locale, 'dayMonth')} · {fmtTime(s.scheduledAt, locale)}</span>
                 <span className="flex items-center gap-1.5">
                   {s.action}
-                  <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', SESSION_TONE[s.status] || 'bg-gray-100')}>
-                    {labels.sessionStatus(s.status)}
-                  </span>
+                  <StatusChip domain="trial" status={s.status} label={labels.sessionStatus(s.status)} size="sm" />
                 </span>
               </li>
             ))}

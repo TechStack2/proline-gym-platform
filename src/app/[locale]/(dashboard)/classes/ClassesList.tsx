@@ -25,6 +25,11 @@ import AddClassModal from './AddClassModal'
 import { cn } from '@/lib/utils'
 import { localizedName } from '@/lib/names'
 import { classCompletenessGaps } from '@/lib/products/completeness'
+import { fmtWeekday } from '@/lib/fmt'
+import { fmtUsd } from '@/lib/billing/currency'
+import { Ltr } from '@/components/ui/bdi'
+import { StatusChip } from '@/components/ui/status-chip'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface ClassesListProps {
   classes: any[]
@@ -35,7 +40,7 @@ interface ClassesListProps {
   autoNew?: boolean
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const DAY_INDEXES = [0, 1, 2, 3, 4, 5, 6]
 
 export default function ClassesList({ classes, disciplines, coaches, locale, autoNew = false }: ClassesListProps) {
   const t = useTranslations('classes')
@@ -87,11 +92,6 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
     )
   }
 
-  const getDayName = (day: number) => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    return days[day] || ''
-  }
-
   return (
     <>
       <Card>
@@ -112,15 +112,12 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
               isRTL && "flex-row-reverse"
             )}>
               <div className="relative flex-1 min-w-[200px]">
-                <Search className={cn(
-                  "absolute top-2.5 h-4 w-4 text-muted-foreground",
-                  isRTL ? "right-3" : "left-3"
-                )} />
+                <Search className="absolute top-2.5 start-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t('searchPlaceholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className={cn(isRTL ? "pr-10" : "pl-10")}
+                  className="ps-10"
                 />
               </div>
               <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
@@ -155,9 +152,9 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('allDays')}</SelectItem>
-                  {DAYS.map((day, index) => (
+                  {DAY_INDEXES.map((index) => (
                     <SelectItem key={index} value={index.toString()}>
-                      {day}
+                      {fmtWeekday(index, locale, 'long')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -201,9 +198,9 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                       </div>
                       <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                         {classItem.show_on_landing && (
-                          <Badge variant="secondary" data-testid="class-published-badge" className="bg-green-100 text-green-700">
-                            {t('wizard.published')}
-                          </Badge>
+                          /* §2.3: the one status pill — landing 'live', historical label kept. */
+                          <StatusChip domain="landing" status="live" data-testid="class-published-badge"
+                            label={t('wizard.published')} />
                         )}
                         {getStatusBadge(classItem.status)}
                         <Button variant="ghost" size="icon" data-testid="class-edit-row-btn"
@@ -216,11 +213,11 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                     {/* COMPLETENESS R3: Incomplete badge + one-line what's-missing.
                         Complete classes render nothing here (no celebratory noise). */}
                     {gaps.length > 0 && (
-                      <div data-testid="class-incomplete" className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5">
-                        <Badge variant="outline" className="border-amber-300 bg-amber-100 text-amber-800">
+                      <div data-testid="class-incomplete" className="tint-warning mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-warning-500/30 px-2.5 py-1.5">
+                        <Badge variant="warning" className="border border-warning-500/40">
                           {t('completeness.incomplete')}
                         </Badge>
-                        <span className={cn('text-xs text-amber-700', isRTL && 'font-arabic')}>
+                        <span className={cn('text-xs', isRTL && 'font-arabic')}>
                           {gaps.map((g) => t(`completeness.gap.${g}` as any)).join(' · ')}
                         </span>
                       </div>
@@ -238,7 +235,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                         {classItem.schedules.map((schedule: any) => (
                           <div key={schedule.id} className="flex items-center text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4 me-2" />
-                            <span>{getDayName(schedule.day_of_week)}</span>
+                            <span>{fmtWeekday(schedule.day_of_week, locale)}</span>
                             <Clock className="h-4 w-4 mx-2" />
                             <span>{schedule.start_time} - {schedule.end_time}</span>
                             {schedule.room && (
@@ -261,7 +258,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
                       {classItem.monthly_fee_usd != null && (
                         <span data-testid="class-cycle" className="inline-flex items-center gap-1 text-xs font-medium text-primary-700">
                           <RefreshCw className="h-3.5 w-3.5" />
-                          {monthlyWord} · ${Number(classItem.monthly_fee_usd).toFixed(2)}/{moWord}
+                          {monthlyWord} · <Ltr>{fmtUsd(classItem.monthly_fee_usd)}</Ltr>/{moWord}
                         </span>
                       )}
                     </div>
@@ -272,9 +269,7 @@ export default function ClassesList({ classes, disciplines, coaches, locale, aut
             </div>
 
             {filteredClasses.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                {t('noClasses')}
-              </div>
+              <EmptyState variant="bare" title={t('noClasses')} />
             )}
           </div>
         </CardContent>

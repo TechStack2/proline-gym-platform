@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { segmentedItemCls, segmentedTrayCls } from '@/components/ui/segmented'
 import { CalendarRange, BarChart3, Layers, Users } from 'lucide-react'
 
 interface ClassRow {
@@ -59,7 +60,7 @@ export function ReportsClient({ locale, dateFrom, dateTo, byClass, byDiscipline,
     router.push(`/${locale}/reports?${params.toString()}`)
   }
 
-  const align = isRTL ? 'text-right' : 'text-left'
+  const align = 'text-start'
   const tabs: { key: TabKey; label: string; icon: typeof BarChart3 }[] = [
     { key: 'byClass', label: t('tabs.byClass'), icon: BarChart3 },
     { key: 'byDiscipline', label: t('tabs.byDiscipline'), icon: Layers },
@@ -86,16 +87,15 @@ export function ReportsClient({ locale, dateFrom, dateTo, byClass, byDiscipline,
       </Card>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b pb-2 overflow-x-auto">
+      {/* W3b DA-19: the underline tabs join the ONE segmented recipe (the 4th
+          and last competing in-page tab style). Testids unchanged. */}
+      <div className={segmentedTrayCls} data-testid="reports-tabs">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             data-testid={`reports-tab-${key}`}
             onClick={() => setTab(key)}
-            className={cn(
-              'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors',
-              tab === key ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50',
-            )}
+            className={segmentedItemCls(tab === key)}
           >
             <Icon className="h-4 w-4" />
             {label}
