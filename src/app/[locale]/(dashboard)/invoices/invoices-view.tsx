@@ -328,7 +328,8 @@ export async function InvoicesView({ locale, searchParams }: Props) {
                 <th className="p-3">{t('Due', 'الاستحقاق', 'Échéance')}</th><th className="p-3">{t('Status', 'الحالة', 'Statut')}</th>
                 <th className="p-3 text-end">{t('Actions', 'إجراءات', 'Actions')}</th>
               </tr></thead>
-              <tbody>
+              {/* `invoice-list` rides both variants (one is display:none per width). */}
+              <tbody data-testid="invoice-list">
                 {rows.map((r) => (
                   <tr key={r.inv.id} className="border-b hover:bg-muted/40" data-testid="invoice-row" data-invoice-number={r.inv.invoice_number}>
                     <td className="p-3 align-top">

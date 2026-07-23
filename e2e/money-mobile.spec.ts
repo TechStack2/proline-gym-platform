@@ -27,6 +27,17 @@ const today = () => new Date().toISOString().slice(0, 10)
 let gymId = ''
 let invoiceId = ''
 let studentId = ''
+let invoiceNumber = ''
+let dueDate = ''
+
+/** Mirror of aging.ts / 000110 (date-only, `current_date` basis) for the oracle. */
+function bucketOf(due: string): 'current' | 'd1_30' | 'd31_60' | 'd60_plus' {
+  const d = Math.floor((new Date(today() + 'T00:00:00Z').getTime() - new Date(due.slice(0, 10) + 'T00:00:00Z').getTime()) / 864e5)
+  if (d <= 0) return 'current'
+  if (d <= 30) return 'd1_30'
+  if (d <= 60) return 'd31_60'
+  return 'd60_plus'
+}
 
 async function svcGet(path: string) {
   const res = await fetch(`${URL}/rest/v1/${path}`, { headers: H() })
@@ -64,9 +75,12 @@ test.beforeAll(async () => {
   })
   if (!res.ok) throw new Error(`seed_e2e_dunning failed: ${res.status} ${await res.text()}`)
   gymId = (await res.json()) as string
-  const inv = await svcGet(`invoices?gym_id=eq.${gymId}&select=id,student_id&order=created_at.desc&limit=1`)
+  // The seed's OPEN overdue renewal invoice (due today-30 → the 1–30-days bucket).
+  const inv = await svcGet(`invoices?gym_id=eq.${gymId}&status=eq.overdue&order=created_at.desc&limit=1&select=id,student_id,invoice_number,due_date`)
   invoiceId = inv[0].id
   studentId = inv[0].student_id
+  invoiceNumber = inv[0].invoice_number
+  dueDate = inv[0].due_date
   // A partial payment TODAY: the invoice stays open (balance > 0 → Collect/WA render)
   // and the Payments tab has a row to card-ify.
   await svcPost('payments', { invoice_id: invoiceId, student_id: studentId, amount_usd: 10, payment_method: 'cash_usd', payment_date: today() })
@@ -80,7 +94,9 @@ test('R1/R2/R3 · Invoices at 390 = card rows, no h-scroll, actions out of the i
   test.setTimeout(90_000)
   const { ctx, page } = await ownerPage(browser, MOBILE)
   try {
-    await page.goto('/en/money?tab=invoices', { waitUntil: 'domcontentloaded' })
+    // Search isolates the seed's overdue invoice so the assertions target IT (the
+    // gym's base seed may carry other invoices; .first() alone would be ambiguous).
+    await page.goto(`/en/money?tab=invoices&search=${encodeURIComponent(invoiceNumber)}`, { waitUntil: 'domcontentloaded' })
     const row = page.locator('[data-testid="invoice-row"]:visible').first()
     await expect(row, 'a card invoice-row is visible at 390').toBeVisible({ timeout: 20_000 })
 
@@ -103,13 +119,12 @@ test('R1/R2/R3 · Invoices at 390 = card rows, no h-scroll, actions out of the i
     // R2: Collect is the M360A pre-filled pay door.
     await expect(row.getByTestId('invoice-row-collect')).toHaveAttribute('href', new RegExp(`/students/${studentId}\\?pay=${invoiceId}`))
 
-    // §5: the aging chip renders the ONE bucket truth. The seed's invoice is due
-    // today-30 → the 1–30-days bucket (byte-matched to 000110 by aging.test.ts).
-    await expect(row.getByTestId('invoice-aging-chip'), 'aging chip present').toHaveAttribute('data-bucket', 'd1_30')
+    // §5: the aging chip renders the ONE bucket truth — byte-matched to 000110 by
+    // aging.test.ts; here the rendered bucket equals the independently-computed oracle.
+    await expect(row.getByTestId('invoice-aging-chip'), 'aging chip present').toHaveAttribute('data-bucket', bucketOf(dueDate))
 
     // R3: the number link keeps the FULL id (title/aria) even if the display truncates.
-    const num = await svcGet(`invoices?id=eq.${invoiceId}&select=invoice_number`)
-    await expect(row.locator('a[title]').first()).toHaveAttribute('title', num[0].invoice_number)
+    await expect(row.locator('a[title]').first()).toHaveAttribute('title', invoiceNumber)
   } finally { await ctx.close() }
 })
 

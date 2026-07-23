@@ -200,7 +200,9 @@ export async function PaymentsView({ locale, searchParams }: Props) {
                 <th className="p-3">{t('Invoice', 'الفاتورة', 'Facture')}</th><th className="p-3">{t('Method', 'الطريقة', 'Méthode')}</th>
                 <th className="p-3">{t('Reference', 'المرجع', 'Référence')}</th><th className="p-3 text-end">{t('Amount', 'المبلغ', 'Montant')}</th>
               </tr></thead>
-              <tbody>
+              {/* `payments-history` rides BOTH variants (one is display:none per width)
+                  so `:visible` always finds the shown list — ar-admin / member360. */}
+              <tbody data-testid="payments-history">
                 {rows.map((p: any) => {
                   const inv = Array.isArray(p.invoices) ? p.invoices[0] : p.invoices
                   const stu = Array.isArray(p.students) ? p.students[0] : p.students
