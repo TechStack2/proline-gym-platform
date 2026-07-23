@@ -99,7 +99,12 @@ jobs:
     # opt into a self-hosted runner; on `push` (the union gate) inputs.runner is
     # empty → the expression resolves to ubuntu-latest, so the default is inert.
     runs-on: ${{ (inputs.runner == 'self' && 'self-hosted') || 'ubuntu-latest' }}
-    timeout-minutes: 45
+    # M360A: 45 was sized for the pre-W4 union; two spec files landed on the union
+    # in one day (lifecycle-cron + member360-actionable) and the by-FILE shard split
+    # rebalanced — shard 2 now runs ~46 min with every test green (measured run
+    # 29985111066: my spec passed in 70s; the shard died at the JOB ceiling, not on
+    # any test). Headroom, not a hang-mask: per-test timeouts still bound each test.
+    timeout-minutes: 55
     env:
       # UNION-SHARD: this leg's shard index + the total (2 union / 1 targeted).
       SHARD_INDEX: ${{ matrix.shard }}

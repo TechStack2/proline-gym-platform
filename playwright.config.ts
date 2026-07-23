@@ -992,6 +992,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MEMBER-360-ACTIONABLE: the §2.1 drillability contract proven behaviorally —
+      // strip→ledger→pre-filled collect, 1-tap queue rows, next-bill drill, guardian
+      // decomposition with the payer pre-scoped. Hermetic own gym. Needs
+      // SUPABASE_SERVICE_ROLE_KEY.
+      name: 'member360-actionable',
+      dependencies: ['setup'],
+      testMatch: /member360-actionable\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // ON-1 portal invites: adopts login-less profiles into auth users.
       name: 'on1',
       dependencies: ['setup'],

@@ -24,6 +24,32 @@ export type { AgingBucket }
 /** The four buckets, always in this fixed order (the render maps them positionally). */
 export const AGING_KEYS = ['current', 'd1_30', 'd31_60', 'd60_plus'] as const
 
+export type AgingKey = (typeof AGING_KEYS)[number]
+
+/**
+ * MEMBER-360-ACTIONABLE: whole days past due for ONE invoice (0 when due today
+ * or later). `current_date` basis, mirroring 000110's SQL.
+ */
+export function daysPastDue(dueDate: string | null | undefined, today = new Date()): number {
+  if (!dueDate) return 0
+  const due = new Date(String(dueDate).slice(0, 10) + 'T00:00:00Z')
+  const now = new Date(today.toISOString().slice(0, 10) + 'T00:00:00Z')
+  const days = Math.floor((now.getTime() - due.getTime()) / 864e5)
+  return days > 0 ? days : 0
+}
+
+/**
+ * The per-invoice twin of 000110's bucketing — the ONE aging truth. Boundaries
+ * byte-match the SQL: due today-or-later = current; else ≤30 / ≤60 / beyond.
+ */
+export function agingBucketFor(dueDate: string | null | undefined, today = new Date()): AgingKey {
+  const d = daysPastDue(dueDate, today)
+  if (d <= 0) return 'current'
+  if (d <= 30) return 'd1_30'
+  if (d <= 60) return 'd31_60'
+  return 'd60_plus'
+}
+
 export type AgingResult =
   | { ok: true; buckets: AgingBucket[] }
   | { ok: false; error: string }

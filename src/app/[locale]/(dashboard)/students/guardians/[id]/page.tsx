@@ -10,9 +10,19 @@ import { Phone, Users, ChevronLeft, Award, CalendarDays, DollarSign, Wallet, Clo
 import { NavChevron } from '@/components/ui/nav-chevron'
 import { localizedName, one } from '@/lib/names'
 import { getFamilySummaries, familyOutstandingTotal, type FamilySummary } from '@/lib/family/aggregate'
+import { getFamilyBillingDetail, type ChildBillingDetail } from '@/lib/family/billing-detail'
 import { Avatar } from '@/components/shared/avatar'
 import { InviteButton } from '@/components/shared/invite-button'
 import { MemberPortalAccess } from '../../[id]/member-portal-access'
+import { FamilyCollect, type FamilyCollectRow } from './family-collect'
+import { AttentionQueue, type QueueRow } from '@/components/member360/attention-queue'
+import { LifecycleFacts, type LifecycleFact } from '@/components/member360/lifecycle-facts'
+import { VARIANT_TINT } from '@/lib/status-vocabulary'
+import { ATTENTION } from '@/lib/member360/attention'
+import { daysPastDue } from '@/lib/finances/aging'
+import { Ltr } from '@/components/ui/bdi'
+import { WhatsAppShare } from '@/components/shared/whatsapp-share'
+import { gymDisplayName } from '@/lib/whatsapp/identity'
 
 /**
  * GUARDIAN-360 R1 — the staff guardian detail. One page for the whole family:
@@ -31,8 +41,9 @@ type Tr = (key: string, values?: Record<string, string | number>) => string
 // statusTintClass — the local light-pinned STATE_CHIP map is dead.
 
 // Hoisted (stable identity) — a per-dependent card with the reused action flows.
-function ChildCard({ s, self, locale, t, tb, isRTL }: {
-  s: FamilySummary; self?: boolean; locale: string; t: Tr; tb: Tr; isRTL: boolean
+function ChildCard({ s, self, locale, t, ta, tb, isRTL, detail, gymName, winbackMsg }: {
+  s: FamilySummary; self?: boolean; locale: string; t: Tr; ta: Tr; tb: Tr; isRTL: boolean
+  detail?: ChildBillingDetail; gymName?: string; winbackMsg?: string
 }) {
   const fmtDate = (d: string | null) => fmtDateLoc(d, locale, 'medium')
   const weekday = (diff: number) => diff === 0 ? t('today') : fmtWeekday(new Date(Date.now() + diff * 864e5).getDay(), locale, 'long')
@@ -73,25 +84,48 @@ function ChildCard({ s, self, locale, t, tb, isRTL }: {
         </p>
       )}
 
-      {/* Glance: next class · cycle end · registrations. */}
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-        <div className="rounded-lg bg-gray-50 px-2.5 py-1.5">
-          <p className="text-gray-400">{t('nextClass')}</p>
-          <p data-testid="guardian-child-nextclass" className="mt-0.5 font-medium text-gray-800" dir="ltr">{nextClassLabel}</p>
+      {/* §4.4 — the member lifecycle grid, compact: the SAME four-slot scan pattern
+          (next class · cycle · next bill · last payment). A dependent with no
+          registrations renders the empty-state row instead — absence is information. */}
+      {(s.activeRegCount > 0 || s.membershipStateValue !== 'none') ? (
+        <LifecycleFacts
+          testid="guardian-child-lifecycle"
+          facts={[
+            { key: 'nextclass', label: t('nextClass'), value: <span data-testid="guardian-child-nextclass" dir="ltr">{nextClassLabel}</span> },
+            { key: 'cycle', label: t('cycleEnd'), value: <span data-testid="guardian-child-cycle-end" dir="ltr">{s.cycleEnd ? fmtDate(s.cycleEnd) : '—'}</span> },
+            {
+              key: 'nextbill', label: ta('nextBill'),
+              value: detail?.nextBill ? fmtDate(detail.nextBill.date) : '—',
+              sub: detail?.nextBill?.amountUsd != null ? <Ltr>{`· $${detail.nextBill.amountUsd.toFixed(2)}`}</Ltr> : undefined,
+              href: detail?.oldestInvoiceId ? `/${locale}/students/${s.studentId}?pay=${detail.oldestInvoiceId}` : undefined,
+              testid: 'fact-next-bill',
+            },
+            {
+              key: 'lastpay', label: ta('lastPayment'),
+              value: detail?.lastPayment ? fmtDate(detail.lastPayment.date) : ta('noneYet'),
+              sub: detail?.lastPayment ? <Ltr>{`· $${detail.lastPayment.amountUsd.toFixed(2)}`}</Ltr> : undefined,
+              tone: detail?.lastPayment ? undefined : (s.outstanding > 0.005 ? 'warning' : undefined),
+              testid: 'fact-last-payment',
+            },
+          ] satisfies LifecycleFact[]}
+        />
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-gray-500" data-testid="guardian-child-no-lifecycle">
+          <span>{ta('noProducts')}</span>
+          {s.phone || gymName ? (
+            <WhatsAppShare phone={s.phone ?? ''} testid="guardian-child-winback-wa"
+              message={winbackMsg ?? ''} label={ta('winback')} />
+          ) : null}
         </div>
-        <div className="rounded-lg bg-gray-50 px-2.5 py-1.5">
-          <p className="text-gray-400">{t('cycleEnd')}</p>
-          <p data-testid="guardian-child-cycle-end" className="mt-0.5 font-medium text-gray-800" dir="ltr">{s.cycleEnd ? fmtDate(s.cycleEnd) : '—'}</p>
-        </div>
-        <div className="rounded-lg bg-gray-50 px-2.5 py-1.5">
-          <p className="text-gray-400">{t('registrations')}</p>
-          <p data-testid="guardian-child-regs" className="mt-0.5 font-medium text-gray-800">{s.activeRegCount}</p>
-        </div>
-      </div>
+      )}
+      {/* regs count keeps its historical hook, compact. */}
+      <p className="mt-1 text-[10px] text-gray-400">
+        {t('registrations')}: <span data-testid="guardian-child-regs" className="font-medium text-gray-600">{s.activeRegCount}</span>
+      </p>
 
       {/* Actions per child — reuse existing Member-360 flows (no reimplementation). */}
       <div className="mt-3 flex flex-wrap items-center gap-2" data-testid="guardian-child-actions">
-        <Link href={`/${locale}/students/${s.studentId}?pay=1`} data-testid="guardian-child-pay"
+        <Link href={`/${locale}/students/${s.studentId}?pay=${detail?.oldestInvoiceId ?? '1'}`} data-testid="guardian-child-pay"
           className="inline-flex items-center gap-1 rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-800">
           <DollarSign className="h-3.5 w-3.5" />{t('recordPayment')}
         </Link>
@@ -156,6 +190,96 @@ export default async function GuardianDetailPage({
   const ownSummary = ownId ? summaries.get(ownId) ?? null : null
   const familyOutstanding = familyOutstandingTotal(kidSummaries)
 
+  // ══ MEMBER-360-ACTIONABLE §4 — the family altitude: STAFF-ONLY billing
+  //    decomposition (separate read from the portal-shared summaries). ══
+  const ta = (await getTranslations('member360.actionable')) as unknown as Tr
+  const tAging = (await getTranslations('ownerFinances.aging')) as unknown as Tr
+  const twa = (await getTranslations('whatsapp')) as unknown as Tr
+  const detail = await getFamilyBillingDetail(supabase, allIds, locale)
+  const { data: gymRow } = await supabase.from('gyms').select('name_ar, name_en, name_fr').eq('id', gymId).maybeSingle()
+  const gymName = gymDisplayName(gymRow as any, locale)
+  const fmtD = (d: string | null) => fmtDateLoc(d, locale, 'medium')
+
+  // §4.1 strip #1 payload — every kid's open invoices, oldest-due-first family-wide.
+  const collectRows: FamilyCollectRow[] = kidSummaries
+    .flatMap((k) => (detail.get(k.studentId)?.openInvoices ?? []).map((inv) => ({
+      invoiceId: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      childName: k.name,
+      ageDays: inv.ageDays,
+      bucketVariant: (inv.bucket === 'current' ? 'neutral' : inv.bucket === 'd1_30' ? 'warning' : 'danger') as FamilyCollectRow['bucketVariant'],
+      bucketLabel: tAging(inv.bucket),
+      balanceUsd: inv.balanceUsd,
+      exchangeRate: inv.exchangeRate,
+    })))
+    .sort((a, b) => b.ageDays - a.ageDays)
+  const familyOldestDays = collectRows.length ? collectRows[0].ageDays : 0
+
+  // §4.1 strip #2 — the next family renewal (nearest upcoming child boundary).
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const renewals = kidSummaries
+    .filter((k) => k.cycleEnd)
+    .map((k) => ({ name: k.name, date: String(k.cycleEnd).slice(0, 10) }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const nextFamilyRenewal = renewals.find((r) => r.date >= todayIso) ?? renewals[0] ?? null
+
+  // §4.1 strip #3 — family attendance: seen-within-window count + worst absentee.
+  const seenCount = kidSummaries.filter((k) => k.lastSeen && daysPastDue(k.lastSeen) < ATTENTION.ABSENCE_WINBACK_DAYS).length
+  const worstAbsent = kidSummaries
+    .map((k) => ({ name: k.name, days: k.lastSeen ? daysPastDue(k.lastSeen) : null }))
+    .sort((a, b) => (b.days ?? Number.MAX_SAFE_INTEGER) - (a.days ?? Number.MAX_SAFE_INTEGER))[0] ?? null
+
+  // §4.3 — the family queue: same mechanical rules, child-tagged, 1-tap actions.
+  const familyQueue: QueueRow[] = []
+  for (const k of kidSummaries) {
+    const d = detail.get(k.studentId)
+    const overdueBoundary = k.cycleEnd && daysPastDue(k.cycleEnd) > 0 && (k.activeRegCount > 0 || k.membershipStateValue !== 'none')
+    if (overdueBoundary) {
+      familyQueue.push({
+        key: `renew-${k.studentId}`, kind: 'renewal',
+        chip: { label: k.name, variant: 'danger' },
+        why: ta('queueRenewal', { label: '', date: fmtD(k.cycleEnd), days: daysPastDue(k.cycleEnd!) }),
+        action: (
+          <Link href={`/${locale}/students/${k.studentId}?pay=${d?.oldestInvoiceId ?? '1'}`} data-testid="family-queue-collect-renew"
+            className="inline-flex items-center rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-800">
+            {ta('collectRenew')}
+          </Link>
+        ),
+      })
+    }
+    for (const inv of d?.openInvoices ?? []) {
+      if (inv.ageDays <= ATTENTION.INVOICE_AGING_DAYS) continue
+      familyQueue.push({
+        key: `inv-${inv.id}`, kind: 'invoice',
+        chip: { label: k.name, variant: 'warning' },
+        why: <>{inv.invoiceNumber} · {ta('unpaidDays', { days: inv.ageDays })} · <Ltr>{`$${inv.balanceUsd.toFixed(2)}`}</Ltr></>,
+        action: (
+          <Link href={`/${locale}/students/${k.studentId}?pay=${inv.id}`} data-testid="family-queue-collect"
+            className="inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+            {ta('collect')}
+          </Link>
+        ),
+      })
+    }
+    const absentDays = k.lastSeen ? daysPastDue(k.lastSeen) : null
+    const winback = (absentDays != null && absentDays >= ATTENTION.ABSENCE_WINBACK_DAYS) ||
+      (absentDays == null && k.activeRegCount === 0 && k.membershipStateValue === 'none')
+    if (winback) {
+      familyQueue.push({
+        key: `wb-${k.studentId}`, kind: 'winback',
+        chip: { label: k.name, variant: 'info' },
+        why: absentDays != null ? ta('queueWinback', { days: absentDays }) : ta('queueWinbackNever'),
+        action: (gPhone || k.phone) ? (
+          <WhatsAppShare phone={(k.phone ?? gPhone)!} testid="family-queue-winback-wa"
+            message={twa('tmpl.winback', { name: k.name, gym: gymName })} label={ta('winback')} />
+        ) : <span className="text-xs text-gray-400">{ta('winback')}</span>,
+      })
+    }
+  }
+
+  // §4.2 — the decomposition, owed-most first (settled rows calm at the end).
+  const ledgerKids = [...kidSummaries].sort((a, b) => b.outstanding - a.outstanding)
+
   return (
     <div className="space-y-5" data-testid="guardian-detail" data-guardian-id={id}>
       <Link href={`/${locale}/students/guardians`} data-testid="guardian-back"
@@ -178,22 +302,94 @@ export default async function GuardianDetailPage({
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            {/* Family balance — the combined outstanding across all dependents. */}
-            <div data-testid="guardian-family-outstanding" data-amount={familyOutstanding.toFixed(2)}
-              className={cn('rounded-xl px-4 py-2 text-end', familyOutstanding > 0.005 ? 'bg-danger-500/10' : 'bg-gray-50')}>
-              <p className={cn('text-[11px] font-medium', familyOutstanding > 0.005 ? 'text-danger-600' : 'text-gray-500')}>{t('familyOutstanding')}</p>
-              <p className={cn('text-lg font-bold', familyOutstanding > 0.005 ? 'text-danger-800' : 'text-gray-600')} dir="ltr">
-                {familyOutstanding > 0.005 ? `$${familyOutstanding.toFixed(2)}` : t('settled')}
-              </p>
-            </div>
             {/* The family's door — invite the guardian to the portal (parent role). */}
             <InviteButton kind="parent" id={(guardian as any).profile_id} name={gName} locale={locale} phone={gPhone} />
           </div>
         </div>
       </div>
 
+      {/* §4.1 — the family status strip: the family's three numbers. The balance
+          stat IS the 1-tap door into the pre-scoped collect flow (§2.1); the other
+          two drill to the dependents section. */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-testid="guardian-strip">
+        <FamilyCollect
+          rows={collectRows}
+          familyBalance={familyOutstanding}
+          oldestDays={familyOldestDays}
+          locale={locale}
+          statLabel={t('familyOutstanding')}
+          oldestChip={familyOldestDays > 0 ? ta('oldestDays', { days: familyOldestDays }) : null}
+        >
+          <span data-testid="guardian-collect-family"
+            className="inline-flex cursor-pointer items-center rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-800">
+            {ta('collectFamily')}
+          </span>
+        </FamilyCollect>
+        <Link href="#guardian-dependents" data-testid="guardian-strip-renewal"
+          className="block rounded-2xl border bg-white px-4 py-3 shadow-elevation-1 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]">
+          <p className="text-[11px] uppercase tracking-wide text-gray-400">{ta('nextFamilyRenewal')}</p>
+          <p className="mt-0.5 text-xl font-bold tabular-nums text-gray-900">{nextFamilyRenewal ? fmtD(nextFamilyRenewal.date) : '—'}</p>
+          {nextFamilyRenewal && (
+            <p className="mt-1"><span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', VARIANT_TINT.neutral)}>{nextFamilyRenewal.name}</span></p>
+          )}
+        </Link>
+        <Link href="#guardian-dependents" data-testid="guardian-strip-attendance"
+          className="block rounded-2xl border bg-white px-4 py-3 shadow-elevation-1 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--shell-accent)]">
+          <p className="text-[11px] uppercase tracking-wide text-gray-400">{ta('familyAttendance')}</p>
+          <p className="mt-0.5 text-xl font-bold tabular-nums text-gray-900">{ta('nOfM', { n: seenCount, m: kidSummaries.length })}</p>
+          {worstAbsent && (worstAbsent.days == null || worstAbsent.days >= ATTENTION.ABSENCE_WINBACK_DAYS) && (
+            <p className="mt-1">
+              <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', VARIANT_TINT.warning)}>
+                {worstAbsent.days != null ? ta('absentDays', { name: worstAbsent.name, days: worstAbsent.days }) : ta('absentNever', { name: worstAbsent.name })}
+              </span>
+            </p>
+          )}
+        </Link>
+      </div>
+
+      {/* §4.2 — balance decomposition: who owes what, oldest first; the Driver
+          column is the sentence staff say out loud. Settled renders calm-neutral. */}
+      {kidSummaries.length > 0 && (
+        <section className="rounded-2xl border bg-white p-4 shadow-sm" data-testid="guardian-ledger">
+          <h2 className={cn('mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
+            <DollarSign className="h-4 w-4 text-primary-600" />{ta('decompositionTitle')}
+          </h2>
+          <ul className="divide-y">
+            {ledgerKids.map((k) => {
+              const d = detail.get(k.studentId)
+              const owes = k.outstanding > 0.005
+              return (
+                <li key={k.studentId} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm" data-testid="family-ledger-row" data-student-id={k.studentId}>
+                  <span className="min-w-[6rem] font-medium text-gray-800">{k.name}</span>
+                  {owes ? (
+                    <span className="font-semibold tabular-nums text-danger-600"><Ltr>{`$${k.outstanding.toFixed(2)}`}</Ltr></span>
+                  ) : (
+                    <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', VARIANT_TINT.neutral)}>{t('settled')}</span>
+                  )}
+                  {owes && d && d.oldestDays > 0 && (
+                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', VARIANT_TINT[d.oldestDays > 30 ? 'danger' : 'warning'])}>
+                      {ta('daysOld', { days: d.oldestDays })}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-xs text-gray-500">{owes ? d?.driver : ta('noOpenInvoices')}</span>
+                  {owes && (
+                    <Link href={`/${locale}/students/${k.studentId}?pay=${d?.oldestInvoiceId ?? '1'}`} data-testid="family-ledger-collect"
+                      className="inline-flex items-center rounded-lg bg-primary-700 px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary-800">
+                      {ta('collect')}
+                    </Link>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+
+      {/* §4.3 — the family needs-attention queue (child-tagged, absent when empty). */}
+      <AttentionQueue rows={familyQueue} testid="guardian-attention" />
+
       {/* Dependents */}
-      <section className="space-y-3">
+      <section className="space-y-3 scroll-mt-4" id="guardian-dependents">
         <h2 className={cn('flex items-center gap-2 text-sm font-semibold text-gray-900', isRTL && 'font-arabic')}>
           <Users className="h-4 w-4 text-primary-600" />{t('dependentsHeading')}
         </h2>
@@ -201,7 +397,7 @@ export default async function GuardianDetailPage({
           <p className="rounded-2xl border bg-white p-6 text-center text-sm text-gray-400" data-testid="guardian-no-dependents">{t('noDependents')}</p>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
-            {kidSummaries.map((s) => <ChildCard key={s.studentId} s={s} locale={locale} t={t} tb={tb} isRTL={isRTL} />)}
+            {kidSummaries.map((s) => <ChildCard key={s.studentId} s={s} locale={locale} t={t} ta={ta} tb={tb} isRTL={isRTL} detail={detail.get(s.studentId)} gymName={gymName} winbackMsg={twa('tmpl.winback', { name: s.name, gym: gymName })} />)}
           </div>
         )}
       </section>
@@ -213,7 +409,7 @@ export default async function GuardianDetailPage({
             <Wallet className="h-4 w-4 text-primary-600" />{t('ownHeading')}
           </h2>
           <div className="grid gap-3 lg:grid-cols-2">
-            <ChildCard s={ownSummary} self locale={locale} t={t} tb={tb} isRTL={isRTL} />
+            <ChildCard s={ownSummary} self locale={locale} t={t} ta={ta} tb={tb} isRTL={isRTL} detail={detail.get(ownSummary.studentId)} gymName={gymName} />
           </div>
         </section>
       )}

@@ -66,7 +66,11 @@ const SHELLS = {
     keyRoutes: ['/today', '/inbox', '/students', '/students/guardians', '/money', '/money?tab=invoices', '/schedule', '/schedule?view=day', '/attendance', '/desk', '/reports', '/leads', '/setup', '/settings', '/profile'],
     // Member-360: the roster card navigates via onClick (role="link", no href) —
     // click the first card and take the landed URL.
-    dynamic: [{ label: 'member-360', from: '/students', clickSelector: '[data-testid="student-card"]' }],
+    // M360A: the staff guardian detail (family dashboard) joins the gated set.
+    dynamic: [
+      { label: 'member-360', from: '/students', clickSelector: '[data-testid="student-card"]' },
+      { label: 'guardian-360', from: '/students/guardians', clickSelector: '[data-testid="guardian-list-row"]' },
+    ],
   },
   // W2b (auditor rider): the GUARDIAN surfaces — FamilyHome renders at /portal
   // for a multi-kid parent; KidDashboard behind the first kid chip.

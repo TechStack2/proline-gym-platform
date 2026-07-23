@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { localizedName, one } from '@/lib/names'
 import { balanceUsd, statusLabel, displayInvoiceStatus, METHOD_LABEL } from '@/lib/billing/reconcile'
 import { StatusChip } from '@/components/ui/status-chip'
-import { statusTintClass } from '@/lib/status-vocabulary'
+import { statusTintClass, VARIANT_TINT } from '@/lib/status-vocabulary'
 import {
   User, Phone, Award, CreditCard, CalendarDays, Dumbbell, ClipboardList,
   DollarSign, Users, Clock,
@@ -25,8 +25,19 @@ import { registrationState, membershipState } from '@/lib/lifecycle/status'
 import { getWaiverContext } from '@/lib/waivers/server'
 import { waiverTitle, waiverBody } from '@/lib/waivers/status'
 import { WaiverSign, WaiverChip } from '@/components/shared/waiver-sign'
-import { fmtDate as fmtIntlDate, fmtPhone, humanizeEnum } from '@/lib/fmt'
+import { fmtDate as fmtIntlDate, fmtDateRange, fmtPhone, fmtTime, humanizeEnum } from '@/lib/fmt'
 import { Ltr } from '@/components/ui/bdi'
+import { StatusStrip, type StripStat } from '@/components/member360/status-strip'
+import { AttentionQueue, type QueueRow } from '@/components/member360/attention-queue'
+import { LifecycleFacts, type LifecycleFact } from '@/components/member360/lifecycle-facts'
+import { deriveMemberAttention } from '@/lib/member360/attention'
+import { agingBucketFor, daysPastDue } from '@/lib/finances/aging'
+import { cycleWindow } from '@/lib/billing/proration'
+import { composeInvoiceWa } from '../../invoices/[id]/wa-message'
+import { InvoiceRowWa } from '../../invoices/invoice-row-wa'
+import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
+import { gymDisplayName } from '@/lib/whatsapp/identity'
+import { WhatsAppShare } from '@/components/shared/whatsapp-share'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,7 +71,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const { data: student } = await supabase
     .from('students')
     .select(`*, profiles!inner (id, first_name_ar, first_name_en, first_name_fr,
-      last_name_ar, last_name_en, last_name_fr, phone, gender, date_of_birth, avatar_url)`)
+      last_name_ar, last_name_en, last_name_fr, phone, gender, date_of_birth, avatar_url, locale)`)
     .eq('id', id)
     .maybeSingle()
   if (!student) notFound()
@@ -92,7 +103,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       .limit(5),
     supabase
       .from('class_registrations')
-      .select('id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, paid_until, billing_anchor, first_cycle_prorated, requested_at, classes:class_id (name_ar, name_en, name_fr, disciplines:discipline_id (name_ar, name_en, name_fr), class_schedules (day_of_week, start_time, end_time, is_active))')
+      .select('id, class_id, status, waitlist_position, monthly_fee_usd, discount_pct, discount_amount_usd, start_date, end_date, paid_until, billing_anchor, first_cycle_prorated, requested_at, classes:class_id (name_ar, name_en, name_fr, disciplines:discipline_id (name_ar, name_en, name_fr), class_schedules (day_of_week, start_time, end_time, is_active))')
       .eq('student_id', id)
       .order('requested_at', { ascending: false })
       .limit(10),
@@ -119,7 +130,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
       .limit(10),
     supabase
       .from('payments')
-      .select('id, invoice_id, amount_usd, amount_lbp, payment_method, payment_date, reference_number')
+      .select('id, invoice_id, amount_usd, amount_lbp, payment_method, payment_date, reference_number, invoices:invoice_id (invoice_type)')
       .eq('student_id', id)
       .order('payment_date', { ascending: false })
       .limit(10),
@@ -223,7 +234,9 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   // due first = the pre-selection.
   const { data: openInvRows } = await supabase
     .from('invoices')
-    .select('id, invoice_number, total_usd, status, due_date, exchange_rate')
+    .select(`id, invoice_number, invoice_type, total_usd, status, due_date, created_at, exchange_rate,
+      notes_ar, notes_en, notes_fr, payer_profile_id,
+      payer:profiles!invoices_payer_profile_id_fkey (first_name_ar, first_name_en, first_name_fr, phone, locale)`)
     .eq('student_id', id)
     .in('status', ['pending', 'partial', 'overdue'])
     .order('due_date', { ascending: true, nullsFirst: false })
@@ -255,7 +268,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   ])
   const ptInvoiceIds = (ptAssignments ?? []).map((a: any) => a.invoice_id).filter(Boolean)
   const { data: ptInvoices } = ptInvoiceIds.length
-    ? await supabase.from('invoices').select('id, invoice_number, status').in('id', ptInvoiceIds)
+    ? await supabase.from('invoices').select('id, invoice_number, status, total_usd').in('id', ptInvoiceIds)
     : { data: [] as any[] }
   const ptInvBy = new Map((ptInvoices ?? []).map((i: any) => [i.id, i]))
   const ptSessionsByAssignment = new Map<string, any[]>()
@@ -300,7 +313,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   // ── ML-1: membership cards (read-time states) + policy + plans + freezes ──
   const { data: gymPolicy } = await supabase
     .from('gyms')
-    .select('renewal_lead_days, dunning_grace_days, freeze_max_days_year, freeze_min_chunk_days')
+    .select('renewal_lead_days, dunning_grace_days, freeze_max_days_year, freeze_min_chunk_days, name_ar, name_en, name_fr, slug')
     .eq('id', gymIdForPromote)
     .single()
   const { data: planRows } = await supabase
@@ -309,21 +322,27 @@ export default async function Member360Page({ params: { locale, id }, searchPara
     .eq('gym_id', gymIdForPromote).eq('is_active', true)
     .order('price_usd')
   const msIds = (memberships ?? []).map((m: any) => m.id)
-  const [{ data: openRenewals }, { data: freezeRows }] = msIds.length
+  const regIds = (registrations ?? []).map((r: any) => r.id)
+  const renewalProductIds = [...msIds, ...regIds]
+  const [{ data: openRenewals }, { data: freezeRows }] = renewalProductIds.length
     ? await Promise.all([
+        // MEMBER-360-ACTIONABLE: widened to BOTH product types + the invoice id, so
+        // an overdue renewal's queue row can open the collect flow pre-filled (§2.1).
         supabase.from('renewal_invoices')
-          .select('product_id, invoices:invoice_id!inner (status)')
-          .eq('product_type', 'membership').in('product_id', msIds),
-        supabase.from('membership_freezes')
-          .select('membership_id, days_frozen, start_date')
-          .in('membership_id', msIds),
+          .select('product_id, product_type, invoice_id, invoices:invoice_id!inner (status)')
+          .in('product_type', ['membership', 'class_registration']).in('product_id', renewalProductIds),
+        msIds.length
+          ? supabase.from('membership_freezes')
+              .select('membership_id, days_frozen, start_date')
+              .in('membership_id', msIds)
+          : Promise.resolve({ data: [] as any[] }),
       ])
     : [{ data: [] as any[] }, { data: [] as any[] }]
-  const renewalOpenSet = new Set(
-    ((openRenewals ?? []) as any[])
-      .filter((r) => ['pending', 'partial', 'overdue'].includes(one(r.invoices)?.status))
-      .map((r) => r.product_id),
-  )
+  const openRenewalRows = ((openRenewals ?? []) as any[])
+    .filter((r) => ['pending', 'partial', 'overdue'].includes(one(r.invoices)?.status))
+  const renewalOpenSet = new Set(openRenewalRows.filter((r) => r.product_type === 'membership').map((r) => r.product_id))
+  /** open renewal invoice per product (membership OR registration) — the §2.1 collect target */
+  const renewalInvoiceByProduct = new Map<string, string>(openRenewalRows.map((r) => [r.product_id, r.invoice_id]))
   const thisYear = new Date().getFullYear()
   const freezeUsedBy = new Map<string, number>()
   for (const f of (freezeRows ?? []) as any[]) {
@@ -418,6 +437,276 @@ export default async function Member360Page({ params: { locale, id }, searchPara
   const memStates = ((memberships ?? []) as any[]).map((m) => membershipState(m, lcPolicy))
   const isLapsedMember = !student.is_active || memStates.includes('lapsed')
   const lastSeenDate = ((attendance ?? []) as any[])[0]?.attendance_date ?? null
+
+  // ══ MEMBER-360-ACTIONABLE (§3) — every derivation below is over rows this page
+  //    already loads; the queue is computed at render, never stored. ══
+  const ta = await getTranslations('member360.actionable')
+  const tAging = await getTranslations('ownerFinances.aging')
+  const tw = await getTranslations('whatsapp')
+  const ti = await getTranslations('invoices')
+
+  // The aging LEDGER = the open invoices, oldest due first (the same rows the
+  // pay modal offers — so "oldest pre-selected" and the ledger agree by shape).
+  const openLedger = ((openInvRows ?? []) as any[])
+    .map((i) => ({ ...i, balance_usd: balanceUsd(i.total_usd, [{ amount_usd: openPaidBy.get(i.id) ?? 0 }]) }))
+    .filter((i) => i.balance_usd > 0)
+  const balanceDue = Math.round(openLedger.reduce((sum, i) => sum + i.balance_usd, 0) * 100) / 100
+  const oldestAgeDays = openLedger.length ? daysPastDue(openLedger[0].due_date) : 0
+
+  // Next renewal = the nearest billing boundary across ACTIVE products.
+  const renewalBoundaries: { date: string; label: string; overdue: boolean; anchor: string; productId: string }[] = []
+  for (const m of (memberships ?? []) as any[]) {
+    if (m.status !== 'active' || !m.end_date) continue
+    renewalBoundaries.push({
+      date: String(m.end_date).slice(0, 10), label: lname(one(m.membership_plans)),
+      overdue: membershipState(m, lcPolicy) === 'overdue', anchor: '#panel-membership', productId: m.id,
+    })
+  }
+  for (const r of (registrations ?? []) as any[]) {
+    if (r.status !== 'active') continue
+    const pu = r.paid_until ?? r.end_date
+    if (!pu) continue
+    renewalBoundaries.push({
+      date: String(pu).slice(0, 10), label: lname(one(r.classes)),
+      overdue: registrationState(r, lcPolicy) === 'overdue', anchor: '#panel-registrations', productId: r.id,
+    })
+  }
+  renewalBoundaries.sort((a, b) => a.date.localeCompare(b.date))
+  const nextRenewal = renewalBoundaries[0] ?? null
+  const nextRenewalOverdue = nextRenewal ? daysPastDue(nextRenewal.date) : 0
+
+  // Last payment per product type (§3.3 money-last slot) + overall (§3.4 line).
+  const lastPayByType = new Map<string, any>()
+  for (const pRow of (payments ?? []) as any[]) {
+    const ty = (one((pRow as any).invoices) as any)?.invoice_type
+    if (ty && !lastPayByType.has(ty)) lastPayByType.set(ty, pRow)
+  }
+  const lastPayment = ((payments ?? []) as any[])[0] ?? null
+
+  // §3.2 — the queue (mechanical rules, lib-derived, absent when empty).
+  const attentionItems = deriveMemberAttention({
+    overdueRenewals: renewalBoundaries.filter((b) => b.overdue).map((b) => ({
+      productLabel: b.label, dueDate: b.date,
+      collectInvoiceId: renewalInvoiceByProduct.get(b.productId) ?? null, anchor: b.anchor,
+    })),
+    openInvoices: openLedger.map((i) => ({ id: i.id, invoiceNumber: i.invoice_number, dueDate: i.due_date, balanceUsd: i.balance_usd })),
+    ptAssignments: ((ptAssignments ?? []) as any[]).map((a) => ({
+      id: a.id, packageLabel: lname(one(a.pt_packages)), expiresAt: a.expires_at,
+      sessionsRemaining: a.sessions_remaining ?? 0, sessionsTotal: a.sessions_total ?? 0,
+      isActive: !!a.is_active && a.status === 'active',
+    })),
+    lastSeen: lastSeenDate,
+    joinDate: (student as any).join_date ?? null,
+  })
+
+  // wa.me handoff payloads for the open ledger + queue reminders (the G1 bridge —
+  // the invoices-view batched idiom: payer when guardian-billed, else the member).
+  const waOrigin = await gymCanonicalOrigin((gymPolicy as any)?.slug ?? null)
+  const twCache = new Map<string, (k: string, v: Record<string, string>) => string>()
+  const twFor = async (loc: string | null | undefined) => {
+    const key = loc === 'ar' || loc === 'fr' ? loc : 'en'
+    if (!twCache.has(key)) {
+      twCache.set(key, (await getTranslations({ locale: key, namespace: 'whatsapp' })) as unknown as (k: string, v: Record<string, string>) => string)
+    }
+    return twCache.get(key)!
+  }
+  const waByInvoice = new Map<string, { phone: string | null; due: string; reminder: string }>()
+  await Promise.all(openLedger.map(async (inv: any) => {
+    const target = inv.payer_profile_id ? (one(inv.payer) as any) : prof
+    waByInvoice.set(inv.id, composeInvoiceWa(await twFor(target?.locale), {
+      gym: gymPolicy as any, target, locale: target?.locale === 'ar' || target?.locale === 'fr' ? target.locale : 'en',
+      origin: waOrigin, invoiceNumber: inv.invoice_number, invoiceType: inv.invoice_type,
+      notes: inv, balanceUsd: inv.balance_usd, exchangeRate: inv.exchange_rate,
+    }))
+  }))
+  const gymName = gymDisplayName(gymPolicy as any, locale)
+
+  // §3.1 — the three numbers that drive action (calm-zero throughout).
+  const stripStats: StripStat[] = [
+    {
+      key: 'balance', label: ta('balanceDue'),
+      value: <Ltr>{`$${balanceDue.toFixed(2)}`}</Ltr>,
+      tone: balanceDue > 0.005 ? 'danger' : undefined,
+      chip: oldestAgeDays > 0 ? { label: ta('oldestDays', { days: oldestAgeDays }), variant: 'danger' } : null,
+      href: '#panel-billing', testid: 'm360-strip-balance',
+    },
+    {
+      key: 'renewal', label: ta('nextRenewal'),
+      value: nextRenewal ? fmtDate(nextRenewal.date) : '—',
+      tone: nextRenewalOverdue > 0 ? 'warning' : undefined,
+      chip: nextRenewal
+        ? nextRenewalOverdue > 0
+          ? { label: ta('overdueDays', { days: nextRenewalOverdue }), variant: 'warning' }
+          : { label: nextRenewal.label, variant: 'neutral' }
+        : null,
+      href: nextRenewal?.anchor ?? '#panel-registrations', testid: 'm360-strip-renewal',
+    },
+    {
+      key: 'lastseen', label: ta('lastSeenLabel'),
+      value: lastSeenDate ? fmtDate(lastSeenDate) : t('neverSeen'),
+      chip: lastSeenDate ? { label: ta('daysAgo', { days: Math.max(0, daysPastDue(lastSeenDate)) }), variant: 'neutral' } : null,
+      href: '#panel-attendance', testid: 'm360-strip-lastseen',
+    },
+  ]
+
+  // §3.2 queue rows — the action IS on the row (§2.1: one tap).
+  const queueRows: QueueRow[] = attentionItems.map((item, idx) => {
+    if (item.kind === 'renewal') {
+      return {
+        key: `renewal-${idx}`, kind: 'renewal',
+        chip: { label: ta('kindRenewal'), variant: 'danger' },
+        why: ta('queueRenewal', { label: item.productLabel, date: fmtDate(item.dueDate), days: item.overdueDays }),
+        action: (
+          <Link
+            href={item.collectInvoiceId ? `/${locale}/students/${id}?pay=${item.collectInvoiceId}` : item.anchor}
+            data-testid="queue-collect-renew"
+            className="inline-flex items-center rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-800"
+          >
+            {ta('collectRenew')}
+          </Link>
+        ),
+      }
+    }
+    if (item.kind === 'invoice') {
+      const wa = waByInvoice.get(item.invoiceId)
+      return {
+        key: `invoice-${item.invoiceId}`, kind: 'invoice',
+        chip: { label: ta('kindInvoice'), variant: 'warning' },
+        why: <>{item.invoiceNumber} · {ta('unpaidDays', { days: item.ageDays })} · <Ltr>{`$${item.balanceUsd.toFixed(2)}`}</Ltr></>,
+        action: wa?.phone ? (
+          <InvoiceRowWa invoiceId={item.invoiceId} phone={wa.phone} dueMessage={wa.due} reminderMessage={wa.reminder}
+            sendLabel={ti('waSendInvoice')} remindLabel={ti('waSendReminder')} />
+        ) : (
+          <Link href={`/${locale}/students/${id}?pay=${item.invoiceId}`} data-testid="queue-collect"
+            className="inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+            {ta('collect')}
+          </Link>
+        ),
+      }
+    }
+    if (item.kind === 'pt') {
+      return {
+        key: `pt-${item.assignmentId}`, kind: 'pt',
+        chip: { label: t('pt'), variant: 'info' },
+        why: item.reason === 'expiring'
+          ? ta('queuePtExpiring', { label: item.packageLabel, date: fmtDate(item.expiresAt), n: item.sessionsRemaining, total: item.sessionsTotal })
+          : ta('queuePtLow', { label: item.packageLabel, n: item.sessionsRemaining }),
+        action: (
+          <a href="#panel-pt" data-testid="queue-book-pt"
+            className="inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+            {ta('bookSession')}
+          </a>
+        ),
+      }
+    }
+    return {
+      key: 'winback', kind: 'winback',
+      chip: { label: ta('kindWinback'), variant: 'info' },
+      why: item.absentDays != null ? ta('queueWinback', { days: item.absentDays }) : ta('queueWinbackNever'),
+      action: prof?.phone ? (
+        <WhatsAppShare phone={prof.phone} testid="queue-winback-wa"
+          message={tw('tmpl.winback', { name, gym: gymName })} label={tw('share.reachOut')} />
+      ) : (
+        <a href="#panel-attendance" className="text-xs font-medium text-gray-500 underline-offset-2 hover:underline">
+          {ta('kindWinback')}
+        </a>
+      ),
+    }
+  })
+
+  // §3.3 fact-grid builders (registration / PT variants; membership grid is
+  // composed inline below and passed into the card).
+  const regFacts = (r: any): LifecycleFact[] => {
+    const anchorIso = r.billing_anchor ?? r.start_date
+    let cycle: string | null = null
+    if (anchorIso && (r.status === 'active' || r.status === 'suspended')) {
+      const w = cycleWindow(new Date(String(anchorIso).slice(0, 10) + 'T12:00:00'), new Date())
+      cycle = fmtDateRange(w.start.toISOString().slice(0, 10), w.end.toISOString().slice(0, 10), locale, 'dayMonth')
+    }
+    const nextBillDate = r.paid_until ?? r.end_date
+    const fee = r.monthly_fee_usd != null
+      ? Math.max(0, Number(r.monthly_fee_usd) * (1 - Number(r.discount_pct ?? 0) / 100) - Number(r.discount_amount_usd ?? 0))
+      : null
+    const collectId = renewalInvoiceByProduct.get(r.id) ?? null
+    const lastPay = lastPayByType.get('class_registration') ?? null
+    const classHref = r.class_id ? `/${locale}/classes/${r.class_id}` : undefined
+    return [
+      { key: 'registered', label: ta('registered'), value: r.requested_at ? fmtDate(r.requested_at) : '—', href: classHref, testid: 'fact-registered' },
+      { key: 'cycle', label: ta('currentCycle'), value: cycle ?? '—', href: classHref, testid: 'fact-cycle' },
+      {
+        key: 'nextbill', label: ta('nextBill'), value: nextBillDate ? fmtDate(nextBillDate) : '—',
+        sub: fee != null ? <Ltr>{`· $${fee.toFixed(2)}`}</Ltr> : undefined,
+        href: collectId ? `/${locale}/students/${id}?pay=${collectId}` : undefined,
+        tone: r.status === 'active' && registrationState(r, lcPolicy) === 'overdue' ? 'danger' : undefined,
+        testid: 'fact-next-bill',
+      },
+      {
+        key: 'lastpay', label: ta('lastPayment'),
+        value: lastPay ? fmtDate(lastPay.payment_date) : ta('noneYet'),
+        sub: lastPay ? <Ltr>{`· $${Number(lastPay.amount_usd).toFixed(2)}`}</Ltr> : undefined,
+        href: lastPay?.invoice_id ? `/${locale}/invoices/${lastPay.invoice_id}/receipt` : undefined,
+        testid: 'fact-last-payment',
+      },
+    ]
+  }
+
+  // §3.3 PT variant (sold · valid window · invoice state · next session).
+  const ptFactsById: Record<string, React.ReactNode> = {}
+  for (const a of (ptAssignments ?? []) as any[]) {
+    const inv: any = a.invoice_id ? ptInvBy.get(a.invoice_id) : null
+    const invOpen = inv && ['pending', 'partial', 'overdue'].includes(inv.status)
+    const future = (ptSessionsByAssignment.get(a.id) ?? [])
+      .filter((sRow: any) => ['scheduled', 'proposed'].includes(sRow.status) && sRow.scheduled_at >= new Date().toISOString())
+      .sort((x: any, y: any) => String(x.scheduled_at).localeCompare(String(y.scheduled_at)))
+    const next = future[0] ?? null
+    const facts: LifecycleFact[] = [
+      { key: 'sold', label: ta('sold'), value: a.purchased_at ? fmtDate(a.purchased_at) : '—', testid: 'fact-registered' },
+      { key: 'valid', label: ta('valid'), value: a.purchased_at && a.expires_at ? fmtDateRange(a.purchased_at, a.expires_at, locale, 'dayMonth') : a.expires_at ? fmtDate(a.expires_at) : '—', testid: 'fact-cycle' },
+      {
+        key: 'invoice', label: ta('invoiceFact'),
+        value: inv ? <Ltr>{`$${Number(inv.total_usd ?? 0).toFixed(2)}`}</Ltr> : '—',
+        sub: inv ? `· ${statusLabel(inv.status, locale)}` : undefined,
+        href: inv ? (invOpen ? `/${locale}/students/${id}?pay=${inv.id}` : `/${locale}/invoices/${inv.id}`) : undefined,
+        tone: invOpen ? 'warning' : undefined,
+        testid: 'fact-next-bill',
+      },
+      {
+        key: 'nextsession', label: ta('nextSession'),
+        value: next ? `${fmtDate(next.scheduled_at)} · ${fmtTime(next.scheduled_at, locale)}` : ta('noneYet'),
+        testid: 'fact-last-payment',
+      },
+    ]
+    ptFactsById[a.id] = <LifecycleFacts facts={facts} testid="pt-lifecycle" />
+  }
+
+  // §3.3 membership variant (start · cycle · next bill · last payment).
+  const msPriceById = new Map<string, number | null>(
+    ((memberships ?? []) as any[]).map((m) => [m.id, (one(m.membership_plans) as any)?.price_usd ?? null]),
+  )
+  const msFacts = (mc: MembershipCardData): React.ReactNode => {
+    const price = msPriceById.get(mc.id)
+    const collectId = renewalInvoiceByProduct.get(mc.id) ?? null
+    const lastPay = lastPayByType.get('membership') ?? null
+    const facts: LifecycleFact[] = [
+      { key: 'start', label: ta('started'), value: fmtDate(mc.start_date), testid: 'fact-registered' },
+      { key: 'cycle', label: ta('currentCycle'), value: fmtDateRange(mc.start_date, mc.end_date, locale, 'dayMonth'), testid: 'fact-cycle' },
+      {
+        key: 'nextbill', label: ta('nextBill'), value: fmtDate(mc.end_date),
+        sub: price != null ? <Ltr>{`· $${Number(price).toFixed(2)}`}</Ltr> : undefined,
+        href: collectId ? `/${locale}/students/${id}?pay=${collectId}` : undefined,
+        tone: mc.renewalOpen ? 'warning' : undefined,
+        testid: 'fact-next-bill',
+      },
+      {
+        key: 'lastpay', label: ta('lastPayment'),
+        value: lastPay ? fmtDate(lastPay.payment_date) : ta('noneYet'),
+        sub: lastPay ? <Ltr>{`· $${Number(lastPay.amount_usd).toFixed(2)}`}</Ltr> : undefined,
+        href: lastPay?.invoice_id ? `/${locale}/invoices/${lastPay.invoice_id}/receipt` : undefined,
+        testid: 'fact-last-payment',
+      },
+    ]
+    return <LifecycleFacts facts={facts} testid="ms-lifecycle" />
+  }
 
   return (
     <div className="space-y-4" data-testid="member-360">
@@ -516,12 +805,19 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               camps={pickableCamps}
               memberAge={age}
               locale={locale}
-              autoPay={searchParams?.pay === '1'}
+              autoPay={!!searchParams?.pay}
+              autoPayInvoiceId={searchParams?.pay && searchParams.pay !== '1' ? searchParams.pay : null}
               autoRegister={searchParams?.register === '1'}
             />
           </div>
         </div>
       </div>
+
+      {/* §3.1 — the header status strip: three tappable numbers (each drills). */}
+      <StatusStrip stats={stripStats} testid="m360-strip" />
+
+      {/* §3.2 — needs-attention queue: derived at render, ABSENT when empty. */}
+      <AttentionQueue rows={queueRows} testid="m360-attention" />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── 1. Membership (NO-MEMBERSHIP: hidden when the gym doesn't sell it) ── */}
@@ -539,6 +835,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                   freezeUsedDays={freezeUsedBy.get(mc.id) ?? 0}
                   studentId={id}
                   locale={locale}
+                  facts={msFacts(mc)}
                 />
               ))}
             </div>
@@ -551,7 +848,8 @@ export default async function Member360Page({ params: { locale, id }, searchPara
           {(registrations ?? []).length === 0 ? <Empty text={t('noRegistrations')} /> : (
             <ul className="space-y-2">
               {(registrations ?? []).map((r: any) => (
-                <li key={r.id} className="flex items-center justify-between text-sm" data-testid="member-reg-row" data-status={r.status}>
+                <li key={r.id} className="text-sm" data-testid="member-reg-row" data-status={r.status}>
+                  <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-800">{lname(one(r.classes))}</p>
                     {(() => {
@@ -605,6 +903,12 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                       <span data-testid="reg-status-badge" className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', regBadge(r.status))}>{humanizeEnum(r.status)}</span>
                     </span>
                   )}
+                  </div>
+                  {/* §3.3 — the uniform four-slot lifecycle grid (origin · window ·
+                      money-next · money-last); every slot drills per §2.1. */}
+                  {(r.status === 'active' || r.status === 'suspended') && (
+                    <LifecycleFacts facts={regFacts(r)} testid="reg-lifecycle" />
+                  )}
                 </li>
               ))}
             </ul>
@@ -619,6 +923,7 @@ export default async function Member360Page({ params: { locale, id }, searchPara
               recent-sessions list died here); sell + extend actions inside. */}
           <MemberPtPanel
             studentId={id}
+            factsById={ptFactsById}
             cards={ptCards as any}
             types={sellableTypes}
             coaches={sellableCoaches}
@@ -628,11 +933,55 @@ export default async function Member360Page({ params: { locale, id }, searchPara
           />
         </Panel>
 
-        {/* ── 4. Billing ── */}
+        {/* ── 4. Billing → the AGING LEDGER (§3.4): open invoices oldest-first with
+            issued date + the 000110 age bucket + balance + a one-tap action; settled
+            history below. The ledger and the pay modal read the SAME open set, so
+            "Collect" always lands on a pre-selectable invoice. */}
         <Panel isRTL={isRTL} icon={DollarSign} title={t('billing')} testid="panel-billing">
-          {(invoices ?? []).length === 0 ? <Empty text={t('noInvoices')} /> : (
-            <ul className="space-y-2">
-              {(invoices ?? []).map((inv: any) => {
+          {openLedger.length === 0 && (invoices ?? []).length === 0 && <Empty text={t('noInvoices')} />}
+          {openLedger.length > 0 && (
+            <ul className="space-y-2" data-testid="m360-aging-ledger">
+              {openLedger.map((inv: any) => {
+                const bucket = agingBucketFor(inv.due_date)
+                const wa = waByInvoice.get(inv.id)
+                return (
+                  <li key={inv.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm" data-testid="member-invoice-row" data-status={inv.status} data-type={inv.invoice_type} data-bucket={bucket}>
+                    <span className="flex min-w-0 flex-col">
+                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono text-xs font-medium text-primary-700 hover:underline">
+                        {inv.invoice_number}
+                      </Link>
+                      {inv.payer_profile_id && inv.payer_profile_id !== profileId && (
+                        <span className="text-[10px] text-gray-400" data-testid="invoice-payer">
+                          {t('payer')}: {localizedName(one(inv.payer), locale)}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[11px] text-gray-400">{ta('issued')} {fmtDate(inv.created_at)}</span>
+                    {/* §2.1: the age chip drills to the invoice it ages. */}
+                    <Link href={`/${locale}/invoices/${inv.id}`} data-testid="ledger-age-chip" data-bucket={bucket}
+                      className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                        VARIANT_TINT[bucket === 'current' ? 'neutral' : bucket === 'd1_30' ? 'warning' : 'danger'])}>
+                      {tAging(bucket)}
+                    </Link>
+                    <span className="ms-auto text-xs text-gray-500">${Number(inv.total_usd).toFixed(2)} · {t('due')} <Ltr>{`$${inv.balance_usd.toFixed(2)}`}</Ltr></span>
+                    <span className="flex items-center gap-1.5">
+                      <Link href={`/${locale}/students/${id}?pay=${inv.id}`} data-testid="ledger-collect"
+                        className="inline-flex items-center rounded-lg bg-primary-700 px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary-800">
+                        {ta('collect')}
+                      </Link>
+                      {wa?.phone && (
+                        <InvoiceRowWa invoiceId={inv.id} phone={wa.phone} dueMessage={wa.due} reminderMessage={wa.reminder}
+                          sendLabel={ti('waSendInvoice')} remindLabel={ti('waSendReminder')} />
+                      )}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          {(invoices ?? []).filter((inv: any) => !openLedger.some((o: any) => o.id === inv.id)).length > 0 && (
+            <ul className={cn('space-y-2', openLedger.length > 0 && 'mt-3 border-t pt-2')}>
+              {(invoices ?? []).filter((inv: any) => !openLedger.some((o: any) => o.id === inv.id)).map((inv: any) => {
                 const bal = balanceUsd(inv.total_usd, [{ amount_usd: paidByInvoice.get(inv.id) ?? 0 }])
                 return (
                   <li key={inv.id} className="flex items-center justify-between gap-2 text-sm" data-testid="member-invoice-row" data-status={inv.status} data-voided={inv.voided_at ? 'true' : undefined} data-type={inv.invoice_type}>
@@ -652,6 +1001,15 @@ export default async function Member360Page({ params: { locale, id }, searchPara
                 )
               })}
             </ul>
+          )}
+          {/* §3.4 — the last-payment line, drilling to its receipt (§2.1). */}
+          {lastPayment && (
+            <p className="mt-3 border-t pt-2 text-xs text-gray-500" data-testid="m360-last-payment">
+              {ta('lastPayment')}:{' '}
+              <Link href={`/${locale}/invoices/${lastPayment.invoice_id}/receipt`} className="font-medium text-gray-800 underline-offset-2 hover:underline">
+                {fmtDate(lastPayment.payment_date)} · <Ltr>{`$${Number(lastPayment.amount_usd).toFixed(2)}`}</Ltr> · {(locale === 'ar' ? METHOD_LABEL[lastPayment.payment_method]?.ar : locale === 'fr' ? METHOD_LABEL[lastPayment.payment_method]?.fr : METHOD_LABEL[lastPayment.payment_method]?.en) || lastPayment.payment_method}
+              </Link>
+            </p>
           )}
           {(payments ?? []).length > 0 && (
             <div className="mt-3 border-t pt-2">

@@ -60,7 +60,7 @@ function Modal({ title, onClose, testid, children }: {
 }
 
 export function MemberActions({
-  studentId, memberName, classes, openInvoices, camps = [], memberAge = null, locale, autoPay, autoRegister,
+  studentId, memberName, classes, openInvoices, camps = [], memberAge = null, locale, autoPay, autoPayInvoiceId = null, autoRegister,
 }: {
   studentId: string
   memberName: string
@@ -70,6 +70,12 @@ export function MemberActions({
   memberAge?: number | null
   locale: string
   autoPay?: boolean
+  /**
+   * MEMBER-360-ACTIONABLE §2.1: `?pay=<invoiceId>` opens the modal with THAT
+   * invoice pre-selected (amount pre-filled) — the drill from a queue row,
+   * aging-ledger row, or lifecycle next-bill fact lands ready to confirm.
+   */
+  autoPayInvoiceId?: string | null
   // GUARDIAN-360: `/students/[id]?register=1` opens the register modal on mount —
   // the per-child "Register" deep-link from the guardian page (mirrors autoPay).
   autoRegister?: boolean
@@ -84,7 +90,13 @@ export function MemberActions({
   const [payOpen, setPayOpen] = useState(false)
   const [campOpen, setCampOpen] = useState(false)
   const [campId, setCampId] = useState('')
-  useEffect(() => { if (autoPay) setPayOpen(true) }, [autoPay])
+  useEffect(() => {
+    if (!autoPay) return
+    // §2.1 pre-fill: a specific invoice in the URL wins over the oldest default.
+    if (autoPayInvoiceId && openInvoices.some((i) => i.id === autoPayInvoiceId)) pickInvoice(autoPayInvoiceId)
+    setPayOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPay, autoPayInvoiceId])
   useEffect(() => { if (autoRegister) setRegOpen(true) }, [autoRegister])
 
   // ── Register-to-class state ──
