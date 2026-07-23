@@ -128,7 +128,9 @@ test('ADM-1 · class lifecycle: staged → publish → edit → archive, proven 
       const res = await anon.page.request.get(`/landing/affiliations/${f}`);
       expect(res.status(), `${f} asset exists`).toBe(200);
     }
-    await expect(anon.page.getByTestId('landing-affiliations-empty'), 'affiliations empty state').toBeVisible();
+    // LANDING DA-13 (§115 decree — premise updated): a non-default gym with no
+    // affiliation rows renders NO section at all (collapse, not placeholder).
+    await expect(anon.page.locator('#affiliations'), 'affiliations section collapses on a non-default gym').toHaveCount(0);
     await expect(anon.page.locator('[data-testid="affiliation-slot"]'), 'no Proline affiliation slots on a non-default gym').toHaveCount(0);
   } finally {
     await owner.ctx.close();

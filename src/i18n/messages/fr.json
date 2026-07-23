@@ -40,7 +40,7 @@
     "passwordLabel": "Mot de Passe",
     "errEmailPassword": "Veuillez saisir votre email et votre mot de passe",
     "backToSite": "Retour au site",
-    "signInPlatform": "Connexion à la plateforme",
+    "signInGym": "Connexion à {gym}",
     "demoAccounts": "Comptes de démonstration",
     "demoPassword": "Mot de passe pour tous les comptes :",
     "emailOrPhoneLabel": "Email ou téléphone",

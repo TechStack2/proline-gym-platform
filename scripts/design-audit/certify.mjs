@@ -80,6 +80,17 @@ const SHELLS = {
     keyRoutes: ['/portal'],
     dynamic: [{ label: 'kid-dashboard', from: '/portal', linkSelector: 'a[href*="kid="]' }],
   },
+  // LANDING pass: the PUBLIC (anon) surfaces — the tenant landing (default host
+  // resolution + an explicit ?gym= tenant) and the three auth doors. role:null →
+  // no login/storageState. Public pages carry NO app chrome, so `chrome:'none'`
+  // replaces the shell XOR premise with its own: neither tab bar nor rail may
+  // render at ANY width.
+  public: {
+    role: null,
+    chrome: 'none',
+    routes: ['/', `/?gym=${SLUG}`, '/auth/login', '/auth/forgot', '/auth/reset'],
+    keyRoutes: ['/', `/?gym=${SLUG}`, '/auth/login', '/auth/forgot', '/auth/reset'],
+  },
 }
 
 async function login(browser, role) {
@@ -162,7 +173,7 @@ const onlyShells = (arg('shells') || '').split(',').map((s) => s.trim()).filter(
 const selected = Object.entries(SHELLS).filter(([name]) => !onlyShells.length || onlyShells.includes(name))
 
 for (const [shell, cfg] of selected) {
-  const storageState = await login(browser, cfg.role)
+  const storageState = cfg.role ? await login(browser, cfg.role) : undefined
 
   // ── 0 · resolve dynamic detail routes (Member-360, KidDashboard) ──
   for (const dyn of cfg.dynamic || []) {
@@ -221,7 +232,10 @@ for (const [shell, cfg] of selected) {
     await settle(page)
     const tabBarVisible = await (await vis(page, '[data-testid="tab-bar"]')).count() > 0
     const railVisible = await (await vis(page, cfg.railSelector || '[data-testid="desktop-rail"]')).count() > 0
-    const ok = width < 768 ? tabBarVisible && !railVisible : railVisible && !tabBarVisible
+    // chrome:'none' (public surfaces): NO app chrome at any width, ever.
+    const ok = cfg.chrome === 'none'
+      ? !tabBarVisible && !railVisible
+      : width < 768 ? tabBarVisible && !railVisible : railVisible && !tabBarVisible
     results.xor.push({ shell, width, tabBarVisible, railVisible, ok })
     console.log(`xor ${shell} @${width}: tabBar=${tabBarVisible} rail=${railVisible} ${ok ? 'OK' : 'FAIL'}`)
     await ctx.close()
@@ -229,7 +243,7 @@ for (const [shell, cfg] of selected) {
 
   // ── 3 · §6.3 capture matrix ──
   for (const route of cfg.keyRoutes) {
-    const slug = route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')
+    const slug = route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root'
     for (const locale of ['en', 'ar']) {
       for (const theme of ['light', 'dark']) {
         for (const width of [390, 1280]) {

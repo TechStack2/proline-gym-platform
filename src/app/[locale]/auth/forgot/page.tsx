@@ -18,8 +18,10 @@ import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { withAuthTimeout, isTransportError } from '@/lib/auth/transport'
+import { useAuthGymBrand } from '@/hooks/use-auth-gym-brand'
+import { AuthLocaleSwitcher } from '@/components/shared/auth-locale-switcher'
 import { cn } from '@/lib/utils'
-import { Mail, ArrowLeft, CheckCircle2, Loader2, KeyRound } from 'lucide-react'
+import { Mail, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
 
 type Props = { params: { locale: string } }
 
@@ -27,6 +29,9 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
   const t = useTranslations('auth')
   const supabase = createClient()
   const isRTL = locale === 'ar'
+  // DA-42: the same host-resolved gym identity login carries (this page dropped it).
+  const brand = useAuthGymBrand(locale)
+  const brandName = brand.name || 'PRO LINE Gym'
 
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -75,7 +80,7 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-sm">
         <Link
           href={`/${locale}/auth/login`}
@@ -85,21 +90,32 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
           {t('backToLogin')}
         </Link>
 
+        {/* DA-42: sm+ card frame + the gym brand region this page dropped (login
+            carries both) — the key icon gave way to the gym identity. */}
+        <div className="sm:rounded-2xl sm:border sm:bg-white sm:p-8 sm:shadow-elevation-1">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 ring-2 ring-primary-200/50">
-            <KeyRound className="h-7 w-7 text-primary-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-lg ring-2 ring-primary-200/50">
+            <Image
+              src={brand.logoUrl || '/logo.jpg'}
+              alt={brandName}
+              width={64}
+              height={64}
+              className="h-full w-full object-cover"
+              priority
+            />
           </div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('forgotTitle')}</h1>
+          <p data-testid="forgot-brand-name" className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>{brandName}</p>
+          <h1 className={cn('mt-2 text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('forgotTitle')}</h1>
           <p className={cn('mt-1 text-sm text-gray-500', isRTL && 'font-arabic')}>{t('forgotSubtitle')}</p>
         </div>
 
         {sent ? (
           <div
             data-testid="forgot-success"
-            className="rounded-2xl border border-green-200 bg-green-50 p-4 text-center"
+            className="rounded-2xl tint-success p-4 text-center"
           >
-            <CheckCircle2 className="mx-auto h-8 w-8 text-green-600" />
-            <p className={cn('mt-2 text-sm font-medium text-green-800', isRTL && 'font-arabic')}>{t('forgotSent')}</p>
+            <CheckCircle2 className="mx-auto h-8 w-8 text-success-600" />
+            <p className={cn('mt-2 text-sm font-medium', isRTL && 'font-arabic')}>{t('forgotSent')}</p>
             <Link
               href={`/${locale}/auth/login`}
               data-testid="forgot-back-login"
@@ -137,13 +153,12 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
                     isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4',
                   )}
                   dir="ltr"
-                  autoFocus
                 />
               </div>
             </div>
 
             {error && (
-              <div data-testid="forgot-error" className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+              <div data-testid="forgot-error" className="rounded-xl tint-danger p-3 text-sm">
                 {error}
               </div>
             )}
@@ -158,6 +173,10 @@ export default function ForgotPasswordPage({ params: { locale } }: Props) {
             </button>
           </form>
         )}
+        </div>
+
+        {/* DA-42: the language switcher login has (this page dropped it). */}
+        <AuthLocaleSwitcher locale={locale} />
       </div>
     </div>
   )

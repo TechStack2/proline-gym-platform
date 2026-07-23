@@ -50,6 +50,13 @@ supabase stop        # NEVER --no-backup (it deletes the data volume)
 
 Logins are the seeded role accounts (`owner|coach|student|parent+proline-gym-local@e2e.local`).
 
+**Public surfaces (landing pass):** the `public` shell entry runs ANON (no login) over
+the tenant landing (default host resolution + `?gym=<run gym>`) and the three auth
+doors (`/auth/login|forgot|reset`). Its `chrome: 'none'` pin replaces the shell XOR
+premise with the public one — NEITHER tab bar NOR rail may render at any width.
+Include it in a run with `--shells public` (it needs no seeded session, only the
+stack + server).
+
 ## The stable route list
 
 Lives in the `SHELLS` map at the top of `certify.mjs` — routes + keyRoutes per shell,

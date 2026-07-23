@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Tent, Clock, Users } from 'lucide-react';
+import { fmtDate } from '@/lib/fmt';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 
 type CampsSectionProps = {
@@ -41,7 +42,9 @@ export async function CampsSection({ locale, gymSlug }: CampsSectionProps) {
     spots.set(c.id, (data as number | null) ?? 0);
   }
 
-  const fmtD = (d: string) => new Date(d).toLocaleDateString(isRTL ? 'ar-LB-u-nu-latn' : locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' });
+  // §2.7: the ONE fmt layer (the local toLocaleDateString fork re-derived
+  // dateLocale by hand); `dayMonth` is the year-less style this line renders.
+  const fmtD = (d: string) => fmtDate(d, locale, 'dayMonth');
 
   return (
     <section id="camps" className="py-20 lg:py-28 bg-gray-50" data-testid="landing-camps">

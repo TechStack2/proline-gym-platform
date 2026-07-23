@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { CalendarDays } from 'lucide-react';
+import { fmtTimeRange } from '@/lib/fmt';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 
 type ScheduleSectionProps = {
@@ -26,10 +27,6 @@ const WEEK = [
 // CLASSES-COLOR-DROP: per-class colours are gone; cells use the gym brand (var(--brand)).
 type Cell = { name: string };
 type Row = { start: string; end: string; cells: Record<number, Cell[]> };
-
-function hhmm(t: string | null): string {
-  return (t || '').slice(0, 5);
-}
 
 function localizedName(c: any, locale: string): string {
   if (locale === 'ar') return c.name_ar || c.name_en;
@@ -69,8 +66,15 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
   // Columns = the days this gym actually schedules, in week order (Mon→Sun).
   const DAYS = WEEK.filter((d) => activeDow.has(d.dow));
 
+  // LANDING DA-13 (§115 decree): no published classes → no section. A public page
+  // shows absence, never a placeholder.
+  if (rows.length === 0) return null;
+
   return (
-    <section id="schedule" className="bg-secondary-950 py-20 lg:py-28">
+    // LANDING DA-27: this band is DESIGNED-DARK (white text on secondary-950) —
+    // pin the neutral channel vars in both themes like the hero/affiliations/footer,
+    // or the ramp inversion flips it light under html.dark and the text washes out.
+    <section id="schedule" className="surface-fixed-dark bg-secondary-950 py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600/15 ring-1 ring-primary-500/30">
@@ -82,10 +86,10 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
           <p className="mt-3 text-gray-400 max-w-2xl mx-auto">{t('subtitle')}</p>
         </div>
 
-        {rows.length === 0 ? (
-          <p className="text-center text-gray-500">{t('empty')}</p>
-        ) : (
-          <div className="overflow-x-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+        {/* DA-41: the wide grid scrolls INSIDE its container with a visible thin
+            scrollbar (the W3b week-grid affordance) — at 390/ar the table used to
+            bleed with no cue that more days exist. */}
+        <div className="overflow-x-auto scrollbar-thin pb-2" dir={isRTL ? 'rtl' : 'ltr'}>
             <table className="w-full min-w-[640px] border-separate border-spacing-2">
               <thead>
                 <tr>
@@ -108,8 +112,12 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
               <tbody>
                 {rows.map((row) => (
                   <tr key={`${row.start}-${row.end}`}>
-                    <td className="rounded-lg bg-secondary-900 px-4 py-3 align-top text-sm font-medium text-gray-300 whitespace-nowrap" dir="ltr">
-                      {hhmm(row.start)}–{hhmm(row.end)}
+                    {/* W4 residual closed: the last hhmm() fork — times flow through
+                        fmtTimeRange like every rendered time in the product (24h,
+                        bidi-isolated; the cell keeps dir=ltr so the range reads
+                        start→end in both page directions). */}
+                    <td className="rounded-lg bg-secondary-900 px-4 py-3 align-top text-sm font-medium text-gray-300 whitespace-nowrap tabular-nums" dir="ltr">
+                      {fmtTimeRange(row.start, row.end, locale)}
                     </td>
                     {DAYS.map((d) => {
                       const cells = row.cells[d.dow] ?? [];
@@ -139,8 +147,7 @@ export async function ScheduleSection({ locale, gymSlug }: ScheduleSectionProps)
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+        </div>
       </div>
     </section>
   );

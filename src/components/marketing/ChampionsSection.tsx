@@ -2,7 +2,6 @@ import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Trophy } from 'lucide-react';
 import { LandingImage } from './LandingImage';
-import { LandingSectionEmpty } from './LandingSectionEmpty';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 import { storagePublicUrl } from '@/lib/storage/public-url';
@@ -22,7 +21,6 @@ const CHAMPIONS = [
 ] as const;
 
 export async function ChampionsSection({ locale, gymSlug }: ChampionsSectionProps) {
-  const isRTL = locale === 'ar';
   const t = await getTranslations('landing.champions');
 
   // LANDING-CONTENT: render THIS gym's champion rows when it has any (anon RPC,
@@ -38,7 +36,8 @@ export async function ChampionsSection({ locale, gymSlug }: ChampionsSectionProp
 
   if (rows.length > 0) {
     return (
-      <section id="champions" className="bg-secondary-900 py-20 lg:py-28">
+      // LANDING DA-27: designed-dark band — pinned in both themes (see ScheduleSection).
+      <section id="champions" className="surface-fixed-dark bg-secondary-900 py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600/15 ring-1 ring-primary-500/30">
@@ -83,16 +82,13 @@ export async function ChampionsSection({ locale, gymSlug }: ChampionsSectionProp
   }
 
   // M2-C: the built-in Proline champions are DEMO content — render them ONLY on the
-  // default gym. A non-default gym with no champion rows shows a tasteful empty state,
-  // never Proline's athletes.
-  if (!isDefault) {
-    return (
-      <LandingSectionEmpty id="champions" bgClass="bg-secondary-900" title={t('title')} subtitle={t('subtitle')} emptyLabel={t('empty')} isRTL={isRTL} />
-    );
-  }
+  // default gym (never another tenant's athletes). LANDING DA-13 (§115 decree): a
+  // non-default gym with no champion rows renders NO section — public surfaces
+  // collapse, never placeholder (the dashed "coming soon" wall dies here).
+  if (!isDefault) return null;
 
   return (
-    <section id="champions" className="bg-secondary-900 py-20 lg:py-28">
+    <section id="champions" className="surface-fixed-dark bg-secondary-900 py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600/15 ring-1 ring-primary-500/30">

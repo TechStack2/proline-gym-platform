@@ -55,7 +55,9 @@ async function landingRendersClass(browser: Browser, slug: string, name: string)
     await page.goto(`/en?gym=${encodeURIComponent(slug)}`)
     await page.waitForLoadState('networkidle').catch(() => {})
     const schedule = page.locator('#schedule')
-    await expect(schedule).toBeVisible({ timeout: 15_000 })
+    // LANDING DA-13 (§115): zero published classes → the section COLLAPSES; an
+    // absent schedule is the strongest possible "not rendered on the landing".
+    if ((await schedule.count()) === 0) return false
     return (await schedule.getByText(name, { exact: false }).count()) > 0
   } finally {
     await ctx.close()

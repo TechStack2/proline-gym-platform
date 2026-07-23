@@ -44,7 +44,12 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
   const igFollowers = branding.instagramFollowers ?? null;
 
   return (
-    <section className="surface-fixed-dark relative h-[min(88vh,820px)] min-h-[560px] flex items-center justify-center overflow-hidden">
+    // LANDING DA-14: the section is a MIN height (was a fixed height) and carries
+    // the h-16 nav clearance itself. A fixed height + items-center OVERFLOWS a
+    // too-tall child equally up and down — at 390/ar (taller display ramp) the
+    // centered block rode UP under the transparent nav and the logo tile clipped
+    // the RTL wordmark. min-height lets the hero grow with its content instead.
+    <section className="surface-fixed-dark relative min-h-[max(560px,min(88vh,820px))] flex items-center justify-center overflow-hidden pt-16">
       {/* Full-bleed gym photo (no baked-in text). Every usable source photo is
           portrait/square (the only landscape file, hero.jpg, has baked text), so
           object-cover crops it to a vertical band — see the wash below for why
@@ -98,7 +103,9 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
       </svg>
 
       {/* Content */}
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-32 text-center">
+      {/* DA-14: the nav clearance moved to the SECTION (pt-16 above, where it can
+          actually bound the centering box) — this inner padding is now just rhythm. */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 pb-24 text-center">
         {/* Logo — the resolved gym's logo (default gym: /logo.jpg; other tenants: their
             own, or nothing when unset — never Proline's). */}
         {logoSrc && (
@@ -185,11 +192,14 @@ export function HeroSection({ locale, branding = DEFAULT_BRANDING, isDefault = f
         {igHandle && (
           <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400">
             <span>📸</span>
+            {/* DA-47: a Latin @handle is LTR DATA inside an Arabic paragraph — without
+                the dir boundary the RTL context flipped it to "prolinegym.lb@". */}
             <a
               href={`https://instagram.com/${igHandle}`}
               target="_blank"
               rel="noopener noreferrer"
               data-testid="hero-ig"
+              dir="ltr"
               className="hover:text-primary-400 transition-colors"
             >
               @{igHandle}

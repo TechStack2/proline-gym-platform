@@ -1,0 +1,53 @@
+[
+  {
+    "route": "/",
+    "status": 200,
+    "consoleErrors": [],
+    "consoleWarnings": [],
+    "pageErrors": [],
+    "cspViolations": [],
+    "restEndpoints": []
+  },
+  {
+    "route": "/?gym=proline-gym-local",
+    "status": 200,
+    "consoleErrors": [],
+    "consoleWarnings": [],
+    "pageErrors": [],
+    "cspViolations": [],
+    "restEndpoints": []
+  },
+  {
+    "route": "/auth/login",
+    "status": 200,
+    "consoleErrors": [],
+    "consoleWarnings": [],
+    "pageErrors": [],
+    "cspViolations": [],
+    "restEndpoints": [
+      "rpc/get_gym_slug_by_domain"
+    ]
+  },
+  {
+    "route": "/auth/forgot",
+    "status": 200,
+    "consoleErrors": [],
+    "consoleWarnings": [],
+    "pageErrors": [],
+    "cspViolations": [],
+    "restEndpoints": [
+      "rpc/get_gym_slug_by_domain"
+    ]
+  },
+  {
+    "route": "/auth/reset",
+    "status": 200,
+    "consoleErrors": [],
+    "consoleWarnings": [],
+    "pageErrors": [],
+    "cspViolations": [],
+    "restEndpoints": [
+      "rpc/get_gym_slug_by_domain"
+    ]
+  }
+]

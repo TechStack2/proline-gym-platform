@@ -1,7 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { LandingImage } from './LandingImage';
-import { LandingSectionEmpty } from './LandingSectionEmpty';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 import { storagePublicUrl } from '@/lib/storage/public-url';
@@ -23,7 +22,6 @@ const AFFILIATIONS = [
 ] as const;
 
 export async function AffiliationsSection({ locale, gymSlug }: AffiliationsSectionProps) {
-  const isRTL = locale === 'ar';
   const t = await getTranslations('landing.affiliations');
 
   // LANDING-CONTENT: THIS gym's affiliation logos when present; ZERO rows → the
@@ -69,12 +67,9 @@ export async function AffiliationsSection({ locale, gymSlug }: AffiliationsSecti
   }
 
   // M2-C: the built-in Proline affiliation logos are DEMO content — default gym only.
-  // A non-default gym with no affiliation rows shows a tasteful empty state.
-  if (!isDefault) {
-    return (
-      <LandingSectionEmpty id="affiliations" bgClass="surface-fixed-dark bg-secondary-950" compact title={t('title')} subtitle={t('subtitle')} emptyLabel={t('empty')} isRTL={isRTL} />
-    );
-  }
+  // LANDING DA-13 (§115 decree): a non-default gym with no affiliation rows renders
+  // NO section — public surfaces collapse, never placeholder.
+  if (!isDefault) return null;
 
   return (
     <section id="affiliations" className="surface-fixed-dark bg-secondary-950 py-14 lg:py-16">

@@ -83,8 +83,10 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-6">
+          {/* Desktop nav. LANDING DA-46: collapses to the hamburger below lg (was md)
+              — at 768 the full link row + switcher + CTA cramped the bar (wordmark
+              wrapped to two lines, CTA text wrapped inside its button). */}
+          <div className="hidden lg:flex items-center gap-6">
             {navLinks.map((link) => (
               <a
                 key={link.href}
@@ -97,7 +99,10 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
                 {link.label}
               </a>
             ))}
-            <LanguageSwitcher locale={locale} />
+            {/* DA-57: over the transparent (dark-hero) bar the switcher gets the same
+                light treatment as the sibling nav items — its default neutral gray
+                read as a disabled control there. */}
+            <LanguageSwitcher locale={locale} className={cn(!scrolled && 'text-white/90 hover:bg-white/10 hover:text-white dark:text-zinc-50')} />
             {/* R4: theme toggle in the desktop cluster. Over the (dark) hero it reads
                 light like the sibling nav items; once scrolled it falls back to the
                 toggle's default neutral (which flips correctly on the dark bar). */}
@@ -122,7 +127,7 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className={cn(
-              'md:hidden rounded-lg p-2 transition-colors',
+              'lg:hidden rounded-lg p-2 transition-colors',
               scrolled ? 'text-gray-600 hover:bg-gray-100' : 'text-white hover:bg-white/10 dark:text-zinc-50'
             )}
             aria-label="Menu"
@@ -134,7 +139,7 @@ export function LandingNav({ locale, gymName, logoUrl, isDefault = false }: Land
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t bg-white shadow-lg animate-slide-in-from-right">
+        <div className="lg:hidden border-t bg-white shadow-lg animate-slide-in-from-right">
           <div className="px-4 py-3 space-y-2">
             {navLinks.map((link) => (
               <a

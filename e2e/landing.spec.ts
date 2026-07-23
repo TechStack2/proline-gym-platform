@@ -42,8 +42,10 @@ test('LP · logged-out landing renders live schedule + pricing + disciplines + b
     await expect(page.locator('[data-testid="pricing-plans"]')).toBeVisible();
     await expect(page.locator('#pricing')).toContainText(/Monthly|Quarterly|Annual/i);
 
-    // Branded sections present (affiliations strip with graceful logo fallback).
-    await expect(page.locator('#affiliations')).toBeVisible();
+    // LANDING DA-13 (§115 decree — premise updated): the run gym is NON-default with
+    // no affiliation images, so the affiliations section COLLAPSES entirely (it used
+    // to render the placeholder empty state; public surfaces now show absence).
+    await expect(page.locator('#affiliations')).toHaveCount(0);
 
     // No i18n gaps on any rendered landing copy.
     await expect(page.locator('body')).not.toContainText('MISSING_MESSAGE');

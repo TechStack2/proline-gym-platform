@@ -1,7 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { LandingImage } from './LandingImage';
-import { LandingSectionEmpty } from './LandingSectionEmpty';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 import { storagePublicUrl } from '@/lib/storage/public-url';
@@ -16,7 +15,6 @@ type GallerySectionProps = {
 const GYM_PHOTOS = [1, 2, 3, 4, 5, 6] as const;
 
 export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
-  const isRTL = locale === 'ar';
   const t = await getTranslations('landing.gallery');
 
   // LANDING-CONTENT: THIS gym's gallery rows when present; ZERO rows → the
@@ -31,7 +29,8 @@ export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
 
   if (rows.length > 0) {
     return (
-      <section id="gallery" className="bg-secondary-950 py-20 lg:py-28">
+      // LANDING DA-27: designed-dark band — pinned in both themes (see ScheduleSection).
+      <section id="gallery" className="surface-fixed-dark bg-secondary-950 py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-white')}>
@@ -72,16 +71,13 @@ export async function GallerySection({ locale, gymSlug }: GallerySectionProps) {
     );
   }
 
-  // M2-C: the built-in Proline gym mosaic is DEMO content — default gym only. A
-  // non-default gym with no gallery rows shows a tasteful empty state.
-  if (!isDefault) {
-    return (
-      <LandingSectionEmpty id="gallery" bgClass="bg-secondary-950" title={t('title')} subtitle={t('subtitle')} emptyLabel={t('empty')} isRTL={isRTL} />
-    );
-  }
+  // M2-C: the built-in Proline gym mosaic is DEMO content — default gym only.
+  // LANDING DA-13 (§115 decree): a non-default gym with no gallery rows renders
+  // NO section — public surfaces collapse, never placeholder.
+  if (!isDefault) return null;
 
   return (
-    <section id="gallery" className="bg-secondary-950 py-20 lg:py-28">
+    <section id="gallery" className="surface-fixed-dark bg-secondary-950 py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className={cn('font-display text-3xl sm:text-4xl font-bold text-white')}>

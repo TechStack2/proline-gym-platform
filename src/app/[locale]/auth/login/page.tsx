@@ -4,10 +4,10 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
-import { createClient } from '@/lib/supabase/client';
 import { signInWithPhone, signInWithEmail } from '@/lib/auth/actions';
 import { withAuthTimeout, isTransportError } from '@/lib/auth/transport';
-import { storagePublicUrl } from '@/lib/storage/public-url';
+import { useAuthGymBrand } from '@/hooks/use-auth-gym-brand';
+import { AuthLocaleSwitcher } from '@/components/shared/auth-locale-switcher';
 import { cn } from '@/lib/utils';
 import { Mail, Lock, Eye, EyeOff, Users, LogIn, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -59,7 +59,6 @@ export default function LoginPage({ params }: Props) {
   const { locale } = params;
   const t = useTranslations('auth');
   const router = useRouter();
-  const supabase = createClient();
   const isRTL = locale === 'ar';
 
   const [email, setEmail] = useState('');
@@ -76,25 +75,9 @@ export default function LoginPage({ params }: Props) {
     try { setShowDemo(new URLSearchParams(window.location.search).get('demo') === '1'); } catch { /* noop */ }
   }, []);
 
-  // WL-DOMAIN-ROUTING: brand the login entry from the request Host. Resolved
-  // client-side (same idiom as showDemo above) so the auth-critical form is
-  // untouched: on a mapped custom domain, swap the logo + name to that gym's;
-  // otherwise the built-in Proline default stands (no flash for the vendor domain).
-  const [brand, setBrand] = useState<{ logoUrl?: string; name?: string }>({});
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data: slug } = await supabase.rpc('get_gym_slug_by_domain', { p_domain: window.location.host });
-        if (!slug || typeof slug !== 'string') return; // vendor/Railway domain → default branding
-        const { data } = await supabase.rpc('get_public_gym', { p_slug: slug });
-        const g = Array.isArray(data) ? data[0] : data;
-        if (g) setBrand({
-          logoUrl: storagePublicUrl('avatars', g.logo_url) || undefined,
-          name: (locale === 'ar' ? g.name_ar : locale === 'fr' ? g.name_fr : g.name_en) || undefined,
-        });
-      } catch { /* keep the default branding */ }
-    })();
-  }, [locale, supabase]);
+  // WL-DOMAIN-ROUTING: brand the login entry from the request Host — extracted to
+  // useAuthGymBrand (DA-42) so forgot/reset carry the same identity.
+  const brand = useAuthGymBrand(locale);
   const brandName = brand.name || 'PRO LINE Gym';
 
   // AUTH-STUCK: success keeps the spinner only for a bounded grace window — if
@@ -186,17 +169,20 @@ export default function LoginPage({ params }: Props) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-sm">
         {/* Back to site */}
         <Link
           href={`/${locale}`}
           className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className={cn('h-4 w-4', isRTL && 'rotate-180')} />
           {t('backToSite')}
         </Link>
 
+        {/* DA-42: from sm up the form sits in the §2 card recipe (a real auth panel)
+            instead of a bare mobile column floating on gray; ≤sm stays frameless. */}
+        <div className="sm:rounded-2xl sm:border sm:bg-white sm:p-8 sm:shadow-elevation-1">
         {/* Logo */}
         <div className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl shadow-lg ring-2 ring-primary-200/50">
@@ -212,8 +198,10 @@ export default function LoginPage({ params }: Props) {
           <h1 data-testid="login-brand-name" className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>
             {brandName}
           </h1>
+          {/* DA-58: gym-voiced, not platform-voiced — the member signs in to THEIR
+              gym (brandName is already the per-locale resolved gym name). */}
           <p className="mt-1 text-sm text-gray-500">
-            {t('signInPlatform')}
+            {t('signInGym', { gym: brandName })}
           </p>
         </div>
 
@@ -248,7 +236,6 @@ export default function LoginPage({ params }: Props) {
                   isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'
                 )}
                 dir="ltr"
-                autoFocus
               />
             </div>
           </div>
@@ -308,7 +295,7 @@ export default function LoginPage({ params }: Props) {
           </div>
 
           {error && (
-            <div data-testid="login-error" className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+            <div data-testid="login-error" className="rounded-xl tint-danger p-3 text-sm">
               {error}
             </div>
           )}
@@ -342,6 +329,9 @@ export default function LoginPage({ params }: Props) {
           </div>
 
           <div className="grid grid-cols-1 gap-1.5">
+            {/* DA-58: the account rows READ tappable — visible border + white ground +
+                press state (they always filled on click, but looked like static
+                monospace pills). */}
             {DEMO_ACCOUNTS.map((acct) => (
               <button
                 key={acct.email}
@@ -350,10 +340,10 @@ export default function LoginPage({ params }: Props) {
                 data-email={acct.email}
                 onClick={() => fillDemoAccount(acct.email)}
                 className={cn(
-                  'flex items-center justify-between rounded-lg px-3 py-2 text-start text-xs transition-all',
+                  'flex items-center justify-between rounded-lg px-3 py-2 text-start text-xs transition-all active:scale-[0.99]',
                   email === acct.email
                     ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                    : 'text-gray-600 hover:bg-gray-50 border border-transparent'
+                    : 'text-gray-600 border border-gray-200 bg-white shadow-sm hover:border-primary-200 hover:bg-primary-50/40'
                 )}
               >
                 <span className="font-medium">
@@ -374,24 +364,10 @@ export default function LoginPage({ params }: Props) {
           </p>
         </div>
         )}
-
-        {/* Language switcher */}
-        <div className="mt-5 flex justify-center gap-1">
-          {(['ar', 'en', 'fr'] as const).map((lang) => (
-            <button
-              key={lang}
-              onClick={() => router.replace('/auth/login', { locale: lang })}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                locale === lang
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-500 hover:bg-gray-100'
-              )}
-            >
-              {lang === 'ar' ? 'العربية' : lang === 'en' ? 'English' : 'Français'}
-            </button>
-          ))}
         </div>
+
+        {/* Language switcher (shared with forgot/reset — DA-42) */}
+        <AuthLocaleSwitcher locale={locale} />
       </div>
     </div>
   );

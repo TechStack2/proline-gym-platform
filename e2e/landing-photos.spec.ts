@@ -79,16 +79,16 @@ test.describe('M2C-GALLERY · public page photos manager', () => {
         }
       }
 
-      // ── (c) after delete, the anon landing shows the empty state (NO Proline athletes) ──
+      // ── (c) after delete, the champions section COLLAPSES (LANDING DA-13, §115:
+      //        absence, never placeholder — and certainly NO Proline athletes) ──
       {
         const ctx = await browser.newContext({ locale: 'en' })
         const page = await ctx.newPage()
         try {
           await page.goto(`/en?gym=${encodeURIComponent(slug)}`)
           await page.waitForLoadState('networkidle').catch(() => {})
-          await expect(page.getByTestId('landing-champions-empty'), 'champions empty state').toBeVisible({ timeout: 15_000 })
-          await expect(page.locator('#champions [data-testid="landing-champion"]'), 'no champion rows').toHaveCount(0)
-          await expect(page.locator('#champions figure'), 'no built-in Proline champions').toHaveCount(0)
+          await expect(page.locator('#champions'), 'champions section collapses after the last row is deleted').toHaveCount(0)
+          await expect(page.locator('[data-testid="landing-champion"]'), 'no champion rows').toHaveCount(0)
         } finally {
           await ctx.close()
         }

@@ -43,6 +43,10 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
 
   type DiscRow = { name_ar: string; name_en: string; name_fr: string; icon_url?: string | null };
   const rows = (disciplines || []) as DiscRow[];
+  // LANDING DA-13 (§115 decree): public surfaces collapse, never placeholder — a gym
+  // with no active disciplines renders NO section, so marketing copy can never
+  // interpolate "0 disciplines" and the page never shows a hollow block.
+  if (rows.length === 0) return null;
   const programs = rows.map((d) => ({
     name: (locale === 'ar' ? d.name_ar : locale === 'fr' ? d.name_fr : d.name_en) || d.name_en,
     nameEn: d.name_en,
@@ -105,12 +109,6 @@ export async function DisciplinesSection({ locale, gymSlug }: DisciplinesSection
             </div>
           ))}
         </div>
-
-        {(!disciplines || disciplines.length === 0) && (
-          <p className="text-center text-gray-400" data-testid="disciplines-empty">
-            {t('empty')}
-          </p>
-        )}
       </div>
     </section>
   );

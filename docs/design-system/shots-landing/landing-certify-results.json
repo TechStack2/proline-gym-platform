@@ -1,0 +1,121 @@
+{
+  "parity": [
+    {
+      "shell": "public",
+      "route": "/",
+      "mobileVisible": 24,
+      "desktopPresent": 26,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "public",
+      "route": "/?gym=proline-gym-local",
+      "mobileVisible": 14,
+      "desktopPresent": 16,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "public",
+      "route": "/auth/login",
+      "mobileVisible": 1,
+      "desktopPresent": 1,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "public",
+      "route": "/auth/forgot",
+      "mobileVisible": 2,
+      "desktopPresent": 2,
+      "missingAtDesktop": []
+    },
+    {
+      "shell": "public",
+      "route": "/auth/reset",
+      "mobileVisible": 3,
+      "desktopPresent": 3,
+      "missingAtDesktop": []
+    }
+  ],
+  "xor": [
+    {
+      "shell": "public",
+      "width": 390,
+      "tabBarVisible": false,
+      "railVisible": false,
+      "ok": true
+    },
+    {
+      "shell": "public",
+      "width": 768,
+      "tabBarVisible": false,
+      "railVisible": false,
+      "ok": true
+    },
+    {
+      "shell": "public",
+      "width": 1024,
+      "tabBarVisible": false,
+      "railVisible": false,
+      "ok": true
+    },
+    {
+      "shell": "public",
+      "width": 1280,
+      "tabBarVisible": false,
+      "railVisible": false,
+      "ok": true
+    }
+  ],
+  "shots": [
+    "public-root-en-light-390.png",
+    "public-root-en-light-1280.png",
+    "public-root-en-dark-390.png",
+    "public-root-en-dark-1280.png",
+    "public-root-ar-light-390.png",
+    "public-root-ar-light-1280.png",
+    "public-root-ar-dark-390.png",
+    "public-root-ar-dark-1280.png",
+    "public-root-en-light-768.png",
+    "public-root-en-light-1024.png",
+    "public-gym-proline-gym-local-en-light-390.png",
+    "public-gym-proline-gym-local-en-light-1280.png",
+    "public-gym-proline-gym-local-en-dark-390.png",
+    "public-gym-proline-gym-local-en-dark-1280.png",
+    "public-gym-proline-gym-local-ar-light-390.png",
+    "public-gym-proline-gym-local-ar-light-1280.png",
+    "public-gym-proline-gym-local-ar-dark-390.png",
+    "public-gym-proline-gym-local-ar-dark-1280.png",
+    "public-gym-proline-gym-local-en-light-768.png",
+    "public-gym-proline-gym-local-en-light-1024.png",
+    "public-auth-login-en-light-390.png",
+    "public-auth-login-en-light-1280.png",
+    "public-auth-login-en-dark-390.png",
+    "public-auth-login-en-dark-1280.png",
+    "public-auth-login-ar-light-390.png",
+    "public-auth-login-ar-light-1280.png",
+    "public-auth-login-ar-dark-390.png",
+    "public-auth-login-ar-dark-1280.png",
+    "public-auth-login-en-light-768.png",
+    "public-auth-login-en-light-1024.png",
+    "public-auth-forgot-en-light-390.png",
+    "public-auth-forgot-en-light-1280.png",
+    "public-auth-forgot-en-dark-390.png",
+    "public-auth-forgot-en-dark-1280.png",
+    "public-auth-forgot-ar-light-390.png",
+    "public-auth-forgot-ar-light-1280.png",
+    "public-auth-forgot-ar-dark-390.png",
+    "public-auth-forgot-ar-dark-1280.png",
+    "public-auth-forgot-en-light-768.png",
+    "public-auth-forgot-en-light-1024.png",
+    "public-auth-reset-en-light-390.png",
+    "public-auth-reset-en-light-1280.png",
+    "public-auth-reset-en-dark-390.png",
+    "public-auth-reset-en-dark-1280.png",
+    "public-auth-reset-ar-light-390.png",
+    "public-auth-reset-ar-light-1280.png",
+    "public-auth-reset-ar-dark-390.png",
+    "public-auth-reset-ar-dark-1280.png",
+    "public-auth-reset-en-light-768.png",
+    "public-auth-reset-en-light-1024.png"
+  ]
+}
