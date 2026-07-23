@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { MapPin, Phone, Mail, Instagram } from 'lucide-react';
+import { fmtPhone } from '@/lib/fmt';
 import { EMPTY_CONTACT, type LandingContact } from '@/lib/marketing/contact';
 
 type FacilitySectionProps = {
@@ -105,7 +106,8 @@ export function FacilitySection({ locale, contact = EMPTY_CONTACT, isDefault = f
                 >
                   <Phone className="h-5 w-5 text-primary-600 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-secondary-900" dir="ltr">{contact.phone}</p>
+                    {/* §2.7: fmtPhone display grouping (tel: href keeps the raw value). */}
+                    <p className="text-sm font-medium text-secondary-900" dir="ltr">{fmtPhone(contact.phone)}</p>
                     <p className="text-xs text-gray-500">{t('callUs')}</p>
                   </div>
                 </a>
@@ -135,7 +137,8 @@ export function FacilitySection({ locale, contact = EMPTY_CONTACT, isDefault = f
                 >
                   <Instagram className="h-5 w-5 text-primary-600 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-secondary-900">@{contact.instagram}</p>
+                    {/* DA-47: LTR isolation — the @ flipped to the end in Arabic. */}
+                    <p className="text-sm font-medium text-secondary-900" dir="ltr">@{contact.instagram}</p>
                     <p className="text-xs text-gray-500">
                       {t('igStats')}
                     </p>

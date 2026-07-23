@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 import { Check, Zap, CalendarClock } from 'lucide-react';
+import { fmtLbpCompact } from '@/lib/fmt';
 import { getLandingGym, DEFAULT_GYM_SLUG } from '@/lib/marketing/gym';
 
 type PricingSectionProps = {
@@ -61,6 +62,11 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
     : { data: null };
 
   const hasPlans = !!(plans && plans.length > 0);
+  const hasFees = !!(feeClasses && feeClasses.length > 0);
+
+  // LANDING DA-13 (§115 decree): nothing to sell → no section. The old
+  // "no plans yet" paragraph was dashboard empty-state thinking on a public page.
+  if (!hasPlans && !hasFees) return null;
 
   return (
     <section id="pricing" className="py-20 lg:py-28 bg-gray-50">
@@ -74,8 +80,8 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
           </p>
         </div>
 
-        {/* Membership plans (live, gym-scoped; static fallback if none yet) */}
-        {hasPlans ? (
+        {/* Membership plans (live, gym-scoped) */}
+        {hasPlans && (
           <div data-testid="pricing-plans" className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {plans!.map((plan: any, i: number) => {
               const tier = perkTier(plan.duration_days);
@@ -84,10 +90,12 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
                 ? PERKS.annual[loc].map((p, k) => (k === PERKS.annual[loc].length - 1 ? GENERIC_ANNUAL_GEAR[loc] : p))
                 : PERKS[tier][loc];
               const period = plan.duration_days >= 300 ? t('perYr') : plan.duration_days >= 80 ? t('per3mo') : t('perMo');
+              // DA-57: the "best value" merchandising joins the brand family (was a
+              // 3rd/4th accent — amber ring + amber chip — against the brand CTAs).
               return (
-                <div key={i} className={cn('relative rounded-2xl bg-white p-8 shadow-elevation-1 hover:shadow-elevation-3 transition-all duration-300 hover:-translate-y-1', isAnnual && 'ring-2 ring-amber-400 shadow-elevation-2')}>
+                <div key={i} className={cn('relative rounded-2xl bg-white p-8 shadow-elevation-1 hover:shadow-elevation-3 transition-all duration-300 hover:-translate-y-1', isAnnual && 'ring-2 ring-primary-500 shadow-elevation-2')}>
                   {isAnnual && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-900">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-primary-600 px-3 py-1 text-xs font-bold text-primary-foreground">
                       <Zap className="h-3 w-3" />{t('bestValue')}
                     </div>
                   )}
@@ -96,17 +104,23 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
                     <span className="text-4xl font-bold text-secondary-900">${Number(plan.price_usd).toFixed(0)}</span>
                     <span className="text-gray-500 text-sm">/{period}</span>
                   </p>
-                  {plan.price_lbp ? <p className="text-xs text-gray-400 mt-1">{Number(plan.price_lbp).toLocaleString()} LBP</p> : null}
+                  {/* §2.7: LBP through the fmt layer (server-locale toLocaleString drifted). */}
+                  {plan.price_lbp ? <p className="text-xs text-gray-400 mt-1" dir="ltr">{fmtLbpCompact(Number(plan.price_lbp))}</p> : null}
                   <ul className="mt-6 space-y-3">
                     {perks.map((f, j) => (
                       <li key={j} className="flex items-start gap-2.5">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        {/* DA-57: perk ticks join the brand family (green was a 4th
+                            accent on a page that already carries brand + neutral). */}
+                        <Check className="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-gray-600">{f}</span>
                       </li>
                     ))}
                   </ul>
                   <div className="mt-8">
-                    <a href="#trial" className={cn('block text-center rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:scale-105 active:scale-95', isAnnual ? 'bg-primary-600 text-primary-foreground hover:bg-primary-700 shadow-glow-primary' : 'bg-secondary-900 text-white hover:bg-secondary-800')}>
+                    {/* DA-47: every plan CTA is a BRAND CTA (the near-black secondary
+                        buttons read as disabled next to the page's crimson CTAs);
+                        the annual keeps the glow as its emphasis. */}
+                    <a href="#trial" className={cn('block text-center rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:scale-105 active:scale-95 bg-primary-600 text-primary-foreground hover:bg-primary-700', isAnnual && 'shadow-glow-primary')}>
                       {t('getStarted')}
                     </a>
                   </div>
@@ -114,14 +128,10 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
               );
             })}
           </div>
-        ) : (
-          <p className="text-center text-gray-400" data-testid="pricing-plans-empty">
-            {t('empty')}
-          </p>
         )}
 
         {/* Per-class monthly fees (B2 recurring-class registration) */}
-        {feeClasses && feeClasses.length > 0 && (
+        {hasFees && (
           <div className="mt-14" data-testid="pricing-class-fees">
             <div className="text-center mb-8">
               <div className="mx-auto mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600/10 ring-1 ring-primary-500/20">
@@ -135,7 +145,7 @@ export async function PricingSection({ locale, gymSlug }: PricingSectionProps) {
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-              {feeClasses.map((c: any) => (
+              {feeClasses!.map((c: any) => (
                 <div key={c.id} className="rounded-xl bg-white p-5 text-center shadow-elevation-1">
                   <p className={cn('text-sm font-semibold text-secondary-900', isRTL && 'font-arabic')}>{localized(c, 'name', locale)}</p>
                   <p className="mt-2 text-2xl font-bold text-primary-600">${Number(c.monthly_fee_usd).toFixed(0)}<span className="text-xs text-gray-400 font-normal">/{t('perMo')}</span></p>

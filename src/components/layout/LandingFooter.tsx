@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Instagram, Facebook, MessageCircle, Youtube } from 'lucide-react';
+import { fmtPhone } from '@/lib/fmt';
 import { EMPTY_CONTACT, type LandingContact } from '@/lib/marketing/contact';
 import { DAY_KEYS, hasOfficeHours, normalizeOfficeHours, type OfficeHours } from '@/lib/marketing/office-hours';
 
@@ -146,8 +147,9 @@ export function LandingFooter({ locale, gymName, logoUrl, address, contact = EMP
               )}
               {contact.phone && (
                 <li>
+                  {/* §2.7: fmtPhone display grouping (tel: href keeps the raw value). */}
                   <a href={`tel:${contact.phone.replace(/\s/g, '')}`} dir="ltr" data-testid="footer-phone" className="text-sm text-gray-400 hover:text-white transition-colors">
-                    {contact.phone}
+                    {fmtPhone(contact.phone)}
                   </a>
                 </li>
               )}

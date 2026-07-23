@@ -40,7 +40,7 @@
     "passwordLabel": "Password",
     "errEmailPassword": "Please enter email and password",
     "backToSite": "Back to site",
-    "signInPlatform": "Sign in to the platform",
+    "signInGym": "Sign in to {gym}",
     "demoAccounts": "Demo Accounts",
     "demoPassword": "Password for all accounts:",
     "emailOrPhoneLabel": "Email or phone",

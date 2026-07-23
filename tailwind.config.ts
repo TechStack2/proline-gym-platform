@@ -306,7 +306,9 @@ const config: Config = {
         'elevation-2': '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
         'elevation-3': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
         'elevation-4': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-        'glow-primary': '0 0 20px -5px rgba(205, 20, 25, 0.2)',
+        // LANDING DA-39: channel-var so the glow follows a tenant brand override;
+        // the --c-brand-700 default IS 205 20 25 → unbranded output is byte-identical.
+        'glow-primary': '0 0 20px -5px rgb(var(--c-brand-700) / 0.2)',
         // DS2-TOKENS §1.1: the two UPWARD elevations — chrome that sits below the
         // content and lifts toward it. Were inline `shadow-[0_-1px_3px_rgba(…)]`
         // arbitrary values in three shared components; same values, one name.

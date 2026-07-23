@@ -87,6 +87,34 @@ test('WL-BRANDING · a DISTINCT brand_color renders THAT color', async ({ browse
   }
 })
 
+test('LANDING DA-39 · the primary-* ramp follows a branded gym (CTAs stop hardcoding crimson)', async ({ browser }) => {
+  const submitBg = (page: Page) =>
+    page.locator('[data-testid="trial-submit"]').evaluate((el) => getComputedStyle(el).backgroundColor)
+  // BLUE gym: the trial submit is a `bg-primary-600` utility — with the WL-THEME
+  // channel ramp (buildBrandChannelsCss) now emitted on the landing it computes to
+  // the DERIVED brand-600 (tint(#0000ff, 0.1) → rgb(26,26,255)), not Proline crimson.
+  {
+    const { page, ctx } = await loadLanding(browser, `?gym=${encodeURIComponent(SLUG_BLUE)}`)
+    try {
+      await expect(page.getByTestId('trial-submit')).toBeVisible({ timeout: 15_000 })
+      expect(await submitBg(page), 'a primary-600 CTA computes to the derived brand-600').toBe('rgb(26, 26, 255)')
+    } finally {
+      await ctx.close()
+    }
+  }
+  // UNSET gym: no ramp emitted (same contract as BrandThemeStyle) → the globals
+  // default primary-600 (#dc2626) byte-identically.
+  {
+    const { page, ctx } = await loadLanding(browser, `?gym=${encodeURIComponent(SLUG_RED)}`)
+    try {
+      await expect(page.getByTestId('trial-submit')).toBeVisible({ timeout: 15_000 })
+      expect(await submitBg(page), 'an unbranded gym keeps the default primary-600').toBe('rgb(220, 38, 38)')
+    } finally {
+      await ctx.close()
+    }
+  }
+})
+
 test('WL-BRANDING · the apex default renders red and the brand <style> is CSP-allowed', async ({ browser }) => {
   const { page, ctx } = await loadLanding(browser, '') // /en, no ?gym → the demo gym
   try {

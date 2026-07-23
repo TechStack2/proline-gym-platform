@@ -147,17 +147,17 @@ test('WL-LANDING · a gym with brand_color UNSET falls back to the default look 
     await expect(body, 'no Proline founder credit leaks').not.toContainText('Fakih Brothers')
     await expect(body, 'no Proline phone leaks').not.toContainText('70 628 601')
 
-    // M2-C GALLERY: SLUG_DEF is a NON-DEFAULT gym with ZERO landing images → the three
-    // image sections show a tasteful EMPTY STATE, NEVER Proline's built-in champions /
-    // gallery / affiliations (the demo set is now gated to slug === DEFAULT_GYM_SLUG).
-    await expect(page.locator('#champions'), 'the champions section still renders (empty state)').toBeVisible()
-    await expect(page.getByTestId('landing-champions-empty'), 'champions empty state — no Proline athletes').toBeVisible()
-    await expect(page.locator('#champions figure'), 'no built-in Proline champion figures').toHaveCount(0)
-    await expect(page.locator('#champions [data-testid="landing-champion"]'), 'no per-gym champion rows').toHaveCount(0)
-    await expect(page.getByTestId('landing-gallery-empty'), 'gallery empty state').toBeVisible()
-    await expect(page.locator('#gallery [data-testid="landing-gallery-tile"]'), 'no per-gym gallery rows').toHaveCount(0)
-    await expect(page.getByTestId('landing-affiliations-empty'), 'affiliations empty state — no Proline logos').toBeVisible()
-    await expect(page.locator('#affiliations [data-testid="affiliation-slot"]'), 'no built-in Proline affiliation slots').toHaveCount(0)
+    // LANDING DA-13 (§115 decree — premise updated from M2-C): SLUG_DEF is a
+    // NON-DEFAULT gym with ZERO landing images → the three image sections COLLAPSE
+    // entirely (public surfaces show absence, never a dashed placeholder wall).
+    // The no-leak premise holds STRONGER: Proline's built-in champions/gallery/
+    // affiliations stay gated to slug === DEFAULT_GYM_SLUG and nothing renders at all.
+    await expect(page.locator('#champions'), 'champions section collapses (no placeholder)').toHaveCount(0)
+    await expect(page.locator('[data-testid="landing-champion"]'), 'no per-gym champion rows').toHaveCount(0)
+    await expect(page.locator('#gallery'), 'gallery section collapses').toHaveCount(0)
+    await expect(page.locator('[data-testid="landing-gallery-tile"]'), 'no per-gym gallery rows').toHaveCount(0)
+    await expect(page.locator('#affiliations'), 'affiliations section collapses').toHaveCount(0)
+    await expect(page.locator('[data-testid="affiliation-slot"]'), 'no built-in Proline affiliation slots').toHaveCount(0)
   } finally {
     await ctx.close()
   }

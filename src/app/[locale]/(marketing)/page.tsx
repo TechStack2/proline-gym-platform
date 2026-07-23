@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { redirect, permanentRedirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getLandingGym, DEFAULT_GYM_SLUG, safeBrandColor, resolveLandingContact } from '@/lib/marketing/gym';
+import { buildBrandChannelsCss } from '@/lib/theme/brand';
 import { classifyHost, resolveTenantSlug, vendorRedirectUrl, type HostClass } from '@/lib/host/resolver';
 import { effectiveHost } from '@/lib/host/effective-host';
 import { canonicalOrigin, aliasRedirectTarget } from '@/lib/host/canonical';
@@ -202,8 +203,14 @@ export default async function LandingPage({ params: { locale }, searchParams }: 
   // WL-BRANDING-DATA: nonce'd :root{--brand…} for the resolved gym (CSP-safe —
   // grabbed from the per-request X-CSP-Nonce the middleware forwards). Default gym
   // + any gym with brand_color NULL resolve to Proline crimson → zero visual change.
+  // LANDING DA-39: the SAME WL-THEME ramp the authed shells use (buildBrandChannelsCss
+  // — one derivation, never forked) re-points every `primary-*` utility on the landing
+  // at the RESOLVED gym's brand, so CTAs/eyebrows/accents follow the tenant colour like
+  // the logged-in product does. Raw brand_color in (not safeBrandColor): NULL/invalid →
+  // '' → the globals.css Proline defaults apply byte-identically, same contract as
+  // BrandThemeStyle.
   const nonce = headers().get('X-CSP-Nonce') ?? '';
-  const brandCss = buildBrandCss(branding.brandColor);
+  const brandCss = buildBrandCss(branding.brandColor) + buildBrandChannelsCss(gym?.brand_color);
 
   return (
     <>

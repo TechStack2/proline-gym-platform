@@ -52,7 +52,8 @@ export async function CoachesSection({ locale, gymSlug }: CoachesSectionProps) {
   if (coaches.length === 0) return null;
 
   return (
-    <section id="coaches" className="bg-secondary-950 py-20 lg:py-28">
+    // LANDING DA-27: designed-dark band — pinned in both themes (see ScheduleSection).
+    <section id="coaches" className="surface-fixed-dark bg-secondary-950 py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600/15 ring-1 ring-primary-500/30">

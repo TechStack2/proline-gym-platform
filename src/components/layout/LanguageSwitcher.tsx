@@ -9,6 +9,9 @@ import { useState, useRef, useEffect } from 'react';
 type LanguageSwitcherProps = {
   locale: string;
   variant?: 'dropdown' | 'inline';
+  /** LANDING DA-57: trigger overrides for a dark/transparent bar — the default
+   *  neutral gray read as a DISABLED control over the landing hero. */
+  className?: string;
 };
 
 const languageNames = {
@@ -23,7 +26,7 @@ const languageFlags = {
   fr: '🇫🇷',
 };
 
-export function LanguageSwitcher({ locale, variant = 'dropdown' }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ locale, variant = 'dropdown', className }: LanguageSwitcherProps) {
   const t = useTranslations('language');
   const router = useRouter();
   const pathname = usePathname();
@@ -70,7 +73,7 @@ export function LanguageSwitcher({ locale, variant = 'dropdown' }: LanguageSwitc
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+        className={cn('flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors', className)}
         aria-label={t('switch')}
       >
         <Languages className="h-4 w-4" />

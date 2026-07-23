@@ -11,10 +11,13 @@ type WhySectionProps = {
 };
 
 // AX-1: copy lives in landing.why.* (the ar/en field pair dropped fr).
+// LANDING DA-57: the value-prop tiles ride the ONE brand icon-tile idiom (the
+// pricing/schedule section-icon recipe) — the amber/blue/green candy gradients
+// were three extra accent families against the brand on one screen.
 const reasons = [
-  { key: 'coaches', icon: Medal, color: 'from-amber-400 to-yellow-600' },
-  { key: 'facility', icon: Building2, color: 'from-blue-400 to-cyan-600' },
-  { key: 'community', icon: Users2, color: 'from-green-400 to-emerald-600' },
+  { key: 'coaches', icon: Medal },
+  { key: 'facility', icon: Building2 },
+  { key: 'community', icon: Users2 },
 ];
 
 export function WhySection({ locale, isDefault = false }: WhySectionProps) {
@@ -48,13 +51,8 @@ export function WhySection({ locale, isDefault = false }: WhySectionProps) {
             const Icon = reason.icon;
             return (
               <div key={reason.key} className="text-center group">
-                <div
-                  className={cn(
-                    'mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg group-hover:scale-110 transition-transform duration-300',
-                    reason.color
-                  )}
-                >
-                  <Icon className="h-8 w-8 text-white" />
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600/10 ring-1 ring-primary-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <Icon className="h-8 w-8 text-primary-600" />
                 </div>
                 <h3 className={cn('text-xl font-semibold text-secondary-900 mb-3', isRTL && 'font-arabic')}>
                   {t(`${reason.key}Title` as Parameters<typeof t>[0])}

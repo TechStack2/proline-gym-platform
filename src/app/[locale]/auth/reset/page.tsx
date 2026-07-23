@@ -10,14 +10,17 @@
  */
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { withAuthTimeout, isTransportError } from '@/lib/auth/transport'
 import { classifyPasswordUpdateFailure } from '@/lib/auth/auth-error'
+import { useAuthGymBrand } from '@/hooks/use-auth-gym-brand'
+import { AuthLocaleSwitcher } from '@/components/shared/auth-locale-switcher'
 import { cn } from '@/lib/utils'
 import { PasswordStrengthHint } from '@/components/shared/password-strength'
 import { isPasswordValid, PASSWORD_MIN_LENGTH } from '@/lib/utils/password'
-import { Lock, Eye, EyeOff, CheckCircle2, Loader2, KeyRound } from 'lucide-react'
+import { Lock, Eye, EyeOff, CheckCircle2, Loader2 } from 'lucide-react'
 
 type Props = { params: { locale: string } }
 
@@ -25,6 +28,9 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
   const t = useTranslations('auth')
   const supabase = createClient()
   const isRTL = locale === 'ar'
+  // DA-42: the same host-resolved gym identity login carries.
+  const brand = useAuthGymBrand(locale)
+  const brandName = brand.name || 'PRO LINE Gym'
 
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
@@ -88,23 +94,33 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-sm">
+        {/* DA-42: sm+ card frame + the gym brand region (parity with login/forgot). */}
+        <div className="sm:rounded-2xl sm:border sm:bg-white sm:p-8 sm:shadow-elevation-1">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 ring-2 ring-primary-200/50">
-            <KeyRound className="h-7 w-7 text-primary-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-lg ring-2 ring-primary-200/50">
+            <Image
+              src={brand.logoUrl || '/logo.jpg'}
+              alt={brandName}
+              width={64}
+              height={64}
+              className="h-full w-full object-cover"
+              priority
+            />
           </div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('resetTitle')}</h1>
+          <p data-testid="reset-brand-name" className={cn('text-sm font-semibold text-gray-700', isRTL && 'font-arabic')}>{brandName}</p>
+          <h1 className={cn('mt-2 text-2xl font-bold text-gray-900', isRTL && 'font-arabic')}>{t('resetTitle')}</h1>
           <p className={cn('mt-1 text-sm text-gray-500', isRTL && 'font-arabic')}>{t('resetSubtitle')}</p>
         </div>
 
         {done ? (
           <div
             data-testid="reset-success"
-            className="rounded-2xl border border-green-200 bg-green-50 p-4 text-center"
+            className="rounded-2xl tint-success p-4 text-center"
           >
-            <CheckCircle2 className="mx-auto h-8 w-8 text-green-600" />
-            <p className={cn('mt-2 text-sm font-medium text-green-800', isRTL && 'font-arabic')}>{t('resetDone')}</p>
+            <CheckCircle2 className="mx-auto h-8 w-8 text-success-600" />
+            <p className={cn('mt-2 text-sm font-medium', isRTL && 'font-arabic')}>{t('resetDone')}</p>
             <Link
               href={`/${locale}/auth/login`}
               data-testid="reset-to-login"
@@ -116,7 +132,7 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
         ) : (
           <form onSubmit={submit} className="space-y-4">
             {hasSession === false && (
-              <div data-testid="reset-invalid" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-700">
+              <div data-testid="reset-invalid" className="rounded-xl tint-warning p-3 text-sm">
                 {t('resetInvalid')}
               </div>
             )}
@@ -133,7 +149,7 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
               isRTL={isRTL}
             />
             {pw.length > 0 && pw.length < PASSWORD_MIN_LENGTH && (
-              <p className="-mt-2 text-xs text-amber-600">{t('resetTooShort')}</p>
+              <p className="-mt-2 text-xs text-warning-600">{t('resetTooShort')}</p>
             )}
             {/* AUTH-DEPTH: shared strength hint (non-blocking; `valid` is the gate). */}
             <PasswordStrengthHint pw={pw} className="-mt-2" />
@@ -150,10 +166,10 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
               isRTL={isRTL}
             />
             {pw2.length > 0 && pw !== pw2 && (
-              <p className="-mt-2 text-xs text-red-600">{t('resetMismatch')}</p>
+              <p className="-mt-2 text-xs text-danger-600">{t('resetMismatch')}</p>
             )}
 
-            {error && <div data-testid="reset-error" className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+            {error && <div data-testid="reset-error" className="rounded-xl tint-danger p-3 text-sm">{error}</div>}
 
             <button
               type="submit"
@@ -165,6 +181,10 @@ export default function ResetPasswordPage({ params: { locale } }: Props) {
             </button>
           </form>
         )}
+        </div>
+
+        {/* DA-42: the language switcher, parity with login/forgot. */}
+        <AuthLocaleSwitcher locale={locale} />
       </div>
     </div>
   )
