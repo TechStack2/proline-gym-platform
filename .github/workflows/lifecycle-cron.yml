@@ -29,9 +29,9 @@
 name: Lifecycle cron (disabled by default)
 
 on:
-  # STEP 2 — uncomment to enable the daily sweep (02:00 UTC ≈ 04:00 Beirut):
-  # schedule:
-  #   - cron: '0 2 * * *'
+  # Enabled by the auditor 2026-07-23 (ops): daily sweep at 02:00 UTC ≈ 04:00 Beirut.
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch: {} # manual "Run workflow" (safe to keep; does nothing without the secret)
 
 jobs:
