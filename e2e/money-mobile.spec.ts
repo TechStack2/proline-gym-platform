@@ -132,12 +132,12 @@ test('R1 · Invoices at 1280 = the table path (unchanged), still no h-scroll', a
   test.setTimeout(90_000)
   const { ctx, page } = await ownerPage(browser, DESKTOP)
   try {
-    await page.goto('/en/money?tab=invoices', { waitUntil: 'domcontentloaded' })
+    await page.goto(`/en/money?tab=invoices&search=${encodeURIComponent(invoiceNumber)}`, { waitUntil: 'domcontentloaded' })
     const row = page.locator('[data-testid="invoice-row"]:visible').first()
     await expect(row).toBeVisible({ timeout: 20_000 })
     // The visible row is a table <tr> at desktop (the card is display:none).
     expect(await row.evaluate((el) => el.tagName.toLowerCase()), 'the visible row is a table row').toBe('tr')
-    // b3 contract preserved: the FIRST anchor in the row navigates to the invoice.
+    // b3 contract preserved: the FIRST anchor in the row is the invoice-number link.
     await expect(row.locator('a').first()).toHaveAttribute('href', new RegExp(`/invoices/${invoiceId}`))
     expect(await noHorizontalScroll(page), 'no page-level horizontal scroll at 1280').toBe(true)
   } finally { await ctx.close() }
