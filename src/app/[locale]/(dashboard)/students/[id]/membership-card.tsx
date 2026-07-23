@@ -38,13 +38,15 @@ export type MembershipCardData = {
 }
 export type PlanOption = { id: string; name: string; price: number; durationDays: number }
 
-export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId, locale }: {
+export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId, locale, facts }: {
   data: MembershipCardData | null
   plans: PlanOption[]
   policy: { renewal_lead_days: number; dunning_grace_days: number; freeze_max_days_year: number; freeze_min_chunk_days: number }
   freezeUsedDays: number
   studentId: string
   locale: string
+  /** MEMBER-360-ACTIONABLE §3.3 — the page-composed lifecycle fact grid (server node). */
+  facts?: React.ReactNode
 }) {
   const isRTL = locale === 'ar'
   const t = useTranslations('lifecycle')
@@ -187,6 +189,7 @@ export function MembershipCard({ data, plans, policy, freezeUsedDays, studentId,
           </Button>
         </div>
       )}
+      {facts}
     </div>
   )
 }

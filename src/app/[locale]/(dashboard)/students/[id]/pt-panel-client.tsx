@@ -36,10 +36,12 @@ export type SellableType = {
 export type SellableCoach = { id: string; name: string; avatarUrl: string | null; specializationEn: string | null }
 
 export function MemberPtPanel({
-  studentId, cards, types, coaches, unlinkedCount, locale, autoSellPackageId,
+  studentId, cards, types, coaches, unlinkedCount, locale, autoSellPackageId, factsById,
 }: {
   studentId: string
   cards: PtCardData[]
+  /** MEMBER-360-ACTIONABLE §3.3 — page-composed lifecycle grids, keyed by assignment (staff-only render; the shared PtPackageCard is untouched). */
+  factsById?: Record<string, React.ReactNode>
   types: SellableType[]
   coaches: SellableCoach[]
   unlinkedCount: number
@@ -156,7 +158,9 @@ export function MemberPtPanel({
               sessionsTitle: t('sessions'),
               sessionStatus,
             }}
-            actions={computePtStatus(d) === 'expired' ? (
+            actions={<>
+              {factsById?.[d.id]}
+              {computePtStatus(d) === 'expired' ? (
               <div className="mt-2">
                 <Button size="sm" variant="outline" data-testid="pt-extend-btn" disabled={pending}
                   onClick={() => extend(d.id)} className="h-7 border-danger-500/30 text-xs text-danger-700 hover:bg-danger-500/10">
@@ -169,6 +173,7 @@ export function MemberPtPanel({
                 <BookPtModal assignmentId={d.id} locale={locale} staff triggerTestid="m360-pt-book" triggerLabel={t('bookSession')} />
               </div>
             ) : null}
+            </>}
           />
         ))
       )}
