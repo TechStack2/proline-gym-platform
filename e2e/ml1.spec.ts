@@ -9,7 +9,8 @@ import { vis, expectNotification, untilConsistent, gymSlug } from './helpers';
  * Seeded fixtures: Karim's membership ENDS TODAY (FD-1 seed — the clean
  * renewal path); Omar's membership ENDED -15d (lapse path); 'Lifecycle Class'
  * capacity 1 with Omar unpaid (paid_until -15d) and LINA WAITLISTED.
- * The tick is driven via the staff "Process renewals now" wrapper.
+ * The tick is driven via the staff daily-sweep wrapper (the "Run the daily
+ * sweep" button — process_renewals_now).
  *
  *  1. Tick: renewal issued for Karim (ending today) with the plan price +
  *     nudge + Renew on Today's expiring row; SAME tick lapses Omar, suspends
@@ -40,14 +41,17 @@ async function openFile(page: Page, name: string) {
 async function runTick(page: Page) {
   await page.goto('/en/money');
   await vis(page, '[data-testid="process-renewals-now"]').first().click();
-  const toast = page.locator('[data-testid="app-toast"]').filter({ hasText: /issued/i }).first();
+  // The completion toast is EITHER the counts summary ("… issued …") OR the
+  // all-caught-up copy when the sweep found nothing due (LIFECYCLE-CRON R3).
+  const toast = page.locator('[data-testid="app-toast"]')
+    .filter({ hasText: /issued|caught up|nothing was due/i }).first();
   try {
     await expect(toast).toBeVisible({ timeout: 45_000 });
   } catch (e) {
     // DIAGNOSTIC: surface whatever toast DID appear (e.g. an error toast) so a
-    // targeted run reveals why the tick produced no "issued" summary.
+    // targeted run reveals why the tick produced no completion summary.
     const seen = await page.locator('[data-testid="app-toast"]').allTextContents().catch(() => []);
-    throw new Error(`runTick: no "issued" toast within 30s. Toasts seen: ${JSON.stringify(seen)}`);
+    throw new Error(`runTick: no completion toast within 45s. Toasts seen: ${JSON.stringify(seen)}`);
   }
   return (await toast.textContent()) ?? '';
 }
@@ -141,10 +145,18 @@ test('ML-1 · tick issues+nudges+lapses+suspends+promotes; idempotent re-run; pa
     }, { timeout: 40_000 });
 
     // ── Idempotency: the second tick issues NOTHING new ──
+    // After the first pass everything that was due has fired, so the re-run is a
+    // no-op — which now reads as the all-caught-up copy (LIFECYCLE-CRON R3) rather
+    // than a row of zeros. If any counter is non-zero (e.g. a reminder still due),
+    // the summary must still show 0 issued / 0 lapsed / 0 suspended.
     const second = await runTick(owner.page);
-    expect(second, 'tick re-run is a no-op').toMatch(/0 issued/);
-    expect(second).toMatch(/0 lapsed/);
-    expect(second).toMatch(/0 suspended/);
+    if (/issued/i.test(second)) {
+      expect(second, 'tick re-run is a no-op').toMatch(/0 issued/);
+      expect(second).toMatch(/0 lapsed/);
+      expect(second).toMatch(/0 suspended/);
+    } else {
+      expect(second, 'tick re-run reports nothing due').toMatch(/caught up|nothing was due/i);
+    }
 
     // ── Activation: pay the renewal → period extends by the plan duration ──
     await owner.page.goto(karimUrl);
@@ -241,9 +253,12 @@ test('ML-1 · lapse → chase + check-in warning + reinstate; suspended seat fre
     await expect(frozenCard.getByTestId('membership-period'), 'end date extended by the frozen days')
       .not.toContainText(endBefore);
 
-    // Frozen members are excluded: a tick now issues nothing anywhere.
+    // Frozen members are excluded: a tick now issues nothing anywhere — which
+    // reads as either "0 issued" in the summary or the all-caught-up copy when
+    // nothing at all was due (LIFECYCLE-CRON R3).
     const after = await runTick(owner.page);
-    expect(after, 'tick is silent with the membership frozen').toMatch(/0 issued/);
+    expect(after, 'tick is silent with the membership frozen')
+      .toMatch(/0 issued|caught up|nothing was due/i);
 
     // Early unfreeze (same day) → the unused days come back off the end date.
     await openFile(owner.page, 'Karim');

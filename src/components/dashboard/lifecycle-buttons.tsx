@@ -59,12 +59,15 @@ export function ProcessRenewalsButton() {
       const res = await processRenewalsNow()
       if (res.ok) {
         const d: any = (res as any).data ?? {}
+        const issued = d.issued ?? 0, reminded = d.reminded ?? 0
+        const lapsed = d.lapsed ?? 0, suspended = d.suspended ?? 0, unfrozen = d.unfrozen ?? 0
+        // Nothing was due → say so plainly, not a row of five zeros.
+        const nothing = issued + reminded + lapsed + suspended + unfrozen === 0
         toast({
           title: t('tickDone'),
-          description: t('tickSummary', {
-            issued: d.issued ?? 0, reminded: d.reminded ?? 0,
-            lapsed: d.lapsed ?? 0, suspended: d.suspended ?? 0, unfrozen: d.unfrozen ?? 0,
-          }),
+          description: nothing
+            ? t('tickNothingDue')
+            : t('tickSummary', { issued, reminded, lapsed, suspended, unfrozen }),
           variant: 'success',
         })
         router.refresh()

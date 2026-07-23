@@ -1,0 +1,55 @@
+# ============================================================================
+# LIFECYCLE-CRON — the scheduled daily lifecycle sweep (DISABLED BY DEFAULT).
+#
+# This workflow POSTs to /api/cron/lifecycle, which iterates active gyms and runs
+# run_lifecycle_tick(gym_id) per gym: issue due renewal invoices, send renewal
+# reminders, lapse unpaid memberships, suspend unpaid class seats (promote the
+# waitlist), auto-unfreeze ended pauses. The tick is idempotent (dedup keys +
+# WHERE-due guards), so a re-run within a day issues nothing new.
+#
+# It does NOTHING until an owner enables it. Two steps to go live:
+#   1) Set the repo secret CRON_SECRET (Settings → Secrets and variables → Actions
+#      → New repository secret). Set the SAME value in the app's env (Railway) so
+#      the route stops being inert. Optionally set APP_URL if the deployment URL
+#      differs from the default below. (This is the SAME CRON_SECRET the push +
+#      dunning crons use — one secret gates all three scheduled routes.)
+#   2) Uncomment the `schedule:` trigger below and commit. That turns on the daily
+#      run. (Until then only a manual "Run workflow" can trigger it.)
+#
+# WHY 02:00 UTC: that is ~04:00 Beirut (EET) / ~05:00 (EEST) — the small hours,
+# no staff at the desk, and BEFORE the dunning cron (06:30 UTC). Running the
+# lifecycle sweep first means the day's freshly-issued renewal invoices already
+# exist when that morning's dunning reminders go out.
+#
+# Safety: even fully enabled, the route is INERT unless the app env has a matching
+# CRON_SECRET. The tick runs for every ACTIVE gym (it is not opt-in like auto
+# WhatsApp dunning); a single gym's failure is isolated and named in the response
+# without aborting the rest.
+# ============================================================================
+name: Lifecycle cron (disabled by default)
+
+on:
+  # STEP 2 — uncomment to enable the daily sweep (02:00 UTC ≈ 04:00 Beirut):
+  # schedule:
+  #   - cron: '0 2 * * *'
+  workflow_dispatch: {} # manual "Run workflow" (safe to keep; does nothing without the secret)
+
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the lifecycle sweep
+        env:
+          # STEP 1 — set these repo secrets. APP_URL defaults to the Railway prod host.
+          APP_URL: ${{ secrets.APP_URL || 'https://proline.up.railway.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "CRON_SECRET is not set — the route is inert. Set the repo secret (step 1) to enable."
+            exit 0
+          fi
+          echo "POST ${APP_URL}/api/cron/lifecycle"
+          curl -fsS -X POST "${APP_URL}/api/cron/lifecycle" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d '{}'

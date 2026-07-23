@@ -2868,8 +2868,9 @@
     "planChanged": "Changement planifié pour le prochain cycle",
     "reinstate": "Réactiver",
     "reinstated": "Abonnement réactivé",
-    "processNow": "Traiter les renouvellements",
-    "tickDone": "Cycle de traitement terminé",
+    "processNow": "Lancer le balayage quotidien",
+    "tickDone": "Balayage quotidien terminé",
+    "tickNothingDue": "Tout est à jour — rien n’était dû",
     "tickSummary": "{issued} émis · {reminded} rappels · {lapsed} échus · {suspended} suspendus · {unfrozen} dégelés"
   },
   "wizard": {

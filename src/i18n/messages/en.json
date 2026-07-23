@@ -2868,8 +2868,9 @@
     "planChanged": "Plan change scheduled for the next cycle",
     "reinstate": "Reinstate",
     "reinstated": "Membership reinstated",
-    "processNow": "Process renewals now",
-    "tickDone": "Lifecycle tick complete",
+    "processNow": "Run the daily sweep",
+    "tickDone": "Daily sweep complete",
+    "tickNothingDue": "All caught up — nothing was due",
     "tickSummary": "{issued} issued · {reminded} reminded · {lapsed} lapsed · {suspended} suspended · {unfrozen} unfrozen"
   },
   "wizard": {
