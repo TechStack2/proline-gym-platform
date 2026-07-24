@@ -13,8 +13,9 @@
 import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react'
+import { captureError } from '@/lib/observability/sentry'
 
-type ErrorCopy = { title: string; body: string; retry: string; home: string; nfTitle: string; nfBody: string }
+type ErrorCopy = { title: string; body: string; retry: string; home: string; nfTitle: string; nfBody: string; ref: string }
 const DICT: Record<'ar' | 'en' | 'fr', ErrorCopy> = {
   en: {
     title: 'Something went wrong',
@@ -23,6 +24,7 @@ const DICT: Record<'ar' | 'en' | 'fr', ErrorCopy> = {
     home: 'Go home',
     nfTitle: 'Page not found',
     nfBody: 'The page you are looking for does not exist or has moved.',
+    ref: 'Reference',
   },
   ar: {
     title: 'حدث خطأ ما',
@@ -31,6 +33,7 @@ const DICT: Record<'ar' | 'en' | 'fr', ErrorCopy> = {
     home: 'الصفحة الرئيسية',
     nfTitle: 'الصفحة غير موجودة',
     nfBody: 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها.',
+    ref: 'المرجع',
   },
   fr: {
     title: 'Une erreur est survenue',
@@ -39,6 +42,7 @@ const DICT: Record<'ar' | 'en' | 'fr', ErrorCopy> = {
     home: 'Accueil',
     nfTitle: 'Page introuvable',
     nfBody: "La page que vous cherchez n'existe pas ou a été déplacée.",
+    ref: 'Référence',
   },
 }
 
@@ -58,7 +62,12 @@ export function SegmentError({ error, reset, notFound = false }: {
 
   useEffect(() => {
     // The raw error is for the console/monitoring ONLY — never the UI.
-    if (error) console.error('[segment-error]', error)
+    // ERROR-OBSERVE: also REPORT it to Sentry (guarded — capture never re-crashes
+    // this boundary). notFound renders with no error, so nothing is captured there.
+    if (error) {
+      console.error('[segment-error]', error)
+      captureError(error)
+    }
   }, [error])
 
   return (
@@ -81,6 +90,15 @@ export function SegmentError({ error, reset, notFound = false }: {
           <Home className="h-4 w-4" /> {d.home}
         </a>
       </div>
+      {/* ERROR-OBSERVE: the Next digest correlates to the Sentry event — a code the
+          owner can read us off a phone. Present only when a digest exists (never for
+          not-found, which has no error). */}
+      {error?.digest && (
+        <p className="mt-6 text-xs text-gray-400">
+          <span className="me-1">{d.ref}:</span>
+          <code data-testid="error-digest" className="select-all font-mono text-gray-500">{error.digest}</code>
+        </p>
+      )}
     </div>
   )
 }
