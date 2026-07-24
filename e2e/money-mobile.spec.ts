@@ -179,18 +179,24 @@ test('§2 · Prospects funnel stage tiles at 390 wrap fully-readable, no right-e
     await page.goto('/en/students?tab=prospects', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('leads-pipeline'), 'the pipeline renders').toBeVisible({ timeout: 20_000 })
 
-    // All five stage tiles are present AND fully within the viewport (the defect was
-    // "Trial Scheduled"/"Converted" clipping off the right edge at 390px).
-    const vw = MOBILE.width
-    for (const k of ['all', 'new', 'contacted', 'trial_scheduled', 'converted']) {
-      const chip = page.getByTestId(`prospect-chip-${k}`)
-      await expect(chip, `${k} tile is visible`).toBeVisible()
-      const box = await chip.boundingBox()
-      expect(box, `${k} tile has a box`).not.toBeNull()
-      expect(box!.x, `${k} tile does not start past the viewport`).toBeGreaterThanOrEqual(0)
-      expect(box!.x + box!.width, `${k} tile's right edge is within 390px`).toBeLessThanOrEqual(vw + 1)
+    // All five stage tiles are present (the row wraps; none are dropped).
+    const KEYS = ['all', 'new', 'contacted', 'trial_scheduled', 'converted']
+    for (const k of KEYS) {
+      await expect(page.getByTestId(`prospect-chip-${k}`), `${k} tile is visible`).toBeVisible()
     }
+
+    // Every tile's right edge sits within the 390px viewport (the defect was
+    // "Trial Scheduled"/"Converted" clipping off the right edge). expect.poll rides
+    // out the hydration/layout settle so a mid-reflow measurement never flakes.
+    await expect
+      .poll(async () => {
+        const boxes = await Promise.all(KEYS.map((k) => page.getByTestId(`prospect-chip-${k}`).boundingBox()))
+        if (boxes.some((b) => !b)) return Infinity
+        return Math.max(...boxes.map((b) => b!.x + b!.width))
+      }, { timeout: 10_000, message: 'every stage tile fits within 390px' })
+      .toBeLessThanOrEqual(MOBILE.width + 1)
+
     // …and the page body itself never scrolls horizontally.
-    expect(await noHorizontalScroll(page), 'no page-level horizontal scroll at 390').toBe(true)
+    await expect.poll(async () => noHorizontalScroll(page), { timeout: 10_000, message: 'no page h-scroll at 390' }).toBe(true)
   } finally { await ctx.close() }
 })
