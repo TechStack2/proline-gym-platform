@@ -173,11 +173,15 @@ test('R1/R4 · Payments at 390 = card rows + quick-range chips + a Custom-range 
 })
 
 test('§2 · Prospects funnel stage tiles at 390 wrap fully-readable, no right-edge clip / h-scroll', async ({ browser }) => {
-  test.setTimeout(90_000)
+  // 120s + a 45s pipeline-visible budget: the /students?tab=prospects leads-pipeline
+  // SSR renders slowly on a loaded CI runner (same surface g1 gives 180s) — domcontentloaded
+  // returns before hydration and the locator below waits it out, so a slow-but-completing
+  // render never gets cut off.
+  test.setTimeout(120_000)
   const { ctx, page } = await ownerPage(browser, MOBILE)
   try {
     await page.goto('/en/students?tab=prospects', { waitUntil: 'domcontentloaded' })
-    await expect(page.getByTestId('leads-pipeline'), 'the pipeline renders').toBeVisible({ timeout: 20_000 })
+    await expect(page.getByTestId('leads-pipeline'), 'the pipeline renders').toBeVisible({ timeout: 45_000 })
 
     // All five stage tiles are present (the row wraps; none are dropped).
     const KEYS = ['all', 'new', 'contacted', 'trial_scheduled', 'converted']
