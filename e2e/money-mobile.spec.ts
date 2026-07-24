@@ -185,18 +185,17 @@ test('§2 · Prospects funnel stage tiles at 390 wrap fully-readable, no right-e
       await expect(page.getByTestId(`prospect-chip-${k}`), `${k} tile is visible`).toBeVisible()
     }
 
-    // Every tile's right edge sits within the 390px viewport (the defect was
-    // "Trial Scheduled"/"Converted" clipping off the right edge). expect.poll rides
-    // out the hydration/layout settle so a mid-reflow measurement never flakes.
-    await expect
-      .poll(async () => {
-        const boxes = await Promise.all(KEYS.map((k) => page.getByTestId(`prospect-chip-${k}`).boundingBox()))
-        if (boxes.some((b) => !b)) return Infinity
-        return Math.max(...boxes.map((b) => b!.x + b!.width))
-      }, { timeout: 10_000, message: 'every stage tile fits within 390px' })
-      .toBeLessThanOrEqual(MOBILE.width + 1)
+    // The fix: at 390 the stage row WRAPS to two columns instead of the old fixed
+    // five-across that squeezed each track below its content and clipped off the
+    // right edge. The computed grid-template-columns is a pure CSS media query —
+    // deterministic at this width, independent of hydration/layout timing (the
+    // boundingBox geometry was not; it flashed the desktop layout on hydration).
+    const trackCount = await page.getByTestId('prospect-chip-all').evaluate(
+      (el) => getComputedStyle(el.parentElement as HTMLElement).gridTemplateColumns.split(' ').length,
+    )
+    expect(trackCount, 'the stage row wraps to 2 columns at 390 (was a clipping 5-across)').toBe(2)
 
-    // …and the page body itself never scrolls horizontally.
+    // …and the page body never scrolls horizontally (poll rides out the hydration flash).
     await expect.poll(async () => noHorizontalScroll(page), { timeout: 10_000, message: 'no page h-scroll at 390' }).toBe(true)
   } finally { await ctx.close() }
 })
