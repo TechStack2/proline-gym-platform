@@ -14,6 +14,25 @@ const ROLE_PORTAL_MAP: Record<PortalRole, string> = {
   external_coach: '/dashboard',
 };
 
+/**
+ * P1 (AUTH-COOKIE-REDIRECT) — build a redirect that CARRIES the auth cookies.
+ *
+ * `getUser()` below rotates the refresh token and writes the NEW sb-* cookies onto
+ * `supabaseResponse` via the client's `setAll`. A bare `NextResponse.redirect(url)`
+ * has none of those cookies, so returning it drops the rotated token — the browser
+ * keeps the already-rotated one and the next request 400s (`refresh_token_already_used`),
+ * killing the session. This is the documented @supabase/ssr rule: whenever you build a
+ * NEW response, copy `supabaseResponse`'s cookies onto it. The non-redirect
+ * `return supabaseResponse` already carries them; every redirect must go through here.
+ */
+export function redirectWithSession(url: URL, from: NextResponse): NextResponse {
+  const redirect = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => {
+    redirect.cookies.set(cookie);
+  });
+  return redirect;
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -58,7 +77,7 @@ export async function updateSession(request: NextRequest) {
       const locale = ['ar', 'en', 'fr'].includes(seg) ? seg : getPreferredLocale(request);
       const url = request.nextUrl.clone();
       url.pathname = `/${locale}/onboarding`;
-      return NextResponse.redirect(url);
+      return redirectWithSession(url, supabaseResponse);
     }
   }
 
@@ -95,12 +114,12 @@ export async function updateSession(request: NextRequest) {
       // precedence over any gym-role default (incl. the role-less 'owner' fallback).
       if (await isPlatformAdmin(supabase)) {
         url.pathname = `/${locale}${VENDOR_HOME}`;
-        return NextResponse.redirect(url);
+        return redirectWithSession(url, supabaseResponse);
       }
       const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
       const role = (roleData?.role || 'owner') as PortalRole;
       url.pathname = `/${locale}${ROLE_PORTAL_MAP[role]}`;
-      return NextResponse.redirect(url);
+      return redirectWithSession(url, supabaseResponse);
     }
   }
 
@@ -108,7 +127,7 @@ export async function updateSession(request: NextRequest) {
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = `/${getPreferredLocale(request)}/auth/login`;
-    return NextResponse.redirect(url);
+    return redirectWithSession(url, supabaseResponse);
   }
 
   // If user is authenticated and on the login page, redirect to role-specific portal
@@ -117,12 +136,12 @@ export async function updateSession(request: NextRequest) {
     // VENDOR-CONSOLE: platform admin → vendor console (before any gym-role default).
     if (await isPlatformAdmin(supabase)) {
       url.pathname = `/${getPreferredLocale(request)}${VENDOR_HOME}`;
-      return NextResponse.redirect(url);
+      return redirectWithSession(url, supabaseResponse);
     }
     const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
     const role = (roleData?.role || 'owner') as PortalRole;
     url.pathname = `/${getPreferredLocale(request)}${ROLE_PORTAL_MAP[role]}`;
-    return NextResponse.redirect(url);
+    return redirectWithSession(url, supabaseResponse);
   }
 
   // Redirect coach/student/parent away from /dashboard
@@ -132,14 +151,14 @@ export async function updateSession(request: NextRequest) {
     if (await isPlatformAdmin(supabase)) {
       const url = request.nextUrl.clone();
       url.pathname = `/${getPreferredLocale(request)}${VENDOR_HOME}`;
-      return NextResponse.redirect(url);
+      return redirectWithSession(url, supabaseResponse);
     }
     const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
     const role = roleData?.role as PortalRole | undefined;
     if (role === 'coach' || role === 'student' || role === 'parent') {
       const url = request.nextUrl.clone();
       url.pathname = `/${getPreferredLocale(request)}${ROLE_PORTAL_MAP[role]}`;
-      return NextResponse.redirect(url);
+      return redirectWithSession(url, supabaseResponse);
     }
   }
 
