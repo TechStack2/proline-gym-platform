@@ -171,3 +171,26 @@ test('R1/R4 · Payments at 390 = card rows + quick-range chips + a Custom-range 
     await expect(dialog.locator('input[type="date"]'), 'the natives stay native, just wrapped').toHaveCount(2)
   } finally { await ctx.close() }
 })
+
+test('§2 · Prospects funnel stage tiles at 390 wrap fully-readable, no right-edge clip / h-scroll', async ({ browser }) => {
+  test.setTimeout(90_000)
+  const { ctx, page } = await ownerPage(browser, MOBILE)
+  try {
+    await page.goto('/en/students?tab=prospects', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('leads-pipeline'), 'the pipeline renders').toBeVisible({ timeout: 20_000 })
+
+    // All five stage tiles are present AND fully within the viewport (the defect was
+    // "Trial Scheduled"/"Converted" clipping off the right edge at 390px).
+    const vw = MOBILE.width
+    for (const k of ['all', 'new', 'contacted', 'trial_scheduled', 'converted']) {
+      const chip = page.getByTestId(`prospect-chip-${k}`)
+      await expect(chip, `${k} tile is visible`).toBeVisible()
+      const box = await chip.boundingBox()
+      expect(box, `${k} tile has a box`).not.toBeNull()
+      expect(box!.x, `${k} tile does not start past the viewport`).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width, `${k} tile's right edge is within 390px`).toBeLessThanOrEqual(vw + 1)
+    }
+    // …and the page body itself never scrolls horizontally.
+    expect(await noHorizontalScroll(page), 'no page-level horizontal scroll at 390').toBe(true)
+  } finally { await ctx.close() }
+})
