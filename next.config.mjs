@@ -282,7 +282,7 @@ const sentryBuildOptions = {
   disableLogger: true,
   widenClientFileUpload: false,
   automaticVercelMonitors: false,
-  reactComponentAnnotation: { enabled: false },
+  reactComponentAnnotation: { enabled: true },
 };
 
 const baseConfig = withPWA(withNextIntl(nextConfig));
