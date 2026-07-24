@@ -115,10 +115,21 @@ test('AUTH-STUCK · success-path stall: navigation grace stops the spinner with 
   try {
     await page.goto('/en/auth/login')
 
-    // HOLD every /dashboard fetch (never settle the route — no continue, no
-    // abort): sign-in succeeds server-side, but the post-login navigation can
-    // never complete — the exact "signed in on a dying connection" stall.
-    await page.route('**/dashboard**', () => { /* intentionally never settled */ })
+    // Sign-in succeeds server-side, but the post-login navigation can never
+    // complete — the "signed in on a dying connection" stall.
+    //
+    // AUTH-NAV-FIX premise update: the post-login step is now a FULL-DOCUMENT
+    // navigation (window.location.assign(`/${locale}/dashboard`)), not the old
+    // soft router.push. We therefore ABORT the /dashboard navigation
+    // (net::ERR_ABORTED) rather than HANG it. An aborted top-level navigation
+    // leaves the browser on the login document — its JS + the NAV_GRACE timer keep
+    // running, so the 8s grace still fires — whereas HANGING a *top-level*
+    // navigation parks Playwright in "waiting for navigation to finish" and blocks
+    // every locator query against the still-live page (a hung soft-nav RSC *fetch*
+    // did not, which is why the old hang worked). Either way the navigation never
+    // lands; the contract under test — the grace stops the spinner and surfaces a
+    // retry affordance — is unchanged.
+    await page.route('**/dashboard**', (r) => r.abort('aborted'))
 
     await page.locator('#email').fill(roleEmail('owner'))
     await page.locator('#password').fill(E2E_PASSWORD)

@@ -82,8 +82,11 @@ export default function VerifyPage({ params }: Props) {
 
       if (verifyError) throw verifyError;
 
-      // Success — redirect to dashboard
-      router.push('/dashboard');
+      // Success. AUTH-NAV-FIX: full-document navigation into the /dashboard redirect
+      // stub (same crash-avoidance as the login door) — NOT a next-intl soft push.
+      // A soft router.push into the /dashboard→role-home server redirect fires the
+      // redirect mid-client-transition and throws React #310 on iOS Safari.
+      window.location.assign(`/${locale}/dashboard`);
     } catch (err: any) {
       setError(errCaught(err));
     } finally {

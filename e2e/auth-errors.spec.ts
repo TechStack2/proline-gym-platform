@@ -115,10 +115,20 @@ test('AUTH-ERRORS · a wrong password says so — and says the IDENTICAL thing f
     expect(onMissing, 'no-such-account is byte-identical to wrong-password').toBe(onExisting)
 
     // (3) …and the credentials state is not simply what this screen always says:
-    // the correct password still signs in.
+    // the correct password still signs in — AND does so as a FULL-DOCUMENT
+    // navigation (AUTH-NAV-FIX), not a next-intl soft push. Post-login is
+    // window.location.assign(`/${locale}/dashboard`); /dashboard is a SERVER
+    // redirect stub → the owner role home (/today). The old router.push soft-
+    // navigated INTO that stub, firing its redirect mid-client-transition and
+    // throwing React #310 ("Rendered more hooks…") on iOS Safari (crash #2). A
+    // sentinel set on THIS document proves the hard nav: a full-page load wipes it.
     await page.goto('/en/auth/login')
+    await page.evaluate(() => { (window as unknown as { __authNavDoc?: boolean }).__authNavDoc = true })
     await attempt(page, REAL_EMAIL, PW)
-    await page.waitForURL((u) => !u.pathname.includes('/auth/login'), { timeout: 30_000 })
+    await expect(page, 'the /dashboard stub resolved to the owner role home (/today)')
+      .toHaveURL(/\/en\/today\b/, { timeout: 30_000 })
+    const softNavSurvived = await page.evaluate(() => (window as unknown as { __authNavDoc?: boolean }).__authNavDoc === true)
+    expect(softNavSurvived, 'login must be a full-document navigation (window.location.assign), not a soft router.push').toBe(false)
   } finally {
     await ctx.close()
   }

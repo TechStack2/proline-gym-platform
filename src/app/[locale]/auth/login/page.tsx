@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from '@/i18n/routing';
 import { signInWithPhone, signInWithEmail } from '@/lib/auth/actions';
 import { withAuthTimeout, isTransportError } from '@/lib/auth/transport';
 import { useAuthGymBrand } from '@/hooks/use-auth-gym-brand';
@@ -58,7 +57,6 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage({ params }: Props) {
   const { locale } = params;
   const t = useTranslations('auth');
-  const router = useRouter();
   const isRTL = locale === 'ar';
 
   const [email, setEmail] = useState('');
@@ -149,12 +147,19 @@ export default function LoginPage({ params }: Props) {
     }
     if (!signedIn) return;
 
-    // Cookies were set server-side — refresh so the browser client adopts the
-    // session, then land on /dashboard (role routing takes over from there).
-    // The spinner survives navigation, but only for NAV_GRACE_MS: if we're still
-    // mounted after that, surface it instead of spinning silently.
-    router.push('/dashboard');
-    router.refresh();
+    // Cookies were set server-side. AUTH-NAV-FIX: land on /dashboard with a
+    // FULL-DOCUMENT navigation, NOT a next-intl soft push. /dashboard is a server
+    // redirect stub → the role home (/today · /coach · /portal, via middleware +
+    // the stub). A soft router.push INTO that stub fired the redirect
+    // mid-client-transition and threw React #310 ("Rendered more hooks than during
+    // the previous render") on iOS Safari (crash #2). window.location.assign lets
+    // middleware role-routing + the stub resolve as ordinary full-page server
+    // redirects — no App-Router transition to choke — and the full reload adopts
+    // the freshly-set session (so the old router.refresh() is no longer needed).
+    // The spinner survives navigation, but only for NAV_GRACE_MS: the page unloads
+    // first, yet on the rare stall (network dropped after the cookies were set)
+    // the timer still surfaces the message instead of spinning silently.
+    window.location.assign(`/${locale}/dashboard`);
     navGraceTimer.current = window.setTimeout(() => {
       navGraceTimer.current = null;
       setLoading(false);
