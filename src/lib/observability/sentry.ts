@@ -6,7 +6,25 @@
  * conservative traces sample (≤0.1). The DSN is NOT a secret (it ships in the client
  * bundle); only SENTRY_AUTH_TOKEN (source-map upload) is, and it's build-only.
  */
+import * as Sentry from '@sentry/nextjs';
 import type { ErrorEvent, EventHint } from '@sentry/nextjs';
+
+/**
+ * ERROR-OBSERVE — the guarded capture the client error boundaries call on mount.
+ *
+ * Reuses the ALREADY-INITIALISED isomorphic Sentry SDK (no new init): Sentry's own
+ * `enabled: !!SENTRY_DSN` (COMMON_INIT) makes this a clean no-op when the SDK is
+ * disabled, so no DSN gate is needed here. Wrapped in try/catch because reporting an
+ * error must NEVER throw out of the last-resort boundary that is reporting it — a
+ * Sentry failure would otherwise re-crash the one surface meant to survive a crash.
+ */
+export function captureError(error: unknown): void {
+  try {
+    Sentry.captureException(error);
+  } catch {
+    // Observability must never re-crash the error boundary.
+  }
+}
 
 /** The public DSN, read the same way on client + server so CSP + init stay in sync. */
 export const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN || '';

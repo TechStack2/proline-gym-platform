@@ -31,6 +31,10 @@ test('EH #1 · a segment throw renders the branded localized boundary — no raw
     await expect(page.locator('body'), 'the raw error message never reaches the UI').not.toContainText('raw internals')
     await expect(page.locator('body')).not.toContainText('e2e forced segment error')
     await expect(page.locator('body')).toContainText('Something went wrong')
+    // ERROR-OBSERVE: the boundary surfaces the Next digest as a copyable reference
+    // code (the production build assigns a digest to a server throw). It correlates
+    // to the Sentry event the boundary also reports on mount.
+    await expect(page.getByTestId('error-digest'), 'a reference code (digest) is shown').toBeVisible()
 
     // /ar — localized + RTL.
     await page.goto('/ar/today?__err=1')

@@ -8,10 +8,19 @@
  * trilingual copy is shown together (the locale segment may not have resolved).
  * Tailwind CLASSES, not inline styles — the prod CSP strips inline style
  * attributes; stylesheet rules survive (worst case: unstyled but readable).
+ *
+ * ERROR-OBSERVE: also REPORT to Sentry on mount (guarded) and surface the Next
+ * digest as a copyable reference code — a crash here used to be console-only, so
+ * we were blind to the exact throw the owner saw on the PWA.
  */
+import { useEffect } from 'react'
+import { captureError } from '@/lib/observability/sentry'
+
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   // Raw error → console only; never the UI.
   console.error('[global-error]', error)
+  // Feed the last-resort crash to Sentry (guarded — capture can never re-crash here).
+  useEffect(() => { captureError(error) }, [error])
   return (
     <html>
       <body className="m-0 bg-gray-50 font-sans">
@@ -25,6 +34,14 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             className="mt-6 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-800">
             Try again · إعادة المحاولة
           </button>
+          {/* ERROR-OBSERVE: the Next digest correlates to the Sentry event — a code
+              the owner can read us off a phone. Present only when a digest exists. */}
+          {error?.digest && (
+            <p className="mt-4 text-xs text-gray-400">
+              <span className="me-1">Reference · المرجع · Référence:</span>
+              <code data-testid="error-digest" className="select-all font-mono text-gray-500">{error.digest}</code>
+            </p>
+          )}
         </div>
       </body>
     </html>
