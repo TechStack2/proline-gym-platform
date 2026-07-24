@@ -196,15 +196,19 @@ export async function LeadsPipeline({ locale, searchParams }: Props) {
       {/* GRW-1: growth funnel strip (conversion + by-source/campaign, this month) */}
       <FunnelStrip funnel={funnel} locale={locale} />
 
-      {/* Stage chips (clickable counts → server-side status filter) */}
-      <div className="grid grid-cols-5 gap-3">
+      {/* Stage chips (clickable counts → server-side status filter).
+          MONEY-MOBILE §2: at 390px five fixed columns squeezed each tile below its
+          min-content and clipped "Trial Scheduled" off the right edge. Wrap the row
+          responsively (2 → 3 → 5) so every tile stays fully readable and the page
+          body never scrolls horizontally; the desktop 5-across is preserved (≥lg). */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {statsData.map((s) => (
           <Link
             key={s.key}
             href={`/${locale}/students?tab=prospects${s.key === 'all' ? '' : `&status=${s.key}`}`}
             data-testid={`prospect-chip-${s.key}`}
             data-count={s.count}
-            className={`text-center p-3 rounded-xl border ${s.color} bg-opacity-20 transition-shadow hover:shadow-md ${activeStatus === s.key ? 'ring-2 ring-primary-700/50' : ''}`}
+            className={`min-w-0 text-center p-3 rounded-xl border ${s.color} bg-opacity-20 transition-shadow hover:shadow-md ${activeStatus === s.key ? 'ring-2 ring-primary-700/50' : ''}`}
           >
             <div className="text-2xl font-bold">{s.count}</div>
             <div className="text-xs font-medium mt-0.5">{s.label}</div>

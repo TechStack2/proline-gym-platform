@@ -427,6 +427,24 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // MONEY-MOBILE (§5): the /money Invoices + Payments surfaces on a phone — card
+      // rows <768 (no page-level horizontal scroll), table ≥768, actions out of the
+      // identity cell, aging chips, the Payments quick-range chips + Custom-range
+      // Dialog. Seeds its OWN gym (seed_e2e_dunning) + a service-role payment.
+      name: 'money-mobile',
+      dependencies: ['setup'],
+      testMatch: /money-mobile\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // MONEY-MOBILE §6.3 evidence: the two money tabs × {en,ar} × {light,dark} ×
+      // {390,768,1280}. Owner storage (seeded invoices + payments).
+      name: 'money-mobile-shots',
+      dependencies: ['setup'],
+      testMatch: /money-mobile-shots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // WL-LANDING: the public landing renders the RESOLVED gym's branding (name +
       // brand color, logo/hero/tagline) — set gym renders its look, unset = the
       // Proline default. Seeds its OWN isolated gyms; loads anon via ?gym=<slug>.

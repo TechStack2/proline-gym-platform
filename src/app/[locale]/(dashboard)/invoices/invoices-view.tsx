@@ -2,10 +2,13 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
-import { Plus, FileText } from 'lucide-react'
+import { Plus, FileText, HandCoins } from 'lucide-react'
 import { fmtDate } from '@/lib/fmt'
 import { fmtUsd } from '@/lib/billing/currency'
 import { StatusChip } from '@/components/ui/status-chip'
+import { VARIANT_TINT } from '@/lib/status-vocabulary'
+import { agingBucketFor } from '@/lib/finances/aging'
+import { middleTruncateId } from '@/lib/billing/invoice-id'
 import { balanceUsd, balanceLbp, localizedName, statusLabel, displayInvoiceStatus, METHOD_LABEL, INVOICE_TYPE_CAT, invoiceTypeLabel, invoiceNote } from '@/lib/billing/reconcile'
 import { dualMoney, normalizeCurrencyPref } from '@/lib/billing/currency'
 import { gymCanonicalOrigin } from '@/lib/host/primary-domain'
@@ -14,15 +17,6 @@ import { InvoiceRowWa } from './invoice-row-wa'
 
 type Props = { locale: string; searchParams: { search?: string; status?: string; aging?: string } }
 
-// FIN-1: days-past-due → aging bucket (matches get_gym_outstanding_aging, 000110:
-// due≥today→current, else ≤30 / ≤60 / 60+, same boundaries).
-function agingBucket(dueDate: string | null, today: string): string {
-  if (!dueDate) return 'current'
-  if (dueDate >= today) return 'current'
-  const days = Math.floor((new Date(today + 'T12:00:00Z').getTime() - new Date(dueDate + 'T12:00:00Z').getTime()) / 864e5)
-  return days <= 30 ? 'd1_30' : days <= 60 ? 'd31_60' : 'd60_plus'
-}
-
 /**
  * /invoices (D1 repair). The as-is page was DOA — it queried students.first_name
  * (name lives on profiles), invoice.issue_date (the column is created_at), and an
@@ -30,6 +24,13 @@ function agingBucket(dueDate: string | null, today: string): string {
  * schema with the canonical reconcile: status + balance are derived from
  * Σ payments. Adds an outstanding-balances summary and a per-method daily tally
  * (the cash drawer: USD/LBP/OMT/Whish/…).
+ *
+ * MONEY-MOBILE (§5): below 768px the list renders as CARD rows (identity on top,
+ * amounts right-aligned tabular, actions in their own row) so nothing floats past a
+ * 390px viewport; at ≥768px the table returns, inside an overflow-x container so the
+ * page body never scrolls horizontally at any width. Aging chips reuse the ONE
+ * bucket truth (agingBucketFor, byte-matched to 000110). FIN-1 aging drill-down and
+ * every existing testid are preserved in role.
  */
 export async function InvoicesView({ locale, searchParams }: Props) {
   const t = (en: string, ar: string, fr: string) => (locale === 'ar' ? ar : locale === 'fr' ? fr : en)
@@ -81,6 +82,7 @@ export async function InvoicesView({ locale, searchParams }: Props) {
     : { data: null }
   const canSendWa = ['owner', 'receptionist'].includes((roleRow as { role?: string } | null)?.role ?? '')
   const ti = await getTranslations({ locale, namespace: 'invoices' })
+  const tAging = await getTranslations({ locale, namespace: 'ownerFinances.aging' })
 
   const waByInvoice = new Map<string, { phone: string | null; due: string; reminder: string }>()
   if (canSendWa) {
@@ -144,9 +146,80 @@ export async function InvoicesView({ locale, searchParams }: Props) {
     const matchStatus = !statusFilter || inv.status === statusFilter
     // Aging drill-down: only open invoices, in the selected days-past-due bucket.
     const isOpen = ['pending', 'partial', 'overdue'].includes(inv.status)
-    const matchAging = !agingFilter || (isOpen && balOf(inv) > 0 && agingBucket(inv.due_date, today) === agingFilter)
+    const matchAging = !agingFilter || (isOpen && balOf(inv) > 0 && agingBucketFor(inv.due_date) === agingFilter)
     return matchSearch && matchStatus && matchAging
   })
+
+  // ── Per-row derived model (computed once; both the mobile card and desktop table
+  //    render from it). Keeps DOM order stable: the invoice-number link is always the
+  //    FIRST anchor (b3 clicks `a.first()` → /invoices/[id]).
+  type Row = {
+    inv: any; profile: any; bal: number; open: boolean; bucket: string; showAge: boolean
+    wa: { phone: string | null; due: string; reminder: string } | undefined
+  }
+  const rows: Row[] = filtered.map((inv: any) => {
+    const profRow = inv.students?.profiles
+    const profile = Array.isArray(profRow) ? profRow[0] : profRow
+    const bal = balOf(inv)
+    const open = ['pending', 'partial', 'overdue'].includes(inv.status)
+    const bucket = agingBucketFor(inv.due_date)
+    return { inv, profile, bal, open, bucket, showAge: open && bal > 0.005, wa: waByInvoice.get(inv.id) }
+  })
+
+  // Render helpers (plain functions, invoked — NOT nested components — so DOM/state
+  // are stable across renders). Each is shared by the mobile card and desktop table.
+
+  // §5: the age chip (reuses the ONE bucket truth). current→calm, 1–30→warning, older→danger.
+  const ageChip = (bucket: string) => (
+    <span data-testid="invoice-aging-chip" data-bucket={bucket}
+      className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold',
+        VARIANT_TINT[bucket === 'current' ? 'neutral' : bucket === 'd1_30' ? 'warning' : 'danger'])}>
+      {tAging(bucket)}
+    </span>
+  )
+
+  const typeBadge = (inv: any) => (
+    <span data-testid="invoice-type-badge" data-type={inv.invoice_type || 'other'}
+      data-cat={INVOICE_TYPE_CAT[inv.invoice_type] || INVOICE_TYPE_CAT.other}
+      className="cat-tint inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">
+      {invoiceTypeLabel(inv.invoice_type, locale)}
+    </span>
+  )
+
+  // §5 R2: the action cluster — an action NEVER lives in the identity cell. Collect is
+  // the M360A pre-filled pay door (?pay=<invoiceId>); Send/Remind reuse InvoiceRowWa.
+  const actions = (r: Row) => (
+    <>
+      {r.showAge && (
+        <Link href={`/${locale}/students/${r.inv.student_id}?pay=${r.inv.id}`} data-testid="invoice-row-collect"
+          className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary-700 px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary-800">
+          <HandCoins className="h-3 w-3" /> {t('Collect', 'تحصيل', 'Encaisser')}
+        </Link>
+      )}
+      {canSendWa && r.wa && (
+        <InvoiceRowWa
+          invoiceId={r.inv.id}
+          phone={r.wa.phone}
+          dueMessage={r.wa.due}
+          reminderMessage={r.wa.reminder}
+          sendLabel={ti('waSendInvoice')}
+          remindLabel={ti('waSendReminder')}
+        />
+      )}
+    </>
+  )
+
+  const memberLink = (inv: any, profile: any) => (
+    <Link href={`/${locale}/students/${inv.student_id}`} data-testid="invoice-member-link" className="hover:underline">
+      {localizedName(profile, locale)}
+    </Link>
+  )
+  const payer = (inv: any) =>
+    inv.payer_profile_id ? (
+      <span className="block text-[10px] text-gray-400" data-testid="invoice-payer">
+        {t('Payer', 'الدافع', 'Payeur')}: {localizedName(Array.isArray(inv.payer) ? inv.payer[0] : inv.payer, locale)}
+      </span>
+    ) : null
 
   return (
     <div className="space-y-6">
@@ -200,64 +273,98 @@ export async function InvoicesView({ locale, searchParams }: Props) {
           <p className="text-sm text-muted-foreground">{t('No invoices found.', 'لا توجد فواتير.', 'Aucune facture trouvée.')}</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b bg-muted/50 text-start">
-              <th className="p-3">{t('Number', 'الرقم', 'Numéro')}</th><th className="p-3">{t('Member', 'العضو', 'Membre')}</th>
-              <th className="p-3">{t('Total', 'الإجمالي', 'Total')}</th><th className="p-3">{t('Balance', 'الرصيد', 'Solde')}</th>
-              <th className="p-3">{t('Due', 'الاستحقاق', 'Échéance')}</th><th className="p-3">{t('Status', 'الحالة', 'Statut')}</th>
-            </tr></thead>
-            <tbody data-testid="invoice-list">
-              {filtered.map((inv: any) => {
-                const profRow = inv.students?.profiles
-                const profile = Array.isArray(profRow) ? profRow[0] : profRow
-                const bal = balOf(inv)
-                return (
-                  <tr key={inv.id} className="border-b hover:bg-muted/40" data-testid="invoice-row" data-invoice-number={inv.invoice_number}>
-                    <td className="p-3">
-                      <Link href={`/${locale}/invoices/${inv.id}`} className="font-mono font-medium text-primary-700 hover:underline">{inv.invoice_number}</Link>
+        <>
+          {/* MOBILE (<768): card rows — identity first, amounts right-aligned tabular,
+              actions in their own row. Hidden at ≥md via display:none so the table is
+              the only visible `invoice-row` there (the double-shell `:visible` rule). */}
+          <ul className="space-y-3 md:hidden" data-testid="invoice-list">
+            {rows.map((r) => (
+              <li key={r.inv.id} data-testid="invoice-row" data-invoice-number={r.inv.invoice_number}
+                className="rounded-2xl border bg-white p-4 shadow-sm">
+                {/* line 1: id + type + aging */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-sm font-medium tabular-nums text-primary-700">
+                    <Link href={`/${locale}/invoices/${r.inv.id}`} title={r.inv.invoice_number} aria-label={r.inv.invoice_number} className="hover:underline">
+                      {middleTruncateId(r.inv.invoice_number)}
+                    </Link>
+                  </span>
+                  {typeBadge(r.inv)}
+                  {r.showAge && ageChip(r.bucket)}
+                  <span className="ms-auto"><StatusChip domain="invoice" status={displayInvoiceStatus(r.inv.status, r.inv.voided_at)} label={statusLabel(displayInvoiceStatus(r.inv.status, r.inv.voided_at), locale)} /></span>
+                </div>
+                {/* line 2: member + payer */}
+                <div className="mt-2 text-sm">
+                  {memberLink(r.inv, r.profile)}
+                  {payer(r.inv)}
+                  {invoiceNote(r.inv, locale) && (
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground" data-testid="invoice-note">{invoiceNote(r.inv, locale)}</span>
+                  )}
+                </div>
+                {/* amounts: right-aligned tabular */}
+                <div className="mt-2 flex items-baseline justify-between gap-3 text-sm">
+                  <span className="text-xs text-muted-foreground">{t('Due', 'الاستحقاق', 'Échéance')} {fmtDate(r.inv.due_date, locale)}</span>
+                  <span className="text-end tabular-nums">
+                    <span className="font-medium">{fmtUsd(Number(r.inv.total_usd))}</span>
+                    <span className={cn('ms-2 font-semibold', r.bal > 0 ? 'text-danger-600' : 'text-gray-500')}>{fmtUsd(r.bal)}</span>
+                  </span>
+                </div>
+                {/* action row (last) */}
+                {(r.showAge || (canSendWa && r.wa)) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3" data-testid="invoice-row-actions">
+                    {actions(r)}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {/* DESKTOP (≥768): the table, inside an overflow-x container so the page body
+              never scrolls horizontally — the table scrolls within its own card. */}
+          <div className="hidden overflow-x-auto rounded-2xl border bg-white shadow-sm md:block">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b bg-muted/50 text-start">
+                <th className="p-3">{t('Number', 'الرقم', 'Numéro')}</th><th className="p-3">{t('Member', 'العضو', 'Membre')}</th>
+                <th className="p-3">{t('Total', 'الإجمالي', 'Total')}</th><th className="p-3">{t('Balance', 'الرصيد', 'Solde')}</th>
+                <th className="p-3">{t('Due', 'الاستحقاق', 'Échéance')}</th><th className="p-3">{t('Status', 'الحالة', 'Statut')}</th>
+                <th className="p-3 text-end">{t('Actions', 'إجراءات', 'Actions')}</th>
+              </tr></thead>
+              {/* `invoice-list` rides both variants (one is display:none per width). */}
+              <tbody data-testid="invoice-list">
+                {rows.map((r) => (
+                  <tr key={r.inv.id} className="border-b hover:bg-muted/40" data-testid="invoice-row" data-invoice-number={r.inv.invoice_number}>
+                    <td className="p-3 align-top">
+                      <Link href={`/${locale}/invoices/${r.inv.id}`} title={r.inv.invoice_number} aria-label={r.inv.invoice_number}
+                        className="whitespace-nowrap font-mono font-medium tabular-nums text-primary-700 hover:underline">
+                        {r.inv.invoice_number}
+                      </Link>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span data-testid="invoice-type-badge" data-type={inv.invoice_type || 'other'}
-                          data-cat={INVOICE_TYPE_CAT[inv.invoice_type] || INVOICE_TYPE_CAT.other}
-                          className="cat-tint inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium">
-                          {invoiceTypeLabel(inv.invoice_type, locale)}
-                        </span>
-                        {invoiceNote(inv, locale) && (
-                          <span className="text-[11px] text-muted-foreground" data-testid="invoice-note">{invoiceNote(inv, locale)}</span>
+                        {typeBadge(r.inv)}
+                        {r.showAge && ageChip(r.bucket)}
+                        {invoiceNote(r.inv, locale) && (
+                          <span className="text-[11px] text-muted-foreground" data-testid="invoice-note">{invoiceNote(r.inv, locale)}</span>
                         )}
                       </div>
                     </td>
-                    <td className="p-3">
-                      <Link href={`/${locale}/students/${inv.student_id}`} data-testid="invoice-member-link" className="hover:underline">
-                        {localizedName(profile, locale)}
-                      </Link>
-                      {inv.payer_profile_id && (
-                        <span className="block text-[10px] text-gray-400" data-testid="invoice-payer">
-                          {t('Payer', 'الدافع', 'Payeur')}: {localizedName(Array.isArray(inv.payer) ? inv.payer[0] : inv.payer, locale)}
-                        </span>
-                      )}
-                      {canSendWa && waByInvoice.has(inv.id) && (
-                        <InvoiceRowWa
-                          invoiceId={inv.id}
-                          phone={waByInvoice.get(inv.id)!.phone}
-                          dueMessage={waByInvoice.get(inv.id)!.due}
-                          reminderMessage={waByInvoice.get(inv.id)!.reminder}
-                          sendLabel={ti('waSendInvoice')}
-                          remindLabel={ti('waSendReminder')}
-                        />
-                      )}
+                    <td className="p-3 align-top">
+                      {memberLink(r.inv, r.profile)}
+                      {payer(r.inv)}
                     </td>
-                    <td className="p-3 font-medium">{fmtUsd(Number(inv.total_usd))}</td>
+                    <td className="p-3 align-top font-medium tabular-nums">{fmtUsd(Number(r.inv.total_usd))}</td>
                     {/* W3b zero doctrine: settled = calm neutral, never celebration green. */}
-                    <td className={cn('p-3 font-medium', bal > 0 ? 'text-danger-600' : 'text-gray-500')}>{fmtUsd(bal)}</td>
-                    <td className="p-3 text-muted-foreground">{fmtDate(inv.due_date, locale)}</td>
-                    <td className="p-3"><StatusChip domain="invoice" status={displayInvoiceStatus(inv.status, inv.voided_at)} label={statusLabel(displayInvoiceStatus(inv.status, inv.voided_at), locale)} /></td>
+                    <td className={cn('p-3 align-top font-medium tabular-nums', r.bal > 0 ? 'text-danger-600' : 'text-gray-500')}>{fmtUsd(r.bal)}</td>
+                    <td className="p-3 align-top whitespace-nowrap text-muted-foreground">{fmtDate(r.inv.due_date, locale)}</td>
+                    <td className="p-3 align-top"><StatusChip domain="invoice" status={displayInvoiceStatus(r.inv.status, r.inv.voided_at)} label={statusLabel(displayInvoiceStatus(r.inv.status, r.inv.voided_at), locale)} /></td>
+                    <td className="p-3 align-top">
+                      <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                        {actions(r)}
+                      </div>
+                    </td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   )

@@ -60,9 +60,10 @@ test('I18N-1 · fr renders with no MISSING_MESSAGE and no raw-key leak across th
       // French — the inline t(en,ar,fr) helper + METHOD_LABEL.fr.
       await owner.page.goto('/fr/money?tab=payments');
       await assertCleanFr(owner.page, '/fr/money?tab=payments');
-      // NB: assert a VISIBLE token (the Filtrer button) — the method <option>s carry
-      // French too but options are never "visible" to Playwright.
-      await expect(owner.page.getByRole('button', { name: 'Filtrer' }), '/fr payments view is localized').toBeVisible({ timeout: 15_000 });
+      // NB: assert a VISIBLE token — MONEY-MOBILE replaced the native date form with
+      // quick-range chips + a Custom-range Dialog, so the localized affordance is now
+      // the "Plage personnalisée" trigger button (always rendered, data-independent).
+      await expect(owner.page.getByRole('button', { name: 'Plage personnalisée' }), '/fr payments view is localized').toBeVisible({ timeout: 15_000 });
       await owner.page.goto('/fr/payments/new');
       await assertCleanFr(owner.page, '/fr/payments/new');
       await expect(owner.page.getByText('Choisissez une facture ouverte à régler.'), '/fr record-payment is localized').toBeVisible({ timeout: 15_000 });
